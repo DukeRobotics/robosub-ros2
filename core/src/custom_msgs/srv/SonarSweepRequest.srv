@@ -2,10 +2,11 @@ float64 start_angle
 float64 end_angle
 
 float64 distance_of_scan
-
-string target_frame_id
 ---
+bool success
+string message
+
 bool is_object
 
-geometry_msgs/Pose pose
+geometry_msgs/PoseStamped pose
 float64 normal_angle

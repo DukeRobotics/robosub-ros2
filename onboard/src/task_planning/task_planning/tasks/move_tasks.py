@@ -103,6 +103,8 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False, d
             global_pose.orientation = geometry_utils.transforms3d_quat_to_geometry_quat(
                 euler2quat(orig_euler_angles[0], orig_euler_angles[1], euler_angles[2]))
 
+        return global_pose
+
     global_pose = send_transformer(pose)
 
     return await coroutine_utils.transform(
@@ -251,8 +253,10 @@ Directions = list[Direction]
 @task
 async def move_with_directions(self: Task,
                                directions: Directions,
+                               depth_level: float | None = None,
                                correct_yaw: bool = False,
                                correct_depth: bool = False,
+
                                ) -> None:
     """
     Move the robot to multiple poses defined by the provided directions.
@@ -275,16 +279,18 @@ async def move_with_directions(self: Task,
     Returns:
         None
     """
-    for direction in directions:
-        assert len(direction) in [3, 6], 'Each tuple in the directions list must be of length 3 or 6. Tuple '
-        f'{direction} has length {len(direction)}.'
+    while True:
+        for direction in directions:
+            assert len(direction) in [3, 6], 'Each tuple in the directions list must be of length 3 or 6. Tuple '
+            f'{direction} has length {len(direction)}.'
 
-        await move_to_pose_local(
-            geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
-            parent=self)
-        logger.info(f'Moved to {direction}')
+            await move_to_pose_local(
+                geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
+                depth_level=depth_level,
+                parent=self)
+            logger.info(f'Moved to {direction}')
 
-        if correct_yaw:
-            await self.parent.correct_yaw()
-        if correct_depth:
-            await self.parent.correct_depth()
+            if correct_yaw:
+                await self.parent.correct_yaw()
+            if correct_depth:
+                await self.parent.correct_depth()

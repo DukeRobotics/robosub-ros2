@@ -9,7 +9,7 @@ import yaml
 from brping import Ping360
 from custom_msgs.srv import SonarSweepRequest
 from cv_bridge import CvBridge
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import PoseStamped
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 from serial.tools import list_ports
@@ -55,8 +55,8 @@ class Sonar(Node):
         super().__init__(self.NODE_NAME)
         self.get_logger().info('Sonar planning node initialized')
 
-        self.stream = self.declare_parameter('stream', False).value
-        self.debug = self.declare_parameter('debug', True).value
+        self.stream = self.declare_parameter('stream', True).value
+        self.debug = self.declare_parameter('debug', False).value
 
         with Path(rr.get_filename(self.CONFIG_FILE_PATH, use_protocol=False)).open() as f:
             self._config_data = yaml.safe_load(f)
@@ -248,12 +248,12 @@ class Sonar(Node):
             List: List of data messages from the Sonar device.
         """
         sonar_sweep_data = []
-        for i in range(range_start, range_end + 1, 1 if self.increase_ccw else -1):  # inclusive ends
+        for i in range(range_start, range_end + 1):  # inclusive ends
             sonar_scan = self.request_data_at_angle(i)
             sonar_sweep_data.append(sonar_scan)
         return np.vstack(sonar_sweep_data)
 
-    def to_robot_position(self, angle: float, index: int, target_frame_id: str) -> Pose:
+    def to_robot_position(self, angle: float, index: int) -> PoseStamped:
         """
         Convert a point in sonar space to a robot global position.
 
@@ -261,38 +261,39 @@ class Sonar(Node):
             angle (float): Angle in gradians of the point relative to in front
                 of the sonar device.
             index (int | float): Index of the data in the sonar response.
-            target_frame_id (str): The target frame to transform the pose to.
 
         Returns:
-            Pose: Pose in target_frame_id containing x and y position of angle/index item.
+            PoseStamped: PoseStamped in the sonar's frame containing x and y position of angle/index item.
         """
         x_pos = self.get_distance_of_sample(index)*np.cos(
             sonar_utils.centered_gradians_to_radians(angle, self.center_gradians, self.increase_ccw))
         y_pos = -1 * self.get_distance_of_sample(index)*np.sin(
             sonar_utils.centered_gradians_to_radians(angle, self.center_gradians, self.increase_ccw))
-        pos_of_point = Pose()
-        pos_of_point.position.x = x_pos
-        pos_of_point.position.y = y_pos
-        pos_of_point.position.z = 0  # z cord is not really 0 but we don't care
-        pos_of_point.orientation.x = 0
-        pos_of_point.orientation.y = 0
-        pos_of_point.orientation.z = 0
-        pos_of_point.orientation.w = 1
+        pos_of_point = PoseStamped()
+        pos_of_point.header.stamp = self.get_clock().now().to_msg()
+        pos_of_point.header.frame_id = 'sonar_ping_360'
+        pos_of_point.pose.position.x = x_pos
+        pos_of_point.pose.position.y = y_pos
+        pos_of_point.pose.position.z = 0.0  # z cord is not really 0 but we don't care
+        pos_of_point.pose.orientation.x = 0.0
+        pos_of_point.pose.orientation.y = 0.0
+        pos_of_point.pose.orientation.z = 0.0
+        pos_of_point.pose.orientation.w = 1.0
 
-        return sonar_utils.transform_pose(self.tf_buffer, pos_of_point, 'sonar_ping_360', target_frame_id)
+        return pos_of_point
 
-    def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int, target_frame_id: str) -> \
-            tuple[Pose, np.ndarray, float]:
+    def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int) -> \
+            tuple[PoseStamped | None, np.ndarray, float | None]:
         """
         Get the depth of the sweep of a detected object. For now uses mean value.
 
         Args:
             start_angle (int): Angle to start sweep in gradians.
             end_angle (int): Angle to end sweep in gradians.
-            target_frame_id (str): The target frame to transform the object pose to.
 
         Returns:
-            (Pose, List): Pose of the object in robot reference frame and sonar sweep array.
+            (PoseStamped, np.ndarray, float): Pose of the object in robot reference frame, sonar sweep array, and normal
+                angle.
         """
         sonar_sweep_array = self.get_sweep(start_angle, end_angle)
         sonar_index, normal_angle, plot = sonar_image_processing.find_center_point_and_angle(
@@ -306,7 +307,7 @@ class Sonar(Node):
 
         sonar_angle = (start_angle + end_angle) / 2  # Take the middle of the sweep
 
-        return (self.to_robot_position(sonar_angle, sonar_index, target_frame_id), plot, normal_angle)
+        return (self.to_robot_position(sonar_angle, sonar_index), plot, normal_angle)
 
     def convert_to_ros_compressed_img(self, sonar_sweep: np.ndarray, compressed_format: str = 'jpg',
                                       is_color: bool = False) -> CompressedImage:
@@ -368,18 +369,21 @@ class Sonar(Node):
         Returns:
             SonarSweepRequest.Response: Response generated from the sonar request.
         """
-        response.pose = Pose()
+        response.pose = PoseStamped()
         response.normal_angle = 0.0
         response.is_object = False
 
         # Get request details
-        left_degrees = request.start_angle
-        right_degrees = request.end_angle
+        start_degrees = request.start_angle
+        end_degrees = request.end_angle
         new_range = request.distance_of_scan
 
-        left_gradians = sonar_utils.degrees_to_centered_gradians(left_degrees, self.center_gradians, self.increase_ccw)
-        right_gradians = sonar_utils.degrees_to_centered_gradians(right_degrees, self.center_gradians,
+        left_gradians = sonar_utils.degrees_to_centered_gradians(start_degrees, self.center_gradians, self.increase_ccw)
+        right_gradians = sonar_utils.degrees_to_centered_gradians(end_degrees, self.center_gradians,
                                                                   self.increase_ccw)
+
+        if right_gradians < left_gradians:
+            left_gradians, right_gradians = right_gradians, left_gradians
 
         self.get_logger().info(f'Recieved Sonar request: {left_gradians}, {right_gradians}, {new_range}')
 
@@ -391,8 +395,12 @@ class Sonar(Node):
         if new_range != self.prev_range:
             self.set_new_range(new_range)
 
-        object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep(left_gradians, right_gradians,
-            request.target_frame_id)
+        try:
+            object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep(left_gradians, right_gradians)
+        except RuntimeError as e:
+            response.success = False
+            response.message = str(e)
+            return response
 
         if object_pose is not None:
             response.pose = object_pose
@@ -401,10 +409,15 @@ class Sonar(Node):
 
         if object_pose is None:
             self.get_logger().error('No object found')
+            response.message = 'No object found.'
+        else:
+            response.message = 'Found object.'
 
         if self.stream:
             sonar_image = self.convert_to_ros_compressed_img(plot, is_color=True)
             self.sonar_image_publisher.publish(sonar_image)
+
+        response.success = True
 
         return response
 
