@@ -162,6 +162,7 @@ class IVC:
         """
         timestamp = Time.from_msg(msg.header.stamp)
         try:
+            logger.info(msg.data)
             message_type = IVCMessageType(msg.data)
         except ValueError:
             message_type = IVCMessageType.UNKNOWN

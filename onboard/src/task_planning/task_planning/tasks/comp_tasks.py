@@ -84,7 +84,7 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
         Controls().publish_desired_power(Twist())
         logger.info('Published zero power')
 
-        await util_tasks.sleep(2, parent=self)
+        await util_tasks.sleep(1.25, parent=self)
 
         logger.info('Completed zero')
 
@@ -1472,7 +1472,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         await move_tasks.yaw_from_local_pose(direction*yaw_distance, parent=self)
 
     await move_to_pink_bins()
-    await face_fish(yaw_left=False, closer_banner=False)
+    await face_fish(yaw_left=True, closer_banner=True)
 
     logger.info('Surfacing...')
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
@@ -1675,7 +1675,7 @@ async def crush_ivc_send(self: Task[None, None, None], msg_to_send: IVCMessageTy
     count = 2
     # Wait for Oogway to say starting/acknowledge command
     while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != msg_to_receive:
-        logger.info(f'Unexpected message received. Remaining attempts: {count}')
+        logger.info(f'Unexpected message or no message received. Remaining attempts: {count - 1}')
         count -= 1
 
 @task
@@ -1684,7 +1684,7 @@ async def crush_ivc_receive(self: Task[None, None, None], msg_to_receive: IVCMes
     count = 2
     # Wait for Oogway to say starting/acknowledge command
     while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != msg_to_receive:
-        logger.info(f'Unexpected message received. Remaining attempts: {count}')
+        logger.info(f'Unexpected message or no message received. Remaining attempts: {count - 1}')
         count -= 1
 
     await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate

@@ -85,20 +85,5 @@ def polar2cart(sonar_sweep: np.ndarray, deg_low: int, deg_high: int) -> np.ndarr
             intensity = val
             if 0 <= x < grid_size and 0 <= y < grid_size:
                 cartesian_grid[y, x] = max(cartesian_grid[y, x], intensity)
-    import matplotlib.pyplot as plt
-
-# cartesian_grid: your np.ndarray from polar2cart
-
-    center = num_samples
-    max_sample = cartesian_grid.shape[0] - center
-    max_distance = 10 # mebe lol
-
-    plt.imshow(cartesian_grid, cmap='viridis', origin='lower',
-           extent=[-max_distance, max_distance, -max_distance, max_distance])
-    plt.xlabel('X (meters)')
-    plt.ylabel('Y (meters)')
-    plt.colorbar(label='Intensity')
-    plt.show()
-    plt.title('Sonar Cartesian Grid')
-    # plt.savefig("sonar_plot.png")
+                
     return cartesian_grid

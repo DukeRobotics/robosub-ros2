@@ -20,6 +20,7 @@ from serial.tools import list_ports
 from std_msgs.msg import String
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from sklearn.cluster import DBSCAN
 
 from sonar import sonar_image_processing, sonar_utils
 
@@ -197,7 +198,7 @@ class Sonar(Node):
         # time of flight includes there and back, so divide by 2
         return self.SPEED_OF_SOUND_IN_WATER * self.sample_period * self.SAMPLE_PERIOD_TICK_DURATION / 2.0
 
-    def get_distance_of_sample(self, sample_index: int) -> float:
+    def get_distance_of_sample_old(self, sample_index: int) -> float:
         """
         Get the distance in meters of a sample given its index in the data array returned from the device.
 
@@ -213,6 +214,23 @@ class Sonar(Node):
         """
         # 0.5 for the average distance of sample
         return (sample_index + 0.5) * self.meters_per_sample()
+    
+    def get_distance_of_sample(self, pixel_distance: float) -> float:
+        """
+        Get the distance in meters of a sample given its index in the data array returned from the device.
+
+        Computes distance using formula from
+        https://bluerobotics.com/learn/understanding-and-using-scanning-sonars/.
+
+        Args:
+            sample_index (int): Index of the sample in the data array, from 0 to N-1,
+            where N = number of samples.
+
+        Returns:
+            float: Distance in meters of the sample from the sonar device.
+        """
+        # 0.5 for the average distance of sample
+        return (pixel_distance + 0.5) * self.meters_per_sample()
 
     def request_data_at_angle(self, angle_in_gradians: float) -> list:
         """
@@ -318,7 +336,7 @@ class Sonar(Node):
 
         sonar_angle = (start_angle + end_angle) / 2  # Take the middle of the sweep
 
-        return (self.to_robot_position(sonar_angle, sonar_index), plot, normal_angle)
+        return (self.to_robot_position(sonar_angle, sonar_index), color_image, normal_angle)
 
     def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int) -> \
                 tuple[PoseStamped | None, np.ndarray, float | None]:
@@ -348,9 +366,30 @@ class Sonar(Node):
         normal_angle_deg = None
 
         if len(line_points_coords) > 1:
-            # PCA works best with features as columns, so transpose the coordinates
+            # --- Apply DBSCAN to cluster the points ---
+            dbscan = DBSCAN(eps=self.DBSCAN_EPS, min_samples=self.DBSCAN_MIN_SAMPLES)  # tune eps/min_samples as needed
+            labels = dbscan.fit_predict(line_points_coords)
+
+            # Ignore noise points (-1)
+            unique_labels, counts = np.unique(labels[labels >= 0], return_counts=True)
+
+            if len(unique_labels) == 0:
+                self.get_logger().info("DBSCAN found no clusters.")
+                color_image = sonar_image_processing.build_color_sonar_image_from_int_array(cart_grid)
+                return (None, color_image, normal_angle_deg)
+
+            # Select largest cluster
+            largest_cluster_label = unique_labels[np.argmax(counts)]
+            largest_cluster_points = line_points_coords[labels == largest_cluster_label]
+            logger.info(size(largest_cluster_points))
+
+            # --- PCA on largest DBSCAN cluster ---
             pca = PCA(n_components=2)
-            pca.fit(line_points_coords)
+            pca.fit(largest_cluster_points)
+
+            # # PCA works best with features as columns, so transpose the coordinates
+            # pca = PCA(n_components=2)
+            # pca.fit(line_points_coords)
 
             # The center of the points is the mean
             center_y, center_x = pca.mean_ # Note: pca.mean_ gives [mean_y, mean_x]
@@ -394,11 +433,17 @@ class Sonar(Node):
 
         # Step 3: Visualize the center point and the principal axis (representing the line)
         # Overlay the identified center point and the principal axis onto the Cartesian grid visualization to verify the result.
-        plot = plt.figure()
-        plt.imshow(cart_grid, cmap='viridis')
-        plt.colorbar(label='Intensity')
-        plt.xlabel('X')
-        plt.ylabel('Y')
+        h, w = cart_grid.shape
+        dpi = 100  # you can adjust depending on desired output scaling
+        plot = plt.figure(figsize=(w/dpi, h/dpi), dpi=dpi)
+
+        plt.imshow(cart_grid, cmap='viridis', interpolation='none')  # no resampling
+        plt.axis('off')  # no ticks/axes
+        plt.tight_layout(pad=0)  # remove padding
+        # plt.colorbar(label='Intensity')
+        # plt.xlabel('X')
+        # plt.ylabel('Y')
+        plt.axis('off')  # Turn off axis for a clean image
 
         # Plot the identified center point if found
         if center_x is not None and center_y is not None:

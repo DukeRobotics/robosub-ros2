@@ -162,5 +162,5 @@ async def ivc_receive(self: Task[None, None, None], timeout: float = 10) -> IVCM
     if IVC().messages[-1].msg != IVCMessageType.UNKNOWN:
         return IVC().messages[-1].msg
 
-    logger.warning(f'Received message {IVC().messages[-1].msg.name} does not match expected message {msg.name}.')
+    logger.warning(f'Received message {IVC().messages[-1].msg.name} is unknown.')
     return IVCMessageType.UNKNOWN
