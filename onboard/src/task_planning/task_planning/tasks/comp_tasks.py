@@ -181,7 +181,7 @@ async def gate_style_task(self: CompTask, depth_level: float = 0.9) -> Task[None
 
     async def roll() -> None:
         power = Twist()
-        power.angular.x = 1.0
+        power.angular.x = 0.5
         Controls().publish_desired_power(power)
         logger.info('[gate_style_task] Published roll power')
 
@@ -199,20 +199,21 @@ async def gate_style_task(self: CompTask, depth_level: float = 0.9) -> Task[None
         logger.info('[gate_style_task] Completed zero')
 
     await self.correct_depth(DEPTH_LEVEL)
+
     await roll()
-    # State().reset_pose()
+    State().reset_pose()
     await util_tasks.sleep(1.8, parent=self)
+    await self.correct_depth(DEPTH_LEVEL)
 
-    # await self.correct_depth(DEPTH_LEVEL)
-    # await roll()
-    # State().reset_pose()
-    # await util_tasks.sleep(2.5, parent=self)
+    await roll()
+    State().reset_pose()
+    await util_tasks.sleep(2.5, parent=self)
+    await self.correct_depth(DEPTH_LEVEL)
 
-    # await self.correct_depth(DEPTH_LEVEL)
-    # await util_tasks.sleep(2.5, parent=self)
+    await util_tasks.sleep(2, parent=self)
 
-    # await self.correct_roll_and_pitch()
-    # logger.info('[gate_style_task] Reset orientation')
+    await self.correct_roll_and_pitch()
+    logger.info('[gate_style_task] Reset orientation')
 
 
 @comp_task
