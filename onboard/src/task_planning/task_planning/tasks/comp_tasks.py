@@ -578,11 +578,11 @@ async def slalom_to_octagon_dead_reckoning(self: Task, depth_level=1.1) -> Task[
     if get_robot_name() == RobotName.OOGWAY:
         pass
     elif get_robot_name() == RobotName.CRUSH:
-        after_cv_directions = [
+        before_cv_directions = [
             (2,0,0),
             (2,0,0),
         ]
-        await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
+        await move_tasks.move_with_directions(before_cv_directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
 
         logger.info("Checking yellow bin detection")
         MAXIMUM_YAW = math.radians(30)
@@ -615,9 +615,9 @@ async def slalom_to_octagon_dead_reckoning(self: Task, depth_level=1.1) -> Task[
         after_cv_directions = [
             (2,0,0),
         ]
-        await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
+        await move_tasks.move_with_directions(after_cv_directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
 
-        await face_fish(yaw_left=True, closer_banner=True)
+        await face_fish(yaw_left=False, closer_banner=False)
 
         logger.info('Surfacing...')
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),

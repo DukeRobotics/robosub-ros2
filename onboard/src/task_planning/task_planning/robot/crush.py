@@ -52,7 +52,7 @@ async def main(self: Task) -> Task[None, None, None]:
 
         # || END 2025 COMP FLOW OCTAGON
 
-        #comp_tasks.octagon_task(direction=1, parent = self),
+        # comp_tasks.octagon_task(direction=1, parent = self),
 
         # comp_tasks.initial_submerge(-0.4, z_tolerance=0.15, enable_controls_flag=True, time_limit=10, parent=self),
         # move_tasks.move_with_directions([(1, 0, 0)], depth_level=-0.4, correct_depth=True, correct_yaw=True, parent=self),
