@@ -20,6 +20,7 @@ from task_planning.interface.cv import CV, CVObjectType
 from task_planning.interface.servos import Servos, MarkerDropperStates, TorpedoStates
 from task_planning.interface.state import State
 from task_planning.interface.ivc import IVC, IVCMessageType
+from task_planning.interface.sonar import Sonar
 from task_planning.task import Task, Yield, task
 from task_planning.tasks import cv_tasks, move_tasks, util_tasks, ivc_tasks
 from task_planning.utils import geometry_utils
@@ -324,7 +325,7 @@ async def gate_to_octagon(self: Task, direction: int = 1, move_forward: int = 0,
     logger.info('Started gate to octagon')
 
     async def move_with_directions(directions, depth_level=-1.0):
-        await move_tasks.move_with_directions(directions, depth_level, correct_yaw=True, correct_depth=True, time_limit=timeout, parent=self)
+        await move_tasks.move_with_directions(directions, depth_level, correct_yaw=True, correct_depth=True, keep_orientation=True, time_limit=timeout, parent=self)
 
     directions = [
         (3, 0, 0),
@@ -377,7 +378,7 @@ async def buoy_circumnavigation_power(self: Task, depth: float = 0.7) -> Task[No
 
 
 @task
-async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float = 0.1, enable_controls_flag: bool = False) -> Task[None, None, None]:
+async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float = 0.1, enable_controls_flag: bool = False, time_limit: int = 30) -> Task[None, None, None]:
     """
     Submerge the robot a given amount.
 
@@ -385,32 +386,35 @@ async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float 
         submerge_dist: The distance to submerge the robot in meters.
         enable_controls_flag: Flag to wait for ENABLE_CONTROLS status when true.
     """
+    logger.info("Starting initial submerge")
+
     while enable_controls_flag and not Controls().enable_controls_status.data:
         await Yield()
 
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, submerge_dist, 0, 0, 0),
-        keep_orientation=False,
+        keep_orientation=True,
         pose_tolerances = move_tasks.create_twist_tolerance(linear_z = z_tolerance),
+        time_limit=time_limit,
         parent=self,
     )
     logger.info(f'Submerged {submerge_dist} meters')
 
-    async def correct_roll_and_pitch():
-        imu_orientation = State().imu.orientation
-        euler_angles = quat2euler([imu_orientation.w, imu_orientation.x, imu_orientation.y, imu_orientation.z])
-        roll_correction = -euler_angles[0] * 1.2
-        pitch_correction = -euler_angles[1] * 1.2
+    # async def correct_roll_and_pitch():
+    #     imu_orientation = State().imu.orientation
+    #     euler_angles = quat2euler([imu_orientation.w, imu_orientation.x, imu_orientation.y, imu_orientation.z])
+    #     roll_correction = -euler_angles[0] * 1.2
+    #     pitch_correction = -euler_angles[1] * 1.2
 
-        logger.info(f'Roll, pitch correction: {roll_correction, pitch_correction}')
-        await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, 0),
-                                            parent=self)
+    #     logger.info(f'Roll, pitch correction: {roll_correction, pitch_correction}')
+    #     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, 0),
+    #                                         parent=self)
 
-    await correct_roll_and_pitch()
+    # await correct_roll_and_pitch()
 
 
 @task
-async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> Task[None, None, None]:
+async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True, time_limit: int=15) -> Task[None, None, None]:
     """
     Perform the coin flip task, adjusting the robot's yaw and depth.
 
@@ -448,20 +452,20 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
     def get_step_size(desired_yaw):
         return min(abs(desired_yaw), MAXIMUM_YAW)
 
-    def get_yaw_correction():
-        orig_imu_orientation = copy.deepcopy(State().orig_imu.orientation)
-        orig_imu_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(orig_imu_orientation))
+    # def get_yaw_correction():
+    #     orig_imu_orientation = copy.deepcopy(State().orig_imu.orientation)
+    #     orig_imu_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(orig_imu_orientation))
 
-        cur_imu_orientation = copy.deepcopy(State().imu.orientation)
-        cur_imu_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(cur_imu_orientation))
+    #     cur_imu_orientation = copy.deepcopy(State().imu.orientation)
+    #     cur_imu_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(cur_imu_orientation))
 
-        correction = orig_imu_euler_angles[2] - cur_imu_euler_angles[2]
+    #     correction = orig_imu_euler_angles[2] - cur_imu_euler_angles[2]
 
-        sign_correction = np.sign(correction)
-        desired_yaw = sign_correction * get_step_size(correction)
-        logger.info(f'Coinflip: imu_yaw_correction = {desired_yaw}')
+    #     sign_correction = np.sign(correction)
+    #     desired_yaw = sign_correction * get_step_size(correction)
+    #     logger.info(f'Coinflip: imu_yaw_correction = {desired_yaw}')
 
-        return desired_yaw
+    #     return desired_yaw
 
     def get_gyro_yaw_correction(return_raw=True):
         orig_gyro_orientation = copy.deepcopy(State().orig_gyro.pose.pose.orientation)
@@ -490,6 +494,7 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, 0, 0, 0, 0, np.pi),
                     pose_tolerances = move_tasks.create_twist_tolerance(angular_yaw = 0.05),
+                    time_limit=time_limit,
                     parent=self,
                     # TODO: maybe set yaw tolerance?
                 )
@@ -509,7 +514,7 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
 
             await move_tasks.move_to_pose_local(
                 geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),
-                time_limit=15,
+                time_limit=time_limit,
                 parent=self,
                 # TODO: maybe set yaw tolerance?
             )
@@ -531,8 +536,11 @@ async def gate_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None, N
         await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
         await move_tasks.move_with_directions([(2, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
     elif get_robot_name() == RobotName.CRUSH:
-        await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, time_limit=15, parent=self)
-        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, time_limit=15, parent=self)
+        directions = [
+            (3, 0, 0),
+            (2, 0, 0),
+        ]
+        await move_tasks.move_with_directions(directions, depth_level=depth_level, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
     logger.info('Moved through gate')
 
 
@@ -1524,3 +1532,39 @@ async def oogway_ivc_start(self: Task[None, None, None], msg: IVCMessageType, ti
         count -= 1
 
     await ivc_tasks.ivc_send(msg, parent = self) # Oogway says ok and starting
+
+@task
+async def orient_to_wall(self: Task[None, None, None],
+                         start_angle: float = -15.0,
+                         end_angle: float = 15.0,
+                         distance: float = 20.0) -> Task[None, None, None]:
+    """
+    Orient the robot to a wall using sonar sweep.
+    """
+    async def get_yaw_angle() -> float:
+        """
+        Returns the yaw angle of the wall in radians.
+        """
+        # Call sonar sweep request
+        sonar_future = Sonar().sweep(start_angle, end_angle, distance)
+        if sonar_future is not None:
+            logger.info("Sonar sweep request sent, waiting for response...")
+            # Wait for the sonar sweep to complete
+            sonar_response = await sonar_future
+            logger.info(f"Sonar sweep response received: {sonar_response}")
+            return sonar_response.normal_angle
+        else:
+            logger.warning("Sonar sweep request failed - bypass mode or service unavailable")
+            return math.nan
+
+    yaw_delta = await get_yaw_angle()
+
+    if yaw_delta != math.nan:
+        logger.info(f"Yaw delta from sonar sweep: {yaw_delta} degrees")
+        # Move to the desired yaw angle
+        await move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_delta),
+            parent=self,
+        )
+    else:
+        logger.warning("No yaw delta received from sonar sweep, skipping orientation.")
