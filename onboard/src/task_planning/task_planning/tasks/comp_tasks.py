@@ -572,7 +572,7 @@ async def slalom_to_octagon_dead_reckoning(self: Task, depth_level=-1.1) -> Task
         directions = [
             (2,0,0), # Clear slalom
             (2,0,0),
-            (0,-2.0,0), # Get yellow bin more into view
+            (0,-0.75,0), # Get yellow bin more into view
         ]
         await move_tasks.move_with_directions(directions, depth_level=depth_level, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
     logger.info('Moved through slalom')
