@@ -654,7 +654,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
     Corrects the yaw relative to the CV object
     """
     DEPTH_LEVEL = State().orig_depth - depth_level
-    MAXIMUM_YAW = math.radians(20)
+    MAXIMUM_YAW = math.radians(45)
     SCALE_FACTOR = 0.5 # How much the correction should be scaled down from yaw calculation
 
     logger.info('Starting yaw_to_cv_object')
@@ -681,7 +681,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
         while not CV().is_receiving_recent_cv_data(cv_object, latency_threshold):
             logger.info(f'No {cv_object} detection, setting yaw setpoint {MAXIMUM_YAW}')
             await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, MAXIMUM_YAW * direction),
-                                                pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.2)),
+                                                pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
                                                 parent=self)
             await correct_depth()
             await Yield()
@@ -1192,22 +1192,30 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     """
     logger.info('Starting octagon task')
 
-    DEPTH_LEVEL_AT_BINS = State().orig_depth - 1.5 # Depth for beginning of task and corrections during forward movement
-    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 1.0 # Depth for going above bin before forward move
+    DEPTH_LEVEL_AT_BINS = State().orig_depth - 1.7 # Depth for beginning of task and corrections during forward movement
+    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 1.3 # Depth for going above bin before forward move
     LATENCY_THRESHOLD = 2 # Latency for seeing the bottom bin
     CONTOUR_SCORE_THRESHOLD = 1000 # Required bottom bin area for valid detection
 
-    SCORE_THRESHOLD = 30000 # Area of bin before beginning surface logic for front camera
+    SCORE_THRESHOLD = 7000 # Area of bin before beginning surface logic for front camera
     POST_FRONT_THRESHOLD_FORWARD_DISTANCE = 0.15 # in meters
 
     # Forward navigation case constants
-    LOW_SCORE = 3500
-    LOW_STEP_SIZE = 2
-    MED_SCORE = 7000
+    # LOW_SCORE = 3500
+    # LOW_STEP_SIZE = 2
+    # MED_SCORE = 7000
+    # MED_STEP_SIZE = 1.25
+    # HIGH_SCORE = 15000
+    # HIGH_STEP_SIZE = 0.75
+    # VERY_HIGH_STEP_SIZE = 0.5
+
+    LOW_SCORE = 1000
+    LOW_STEP_SIZE = 1.75
+    MED_SCORE = 2000
     MED_STEP_SIZE = 1.25
-    HIGH_SCORE = 15000
+    HIGH_SCORE = 4000
     HIGH_STEP_SIZE = 0.75
-    VERY_HIGH_STEP_SIZE = 0.5
+    VERY_HIGH_STEP_SIZE = 0.25
 
     async def correct_depth(desired_depth):
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
@@ -1268,7 +1276,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             if not moved_above:
                 logger.info("Yawing to pink bin front")
                 await yaw_to_cv_object(CVObjectType.BIN_PINK_FRONT, direction=direction, yaw_threshold=math.radians(15),
-                                       depth_level=DEPTH_LEVEL_AT_BINS, parent=Task.MAIN_ID)
+                                       depth_level=0.7, parent=Task.MAIN_ID)
 
             logger.info(f'Bin pink front score: {CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score}')
 
