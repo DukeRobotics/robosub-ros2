@@ -49,6 +49,7 @@ class ResourceMonitor(Node):
         try:
             # Collect one sample every 1 second
             output = subprocess.check_output(['tegrastats', '--interval', '1000', '--count', '1'], text=True)
+            print(f"OUTPUT: {output}")
             data = {}
 
             # GPU usage percentage and frequency
@@ -91,6 +92,8 @@ class ResourceMonitor(Node):
         #building a status message with all the usage info of the nodes
         msg = ""
         msg += f"\n=== System ===\n"
+        print(f'TEGRA {tegra}')
+        exit(0)
         if tegra:
             msg += f"GPU: {tegra.get('gpu_usage', 'N/A')}% @ {tegra.get('gpu_freq', 'N/A')} MHz | "
             msg += f"RAM: {tegra.get('ram_used', 'N/A')}/{tegra.get('ram_total', 'N/A')} MB | "

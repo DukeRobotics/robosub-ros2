@@ -1,0 +1,3 @@
+<launch>
+	<node name="monitor_usage" pkg="cv" exec="monitor_usage" output="screen"/>
+</launch>

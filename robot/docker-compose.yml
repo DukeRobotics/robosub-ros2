@@ -9,3 +9,6 @@ services:
     network_mode: host
     volumes:
       - /dev:/dev
+      - /usr/bin/tegrastats:/usr/bin/tegrastats:ro  # ADD THIS LINE
+
+RUN /home/ubuntu/venv/bin/pip install jetson-stats  # ADD THIS LINE
