@@ -46,7 +46,7 @@ async def main(self: Task) -> Task[None, None, None]:
         comp_tasks.coin_flip(enable_same_direction=False, parent=self),
         comp_tasks.gate_task_dead_reckoning(depth_level=-0.7, parent=self),
         comp_tasks.crush_ivc_send(msg_to_send = IVCMessageType.CRUSH_GATE,
-             msg_to_receive = IVCMessageType.OOGWAY_ACKNOWLEDGE, timeout=5, parent=self),
+             msg_to_receive = IVCMessageType.OOGWAY_ACKNOWLEDGE, timeout=10, parent=self),
         comp_tasks.gate_style_task(depth_level=1.1, parent=self),
         comp_tasks.slalom_task_dead_reckoning(depth_level=-1.1, parent=self),
         comp_tasks.slalom_to_octagon_dead_reckoning(depth_level=-1.1,parent = self),
