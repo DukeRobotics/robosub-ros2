@@ -609,7 +609,6 @@ async def slalom_to_octagon_dead_reckoning(self: Task, depth_level=1.1) -> Task[
             if step > 8:
                 break
 
-            # await correct_depth()
             step += 1
             await Yield()
         
@@ -618,14 +617,13 @@ async def slalom_to_octagon_dead_reckoning(self: Task, depth_level=1.1) -> Task[
         ]
         await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
 
-        face_fish(yaw_left=True, closer_banner=True)
+        await face_fish(yaw_left=True, closer_banner=True)
 
         logger.info('Surfacing...')
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
                                             time_limit=10, parent=self)
         logger.info('Finished surfacing')
 
-    # logger.info('Moved through slalom')
 
 @task
 async def return_task_dead_reckoning(self: Task, depth_level=0.7) -> Task[None, None, None]:
