@@ -315,6 +315,7 @@ async def move_with_directions(self: Task,
                                keep_orientation: bool = False,
                                timeout: int = 30,
                                keep_depth: bool = False,
+                               pose_tolerances: Twist | None = None,
                                ) -> None:
     """
     Move the robot to multiple poses defined by the provided directions.
@@ -337,6 +338,9 @@ async def move_with_directions(self: Task,
             before timing out. Defaults to 30.
         keep_depth (bool, optional): EXPERIMENTAL. If True (and depth_level is set), hold depth_level continuously
             throughout each leg of the move. Defaults to False.
+        pose_tolerances (Twist, optional): The pose tolerances used to determine when each leg has arrived. If None, a
+            default tolerance of create_twist_tolerance(linear_x=0.1, linear_y=0.07, linear_z=0.07, angular_yaw=0.05)
+            is used. Defaults to None.
 
     Raises:
         ValueError: If a direction tuple in the list is not of length 3 or 6.
@@ -344,6 +348,9 @@ async def move_with_directions(self: Task,
     Returns:
         None.
     """
+    leg_pose_tolerances = pose_tolerances if pose_tolerances is not None else \
+        create_twist_tolerance(linear_x=0.1, linear_y=0.07, linear_z=0.07, angular_yaw=0.05)
+
     for direction in directions:
         assert len(direction) in [3, 6], 'Each tuple in the directions list must be of length 3 or 6. Tuple '
         f'{direction} has length {len(direction)}.'
@@ -354,7 +361,7 @@ async def move_with_directions(self: Task,
             keep_orientation=keep_orientation,
             depth_level=depth_level,
             keep_depth=keep_depth,
-            pose_tolerances=create_twist_tolerance(linear_x=0.1, linear_y=0.07, linear_z=0.07, angular_yaw=0.05),
+            pose_tolerances=leg_pose_tolerances,
             timeout=timeout,
             parent=self)
         logger.info(f'Moved to {direction}')
