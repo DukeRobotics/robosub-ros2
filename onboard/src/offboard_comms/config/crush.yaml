@@ -44,22 +44,22 @@ thrusters:
     cw: false
     standard_esc: false
   - name: middle_right_first
-    cw: true
+    cw: false
     standard_esc: true
   - name: middle_right_second
-    cw: false
+    cw: true
     standard_esc: false
   - name: back_right
     cw: false
     standard_esc: true
   - name: back_left
     cw: true
-    standard_esc: false
+    standard_esc: true
   - name: middle_left_first
-    cw: true
+    cw: false
     standard_esc: true
   - name: middle_left_second
-    cw: false
+    cw: true
     standard_esc: true
   - name: front_left
     cw: true
