@@ -553,12 +553,9 @@ async def slalom_task_dead_reckoning(self: Task, depth_level=-1.1) -> Task[None,
         pass
     elif get_robot_name() == RobotName.CRUSH:
         directions = [
-            (0, 1.5, 0), # Shift left to first slalom
-            (2.3, 0, 0), # First gate
-            (0, 0.5, 0), # Left to second slalom
-            (1.8, 0, 0), # Second gate
-            (0, -0.25, 0), # Right to final slalom
-            (2.5, 0, 0), # Clear final slalom
+            (2, 0, 0),
+            (2, 0, 0),
+            (2, 0, 0),
         ]
         await move_tasks.move_with_directions(directions, depth_level=depth_level, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=20, parent=self)
     logger.info('Moved through slalom')
@@ -572,7 +569,7 @@ async def slalom_to_octagon_dead_reckoning(self: Task, depth_level=-1.1) -> Task
         directions = [
             (2,0,0), # Clear slalom
             (2,0,0),
-            (0,-0.75,0), # Get yellow bin more into view
+            (0,0.75,0), # Get yellow bin more into view
         ]
         await move_tasks.move_with_directions(directions, depth_level=depth_level, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
     logger.info('Moved through slalom')
@@ -1675,8 +1672,13 @@ async def crush_ivc_send(self: Task[None, None, None], msg_to_send: IVCMessageTy
     count = 2
     # Wait for Oogway to say starting/acknowledge command
     while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != msg_to_receive:
-        logger.info(f'Unexpected message or no message received. Remaining attempts: {count - 1}')
+        logger.info(f'Unexpected message or no message received. Sending again. Remaining attempts: {count - 1}')
+        await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
         count -= 1
+    
+    if count == 0:
+        logger.info(f'No acknowledgement, sending one last time')
+        await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
 
 @task
 async def crush_ivc_receive(self: Task[None, None, None], msg_to_receive: IVCMessageType,
