@@ -381,7 +381,7 @@ class Sonar(Node):
             # Select largest cluster
             largest_cluster_label = unique_labels[np.argmax(counts)]
             largest_cluster_points = line_points_coords[labels == largest_cluster_label]
-            logger.info(size(largest_cluster_points))
+            #self.get_logger().info(size(largest_cluster_points))
 
             # --- PCA on largest DBSCAN cluster ---
             pca = PCA(n_components=2)

@@ -156,9 +156,12 @@ class ModemPublisher(SerialNode):
                 # Must have enough bytes in buffer for a complete message
                 if len(self.buffer) - index < self.MESSAGE_SIZE:
                     break
-
+                
                 packet = self.buffer[index:index + self.MESSAGE_SIZE]
-                self.publish_message(bytes(packet).decode('ascii'))
+                try:    
+                    self.publish_message(bytes(packet).decode('ascii'))
+                except:
+                    pass
                 index += 2
 
         self.buffer = self.buffer[index:]

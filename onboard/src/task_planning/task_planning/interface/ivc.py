@@ -33,9 +33,11 @@ class IVCMessageType(Enum):
     OOGWAY_TEST = 'to'
     OOGWAY_GATE = 'og'
     OOGWAY_ACKNOWLEDGE = 'oa'
+    OOGWAY_TORPEDOES = 'fu'
     CRUSH_TEST = 'tc'
     CRUSH_GATE = 'cg'
     CRUSH_ACKNOWLEDGE = 'ca'
+    CRUSH_OCTAGON = 'ky'
 
 
 
@@ -55,7 +57,7 @@ def ros_timestamp_to_pacific_time(sec: int, nanosec: int) -> str:
     """
     Convert ROS timestamp (seconds and nanoseconds) to human-readable Pacific time.
 
-    # TODO: move to utils
+    # TODO: move to utils + merge with same function in ivc_tasks.py
 
     Args:
         sec (int): Seconds since epoch
@@ -162,7 +164,6 @@ class IVC:
         """
         timestamp = Time.from_msg(msg.header.stamp)
         try:
-            logger.info(msg.data)
             message_type = IVCMessageType(msg.data)
         except ValueError:
             message_type = IVCMessageType.UNKNOWN

@@ -42,19 +42,17 @@ async def main(self: Task) -> Task[None, None, None]:
 
         # || START 2025 COMP FLOW OCTAGON
         comp_tasks.delineate_ivc_log(parent = self),
-        comp_tasks.initial_submerge(-0.7, z_tolerance=0.15, enable_controls_flag=True, time_limit=10, parent=self),
-        comp_tasks.coin_flip(enable_same_direction=False, parent=self),
-        comp_tasks.gate_task_dead_reckoning(depth_level=-0.7, parent=self),
-        # EDIT THIS TASK WITH MOVE RIGHT AMT
-        move_tasks.move_with_directions([(0, -2, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self),
-        comp_tasks.crush_ivc_send(msg_to_send = IVCMessageType.CRUSH_GATE,
-             msg_to_receive = IVCMessageType.OOGWAY_ACKNOWLEDGE, timeout=10, parent=self),
-        comp_tasks.gate_style_task(depth_level=1.1, parent=self),
-        comp_tasks.slalom_task_dead_reckoning(depth_level=-1.1, parent=self),
-        comp_tasks.slalom_to_octagon_dead_reckoning(depth_level=-1.1,parent = self),
-        comp_tasks.octagon_task(direction=1, parent = self),
+        comp_tasks.initial_submerge(-0.5, z_tolerance=0.15, enable_controls_flag=True, time_limit=10, parent=self),
+        # comp_tasks.coin_flip(enable_same_direction=False, parent=self),
+        # comp_tasks.gate_task_dead_reckoning(depth_level=0.7, parent=self), # Move through gate via 2,2; right strafe via 1.5
+        # comp_tasks.gate_style_task(depth_level=0.975, parent=self), # Spin
+        comp_tasks.crush_ivc_spam(msg_to_send = IVCMessageType.CRUSH_OCTAGON, parent = self),
+        # comp_tasks.slalom_task_dead_reckoning(depth_level=0.975, parent=self), # Move through slalom via 2,2,2
+        # comp_tasks.slalom_to_octagon_dead_reckoning(depth_level=0.975,parent = self), # Move to octagon front via 2,2; left strafe via 0.75
 
         # || END 2025 COMP FLOW OCTAGON
+
+        #comp_tasks.octagon_task(direction=1, parent = self),
 
         # comp_tasks.initial_submerge(-0.4, z_tolerance=0.15, enable_controls_flag=True, time_limit=10, parent=self),
         # move_tasks.move_with_directions([(1, 0, 0)], depth_level=-0.4, correct_depth=True, correct_yaw=True, parent=self),
@@ -65,7 +63,8 @@ async def main(self: Task) -> Task[None, None, None]:
         # move_tasks.move_with_directions([(0.25, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self),
         # move_tasks.yaw_from_local_pose(np.pi/2, parent=self),
         # comp_tasks.orient_to_wall(parent=self),
-        # move_tasks.yaw_from_local_pose(-np.pi/2, parent=self),
+        # comp_tasks.orient_to_wall(parent=self),
+        # # move_tasks.yaw_from_local_pose(-np.pi/2, parent=self),
         # move_tasks.move_with_directions([(0.25, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self),
         # move_tasks.yaw_from_local_pose(np.pi/2, parent = self),
 

@@ -84,22 +84,22 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
         Controls().publish_desired_power(Twist())
         logger.info('Published zero power')
 
-        await util_tasks.sleep(1.25, parent=self)
+        await util_tasks.sleep(2, parent=self)
 
         logger.info('Completed zero')
 
     await move_tasks.depth_correction(DEPTH_LEVEL, parent=self)
     await roll()
     State().reset_pose()
-    await util_tasks.sleep(3, parent=self)
+    await util_tasks.sleep(2.5, parent=self)
 
     await move_tasks.depth_correction(DEPTH_LEVEL, parent=self)
     await roll()
     State().reset_pose()
-    await util_tasks.sleep(3, parent=self)
+    await util_tasks.sleep(2.5, parent=self)
 
     await move_tasks.depth_correction(DEPTH_LEVEL, parent=self)
-    await util_tasks.sleep(3, parent=self)
+    await util_tasks.sleep(2.5, parent=self)
 
     imu_orientation = State().imu.orientation
     euler_angles = quat2euler([imu_orientation.w, imu_orientation.x, imu_orientation.y, imu_orientation.z])
@@ -109,7 +109,7 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
     logger.info(f'Roll, pitch, yaw correction: {roll_correction, pitch_correction}')
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, 0),
                                         parent=self)
-    State().reset_pose()
+    #State().reset_pose()
     logger.info('Reset orientation')
 
 @task
@@ -533,21 +533,23 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True, tim
 
 
 @task
-async def gate_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None, None, None]:
+async def gate_task_dead_reckoning(self: Task, depth_level=0.7) -> Task[None, None, None]:
+    DEPTH_LEVEL = State().orig_depth - depth_level
     logger.info('Started gate task')
     if get_robot_name() == RobotName.OOGWAY:
-        await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
-        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, parent=self)
     elif get_robot_name() == RobotName.CRUSH:
         directions = [
+            (2, 0, 0),
             (3, 0, 0),
-            (2, 0, 0),
         ]
-        await move_tasks.move_with_directions(directions, depth_level=depth_level, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
-    logger.info('Moved through gate')
+        await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
+    logger.info('Moved through gate, and strafed.')
 
 @task
-async def slalom_task_dead_reckoning(self: Task, depth_level=-1.1) -> Task[None, None, None]:
+async def slalom_task_dead_reckoning(self: Task, depth_level=1.1) -> Task[None, None, None]:
+    DEPTH_LEVEL = State().orig_depth - depth_level
     logger.info('Started slalom task')
     if get_robot_name() == RobotName.OOGWAY:
         pass
@@ -557,26 +559,78 @@ async def slalom_task_dead_reckoning(self: Task, depth_level=-1.1) -> Task[None,
             (2, 0, 0),
             (2, 0, 0),
         ]
-        await move_tasks.move_with_directions(directions, depth_level=depth_level, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=20, parent=self)
+        await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=20, parent=self)
     logger.info('Moved through slalom')
 
 @task
-async def slalom_to_octagon_dead_reckoning(self: Task, depth_level=-1.1) -> Task[None, None, None]:
+async def slalom_to_octagon_dead_reckoning(self: Task, depth_level=1.1) -> Task[None, None, None]:
+    DEPTH_LEVEL = State().orig_depth - depth_level
+    latency_threshold = 10
+
+    async def face_fish(yaw_left: bool = True, closer_banner: bool = True):
+        direction = 1 if yaw_left else -1
+        yaw_distance = np.pi/4 if closer_banner else 3*np.pi/4
+        await orient_to_wall(parent=self)
+        await orient_to_wall(parent=self)
+        await move_tasks.yaw_from_local_pose(direction*yaw_distance, parent=self)
+
     logger.info('Started slalom task')
     if get_robot_name() == RobotName.OOGWAY:
         pass
     elif get_robot_name() == RobotName.CRUSH:
-        directions = [
-            (2,0,0), # Clear slalom
+        after_cv_directions = [
             (2,0,0),
-            (0,0.75,0), # Get yellow bin more into view
+            (2,0,0),
         ]
-        await move_tasks.move_with_directions(directions, depth_level=depth_level, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
-    logger.info('Moved through slalom')
+        await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
+
+        logger.info("Checking yellow bin detection")
+        MAXIMUM_YAW = math.radians(30)
+        step = 1
+
+        while not CV().is_receiving_recent_cv_data(CVObjectType.BIN_PINK_FRONT, latency_threshold):
+            if step <= 3:
+                angle = MAXIMUM_YAW
+            elif step == 4:
+                angle = -2 * MAXIMUM_YAW
+            elif step <= 8:
+                angle = -1 * MAXIMUM_YAW
+            else:
+                angle = 3 * MAXIMUM_YAW
+                logger.info(f'Yawed to find object more than 9 times, breaking loop.')
+
+            logger.info(f'No {cv_object} detection, setting yaw setpoint {angle}')
+            await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, angle * direction),
+                                                depth_level=depth_level,
+                                                pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
+                                                time_limit=10,
+                                                parent=self)
+                                                
+            if step > 8:
+                break
+
+            # await correct_depth()
+            step += 1
+            await Yield()
+        
+        after_cv_directions = [
+            (2,0,0),
+        ]
+        await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
+
+        face_fish(yaw_left=True, closer_banner=True)
+
+        logger.info('Surfacing...')
+        await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
+                                            time_limit=10, parent=self)
+        logger.info('Finished surfacing')
+
+    # logger.info('Moved through slalom')
 
 @task
-async def return_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None, None, None]:
+async def return_task_dead_reckoning(self: Task, depth_level=0.7) -> Task[None, None, None]:
     logger.info('Started gate return task')
+    DEPTH_LEVEL = State().orig_depth - depth_level
     if get_robot_name() == RobotName.OOGWAY:
         pass
     elif get_robot_name() == RobotName.CRUSH:
@@ -586,7 +640,7 @@ async def return_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None,
             (-3, 0, 0),
             (-3, 0, 0),
         ]
-        await move_tasks.move_with_directions(directions, depth_level=depth_level, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
+        await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
         logger.info('Moved through gate return')
 
 @task
@@ -1191,7 +1245,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
 
     async def yaw_until_object_detection():
         logger.info("Beginning yaw_util_object_detection task")
-        MAXIMUM_YAW = math.radians(35)
+        MAXIMUM_YAW = math.radians(30)
         step = 1
         while not CV().is_receiving_recent_cv_data(cv_object, latency_threshold):
             if step <= 3:
@@ -1310,12 +1364,12 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
     # Forward navigation case constants
     LOW_SCORE = 1500
-    LOW_STEP_SIZE = 1.5
+    LOW_STEP_SIZE = 0.75
     MED_SCORE = 3500
-    MED_STEP_SIZE = 1.0
+    MED_STEP_SIZE = 0.5
     HIGH_SCORE = 5000
-    HIGH_STEP_SIZE = 0.5
-    VERY_HIGH_STEP_SIZE = 0.25
+    HIGH_STEP_SIZE = 0.35
+    VERY_HIGH_STEP_SIZE = 0.2
 
     # LOW_SCORE = 1000
     # LOW_STEP_SIZE = 1.75
@@ -1380,7 +1434,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
         if not is_receiving_pink_bin_data(latest_detection_time):
             latency_threshold = 10
-            MAXIMUM_YAW = math.radians(35)
+            MAXIMUM_YAW = math.radians(30)
             step = 1
             while not CV().is_receiving_recent_cv_data(CVObjectType.BIN_PINK_FRONT, latency_threshold):
                 if step <= 3:
@@ -1666,6 +1720,12 @@ async def torpedo_task_old(self: Task,
     await center_with_torpedo_target()
 
 @task
+async def crush_ivc_spam(self: Task[None, None, None], msg_to_send: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
+    while True:
+        await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
+        await util_tasks.sleep(20, parent = self)
+
+@task
 async def crush_ivc_send(self: Task[None, None, None], msg_to_send: IVCMessageType, msg_to_receive: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
     await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
 
@@ -1707,11 +1767,11 @@ async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[Non
 async def orient_to_wall(self: Task[None, None, None],
                          start_angle: float = -15.0,
                          end_angle: float = 15.0,
-                         distance: float = 20.0) -> Task[None, None, None]:
+                         distance: float = 10.0) -> Task[None, None, None]:
     """
     Orient the robot to a wall using sonar sweep.
     """
-    async def get_sonar_normal_angle() -> float:
+    async def get_sonar_normal_angle() -> float | None:
         """
         Returns the yaw angle of the wall in degrees.
         """
@@ -1722,6 +1782,9 @@ async def orient_to_wall(self: Task[None, None, None],
             # Wait for the sonar sweep to complete
             sonar_response = await sonar_future
             logger.info(f"Sonar sweep response received: {sonar_response}")
+            if not sonar_response.is_object:
+                logger.info(f"Did not get valid object from scan")
+                return None
             return sonar_response.normal_angle
         else:
             logger.warning("Sonar sweep request failed - bypass mode or service unavailable")
@@ -1734,16 +1797,27 @@ async def orient_to_wall(self: Task[None, None, None],
         yaw_in_degrees = 180 - sonar_normal
         return yaw_in_degrees * np.pi / 180
 
-    sonar_output = await get_sonar_normal_angle()
+    count = 2
+    got_valid_sweep = False
 
-    if not math.isnan(sonar_output):
-        yaw_delta = convert_sonar_output_to_yaw(sonar_output)
-        logger.info(f"Yaw delta from sonar sweep: {yaw_delta} radians")
-        # Move to the desired yaw angle
-        await move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_delta),
-            time_limit=10,
-            parent=self,
-        )
-    else:
-        logger.warning("No yaw delta received from sonar sweep, skipping orientation.")
+    while not got_valid_sweep and count > 0:
+        sonar_output = await get_sonar_normal_angle()
+        count -= 1
+
+        if sonar_output is None:
+            logger.info(f"Did not get valid sweep object, trying again {count} times")
+            continue
+
+        got_valid_sweep = True
+
+        if not math.isnan(sonar_output):
+            yaw_delta = convert_sonar_output_to_yaw(sonar_output)
+            logger.info(f"Yaw delta from sonar sweep: {yaw_delta} radians")
+            # Move to the desired yaw angle
+            await move_tasks.move_to_pose_local(
+                geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_delta),
+                time_limit=10,
+                parent=self,
+            )
+        else:
+            logger.warning("No yaw delta received from sonar sweep, skipping orientation.")
