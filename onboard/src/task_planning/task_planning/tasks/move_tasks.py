@@ -1,6 +1,6 @@
 import copy
 
-from geometry_msgs.msg import Pose, Twist
+from geometry_msgs.msg import Pose, Twist, Vector3
 from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.logging import get_logger
@@ -191,6 +191,7 @@ async def depth_correction(self: Task, desired_depth: float) -> Task[None, None,
     logger.info(f'Started depth correction {depth_delta}')
     await move_to_pose_local(
         geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0),
+        pose_tolerances = create_twist_tolerance(linear_z = 0.12),
         parent=self)
     logger.info(f'Finished depth correction {depth_delta}')
 
@@ -254,9 +255,10 @@ Directions = list[Direction]
 async def move_with_directions(self: Task,
                                directions: Directions,
                                depth_level: float | None = None,
+                               yaw_heading: float | None = None,
                                correct_yaw: bool = False,
                                correct_depth: bool = False,
-
+                               keep_orientation: bool = False,
                                ) -> None:
     """
     Move the robot to multiple poses defined by the provided directions.
@@ -272,6 +274,7 @@ async def move_with_directions(self: Task,
             - Tuples of length 6 represent (x, y, z, roll, pitch, yaw).
         correct_yaw (bool, optional): If True, corrects the yaw after moving to a pose. Defaults to False.
         correct_depth (bool, optional): If True, corrects the depth after moving to a pose. Defaults to False.
+        keep_orientation (bool, optional): If True, corrects orientation after moving to a pose. Defaults to False.
 
     Raises:
         ValueError: If a direction tuple in the list is not of length 3 or 6.
@@ -283,13 +286,45 @@ async def move_with_directions(self: Task,
         assert len(direction) in [3, 6], 'Each tuple in the directions list must be of length 3 or 6. Tuple '
         f'{direction} has length {len(direction)}.'
         logger.info(f'Starting move to {direction}')
+        orig_gyro = State().gyro_euler_angles.z
         await move_to_pose_local(
             geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
+            keep_orientation=keep_orientation,
             depth_level=depth_level,
+            pose_tolerances = create_twist_tolerance(linear_x = 0.1, linear_y = 0.07, linear_z = 0.07),
+            time_limit=30,
             parent=self)
         logger.info(f'Moved to {direction}')
 
         if correct_yaw:
-            await self.parent.correct_yaw()
+            logger.info(f'Correcting yaw {orig_gyro - State().gyro_euler_angles.z}')
+            await move_to_pose_local(geometry_utils.create_pose(0,0,0,0,0,orig_gyro - State().gyro_euler_angles.z), parent=self)
         if correct_depth:
-            await self.parent.correct_depth()
+            await depth_correction(depth_level, parent=self)
+
+def create_twist_tolerance(
+    linear_x: float = 0.05,
+    linear_y: float = 0.05,
+    linear_z: float = 0.05,
+    angular_roll: float = 0.2,
+    angular_pitch: float = 0.3,
+    angular_yaw: float = 0.1,
+) -> Twist:
+    """
+    Create a Twist message to represent pose or velocity tolerances.
+
+    Args:
+        linear_x (float): Tolerance in X (forward/backward)
+        linear_y (float): Tolerance in Y (left/right)
+        linear_z (float): Tolerance in Z (up/down)
+        angular_roll (float): Tolerance in roll (rotation around X)
+        angular_pitch (float): Tolerance in pitch (rotation around Y)
+        angular_yaw (float): Tolerance in yaw (rotation around Z)
+
+    Returns:
+        Twist: A Twist message with specified tolerances.
+    """
+    tolerance = Twist()
+    tolerance.linear = Vector3(x=linear_x, y=linear_y, z=linear_z)
+    tolerance.angular = Vector3(x=angular_roll, y=angular_pitch, z=angular_yaw)
+    return tolerance

@@ -13,14 +13,18 @@ from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.logging import get_logger
 from transforms3d.euler import quat2euler
+from typing import TYPE_CHECKING, cast
 
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV, CVObjectType
 from task_planning.interface.servos import Servos, MarkerDropperStates, TorpedoStates
 from task_planning.interface.state import State
+from task_planning.interface.ivc import IVC, IVCMessageType
 from task_planning.task import Task, Yield, task
-from task_planning.tasks import cv_tasks, move_tasks, util_tasks
+from task_planning.tasks import cv_tasks, move_tasks, util_tasks, ivc_tasks
 from task_planning.utils import geometry_utils
+
+
 
 from task_planning.utils.other_utils import get_robot_name, RobotName
 
@@ -197,7 +201,7 @@ async def buoy_task(self: Task, turn_to_face_buoy: bool = False, depth: float = 
     DEPTH_LEVEL = State().orig_depth - depth
 
     async def correct_y() -> Coroutine[None, None, None]:
-        await cv_tasks.correct_y(prop=CVObjectType.BUOY, parent=self)
+        await cv_tasks.correct_y(prop=CVObjectType.BUOY, mult_factor=0.4, parent=self)
 
     async def correct_z() -> Coroutine[None, None, None]:
         await cv_tasks.correct_z(prop=CVObjectType.BUOY, parent=self)
@@ -453,6 +457,7 @@ async def initial_submerge(self: Task, submerge_dist: float, enable_controls_fla
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, submerge_dist, 0, 0, 0),
         keep_orientation=False,
+        pose_tolerances = move_tasks.create_twist_tolerance(linear_z = 0.1),
         parent=self,
     )
     logger.info(f'Submerged {submerge_dist} meters')
@@ -550,6 +555,7 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
                 yaw_correction -= np.pi
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, 0, 0, 0, 0, np.pi),
+                    pose_tolerances = move_tasks.create_twist_tolerance(angular_yaw = 0.05),
                     parent=self,
                     # TODO: maybe set yaw tolerance?
                 )
@@ -562,8 +568,6 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
                 parent=self,
                 # TODO: maybe set yaw tolerance?
             )
-
-            logger.info('Step Completed')
     else:
         while abs(get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
             yaw_correction = get_gyro_yaw_correction(return_raw=False)
@@ -574,9 +578,8 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
                 parent=self,
                 # TODO: maybe set yaw tolerance?
             )
-            logger.info('Step Completed')
 
-
+    logger.info('Step Completed')
     logger.info(f'Final yaw offset: {get_gyro_yaw_correction(return_raw=True)}')
 
     depth_delta = DEPTH_LEVEL - State().depth
@@ -590,11 +593,14 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
 async def gate_task_dead_reckoning(self: Task) -> Task[None, None, None]:
     logger.info('Started gate task')
     DEPTH_LEVEL = State().orig_depth - 0.6
-    STEPS = 5
+    directions = [
+        (2, 0, 0),
+        (0, 0.2 * direction, 0),
+        (2, 0, 0),
+        (1, 0, 0),
+    ]
 
-    for _ in range(STEPS):
-        await move_tasks.move_x(step=1, parent=self)
-        await move_tasks.correct_depth(desired_depth=DEPTH_LEVEL, parent=self)
+    await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_yaw=False, correct_depth=True, parent=self)
 
     logger.info('Moved through gate')
 
@@ -1386,7 +1392,55 @@ async def torpedo_task(self: Task,
 
     await center_with_torpedo_target()
 
-@task
-def first_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
+if TYPE_CHECKING:
+    from custom_msgs.srv import SendModemMessage
 
+@task
+async def ivc_send(self: Task[None, None, None], msg: IVCMessageType) -> None:
+    await ivc_tasks.wait_for_modem_ready(parent=self)
+
+    future = IVC().send_message(msg)
+    if future is None:
+        logger.error('Could not call IVC send message service.')
+    else:
+        service_response = cast('SendModemMessage.Response', await future)
+        if service_response.success:
+            logger.info(f'Sent IVC message: {msg.name}')
+        else:
+            logger.error(f'Modem failed to send message. Response: {service_response.message}')
+@task
+async def ivc_receive(self: Task[None, None, None], timeout: float = 10):
+    await ivc_tasks.wait_for_modem_ready(parent=self)
+
+    messages_received = len(IVC().messages)
+
+    sleep_task = util_tasks.sleep(timeout, parent=self)
+    while not (len(IVC().messages) > messages_received):
+        remaining_duration = sleep_task.step()
+        if not remaining_duration:
+            logger.error('Timeout waiting for message.')
+            return False
+
+        logger.info('Waiting for message...')
+        await util_tasks.sleep(min(remaining_duration, Duration(seconds=1)), parent=self)
+
+    sleep_task.close()
+
+    logger.info(f'Received IVC message: {IVC().messages[-1].msg.name}')
+    messages_received = len(IVC().messages)
+
+    return True
+
+
+
+@task
+async def first_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
+    await ivc_send(self, msg)
+    await ivc_receive(self, timeout = 60)
+
+
+@task
+async def second_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
+    await ivc_receive(self, timeout = 60)
+    await ivc_send(self, msg)
 

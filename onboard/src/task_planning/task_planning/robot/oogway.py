@@ -22,6 +22,8 @@ async def main(self: Task) -> Task[None, None, None]:
         # prequal_tasks.prequal_task(parent=self),
 
         # comp_tasks.coin_flip(parent=self),
+        # comp_tasks.second_robot_ivc(self, IVCMessageType.OOGWAY_ACKNOWLEDGE)
+
         # comp_tasks.yaw_to_cv_object(CVObjectType.GATE_SAWFISH, direction=1, yaw_threshold=radians(10),
         #                             latency_threshold=1, depth_level=0.7, parent=self),
         # comp_tasks.gate_task(offset=-0.1, direction=-1, parent=self),

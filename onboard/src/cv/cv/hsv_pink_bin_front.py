@@ -14,7 +14,8 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
             name='bin_pink_front',
             camera='front',
             mask_ranges=[
-                [cv_constants.PinkBins.PINK_1_BOT, cv_constants.PinkBins.PINK_1_TOP],
+                [cv_constants.PinkBins.PINK_2_BOT, cv_constants.PinkBins.PINK_2_TOP],
+                [cv_constants.PinkBins.PINK_3_BOT, cv_constants.PinkBins.PINK_3_TOP],
             ],
             width=cv_constants.Bins.WIDTH,
         )
@@ -71,12 +72,13 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
         """Pick the largest and lowest contour only."""
         final_contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
-        grouped_contours = self.group_contours_by_distance(final_contours, dist_thresh=100)
+        grouped_contours = self.group_contours_by_distance(final_contours, dist_thresh=40)
 
         final_x, final_y = 0, 0
         chosen_contour_score = None
         chosen_contour = None
 
+        # self.get_logger().info(f"grouped count {len(grouped_contours)}")
         for contour in grouped_contours[:min(3,len(final_contours))]:
             # Get center (mean of all contour points)
             M = cv2.moments(contour)
@@ -103,8 +105,12 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
 
     def morphology(self, mask: np.ndarray) -> np.ndarray:
         """Apply a kernel morphology."""
-        kernel = np.ones((5, 5), np.uint8)
-        return cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        kernel_h = np.ones((2, 10), np.uint8)
+        kernel_v = np.ones((10, 2), np.uint8)
+        mask_h = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_h)
+        mask_v = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_v)
+    
+        return cv2.bitwise_or(mask_h, mask_v)
 
 def main(args: list[str] | None = None) -> None:
     """Run the node."""

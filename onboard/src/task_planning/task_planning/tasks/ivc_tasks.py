@@ -88,7 +88,5 @@ async def test_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
 
         sleep_task = util_tasks.sleep(5, parent=self)
         while not sleep_task.done:
-            if len(IVC().messages) > messages_received:
-                logger.info(f'Received IVC message: {IVC().messages[-1].msg.name}')
-                messages_received = len(IVC().messages)
+            
             sleep_task.step()

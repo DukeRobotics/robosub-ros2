@@ -65,3 +65,38 @@ def degrees_to_centered_gradians(angle_degrees: float, center_gradians: float, i
     angle_gradians = angle_degrees * GRADIANS_PER_DEGREE * (1 if increase_ccw else -1)
     angle_gradians_centered = angle_gradians + center_gradians
     return int(angle_gradians_centered)
+
+def polar_to_cartesian_points(sonar_array: np.ndarray, start_angle: int, end_angle: int, center_gradians: float, increase_ccw: bool) -> np.ndarray:
+    """
+    Convert sonar polar data to (x, y) points based on pixel intensity.
+
+    Args:
+        sonar_array (np.ndarray): 2D array (angle x range) of sonar intensities
+        start_angle (int): start angle in gradians
+        end_angle (int): end angle in gradians
+        center_gradians (float): Center gradians to use for conversion.
+        increase_ccw (bool): If True, sonar angles increase counter-clockwise when viewed from above the robot.
+
+    Returns:
+        List of (x, y) points
+    """
+    angle_count, range_count = sonar_array.shape
+    points = []
+
+    # Linearly spaced angles across the sweep
+    angles_grad = np.linspace(start_angle, end_angle, angle_count)
+    for i, grad in enumerate(angles_grad):
+        angle_rad = centered_gradians_to_radians(
+            grad, center_gradians, increase_ccw)
+
+        for j in range(range_count):
+            intensity = sonar_array[i, j]
+            if intensity < sonar_obj.VALUE_THRESHOLD:
+                continue  # skip weak returns
+
+            r = sonar_obj.get_distance_of_sample(j)
+            x = r * np.cos(angle_rad)
+            y = r * np.sin(angle_rad)
+            points.append((x, y))
+
+    return np.array(points)

@@ -51,14 +51,14 @@ class PathMarker:
 
 class PinkBins:
     """Pink bins color bounds."""
-    PINK_1_BOT = np.array([4, 0, 0])
-    PINK_1_TOP = np.array([20, 100, 100])
+    PINK_1_BOT = np.array([0, 0, 75])
+    PINK_1_TOP = np.array([30, 20, 100])
 
-    PINK_2_BOT = np.array([130, 80, 130])
-    PINK_2_TOP = np.array([160, 150, 255])
+    PINK_2_BOT = np.array([220, 0, 50])
+    PINK_2_TOP = np.array([355, 70, 100])
 
-    PINK_3_BOT = np.array([155, 100, 150])
-    PINK_3_TOP = np.array([175, 255, 255])
+    PINK_3_BOT = np.array([190, 0, 40])
+    PINK_3_TOP = np.array([250, 30, 70])
 
 class USBCamera(Enum):
     """Enum for different USB cameras."""

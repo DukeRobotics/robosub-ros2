@@ -19,11 +19,20 @@ class IVCMessageType(Enum):
     Attributes:
         UNKNOWN (str): Unknown message type. Any message that is not one of the following will be set to this type.
         OOGWAY_TEST (str): Test message for Oogway.
+        OOGWAY_GATE (str): Confirm pass through gate by Oogway.
+        OOGWAY_ACKNOWLEDGE (str): Acknowledgement message by Oogway
         CRUSH_TEST (str): Test message for Crush.
+        CRUSH_GATE (str): Confirm pass through gate by Crush
+        CRUSH_ACKNOWLEDGE (str):  Acknowledgement message by Crush
     """
     UNKNOWN = ''
     OOGWAY_TEST = 'to'
+    OOGWAY_GATE = 'og'
+    OOGWAY_ACKNOWLEDGE = 'oa'
     CRUSH_TEST = 'tc'
+    CRUSH_GATE = 'cg'
+    CRUSH_ACKNOWLEDGE = 'ca'
+
 
 
 @dataclass
