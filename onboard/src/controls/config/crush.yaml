@@ -208,6 +208,10 @@ static_power_global:
 power_scale_factor: 1
 # all x positions assume the corner link is 10.41527MM +x than it actually is
 thrusters:
+  - name: front_right
+    type: T200
+    pos: [0.001895, -0.38866, -0.003175]
+    rpy: [0, 0, -135]
   - name: middle_right_first
     type: T200
     pos: [-0.15501, -0.34805, -0.003175]
@@ -216,10 +220,6 @@ thrusters:
     type: T200
     pos: [-0.32582, -0.34805, -0.003175]
     rpy: [0, 90, 0]
-  - name: front_right
-    type: T200
-    pos: [0.001895, -0.38866, -0.003175]
-    rpy: [0, 0, -135]
   - name: back_right
     type: T200
     pos: [-0.48273, -0.38866, -0.003175]

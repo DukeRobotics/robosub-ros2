@@ -44,7 +44,7 @@ thrusters:
     cw: false
     standard_esc: false
   - name: middle_right_first
-    cw: false
+    cw: true
     standard_esc: true
   - name: middle_right_second
     cw: false
@@ -59,7 +59,7 @@ thrusters:
     cw: true
     standard_esc: true
   - name: middle_left_second
-    cw: true
+    cw: false
     standard_esc: true
   - name: front_left
     cw: true
