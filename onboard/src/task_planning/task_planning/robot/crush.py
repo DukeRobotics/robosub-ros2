@@ -13,17 +13,15 @@ async def main(self: Task) -> Task[None, None, None]:
     tasks = [
         # ivc_tasks.test_ivc(IVCMessageType.CRUSH_TEST, parent=self),
         # buoyancy_tasks.tune_static_power(parent=self),
-        comp_tasks.initial_submerge(-0.7, parent=self),
+        comp_tasks.initial_submerge(-0.7, enable_controls_flag=True, parent=self),
         #comp_tasks.initial_submerge(-0.6, parent=self),
-        move_tasks.move_with_directions([(2, -2, 0)], parent=self),
+        # move_tasks.move_with_directions([(2, -2, 0)], parent=self),
         # move_tasks.move_with_directions([(0.5, 0, 0), (0, 0.5, 0), (-0.5, 0, 0), (0, -0.5, 0)], parent=self),
         # move_tasks.move_with_directions([(1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0)], parent=self),
         # move_tasks.move_with_directions([(1, 0, 0), (-1, 0, 0)], depth_level=-0.5, parent=self),
         # move_tasks.move_with_directions([(0, 0, -0.5), (0, 0, 0.5)], parent=self),
-
         # prequal_tasks.prequal_task(parent=self),
-
-        # comp_tasks.coin_flip(parent=self),
+        comp_tasks.coin_flip(parent=self),
         # comp_tasks.yaw_to_cv_object(CVObjectType.GATE_SAWFISH, direction=1, yaw_threshold=radians(10),
         #                             latency_threshold=1, depth_level=0.7, parent=self),
         # comp_tasks.gate_task(offset=-0.1, direction=-1, parent=self),

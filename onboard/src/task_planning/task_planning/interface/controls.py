@@ -7,6 +7,7 @@ from custom_msgs.srv import SetControlTypes
 from geometry_msgs.msg import Pose, Twist
 from rclpy.logging import get_logger
 from rclpy.node import Node
+from std_msgs.msg import Bool
 from std_srvs.srv import SetBool, Trigger
 from task_planning.utils.other_utils import singleton
 
@@ -71,11 +72,13 @@ class Controls:
                 logger.info(f'{self.RESET_PID_LOOPS_SERVICE} not ready, waiting...')
 
         self._enable_controls = node.create_client(SetBool, self.ENABLE_CONTROLS_SERVICE)
-        self._enable_controls_status = node.create_subscription(bool, self.ENABLE_CONTROLS_TOPIC, self._on_receive_enable_controls, 10)
 
         self._desired_position_pub = node.create_publisher(Pose, self.DESIRED_POSITION_TOPIC, 1)
         self._desired_velocity_pub = node.create_publisher(Twist, self.DESIRED_VELOCITY_TOPIC, 1)
         self._desired_power_pub = node.create_publisher(Twist, self.DESIRED_POWER_TOPIC, 1)
+
+        node.create_subscription(Bool, self.ENABLE_CONTROLS_TOPIC, self._on_receive_enable_controls, 10)
+        self._enable_controls_status = Bool()
 
         self._read_config = None
 
@@ -87,8 +90,8 @@ class Controls:
         self.bypass = bypass
 
     @property
-    def enable_controls_status(self) -> bool:
-        """Status of the ENABLE_CONTROLS"""
+    def enable_controls_status(self) -> Bool:
+        """Status of the ENABLE_CONTROLS."""
         return self._enable_controls_status
 
     def _update_control_types(self, control_types: ControlTypes) -> None:
@@ -126,12 +129,12 @@ class Controls:
         request.data = enable
         self._enable_controls.call_async(request)
 
-    def _on_receive_enable_controls(self, status: bool) -> None:
+    def _on_receive_enable_controls(self, status: Bool) -> None:
         """
-        Sets controls status object
+        Sets controls status object.
 
         Args:
-            status: Status of ENABLE_CONTROLS flag
+            status: Status of ENABLE_CONTROLS flag.
         """
         self._enable_controls_status = status
 

@@ -448,8 +448,8 @@ async def initial_submerge(self: Task, submerge_dist: float, enable_controls_fla
         submerge_dist: The distance to submerge the robot in meters.
         enable_controls_flag: Flag to wait for ENABLE_CONTROLS status when true.
     """
-    while enable_controls_flag and not Controls().enable_controls_status:
-        continue
+    while enable_controls_flag and not Controls().enable_controls_status.data:
+        await Yield()
 
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, submerge_dist, 0, 0, 0),
