@@ -1,6 +1,6 @@
 .DS_Store
 __pycache__
 
-onboard2/build/*
-onboard2/install/*
-onboard2/log/*
+onboard/build/*
+onboard/install/*
+onboard/log/*
