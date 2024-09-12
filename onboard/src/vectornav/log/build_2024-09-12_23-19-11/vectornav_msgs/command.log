@@ -1,2 +1,0 @@
-Invoking command in '/root/dev/robosub-ros2/onboard/src/vectornav/build/vectornav_msgs': /usr/bin/cmake /root/dev/robosub-ros2/onboard/src/vectornav/vectornav_msgs -DCMAKE_INSTALL_PREFIX=/root/dev/robosub-ros2/onboard/src/vectornav/install/vectornav_msgs
-Invoked command in '/root/dev/robosub-ros2/onboard/src/vectornav/build/vectornav_msgs' returned '1': /usr/bin/cmake /root/dev/robosub-ros2/onboard/src/vectornav/vectornav_msgs -DCMAKE_INSTALL_PREFIX=/root/dev/robosub-ros2/onboard/src/vectornav/install/vectornav_msgs
