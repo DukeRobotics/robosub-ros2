@@ -1,0 +1,21 @@
+{
+    "recommendations": [
+        "jeff-hykin.better-cpp-syntax",
+        "ms-vscode.cpptools-extension-pack",
+        "cschlosser.doxdocgen",
+        "dbaeumer.vscode-eslint",
+        "ms-python.flake8",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "bierner.github-markdown-preview",
+        "GitHub.vscode-pull-request-github",
+        "eamodio.gitlens",
+        "ms-vsliveshare.vsliveshare",
+        "ms-python.vscode-pylance",
+        "ms-python.python",
+        "ms-python.debugpy",
+        "mechatroner.rainbow-csv",
+        "ms-vscode-remote.vscode-remote-extensionpack",
+        "redhat.vscode-yaml"
+    ]
+}
