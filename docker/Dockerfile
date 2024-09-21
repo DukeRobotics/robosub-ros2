@@ -13,7 +13,7 @@ RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
     mkdir -p /root/.ssh && \
     touch /root/.ssh/environment
 
-RUN echo "Port 2200" >> /etc/ssh/sshd_config
+RUN echo "Port 2202" >> /etc/ssh/sshd_config
 
 RUN mkdir -p /root/dev/robosub-ros2
 
