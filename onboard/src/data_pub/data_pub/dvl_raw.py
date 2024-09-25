@@ -11,8 +11,9 @@ import rclpy
 from rclpy.node import Node
 
 from custom_msgs.msg import DVLRaw
+from drc_core.drc_node import DRCNode
 
-class DvlRawPublisher(Node):
+class DvlRawPublisher(DRCNode):
 
     CONFIG_FILE_PATH = f'package://data_pub/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
 
@@ -25,7 +26,7 @@ class DvlRawPublisher(Node):
         with open(rr.get_filename(self.CONFIG_FILE_PATH, use_protocol=False)) as f:
             self._config_data = yaml.safe_load(f)
 
-        super().__init__(self.NODE_NAME)
+        super().__init__(self.NODE_NAME, add_to_static_threads=True)
         self._pub = self.create_publisher(DVLRaw, self.TOPIC_NAME, 10)
 
         self._current_msg = DVLRaw()
