@@ -1,0 +1,53 @@
+{
+    "name": "RoboSub ROS2",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "robosub-ros2",
+    "workspaceFolder": "/root/dev/robosub-ros2",
+    "mounts": [
+       "type=bind,source=${localEnv:HOME}/.ssh,target=/root/.ssh,readonly"
+    ],
+    "postAttachCommand": "git config --global user.signingkey ~/.ssh/id_rsa",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "jeff-hykin.better-cpp-syntax",
+                "ms-vscode.cpptools-extension-pack",
+                "cschlosser.doxdocgen",
+                "dbaeumer.vscode-eslint",
+                "ms-python.flake8",
+                "GitHub.copilot",
+                "GitHub.copilot-chat",
+                "bierner.github-markdown-preview",
+                "GitHub.vscode-pull-request-github",
+                "eamodio.gitlens",
+                "ms-vsliveshare.vsliveshare",
+                "ms-python.vscode-pylance",
+                "ms-python.python",
+                "ms-python.debugpy",
+                "mechatroner.rainbow-csv",
+                "ms-vscode-remote.vscode-remote-extensionpack",
+                "redhat.vscode-yaml",
+                "ms-azuretools.vscode-docker"
+            ],
+            "settings": {
+                "files.trimTrailingWhitespace": true,
+                "flake8.args": [
+                    "--max-line-length=120"
+                ],
+                "editor.rulers": [
+                    120
+                ],
+                "python.analysis.diagnosticSeverityOverrides": {
+                    "reportMissingImports": "none",
+                    "reportMissingModuleSource": "none"
+                },
+                "[ui]": {
+                    "editor.tabSize": 2
+                },
+                "git.enableCommitSigning": true,
+                "doxdocgen.generic.returnTemplate": "@return ",
+                "files.eol": "\n"
+            }
+        }
+    }
+}
