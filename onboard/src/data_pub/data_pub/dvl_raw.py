@@ -12,13 +12,13 @@ from rclpy.node import Node
 
 from custom_msgs.msg import DVLRaw
 
-class DvlRawPublisher(Node):
+class DVLRawPublisher(Node):
 
     CONFIG_FILE_PATH = f'package://data_pub/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
 
     BAUDRATE = 115200
+    NODE_NAME = 'dvl_raw_pub'
     TOPIC_NAME = 'sensors/dvl/raw'
-    NODE_NAME = 'dvl_raw_publisher'
     LINE_DELIM = ','
 
     CONNECTION_RETRY_PERIOD = 0.2 #S
@@ -155,7 +155,7 @@ class DvlRawPublisher(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    dvl_raw = DvlRawPublisher()
+    dvl_raw = DVLRawPublisher()
 
     try:
         rclpy.spin(dvl_raw)
@@ -165,6 +165,7 @@ def main(args=None):
         dvl_raw.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

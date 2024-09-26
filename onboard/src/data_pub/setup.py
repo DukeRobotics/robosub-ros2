@@ -23,6 +23,7 @@ setup(
     entry_points={
         'console_scripts': [
             'dvl_raw = data_pub.dvl_raw:main',
+            'dvl_odom = data_pub.dvl_to_odom:main',
         ],
     },
 )
