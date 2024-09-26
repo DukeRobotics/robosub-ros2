@@ -16,4 +16,9 @@
     "git.enableCommitSigning": true,
     "doxdocgen.generic.returnTemplate": "@return ",
     "files.eol": "\n",
+    "python.autoComplete.extraPaths": [
+        "/opt/ros/jazzy/lib/python3.12/site-packages"
+    ],
+    "cmake.ignoreCMakeListsMissing": true,
+    "python.terminal.activateEnvironment": false
 }

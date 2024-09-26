@@ -14,6 +14,7 @@
         "ms-python.vscode-pylance",
         "ms-python.python",
         "ms-python.debugpy",
+        "ms-iot.vscode-ros",
         "mechatroner.rainbow-csv",
         "ms-vscode-remote.vscode-remote-extensionpack",
         "redhat.vscode-yaml",
