@@ -11,9 +11,8 @@ import rclpy
 from rclpy.node import Node
 
 from custom_msgs.msg import DVLRaw
-from drc_core.drc_node import DRCNode
 
-class DvlRawPublisher(DRCNode):
+class DvlRawPublisher(Node):
 
     CONFIG_FILE_PATH = f'package://data_pub/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
 
@@ -22,19 +21,20 @@ class DvlRawPublisher(DRCNode):
     NODE_NAME = 'dvl_raw_publisher'
     LINE_DELIM = ','
 
+    CONNECTION_RETRY_PERIOD = 0.2 #S
+    LOOP_RATE = 10 #Hz
+
     def __init__(self):
         with open(rr.get_filename(self.CONFIG_FILE_PATH, use_protocol=False)) as f:
             self._config_data = yaml.safe_load(f)
 
-        super().__init__(self.NODE_NAME, add_to_static_threads=True)
+        super().__init__(self.NODE_NAME)
         self._pub = self.create_publisher(DVLRaw, self.TOPIC_NAME, 10)
 
         self._current_msg = DVLRaw()
 
         self._serial_port = None
         self._serial = None
-
-        self._rate = self.create_rate(1)
 
         self._dvl_line_parsers = {
             'SA': self._parse_SA,
@@ -46,7 +46,9 @@ class DvlRawPublisher(DRCNode):
             'RA': self._parse_RA
         }
 
-        self.connect()
+        self.connection_timer = self.create_timer(self.CONNECTION_RETRY_PERIOD, self.connect)
+        self.run_timer = self.create_timer(1.0/self.LOOP_RATE, self.run)
+        self.run_timer.cancel()
 
     def connect(self):
         while self._serial_port is None and rclpy.ok():
@@ -57,26 +59,24 @@ class DvlRawPublisher(DRCNode):
                                              timeout=0.1, write_timeout=1.0,
                                              bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE,
                                              stopbits=serial.STOPBITS_ONE)
+                self.run_timer.reset()
+                self.connection_timer.cancel()
             except StopIteration:
-                self.get_logger().info("DVL not found, trying again in 0.1 seconds.")
-                self._rate.sleep()
+                self.get_logger().error(f"DVL not found, trying again in {self.CONNECTION_RETRY_PERIOD} seconds.")
 
     def run(self):
-        while rclpy.ok():
-            try:
-                line = self._serial.readline().decode('utf-8')
-                if not line or line == '':
-                    self._rate.sleep()
-                    continue  # Skip and retry
-                if line.strip() and line[0] == ':':
-                    self._parse_line(line)
-            except Exception:
-                self.get_logger().info("Error in reading and extracting information. Reconnecting.")
-                self.get_logger().info(traceback.format_exc())
-                self._serial.close()
-                self._serial = None
-                self._serial_port = None
-                self.connect()
+        try:
+            line = self._serial.readline().decode('utf-8')
+            if line and line.strip() and line[0] == ':':
+                self._parse_line(line)
+        except Exception:
+            self.get_logger().info("Error in reading and extracting information. Reconnecting.")
+            self.get_logger().info(traceback.format_exc())
+            self._serial.close()
+            self._serial = None
+            self._serial_port = None
+            self.run_timer.cancel()
+            self.connection_timer.reset()
 
     def _parse_line(self, line):
         data_type = line[1:3]
@@ -134,7 +134,6 @@ class DvlRawPublisher(DRCNode):
         self._current_msg.bd_range = fields[3]
         self._current_msg.bd_time = fields[4]
 
-        # BD type is the last message received, so publish
         self._publish_current_msg()
 
     # Pressure and range to bottom data, currently being ignored
@@ -156,14 +155,16 @@ class DvlRawPublisher(DRCNode):
 
 def main(args=None):
     rclpy.init(args=args)
+    dvl_raw = DvlRawPublisher()
 
-    dvl_raw_publisher = DvlRawPublisher()
-    dvl_raw_publisher.connect()
-
-    dvl_raw_publisher.run()
-
-    dvl_raw_publisher.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(dvl_raw)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        dvl_raw.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

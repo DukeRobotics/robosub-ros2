@@ -1,13 +1,7 @@
 from setuptools import find_packages, setup
-import glob
+from glob import glob
 
 package_name = 'data_pub'
-
-# glob all config files in /config
-config_files = glob.glob('config/*.yaml')
-
-if len(config_files) == 0:
-    raise FileNotFoundError('No config files found in /config')
 
 setup(
     name=package_name,
@@ -17,7 +11,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/config', config_files),
+        ('share/' + package_name + '/config', glob('./config/*.yaml')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
