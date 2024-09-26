@@ -20,12 +20,9 @@ find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
-# Grab all message files 
+# Grab all message files
 file(GLOB msg_sources RELATIVE ${PROJECT_SOURCE_DIR} msg/*.msg)
 file(GLOB act_sources RELATIVE ${PROJECT_SOURCE_DIR} action/*.action)
-
-message("Grabbing messages ${act_sources}")
-
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_sources}

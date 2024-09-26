@@ -12,9 +12,6 @@ find_package(rosidl_default_generators REQUIRED)
 file(GLOB msg_sources RELATIVE ${PROJECT_SOURCE_DIR} msg/*.msg)
 file(GLOB srv_sources RELATIVE ${PROJECT_SOURCE_DIR} srv/*.srv)
 
-message("Globbing messages ${msg_sources}")
-message("Globbing services ${srv_sources}")
-
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_sources}
   ${srv_sources}
