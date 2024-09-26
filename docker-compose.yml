@@ -1,0 +1,11 @@
+services:
+  robosub-ros2:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    container_name: robosub-ros2
+    tty: true
+    volumes:
+      - ./:/root/dev/robosub-ros2
+    ports:
+      - 2202:2202
