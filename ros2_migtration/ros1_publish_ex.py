@@ -5,28 +5,32 @@ import serial
 import serial.tools.list_ports as list_ports
 import traceback
 import yaml
-import resource_retriever as rr
 
-import rclpy
+import resource_retriever as rr
+import rospy
 
 from custom_msgs.msg import DVLRaw
-from data_pub.serial_republisher_node import SerialReublisherNode
 
-class DVLRawPublisher(SerialReublisherNode):
+
+class DvlRawPublisher:
 
     CONFIG_FILE_PATH = f'package://data_pub/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
 
     BAUDRATE = 115200
-    NODE_NAME = 'dvl_raw_pub'
     TOPIC_NAME = 'sensors/dvl/raw'
+    NODE_NAME = 'dvl_raw_publisher'
     LINE_DELIM = ','
 
-    CONNECTION_RETRY_PERIOD = 1.0 #S
-    LOOP_RATE = 20.0 #Hz
-
     def __init__(self):
+        with open(rr.get_filename(self.CONFIG_FILE_PATH, use_protocol=False)) as f:
+            self._config_data = yaml.safe_load(f)
 
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, 'dvl', self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE)
+        self._pub = rospy.Publisher(self.TOPIC_NAME, DVLRaw, queue_size=10)
+
+        self._current_msg = DVLRaw()
+
+        self._serial_port = None
+        self._serial = None
 
         self._dvl_line_parsers = {
             'SA': self._parse_SA,
@@ -38,17 +42,40 @@ class DVLRawPublisher(SerialReublisherNode):
             'RA': self._parse_RA
         }
 
-        self._pub = self.create_publisher(DVLRaw, self.TOPIC_NAME, 10)
+    def connect(self):
+        while self._serial_port is None and not rospy.is_shutdown():
+            try:
+                dvl_ftdi_string = self._config_data['dvl']['ftdi']
+                self._serial_port = next(list_ports.grep(dvl_ftdi_string)).device
+                self._serial = serial.Serial(self._serial_port, self.BAUDRATE,
+                                             timeout=0.1, write_timeout=1.0,
+                                             bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE,
+                                             stopbits=serial.STOPBITS_ONE)
+            except StopIteration:
+                rospy.logerr("DVL not found, trying again in 0.1 seconds.")
+                rospy.sleep(0.1)
 
-        self._current_msg = DVLRaw()
+    def run(self):
+        rospy.init_node(self.NODE_NAME)
+        self.connect()
 
-    def _extract_floats(self, num_string, start, stop):
-        """Return a list of floats from a given string,
-        using LINE_DELIM and going from start to stop
-        """
-        return [float(num) for num in num_string.split(self.LINE_DELIM)[start:stop]]
+        while not rospy.is_shutdown():
+            try:
+                line = self._serial.readline().decode('utf-8')
+                if not line or line == '':
+                    rospy.sleep(0.1)
+                    continue  # Skip and retry
+                if line.strip() and line[0] == ':':
+                    self._parse_line(line)
+            except Exception:
+                rospy.logerr("Error in reading and extracting information. Reconnecting.")
+                rospy.logerr(traceback.format_exc())
+                self._serial.close()
+                self._serial = None
+                self._serial_port = None
+                self.connect()
 
-    def process_line(self, line):
+    def _parse_line(self, line):
         data_type = line[1:3]
         self._dvl_line_parsers[data_type](self._clean_line(line))
 
@@ -104,27 +131,30 @@ class DVLRawPublisher(SerialReublisherNode):
         self._current_msg.bd_range = fields[3]
         self._current_msg.bd_time = fields[4]
 
-        self._pub.publish(self._current_msg)
-        self._current_msg = DVLRaw()
+        # BD type is the last message received, so publish
+        self._publish_current_msg()
 
+    # Pressure and range to bottom data, currently being ignored
     def _parse_RA(self, line):
         pass
 
+    def _extract_floats(self, num_string, start, stop):
+        """Return a list of floats from a given string,
+        using LINE_DELIM and going from start to stop
+        """
+        return [float(num) for num in num_string.split(self.LINE_DELIM)[start:stop]]
 
-def main(args=None):
-    rclpy.init(args=args)
-    dvl_raw = DVLRawPublisher()
-
-    try:
-        rclpy.spin(dvl_raw)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        dvl_raw.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+    def _publish_current_msg(self):
+        """Publish the current DVL message and set the message to empty
+        """
+        self._pub.publish(self._current_msg)
+        # We stopped resetting the current message because we want to use the past value in case of an error
+        # See _parse_BS for relevant code
+        # self._current_msg = DVLRaw()
 
 
 if __name__ == '__main__':
-    main()
-
+    try:
+        DvlRawPublisher().run()
+    except rospy.ROSInterruptException:
+        pass

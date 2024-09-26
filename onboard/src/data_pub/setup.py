@@ -24,6 +24,8 @@ setup(
         'console_scripts': [
             'dvl_raw = data_pub.dvl_raw:main',
             'dvl_odom = data_pub.dvl_to_odom:main',
+            'pressure_voltage = data_pub.pressure_voltage:main',
+            'sensor_servo = data_pub.sensor_servo:main',
         ],
     },
 )
