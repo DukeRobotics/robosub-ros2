@@ -7,11 +7,15 @@
   <maintainer email="root@todo.todo">root</maintainer>
   <license>Apache-2.0</license>
 
-  <depend> std_msgs </depend>
-  <depend> custom_msgs</depend>
-  <depend> geometry_msgs </depend>
+  <depend>std_msgs</depend>
+  <depend>custom_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>tf_transformations</depend>
 
-  <exec_depend> rclpy </exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>python-serial</exec_depend>
+  <exec_depend>python-numpy</exec_depend>
 
   <export>
     <build_type>ament_python</build_type>

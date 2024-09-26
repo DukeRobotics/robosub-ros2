@@ -5,3 +5,7 @@ dvl:
   negate_z_vel: false
 ping1D:
   ftdi: DP05ZD1V
+pv:
+  ftdi: B0015XL0
+servo:
+  ftdi: A10N1UC1
