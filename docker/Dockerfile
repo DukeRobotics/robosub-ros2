@@ -8,6 +8,7 @@ RUN apt install -y --no-install-recommends tini
 RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-pip
+RUN apt install -y --no-install-recommends python3-serial
 
 # Change password for root user to "robotics"
 RUN echo root:robotics | chpasswd
