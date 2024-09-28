@@ -11,10 +11,11 @@ RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-serial
 
 # Change password for root user to "robotics"
-RUN echo root:robotics | chpasswd
+RUN passwd -d root
 
-# Modifiy SSH server configuration to allow SSH into the container
+# Modify SSH server configuration to allow SSH into the container
 RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
+    echo "PermitEmptyPasswords yes" >> /etc/ssh/sshd_config && \
     echo "PermitUserEnvironment yes" >> /etc/ssh/sshd_config && \
     mkdir -p /root/.ssh && \
     touch /root/.ssh/environment
@@ -22,13 +23,35 @@ RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
 # SSH server at port 2202
 RUN echo "Port 2202" >> /etc/ssh/sshd_config
 
+# Copy SSH config file
+COPY ssh_config /root/.ssh/config
+
 # Create directory for SSH server
 RUN mkdir /var/run/sshd
 RUN chmod 0755 /var/run/sshd
 
-# Copy SSH configuration file
-COPY ssh_config /root/.ssh/config
+# Define ARGs for SSH keys and Git information
+ARG GITHUB_AUTH_SSH_KEY
+ARG GITHUB_AUTH_SSH_KEY_PUB
+ARG GITHUB_SIGNING_SSH_KEY
+ARG GIT_ALLOWED_SIGNERS
+ARG SSH_KEY_PUBLIC
+ARG GIT_USER_NAME
+ARG GIT_USER_EMAIL
 
+# Create the SSH key files with their contents from the build arguments
+RUN echo "$GITHUB_AUTH_SSH_KEY" > /root/.ssh/github_auth_key && \
+    echo "$GITHUB_AUTH_SSH_KEY_PUB" > /root/.ssh/github_auth_key.pub && \
+    echo "$GITHUB_SIGNING_SSH_KEY" > /root/.ssh/github_signing_key && \
+    echo "$GIT_ALLOWED_SIGNERS" > /root/.ssh/allowed_signers && \
+    echo "$SSH_KEY_PUBLIC" > /root/.ssh/authorized_keys
+
+# Set appropriate permissions for the SSH keys
+RUN chmod 600 /root/.ssh/github_auth_key /root/.ssh/github_signing_key && \
+    chmod 644 /root/.ssh/github_auth_key.pub /root/.ssh/allowed_signers /root/.ssh/authorized_keys && \
+    chown root:root /root/.ssh/*
+
+# Create development directory
 RUN mkdir -p /root/dev/robosub-ros2
 
 # Use SSH entrypoint script as container's .bash_profile
@@ -38,21 +61,15 @@ COPY ssh_entry.sh /root/.bash_profile
 COPY ros_bashrc.sh /root/ros_bashrc.sh
 RUN echo "source /root/ros_bashrc.sh" >> /root/.bashrc
 
-# Configure git to automatically sign commits with SSH key mounted inside container and to recognize commit signatures
+# Configure git to automatically sign commits with SSH key and recognize commit signatures
 RUN git config --global commit.gpgSign true
 RUN git config --global gpg.format ssh
 RUN git config --global user.signingkey "/root/.ssh/github_signing_key"
 RUN git config --global gpg.ssh.allowedSignersFile "/root/.ssh/allowed_signers"
 
-# Set git user name and email
-ARG GIT_USER_NAME
+# Set git user name and email from build arguments
 RUN git config --global user.name "$GIT_USER_NAME"
-
-ARG GIT_USER_EMAIL
 RUN git config --global user.email "$GIT_USER_EMAIL"
-
-COPY startup.sh /usr/local/bin/startup.sh
-RUN chmod +x /usr/local/bin/startup.sh
 
 # Copy entrypoint script into container and make it executable
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh

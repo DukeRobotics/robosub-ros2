@@ -7,15 +7,14 @@ services:
       args:
         GIT_USER_NAME: ${GIT_USER_NAME}
         GIT_USER_EMAIL: ${GIT_USER_EMAIL}
+        GITHUB_AUTH_SSH_KEY: ${GITHUB_AUTH_SSH_KEY}
+        GITHUB_AUTH_SSH_KEY_PUB: ${GITHUB_AUTH_SSH_KEY_PUB}
+        GITHUB_SIGNING_SSH_KEY: ${GITHUB_SIGNING_SSH_KEY}
+        GIT_ALLOWED_SIGNERS: ${GIT_ALLOWED_SIGNERS}
+        SSH_KEY_PUBLIC: ${SSH_KEY_PUBLIC}
     container_name: onboard2
     tty: true
     volumes:
       - ./:/root/dev/robosub-ros2
-      - ${GITHUB_AUTH_SSH_KEY_PATH_PRIVATE}:/root/.ssh/github_auth_key
-      - ${GITHUB_AUTH_SSH_KEY_PATH_PUBLIC}:/root/.ssh/github_auth_key.pub
-      - ${GITHUB_SIGNING_SSH_KEY_PATH_PRIVATE}:/root/.ssh/github_signing_key
-      - ${GIT_ALLOWED_SIGNERS_PATH}:/root/.ssh/allowed_signers
-      - ${SSH_KEY_PATH_PUBLIC}:/root/.ssh/authorized_keys
-    command: ["bash", "/usr/local/bin/startup.sh"]
     ports:
       - 2202:2202

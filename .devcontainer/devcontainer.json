@@ -3,6 +3,7 @@
     "dockerComposeFile": "../docker-compose.yml",
     "service": "robosub-ros2",
     "workspaceFolder": "/root/dev/robosub-ros2",
+    "initializeCommand": "/bin/bash ./docker-build.sh",
     "customizations": {
         "vscode": {
             "extensions": [
