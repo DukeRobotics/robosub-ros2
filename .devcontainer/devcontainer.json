@@ -6,42 +6,64 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "jeff-hykin.better-cpp-syntax",
-                "ms-vscode.cpptools-extension-pack",
+                "bierner.github-markdown-preview",
                 "cschlosser.doxdocgen",
                 "dbaeumer.vscode-eslint",
-                "ms-python.flake8",
+                "eamodio.gitlens",
                 "GitHub.copilot",
                 "GitHub.copilot-chat",
-                "bierner.github-markdown-preview",
                 "GitHub.vscode-pull-request-github",
-                "eamodio.gitlens",
-                "ms-vsliveshare.vsliveshare",
-                "ms-python.vscode-pylance",
-                "ms-python.python",
-                "ms-python.debugpy",
-                "ms-iot.vscode-ros",
+                "jeff-hykin.better-cpp-syntax",
                 "mechatroner.rainbow-csv",
+                "ms-azuretools.vscode-docker",
+                "ms-iot.vscode-ros",
+                "ms-python.debugpy",
+                "ms-python.flake8",
+                "ms-python.python",
+                "ms-python.vscode-pylance",
                 "ms-vscode-remote.vscode-remote-extensionpack",
-                "redhat.vscode-yaml",
-                "ms-azuretools.vscode-docker"
+                "ms-vscode.cpptools-extension-pack",
+                "ms-vsliveshare.vsliveshare",
+                "redhat.vscode-yaml"
             ],
             "settings": {
+                // File and editor-related settings
                 "files.trimTrailingWhitespace": true,
-                "python.defaultInterpreterPath": "/usr/bin/python3",
-                "flake8.args": [
-                    "--max-line-length=120"
-                ],
+                "files.eol": "\n",
                 "editor.rulers": [
                     120
                 ],
                 "[ui]": {
                     "editor.tabSize": 2
                 },
+
+                // Git-related settings
                 "git.enableCommitSigning": true,
+
+                // Python-related settings
+                "python.defaultInterpreterPath": "/usr/bin/python3",
+                "flake8.args": [
+                    "--max-line-length=120"
+                ],
+
+                // Doxygen doc generator settings
                 "doxdocgen.generic.returnTemplate": "@return ",
-                "files.eol": "\n"
+
+                // CMake-related settings
+                "cmake.ignoreCMakeListsMissing": true,
+                "cmake.options.statusBarVisibility": "hidden",
+                "cmake.options.advanced": {
+                    "build": {
+                        "statusBarVisibility": "inherit"
+                    },
+                    "launch": {
+                        "statusBarVisibility": "inherit"
+                    },
+                    "debug": {
+                        "statusBarVisibility": "inherit"
+                    }
+                }
             }
-        }
+        },
     }
 }
