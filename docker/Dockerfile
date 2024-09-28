@@ -37,11 +37,11 @@ COPY ssh_entry.sh /root/.bash_profile
 COPY ros_bashrc.sh /root/ros_bashrc.sh
 RUN echo "source /root/ros_bashrc.sh" >> /root/.bashrc
 
-# Configure git to automatically sign commits with SSH key inside container
+# Configure git to automatically sign commits with SSH key mounted inside container and to recognize commit signatures
 RUN git config --global commit.gpgSign true
 RUN git config --global gpg.format ssh
 RUN git config --global user.signingkey "/root/.ssh/github_signing_key"
-RUN git config --global gpg.ssh.allowedSignersFile "/root/.ssh/github_signing_key"
+RUN git config --global gpg.ssh.allowedSignersFile "/root/.ssh/allowed_signers"
 
 # Set git user name and email
 ARG GIT_USER_NAME
