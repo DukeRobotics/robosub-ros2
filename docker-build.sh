@@ -9,6 +9,7 @@ set -o allexport
 GIT_USER_NAME=$(git config --global user.name)
 GIT_USER_EMAIL=$(git config --global user.email)
 
+# Check if the user wants to set up Git in the container
 if [ "$NO_GIT" != "true" ]; then
     # Read SSH key contents using the paths from the .env file
     GITHUB_AUTH_SSH_KEY=$(cat ${GITHUB_AUTH_SSH_KEY_PRIV_PATH})
