@@ -115,6 +115,7 @@ class TaskPlanning(Node):
 
             self.get_logger().info('Running tasks.')
 
+            # TODO: migrate this correctly
             # Step through tasks, stopping if rospy is shutdown
             rate = self.create_rate(30)
             for t in tasks:
