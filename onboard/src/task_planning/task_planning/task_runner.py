@@ -89,6 +89,7 @@ class TaskPlanning(Node):
                 comp_tasks.after_buoy_task(parent=Task.MAIN_ID)
 
 
+
                 # comp_tasks.align_path_marker(direction=-1, parent=Task.MAIN_ID),
                 # comp_tasks.center_path_marker(parent=Task.MAIN_ID),
                 # comp_tasks.yaw_to_cv_object('path_marker', yaw_threshold=math.radians(5), direction=-1,
