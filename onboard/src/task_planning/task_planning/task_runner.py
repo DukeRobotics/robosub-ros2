@@ -27,7 +27,7 @@ class TaskPlanning(Node):
 
     def __init__(self):
         """TODO."""
-        self.node = super().__init__(self.NODE_NAME)
+        super().__init__(self.NODE_NAME)
         self.declare_parameter('bypass', False)
         self.declare_parameter('untethered', False)
 
@@ -49,9 +49,9 @@ class TaskPlanning(Node):
         _ = tf2_ros.TransformListener(tfBuffer)
 
         # Initialize interfaces
-        Controls(bypass)
-        state = State(bypass, tfBuffer)
-        CV(bypass, self.node)
+        Controls(bypass, self)
+        state = State(bypass, tfBuffer, self)
+        CV(bypass, self)
 
         # Initialize the task update publisher
         TaskUpdatePublisher()
