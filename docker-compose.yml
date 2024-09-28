@@ -11,7 +11,6 @@ services:
         GITHUB_AUTH_SSH_KEY_PUB: ${GITHUB_AUTH_SSH_KEY_PUB}
         GITHUB_SIGNING_SSH_KEY: ${GITHUB_SIGNING_SSH_KEY}
         GIT_ALLOWED_SIGNERS: ${GIT_ALLOWED_SIGNERS}
-        SSH_KEY_PUBLIC: ${SSH_KEY_PUBLIC}
     container_name: onboard2
     tty: true
     volumes:

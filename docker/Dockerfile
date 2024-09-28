@@ -10,15 +10,15 @@ RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-serial
 
-# Change password for root user to "robotics"
+# Set no password for root user
 RUN passwd -d root
 
-# Modify SSH server configuration to allow SSH into the container
-RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
-    echo "PermitEmptyPasswords yes" >> /etc/ssh/sshd_config && \
-    echo "PermitUserEnvironment yes" >> /etc/ssh/sshd_config && \
-    mkdir -p /root/.ssh && \
-    touch /root/.ssh/environment
+# Modify SSH server configuration to allow SSH into the container without password
+RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+RUN echo "PermitEmptyPasswords yes" >> /etc/ssh/sshd_config
+RUN echo "PermitUserEnvironment yes" >> /etc/ssh/sshd_config
+RUN mkdir -p /root/.ssh
+RUN touch /root/.ssh/environment
 
 # SSH server at port 2202
 RUN echo "Port 2202" >> /etc/ssh/sshd_config
@@ -35,21 +35,19 @@ ARG GITHUB_AUTH_SSH_KEY
 ARG GITHUB_AUTH_SSH_KEY_PUB
 ARG GITHUB_SIGNING_SSH_KEY
 ARG GIT_ALLOWED_SIGNERS
-ARG SSH_KEY_PUBLIC
 ARG GIT_USER_NAME
 ARG GIT_USER_EMAIL
 
 # Create the SSH key files with their contents from the build arguments
-RUN echo "$GITHUB_AUTH_SSH_KEY" > /root/.ssh/github_auth_key && \
-    echo "$GITHUB_AUTH_SSH_KEY_PUB" > /root/.ssh/github_auth_key.pub && \
-    echo "$GITHUB_SIGNING_SSH_KEY" > /root/.ssh/github_signing_key && \
-    echo "$GIT_ALLOWED_SIGNERS" > /root/.ssh/allowed_signers && \
-    echo "$SSH_KEY_PUBLIC" > /root/.ssh/authorized_keys
+RUN echo "$GITHUB_AUTH_SSH_KEY" > /root/.ssh/github_auth_key
+RUN echo "$GITHUB_AUTH_SSH_KEY_PUB" > /root/.ssh/github_auth_key.pub
+RUN echo "$GITHUB_SIGNING_SSH_KEY" > /root/.ssh/github_signing_key
+RUN echo "$GIT_ALLOWED_SIGNERS" > /root/.ssh/allowed_signers
 
 # Set appropriate permissions for the SSH keys
-RUN chmod 600 /root/.ssh/github_auth_key /root/.ssh/github_signing_key && \
-    chmod 644 /root/.ssh/github_auth_key.pub /root/.ssh/allowed_signers /root/.ssh/authorized_keys && \
-    chown root:root /root/.ssh/*
+RUN chmod 600 /root/.ssh/github_auth_key /root/.ssh/github_signing_key
+RUN chmod 644 /root/.ssh/github_auth_key.pub /root/.ssh/allowed_signers
+RUN chown root:root /root/.ssh/*
 
 # Create development directory
 RUN mkdir -p /root/dev/robosub-ros2

@@ -14,7 +14,6 @@ GITHUB_AUTH_SSH_KEY=$(cat ${GITHUB_AUTH_SSH_KEY_PRIV_PATH})
 GITHUB_AUTH_SSH_KEY_PUB=$(cat ${GITHUB_AUTH_SSH_KEY_PUB_PATH})
 GITHUB_SIGNING_SSH_KEY=$(cat ${GITHUB_SIGNING_SSH_KEY_PRIV_PATH})
 GIT_ALLOWED_SIGNERS=$(cat ${GIT_ALLOWED_SIGNERS_PATH})
-SSH_KEY_PUBLIC=$(cat ${SSH_KEY_PUBLIC_PATH})
 
 # Build the Docker image with the SSH keys passed as build arguments
 docker compose up -d --build
