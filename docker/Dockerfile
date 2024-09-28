@@ -41,6 +41,7 @@ RUN echo "source /root/ros_bashrc.sh" >> /root/.bashrc
 RUN git config --global commit.gpgSign true
 RUN git config --global gpg.format ssh
 RUN git config --global user.signingkey "/root/.ssh/github_signing_key"
+RUN git config --global gpg.ssh.allowedSignersFile "/root/.ssh/github_signing_key"
 
 # Set git user name and email
 ARG GIT_USER_NAME
