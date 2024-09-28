@@ -36,7 +36,7 @@ class CV:
     MONO_CAM_SENSOR_SIZE = (3.054, 1.718)  # Width, height in mm
     MONO_CAM_FOCAL_LENGTH = 2.65  # Focal length in mm
 
-    def __init__(self, bypass: bool = False):
+    def __init__(self, node, bypass: bool = False):
         self.cv_data = {}
         self.bypass = bypass
 
