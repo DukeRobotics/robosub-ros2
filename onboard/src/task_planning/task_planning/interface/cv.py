@@ -7,7 +7,9 @@ from geometry_msgs.msg import Pose, Point
 from std_msgs.msg import Float64
 from vision_msgs.msg import Detection2DArray
 from utils.other_utils import singleton
+import rclpy
 
+from rclpy.node import Node
 
 @singleton
 class CV:
@@ -36,9 +38,10 @@ class CV:
     MONO_CAM_SENSOR_SIZE = (3.054, 1.718)  # Width, height in mm
     MONO_CAM_FOCAL_LENGTH = 2.65  # Focal length in mm
 
-    def __init__(self, bypass: bool = False, node):
+    def __init__(self, node: Node, bypass: bool = False):
         self.cv_data = {}
         self.bypass = bypass
+        self.node = node
 
 
         with open(rr.get_filename(self.MODELS_PATH, use_protocol=False)) as f:
