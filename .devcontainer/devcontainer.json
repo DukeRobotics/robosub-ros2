@@ -3,10 +3,6 @@
     "dockerComposeFile": "../docker-compose.yml",
     "service": "robosub-ros2",
     "workspaceFolder": "/root/dev/robosub-ros2",
-    "mounts": [
-       "type=bind,source=${localEnv:HOME}/.ssh,target=/root/.ssh,readonly"
-    ],
-    "postAttachCommand": "git config --global user.signingkey ~/.ssh/id_rsa",
     "customizations": {
         "vscode": {
             "extensions": [
@@ -32,16 +28,13 @@
             ],
             "settings": {
                 "files.trimTrailingWhitespace": true,
+                "python.defaultInterpreterPath": "/usr/bin/python3",
                 "flake8.args": [
                     "--max-line-length=120"
                 ],
                 "editor.rulers": [
                     120
                 ],
-                "python.analysis.diagnosticSeverityOverrides": {
-                    "reportMissingImports": "none",
-                    "reportMissingModuleSource": "none"
-                },
                 "[ui]": {
                     "editor.tabSize": 2
                 },
