@@ -11,10 +11,11 @@ services:
     tty: true
     volumes:
       - ./:/root/dev/robosub-ros2
-      - ${GITHUB_AUTH_SSH_KEY_PATH_PRIVATE}:/root/.ssh/github_auth_key:ro
-      - ${GITHUB_AUTH_SSH_KEY_PATH_PUBLIC}:/root/.ssh/github_auth_key.pub:ro
-      - ${GITHUB_SIGNING_SSH_KEY_PATH}:/root/.ssh/github_signing_key:ro
-      - ${GIT_ALLOWED_SIGNERS_PATH}:/root/.ssh/allowed_signers:ro
-      - ${SSH_KEY_PATH_PUBLIC}:/root/.ssh/authorized_keys:ro
+      - ${GITHUB_AUTH_SSH_KEY_PATH_PRIVATE}:/root/.ssh/github_auth_key
+      - ${GITHUB_AUTH_SSH_KEY_PATH_PUBLIC}:/root/.ssh/github_auth_key.pub
+      - ${GITHUB_SIGNING_SSH_KEY_PATH_PRIVATE}:/root/.ssh/github_signing_key
+      - ${GIT_ALLOWED_SIGNERS_PATH}:/root/.ssh/allowed_signers
+      - ${SSH_KEY_PATH_PUBLIC}:/root/.ssh/authorized_keys
+    command: ["bash", "/usr/local/bin/startup.sh"]
     ports:
       - 2202:2202

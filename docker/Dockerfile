@@ -51,6 +51,9 @@ RUN git config --global user.name "$GIT_USER_NAME"
 ARG GIT_USER_EMAIL
 RUN git config --global user.email "$GIT_USER_EMAIL"
 
+COPY startup.sh /usr/local/bin/startup.sh
+RUN chmod +x /usr/local/bin/startup.sh
+
 # Copy entrypoint script into container and make it executable
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
