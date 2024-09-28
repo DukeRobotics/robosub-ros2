@@ -6,6 +6,7 @@ RUN apt update
 RUN apt install -y --no-install-recommends openssh-server
 RUN apt install -y --no-install-recommends tini
 RUN apt install -y --no-install-recommends snapd
+RUN apt install -y --no-install-recommends nano
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-serial
