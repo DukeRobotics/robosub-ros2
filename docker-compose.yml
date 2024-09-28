@@ -3,9 +3,15 @@ services:
     build:
       context: ./docker
       dockerfile: Dockerfile
+      args:
+        GIT_USER_NAME: ${GIT_USER_NAME}
+        GIT_USER_EMAIL: ${GIT_USER_EMAIL}
     container_name: robosub-ros2
     tty: true
     volumes:
       - ./:/root/dev/robosub-ros2
+      - ${GITHUB_AUTH_SSH_KEY_PATH_PRIVATE}:/root/.ssh/github_auth_key:ro
+      - ${GITHUB_AUTH_SSH_KEY_PATH_PUBLIC}:/root/.ssh/github_auth_key.pub:ro
+      - ${GITHUB_SIGNING_SSH_KEY_PATH}:/root/.ssh/github_signing_key:ro
     ports:
       - 2202:2202
