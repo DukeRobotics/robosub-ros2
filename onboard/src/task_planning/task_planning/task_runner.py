@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
+"""TODO."""
 
-import tf2_ros
 import math
-from tqdm import tqdm
+import time
 
-from task import Task, TaskStatus, TaskUpdatePublisher
-from interface.controls import Controls
-from interface.state import State
-from interface.cv import CV
 import comp_tasks
+
+from interface.controls import Controls
+from interface.cv import CV
+from interface.state import State
+
 import rclpy
 from rclpy.node import Node
+
+from task import Task, TaskStatus, TaskUpdatePublisher
+
+import tf2_ros
+
+from tqdm import tqdm
 
 
 class TaskPlanning(Node):
@@ -20,14 +27,12 @@ class TaskPlanning(Node):
 
     def __init__(self):
         """TODO."""
-
         self.node = super().__init__(self.NODE_NAME)
         self.declare_parameter('bypass', False)
         self.declare_parameter('untethered', False)
 
     def main(self):
         """TODO."""
-
         main_initialized = False
         bypass = self.get_parameter('bypass').get_parameter_value().bool_value
         untethered = self.get_parameter('untethered').get_parameter_value().bool_value
@@ -35,9 +40,9 @@ class TaskPlanning(Node):
         # When rospy is shutdown, if main finished initializing, publish that it has closed
         def publish_close():
             if main_initialized:
-                TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, "main", TaskStatus.CLOSED, None)
+                TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
 
-        rospy.on_shutdown(publish_close)
+        rclpy.shutdown_callback(publish_close)
 
         # Initialize transform buffer and listener
         tfBuffer = tf2_ros.Buffer()
@@ -52,13 +57,13 @@ class TaskPlanning(Node):
         TaskUpdatePublisher()
 
         # Wait one second for all publishers and subscribers to start
-        rospy.sleep(1)
+        time.sleep(1)
 
         # Ensure transform from odom to base_link is available
         try:
-            _ = tfBuffer.lookup_transform('odom', 'base_link', rospy.Time(), rospy.Duration(15))
+            _ = tfBuffer.lookup_transform('odom', 'base_link', rclpy.time.Time(), rclpy.duration(seconds=15))
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            rospy.logerr("Failed to get transform")
+            self.get_logger().error('Failed to get transform')
             return
 
         # Ensure state is available
@@ -66,7 +71,7 @@ class TaskPlanning(Node):
             pass
 
         # Main has initialized
-        TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, "main", TaskStatus.INITIALIZED, None)
+        TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.INITIALIZED, None)
         main_initialized = True
 
         # Run tasks
@@ -86,8 +91,8 @@ class TaskPlanning(Node):
 
                 # comp_tasks.align_path_marker(direction=-1, parent=Task.MAIN_ID),
                 # comp_tasks.center_path_marker(parent=Task.MAIN_ID),
-                # comp_tasks.yaw_to_cv_object('path_marker', yaw_threshold=math.radians(5), direction=-1, depth_level=0.5,
-                #                             parent=Task.MAIN_ID),
+                # comp_tasks.yaw_to_cv_object('path_marker', yaw_threshold=math.radians(5), direction=-1,
+                #                             depth_level=0.5, parent=Task.MAIN_ID),
                 # comp_tasks.dead_reckoning_path_marker_to_bin(maximum_distance=4, parent=Task.MAIN_ID),
                 # comp_tasks.path_marker_to_pink_bin(maximum_distance=6, parent=Task.MAIN_ID),
                 # comp_tasks.buoy_to_octagon(direction=1, move_forward=0, parent=Task.MAIN_ID),
@@ -102,7 +107,7 @@ class TaskPlanning(Node):
             if untethered:
                 self.get_logger().info('Countdown started...')
                 for i in tqdm(range(10, 0, -1)):
-                    rospy.sleep(1)
+                    time.sleep(1)
                     if not rclpy.ok():
                         break
                 Controls().call_enable_controls(True)
@@ -110,12 +115,12 @@ class TaskPlanning(Node):
             self.get_logger().info('Running tasks.')
 
             # Step through tasks, stopping if rospy is shutdown
-            rate = rospy.Rate(30)
+            rate = self.create_rate(30)
             for t in tasks:
-                while not t.done and not rclpy.ok():
+                while not t.done and rclpy.ok():
                     t.step()
                     rate.sleep()
-                if rclpy.ok():
+                if not rclpy.ok():
                     break
 
             if untethered:
@@ -124,13 +129,13 @@ class TaskPlanning(Node):
         except BaseException as e:
 
             # Main has errored
-            TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, "main", TaskStatus.ERRORED, e)
+            TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.ERRORED, e)
             raise
 
         else:
 
             # Main has returned
-            TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, "main", TaskStatus.RETURNED, None)
+            TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.RETURNED, None)
 
 
 def main(args=None):
