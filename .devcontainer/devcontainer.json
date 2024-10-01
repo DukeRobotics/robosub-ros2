@@ -1,6 +1,6 @@
 {
     "name": "RoboSub ROS2",
-    "dockerComposeFile": "../docker-compose.yml",
+    "dockerComposeFile": "../docker-compose-with-git.yml",
     "service": "robosub-ros2",
     "workspaceFolder": "/root/dev/robosub-ros2",
     "initializeCommand": "/bin/bash ./docker-build.sh",
@@ -25,15 +25,18 @@
                 "ms-vscode-remote.vscode-remote-extensionpack",
                 "ms-vscode.cpptools-extension-pack",
                 "ms-vsliveshare.vsliveshare",
-                "redhat.vscode-yaml"
+                "redhat.vscode-yaml",
+                "yahyabatulu.vscode-markdown-alert"
             ],
             "settings": {
                 // File and editor-related settings
                 "files.trimTrailingWhitespace": true,
                 "files.eol": "\n",
-                "editor.rulers": [
-                    120
-                ],
+                "[python]": {
+                    "editor.rulers": [
+                        120
+                    ]
+                },
                 "[ui]": {
                     "editor.tabSize": 2
                 },
@@ -65,6 +68,6 @@
                     }
                 }
             }
-        },
+        }
     }
 }
