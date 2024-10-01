@@ -19,4 +19,4 @@ if [ "$NO_GIT" != "true" ]; then
 fi
 
 # Build the Docker image with the SSH keys passed as build arguments
-docker compose up -d --build
+docker compose -f docker-compose-with-git.yml up -d --build
