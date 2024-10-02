@@ -1,5 +1,5 @@
 # Duke Robotics Club - RoboSub ROS 2
-The Duke Robotics Club is a student organization of [Duke University](https://duke.edu) that develops Autonomous Underwater Vehicles (AUVs) for the [RoboSub](https://robosub.org) competition. Check out [our website](https://dukerobotics.org) for more information about our club and projects.
+The Duke Robotics Club is a student organization of [Duke University](https://duke.edu) that develops Autonomous Underwater Vehicles (AUVs) for the [RoboSub](https://robosub.org) competition. Check out [our website](https://duke-robotics.com) for more information about our club and projects.
 
 This repository contains all code required for running and testing our AUVs. The code is built on the [Robot Operating System (ROS) 2](https://github.com/ros2) framework. We use the [Jazzy Jalisco](https://docs.ros.org/en/jazzy) distribution of ROS 2.
 
@@ -24,12 +24,19 @@ We are currently in the process of migrating our codebase from ROS 1 to ROS 2. T
     - You **must** sign commits with a SSH key. Using GPG keys or other signing methods is **not** supported.
     - Follow the instructions in the [GitHub documentation](https://docs.github.com/en/github/authenticating-to-github/managing-commit-signature-verification) to set up commit signing.
 2. Set up allowed signers.
+    - This file enables git to distinguish which commits were signed by you and which were signed by others. This file is **required** to set up the Docker container.
     - Create a file called `allowed_signers` in the `~/.ssh` directory.
     - Run the following command to copy your email and _public_ signing key to the `allowed_signers` file:
         ```bash
         echo "$(git config user.email) $(cat PATH_TO_PUBLIC_KEY)" >> ~/.ssh/allowed_signers
         ```
         - Replace `PATH_TO_PUBLIC_KEY` with the path to your _public_ signing key.
+        - You can run `git config user.signingkey` to get the path to your _private_ signing key. Typically, the path to the _public_ key is the same as the path to the _private_ key with `.pub` appended to the end.
+    - Run the following command to tell git about the `allowed_signers` file:
+        ```bash
+        git config --global gpg.ssh.allowedSigners ~/.ssh/allowed_signers
+        ```
+    - In any repo on your computer, you can run `git log --show-signature` and git will show which commits were signed by you.
 3. If you're on Windows:
     - Turn off `autocrlf` by running the following command in Git Bash:
         ```bash
@@ -47,7 +54,7 @@ We are currently in the process of migrating our codebase from ROS 1 to ROS 2. T
 
 ### Set Up the Dotenv File
 Create a file in the root of the repository called `.env` with the following contents. Populate the variables with the appropriate values after the `=` sign.:
-```bash
+```
 GITHUB_AUTH_SSH_KEY_PRIV_PATH=
 GITHUB_AUTH_SSH_KEY_PUB_PATH=
 GITHUB_SIGNING_SSH_KEY_PRIV_PATH=
@@ -65,19 +72,20 @@ NO_GIT=false
 > If your SSH keys are **not** located in plaintext files on your computer, then do **not** include the variables above in `.env`. Instead, include only `NO_GIT=true`.
 >
 > This disables git authentication and signing inside the Docker container. This is useful for CI/CD pipelines or if you have your SSH keys stored in encrypted files.
->
-> With `NO_GIT=true`, do **not** run `./docker-build.sh` to start the Docker container. Instead, run `docker compose up -d --build`.
 
 ### Set Up the Docker Container
+Make sure you have Docker running on your machine. Then, follow the instructions below to set up the Docker container.
+
 #### Using VS Code Dev Containers
 If you're using VS Code and have the Dev Containers extension installed:
 
-1. Open the Command Palette (`Ctrl/Cmd + Shift + P`).
-2. Run the `Dev Containers: Reopen in Container` command.
-3. Wait for the container to finish building.
-4. Now, you're ready to start developing!
+1. Open the repo in VS Code.
+2. Open the Command Palette (`Ctrl/Cmd + Shift + P`).
+3. Run the `Dev Containers: Reopen in Container` command.
+4. Wait for the container to finish building.
+5. Now, you're ready to start developing!
     - VS Code is automatically configured with helpful extensions and settings.
-    - Any changes you make in the `/root/dev/robosub-ros2` directory are reflected in the repository on your host machine.
+    - Any changes you make in the `/root/dev/robosub-ros2` directory in the container are reflected in the repository on your host machine.
     - Any terminals you open in VS Code are automatically connected to the Docker container.
     - To open a file or directory in the container in VS Code, run the following command in the integrated terminal:
         ```bash
@@ -86,9 +94,9 @@ If you're using VS Code and have the Dev Containers extension installed:
         - Replace `PATH_TO_FILE_OR_DIRECTORY` with the path to the file or directory you want to open in VS Code.
         - If it is a file, the file will open in the current VS Code window.
         - If it is a directory, a new VS Code window will open with the directory as the workspace.
-    - If you set `NO_GIT=false` in the `.env` file, you can make signed commits and pull/push changes to remote in the container.
+    - If you set `NO_GIT=false` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
     - You must build the packages in the container before running the code. See the [Build Packages](#build-packages) section for more information.
-5. When you're done, simply close the VS Code window to stop the container.
+6. When you're done, simply close the VS Code window to stop the container.
 
 #### Without VS Code Dev Containers
 If you're **not** using VS Code or do **not** have the Dev Containers extension installed:
@@ -97,15 +105,16 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
     ```bash
     ./docker-build.sh
     ```
+    - If you set `NO_GIT=true` in the `.env` file, then run the following command instead: `docker compose up -d --build`.
 3. Once the container is running, access its shell by running:
     ```bash
     ssh -p 2202 root@localhost
     ```
 4. Now, you're ready to start developing!
     - Any changes you make in the repository on your host machine are reflected in the `/root/dev/robosub-ros2` directory in the Docker container.
-    - To open additional terminals in the container, open a new terminal and run the `ssh` command above.
-    - If you set `NO_GIT=false` in the `.env` file, you can make signed commits and pull/push changes to remote.
+    - If you set `NO_GIT=false` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
     - You must build the packages in the container before running the code. See the [Build Packages](#build-packages) section for more information.
+    - To open additional terminals in the container, open a new terminal and run the `ssh` command above.
 5. When you're done, open a new terminal, navigate to the root of the repository, and run:
     ```bash
     docker compose down
