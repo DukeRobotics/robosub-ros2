@@ -19,6 +19,9 @@ class CV:
         cv_data: Dictionary of the data of the objects
     """
 
+    ###
+    # Constants
+    ###
     MODELS_PATH = "package://cv/models/depthai_models.yaml"
     CV_CAMERA = "front"
     # TODO: We may want a better way to sync this between here and the cv node
@@ -36,12 +39,23 @@ class CV:
     MONO_CAM_SENSOR_SIZE = (3.054, 1.718)  # Width, height in mm
     MONO_CAM_FOCAL_LENGTH = 2.65  # Focal length in mm
 
+
+
+    ###
+    # Initialization
+    ###
     def __init__(self, node, bypass: bool = False):
+        """
+        Initialize the CV interface
+        """
+        super().__init__(self.NODE_NAME)
+        self.declare_parameter('bypass', False)
+        self.declare_parameter('untethered', False)
         self.cv_data = {}
         self.bypass = bypass
 
         with open(rr.get_filename(self.MODELS_PATH, use_protocol=False)) as f:
-            model = yaml.safe_load(f)[self.CV_MODEL]
+            model = yaml.safe_load(f)[self.CV_MODEL] # load model from yaml file
 
             for model_class in model['classes']:
                 self.cv_data[model_class] = None
@@ -326,3 +340,26 @@ class CV:
         pose.orientation.z = 0
         pose.orientation.w = 1
         return pose
+
+
+
+
+def main(args=None):
+    # ROS2 node initialization
+    rclpy.init(args=args)
+    cv = CV()
+    
+    try:
+        rclpy.spin(task_planning)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        task_planning.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
+
+
+if __name__ == '__main__':
+    main()
