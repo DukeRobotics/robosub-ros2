@@ -14,8 +14,8 @@ We are currently in the process of migrating our codebase from ROS 1 to ROS 2. T
     - [Linux](https://docs.docker.com/desktop/install/linux/)
 2. Git Bash (required for Windows)
     - [Git for Windows](https://gitforwindows.org)
-    > [!IMPORTANT]
-    > If you're using Windows, you **must use Git Bash** to run all commands below. The commands are **not** compatible with PowerShell or Command Prompt.
+> [!IMPORTANT]
+> If you're using Windows, you **must use Git Bash** to run all commands below. The commands are **not** compatible with PowerShell or Command Prompt.
 2. [Visual Studio Code](https://code.visualstudio.com) (recommended)
     - [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension (recommended)
 
