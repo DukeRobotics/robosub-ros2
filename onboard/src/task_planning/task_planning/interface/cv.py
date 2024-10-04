@@ -1,4 +1,5 @@
-import rospy
+import rclpy
+from rclpy.node import Node
 import yaml
 import numpy as np
 import resource_retriever as rr
@@ -54,46 +55,156 @@ class CV:
         self.cv_data = {}
         self.bypass = bypass
 
+        # Load the model from the yaml file
         with open(rr.get_filename(self.MODELS_PATH, use_protocol=False)) as f:
-            model = yaml.safe_load(f)[self.CV_MODEL] # load model from yaml file
+            model = yaml.safe_load(f)[self.CV_MODEL]
 
             for model_class in model['classes']:
                 self.cv_data[model_class] = None
                 topic = f"{model['topic']}{self.CV_CAMERA}/{model_class}"
-                rospy.Subscriber(topic, CVObject, self._on_receive_cv_data, model_class)
+                self.create_subscription(
+                    CVObject,
+                    topic,
+                    lambda msg, model_class=model_class: self._on_receive_cv_data(msg, model_class),
+                    10
+                )
 
-        rospy.Subscriber("/cv/bottom/lane_marker_angle", Float64, self._on_receive_lane_marker_angle)
+        # Subscribe to the lane marker angle
+        self.create_subscription(
+            Float64,
+            "/cv/bottom/lane_marker_angle", 
+            self._on_receive_lane_marker_angle,
+            10
+            )
         self.lane_marker_angles = []
 
-        rospy.Subscriber("/cv/bottom/lane_marker_dist", Float64, self._on_receive_lane_marker_dist)
+        # Subscribe to the lane marker dist
+        self.create_subscription(
+            Float64,
+            "/cv/bottom/lane_marker_dist", 
+            self._on_receive_lane_marker_dist,
+            10
+            )
         self.lane_marker_dists = []
 
-        rospy.Subscriber("/cv/bottom/lane_marker", RectInfo, self._on_receive_lane_marker_info)
+        # Subscribe to the lane marker info
+        self.create_subscription(
+            RectInfo,
+            "/cv/bottom/lane_marker", 
+            self._on_receive_lane_marker_info
+            ,10
+            )
         self.lane_marker_heights = []
 
-        self.lane_marker_angle_publisher = rospy.Publisher("/task_planning/cv/bottom/lane_marker_angle",
-                                                           Float64, queue_size=1)
+        # Create a publisher for the lane marker angle
+        self.lane_marker_angle_publisher = rclpy.create_publisher(
+            Float64,
+            "/task_planning/cv/bottom/lane_marker_angle",
+            1
+            )
 
-        rospy.Subscriber("/cv/front_usb/buoy/bounding_box", CVObject, self._on_receive_cv_data, "buoy")
+        # Subscribe to the front usb buoy bounding box
+        rclpy.create_subscription(
+            CVObject,
+            "/cv/front_usb/buoy/bounding_box",  
+            lambda msg: self._on_receive_cv_data(msg, "buoy"),
+            10
+            )
 
-        rospy.Subscriber('/cv/front/gate_red_cw', CVObject, self._on_receive_cv_data, "gate_red_cw")
-        rospy.Subscriber('/cv/front/gate_whole', CVObject, self._on_receive_cv_data, "gate_whole")
+        # Subscribe to the front gate red cw bounding box
+        rclpy.create_subscription(
+            CVObject,
+            '/cv/front/gate_red_cw', 
+            lambda msg: self._on_receive_cv_data(msg, "gate_red_cw"), 
+            10
+            )
+        
+        # Subscribe to the front gate whole
+        rclpy.create_subscription(
+            CVObject,
+            '/cv/front/gate_whole',  
+            lambda msg: self._on_receive_cv_data(msg, "gate_whole"), 
+            10
+            )
 
-        rospy.Subscriber("/cv/bottom/bin_blue/bounding_box", CVObject, self._on_receive_cv_data, "bin_blue")
-        rospy.Subscriber("/cv/bottom/bin_red/bounding_box", CVObject, self._on_receive_cv_data, "bin_red")
-        rospy.Subscriber("/cv/bottom/bin_center/bounding_box", CVObject, self._on_receive_cv_data, "bin_center")
+        # Subscribe to the bottom bin blue bounding box
+        rclpy.create_subscription(
+            CVObject,
+            "/cv/bottom/bin_blue/bounding_box", 
+            lambda msg: self._on_receive_cv_data(msg, "bin_blue"), 
+            10
+            )
+        
+        # Subscribe to the bottom bin red bounding box
+        rclpy.create_subscription(
+            CVObject,
+            "/cv/bottom/bin_red/bounding_box", 
+            lambda msg: self._on_receive_cv_data(msg, "bin_red"), 
+            10
+            )
+        
+        # Subscribe to the bottom bin center bounding box
+        rclpy.create_subscription(
+            CVObject, 
+            "/cv/bottom/bin_center/bounding_box", 
+            lambda msg: self._on_receive_cv_data(msg, "bin_center"), 
+            10
+            )
 
-        rospy.Subscriber("/cv/bottom/bin_blue/distance", Point, self._on_receive_distance_data, "bin_blue")
-        rospy.Subscriber("/cv/bottom/bin_red/distance", Point, self._on_receive_distance_data, "bin_red")
-        rospy.Subscriber("/cv/bottom/bin_center/distance", Point, self._on_receive_distance_data, "bin_center")
+        rclpy.create_subscription(
+            Point, 
+            "/cv/bottom/bin_blue/distance", 
+            lambda msg: self._on_receive_cv_data(msg, "bin_blue"), 
+            10
+            )
+        
+        rclpy.create_subscription(
+            Point, 
+            "/cv/bottom/bin_red/distance", 
+            lambda msg: self._on_receive_cv_data(msg, "bin_red"), 
+            10
+            )
+        
+        rclpy.create_subscription(
+            Point, 
+            "/cv/bottom/bin_center/distance", 
+            lambda msg: self._on_receive_cv_data(msg, "bin_center"), 
+            10
+            )
 
         self.bin_distances = {object_type: {"x": [], "y": []} for object_type in ["bin_red", "bin_blue"]}
 
-        rospy.Subscriber("/cv/bottom/path_marker/bounding_box", CVObject, self._on_receive_cv_data, "path_marker")
-        rospy.Subscriber("/cv/bottom/path_marker/distance", Point, self._on_receive_distance_data, "path_marker")
+        # Subscribe to the bottom path marker bounding box
+        rclpy.create_subscription(
+            CVObject,
+            "/cv/bottom/path_marker/bounding_box",  
+            lambda msg: self._on_receive_cv_data(msg, "path_marker"),
+            10
+            )
+        
+        # Subscribe to the bottom path marker distance
+        rclpy.create_subscription(
+            Point,
+            "/cv/bottom/path_marker/distance",  
+            lambda msg: self._on_receive_cv_data(msg, "path_marker"),
+            10
+            )
 
-        rospy.Subscriber("/cv/front/pink_bins/bounding_box", CVObject, self._on_receive_cv_data, "bin_pink_front")
-        rospy.Subscriber("/cv/bottom/pink_bins/bounding_box", CVObject, self._on_receive_cv_data, "bin_pink_bottom")
+        # Subscribe to the front pink bins bounding box
+        rclpy.create_subscription(
+            CVObject,
+            "/cv/front/pink_bins/bounding_box", 
+            lambda msg: self._on_receive_cv_data(msg, "bin_pink_front"),
+            10
+            )
+        
+        # Subscribe to the bottom pink bins bounding box
+        rclpy.create_subscription(
+            CVObject,
+            "/cv/bottom/pink_bins/bounding_box",  
+            lambda msg: self._on_receive_cv_data(msg, "bin_pink_bottom"),
+            10
+            )
 
     def _on_receive_cv_data(self, cv_data: CVObject, object_type: str) -> None:
         """
