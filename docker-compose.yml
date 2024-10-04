@@ -1,9 +1,12 @@
 services:
   robosub-ros2:
+    image: robosub-ros2
     build:
       context: ./docker
       dockerfile: Dockerfile
-    container_name: robosub-ros2
+      args:
+        NO_GIT: ${NO_GIT}
+    container_name: onboard2
     tty: true
     volumes:
       - ./:/root/dev/robosub-ros2
