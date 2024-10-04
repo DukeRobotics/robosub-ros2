@@ -206,6 +206,11 @@ class CV:
             10
             )
 
+
+
+    ###
+    # _on_receive_cv_data callback
+    ###
     def _on_receive_cv_data(self, cv_data: CVObject, object_type: str) -> None:
         """
         Parse the received CV data and store it
@@ -216,6 +221,11 @@ class CV:
         """
         self.cv_data[object_type] = cv_data
 
+
+
+    ###
+    # _on_receive_distance_data callback
+    ###
     def _on_receive_distance_data(self, distance_data: Point, object_type: str, filter_len=10) -> None:
         """
         Parse the received distance data and store it
@@ -224,7 +234,8 @@ class CV:
             distance_data: The received distance data as a Point
             object_type: The name/type of the object
         """
-        # TODO: migrate all self.{object}_distances type objects into a single self.distances dictionary
+        # TODO: migrate all self.{object}_distances type objects into a 
+        #   single self.distances dictionary
         # TODO: implement a generic moving average filter
         # TODO: integrate _on_receive_lane_marker_dist
         if object_type == "path_marker":
@@ -276,6 +287,11 @@ class CV:
 
             self.cv_data["bin_angle"] = angle
 
+
+
+    ###
+    # _on_receive_lane_marker_angle callback
+    ###
     def _on_receive_lane_marker_angle(self, angle: Float64) -> None:
         """
         Parse the received angle of the blue rectangle and store it
@@ -294,6 +310,11 @@ class CV:
         self.cv_data["lane_marker_angle"] = lane_marker_angle
         self.lane_marker_angle_publisher.publish(self.cv_data["lane_marker_angle"])
 
+
+
+    ###
+    # _on_receive_lane_marker_dist callback
+    ###
     # TODO: remove this and integrate into _on_receive_distance_data
     def _on_receive_lane_marker_dist(self, dist: Float64) -> None:
         """
@@ -312,6 +333,11 @@ class CV:
         lane_marker_dist = sum(self.lane_marker_dists[skip:filter_len-skip]) / len(self.lane_marker_dists)
         self.cv_data["lane_marker_dist"] = lane_marker_dist
 
+
+
+    ###
+    # _on_receive_lane_marker_info callback
+    ###
     def _on_receive_lane_marker_info(self, lane_marker_info: RectInfo) -> None:
         """
         Parse the received info of the blue rectangle and store it
@@ -333,6 +359,11 @@ class CV:
         self.cv_data["lane_marker_touching_top"] = lane_marker_info.center_y - lane_marker_info.height / 2 <= 0
         self.cv_data["lane_marker_touching_bottom"] = lane_marker_info.center_y + lane_marker_info.height / 2 >= 480
 
+
+
+    ###
+    # _on_receive_gate_red_cw_detection_depthai callback
+    ###
     def _on_receive_gate_red_cw_detection_depthai(self, msg: CVObject) -> None:
         """
         Parse the received detection of the red gate and store it
@@ -346,6 +377,11 @@ class CV:
             "z": msg.coords.z
         }
 
+
+
+    ###
+    # _on_receive_gate_whole_detection_depthai callback
+    ###
     def _on_receive_gate_whole_detection_depthai(self, msg: CVObject) -> None:
         """
         Parse the received detection of the whole gate and store it
@@ -361,6 +397,11 @@ class CV:
             "secs": msg.header.stamp.secs
         }
 
+
+
+    ###
+    # _on_receive_gate_detection callback
+    ###
     def _on_receive_gate_detection(self, msg: Detection2DArray) -> None:
         for detection in msg.detections:
             for result in detection.results:
@@ -369,8 +410,8 @@ class CV:
                 elif result.id == 1:  # gate_red_cw
                     self.cv_data["gate_red_cw_bbox"] = detection.bbox
 
-        highest_confidence_blue = -1
-        highest_confidence_red = -1
+        highest_confidence_blue = -1 # why -1?
+        highest_confidence_red = -1 # why -1?
         best_bbox_blue = None
         best_bbox_red = None
 
@@ -390,9 +431,14 @@ class CV:
             self.cv_data["gate_red_cw_bbox"] = best_bbox_red
             self.compute_gate_properties("gate_red_cw")
 
+
+
+    ###
+    # compute_gate_properties
+    ###
     def compute_gate_properties(self, gate_class):
         if gate_class + "_bbox" not in self.cv_data or self.cv_data[gate_class + "_bbox"] is None:
-            rospy.logwarn(f"No bounding box data available for {gate_class}")
+            self.get_logger().warn(f"No bounding box data available for {gate_class}")
             return None
 
         bbox = self.cv_data[gate_class + "_bbox"]
@@ -423,14 +469,29 @@ class CV:
             "z": dist_y_meters,
         }
 
+
+
+    ###
+    # mono_cam_dist_with_obj_width
+    ###
     def mono_cam_dist_with_obj_width(self, width_pixels, width_meters):
         return (self.MONO_CAM_FOCAL_LENGTH * width_meters * self.MONO_CAM_IMG_SHAPE[0]) \
             / (width_pixels * self.MONO_CAM_SENSOR_SIZE[0])
 
+
+
+    ###
+    # mono_cam_dist_with_obj_height
+    ###
     def mono_cam_dist_with_obj_height(self, height_pixels, height_meters):
         return (self.MONO_CAM_FOCAL_LENGTH * height_meters * self.MONO_CAM_IMG_SHAPE[1]) \
             / (height_pixels * self.MONO_CAM_SENSOR_SIZE[1])
 
+
+
+    ###
+    # get_pose
+    ###
     def get_pose(self, name: str) -> Pose:
         """
         Get the pose of a detected object
