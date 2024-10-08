@@ -16,6 +16,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run docker-build.sh
+        env:
+          NO_GIT: true
         run: |
           ./docker-build.sh
 
