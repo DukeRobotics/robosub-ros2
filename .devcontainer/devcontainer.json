@@ -11,9 +11,10 @@
                 "cschlosser.doxdocgen",
                 "dbaeumer.vscode-eslint",
                 "eamodio.gitlens",
-                "GitHub.copilot",
-                "GitHub.copilot-chat",
-                "GitHub.vscode-pull-request-github",
+                "github.copilot",
+                "github.copilot-chat",
+                "github.vscode-github-actions",
+                "github.vscode-pull-request-github",
                 "jeff-hykin.better-cpp-syntax",
                 "mechatroner.rainbow-csv",
                 "ms-azuretools.vscode-docker",
@@ -26,6 +27,7 @@
                 "ms-vscode.cpptools-extension-pack",
                 "ms-vsliveshare.vsliveshare",
                 "redhat.vscode-yaml",
+                "timonwong.shellcheck",
                 "yahyabatulu.vscode-markdown-alert"
             ],
             "settings": {
