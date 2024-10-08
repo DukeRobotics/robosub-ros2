@@ -12,18 +12,30 @@ clean_workspace() {
     rm -rf "$workspace_dir/build" "$workspace_dir/install" "$workspace_dir/log"
 }
 
+# Function to build workspace or package
+build_workspace() {
+    workspace_dir=$1
+    package_name=$2
+
+    cd "$workspace_dir"
+    if [ -z "$package_name" ]; then
+        echo "Building workspace: $workspace_dir"
+        colcon build --symlink-install --executor sequential
+    else
+        echo "Building package '$package_name' in workspace: $workspace_dir"
+        colcon build --symlink-install --packages-select "$package_name"
+    fi
+    source install/setup.bash
+}
+
 # Main script logic
 if [ "$1" == "core" ]; then
     # Build all packages in core workspace
-    cd "$CORE_WS"
-    colcon build --symlink-install --executor sequential
-    source install/setup.bash
+    build_workspace "$CORE_WS"
 
 elif [ "$1" == "onboard" ]; then
     # Build all packages in onboard workspace
-    cd "$ONBOARD_WS"
-    colcon build --symlink-install --executor sequential
-    source install/setup.bash
+    build_workspace "$ONBOARD_WS"
 
 elif [ "$1" == "clean" ]; then
     # Clean workspaces
@@ -38,17 +50,11 @@ elif [ "$1" == "clean" ]; then
 
 elif [ -n "$1" ]; then
     # Build a specific package in the onboard workspace
-    cd "$ONBOARD_WS"
-    colcon build --symlink-install --packages-select "$1"
-    source install/setup.bash
-
+    build_workspace "$ONBOARD_WS" "$1"
 else
     # Build all packages in both core and onboard workspaces
-    cd "$CORE_WS"
-    colcon build --symlink-install --executor sequential
-    cd "$ONBOARD_WS"
-    colcon build --symlink-install --executor sequential
-    source install/setup.bash
+    build_workspace "$CORE_WS"
+    build_workspace "$ONBOARD_WS"
 fi
 
 # Reload bashrc and return to original directory
