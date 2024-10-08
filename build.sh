@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Store the current working directory
 original_cwd=$(pwd)
 
@@ -17,7 +19,7 @@ build_workspace() {
     workspace_dir=$1
     package_name=$2
 
-    cd "$workspace_dir"
+    cd "$workspace_dir" || exit
     if [ -z "$package_name" ]; then
         echo "Building workspace: $workspace_dir"
         colcon build --symlink-install --executor sequential
@@ -58,5 +60,5 @@ else
 fi
 
 # Reload bashrc and return to original directory
-source ~/.bashrc
-cd "$original_cwd"
+source /root/.bashrc
+cd "$original_cwd" || exit
