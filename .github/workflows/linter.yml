@@ -23,6 +23,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LINTER_RULES_PATH: /
           VALIDATE_BASH: true
-          VALIDATE_BASH_EXEC: true
           VALIDATE_PYTHON_FLAKE8: true
           VALIDATE_CLANG_FORMAT: true
