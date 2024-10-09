@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC1091
 
 # Store the current working directory
 original_cwd=$(pwd)
