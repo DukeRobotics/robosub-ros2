@@ -25,3 +25,4 @@ jobs:
           VALIDATE_BASH: true
           VALIDATE_PYTHON_FLAKE8: true
           VALIDATE_CLANG_FORMAT: true
+          CLANG_FORMAT_FILE_NAME: " "
