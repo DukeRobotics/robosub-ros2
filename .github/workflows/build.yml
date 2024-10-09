@@ -15,21 +15,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Test subchecks
-        run: |
-          echo "Running Step 1..."
-          echo "::notice::Sub-check1: Step 1 completed successfully"
-          echo "Running Step 2..."
-          echo "::warning file=app.py,line=42::Sub-check2: Possible issue detected in Step 2"
-          echo "Running Step 3..."
-          echo "::error file=main.py,line=21::Sub-check3: Error encountered in Step 3"
-
       - name: Create .env file with NO_GIT
         run: echo "NO_GIT=true" > .env
 
       - name: Run docker-build.sh
         run: |
           ./docker-build.sh
+
+      - name: Linter
+        run: |
+          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/linter.sh
 
       - name: Build ROS2
         run: |
