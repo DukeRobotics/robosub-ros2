@@ -15,12 +15,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Create .env file with NO_GIT
+        run: echo "NO_GIT=true" > .env
+
       - name: Run docker-build.sh
-        env:
-          NO_GIT: true
         run: |
           ./docker-build.sh
 
-      - name: Run build.sh inside Docker container
+      - name: Build ROS2
         run: |
           docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build.sh
