@@ -28,6 +28,8 @@ class CV:
     # TODO: We may want a better way to sync this between here and the cv node
     CV_MODEL = "yolov7_tiny_2023_main"
 
+    QUEUE_SIZE = 10
+
     FRAME_WIDTH = 640
     FRAME_HEIGHT = 320
 
@@ -62,155 +64,137 @@ class CV:
             for model_class in model['classes']:
                 self.cv_data[model_class] = None
                 topic = f"{model['topic']}{self.CV_CAMERA}/{model_class}"
-                self.create_subscription(
+                node.create_subscription(
                     CVObject,
                     topic,
                     lambda msg, model_class=model_class: self._on_receive_cv_data(msg, model_class),
-                    10
+                    self.QUEUE_SIZE
                 )
 
-        # Subscribe to the lane marker angle
-        self.create_subscription(
+        node.create_subscription(
             Float64,
             "/cv/bottom/lane_marker_angle", 
             self._on_receive_lane_marker_angle,
-            10
+            self.QUEUE_SIZE
             )
         self.lane_marker_angles = []
 
-        # Subscribe to the lane marker dist
-        self.create_subscription(
+        node.create_subscription(
             Float64,
             "/cv/bottom/lane_marker_dist", 
             self._on_receive_lane_marker_dist,
-            10
+            self.QUEUE_SIZE
             )
         self.lane_marker_dists = []
 
-        # Subscribe to the lane marker info
-        self.create_subscription(
+        node.create_subscription(
             RectInfo,
             "/cv/bottom/lane_marker", 
-            self._on_receive_lane_marker_info
-            ,10
+            self._on_receive_lane_marker_info,
+            self.QUEUE_SIZE
             )
         self.lane_marker_heights = []
 
-        # Create a publisher for the lane marker angle
-        self.lane_marker_angle_publisher = rclpy.create_publisher(
+        self.lane_marker_angle_publisher = node.create_publisher(
             Float64,
             "/task_planning/cv/bottom/lane_marker_angle",
-            1
+            self.QUEUE_SIZE
             )
 
-        # Subscribe to the front usb buoy bounding box
-        rclpy.create_subscription(
+        node.create_subscription(
             CVObject,
             "/cv/front_usb/buoy/bounding_box",  
             lambda msg: self._on_receive_cv_data(msg, "buoy"),
-            10
+            self.QUEUE_SIZE
             )
-
-        # Subscribe to the front gate red cw bounding box
-        rclpy.create_subscription(
+        
+        node.create_subscription(
             CVObject,
             '/cv/front/gate_red_cw', 
             lambda msg: self._on_receive_cv_data(msg, "gate_red_cw"), 
-            10
+            self.QUEUE_SIZE
             )
         
-        # Subscribe to the front gate whole
-        rclpy.create_subscription(
+        node.create_subscription(
             CVObject,
             '/cv/front/gate_whole',  
             lambda msg: self._on_receive_cv_data(msg, "gate_whole"), 
-            10
+            self.QUEUE_SIZE
             )
 
-        # Subscribe to the bottom bin blue bounding box
-        rclpy.create_subscription(
+        node.create_subscription(
             CVObject,
             "/cv/bottom/bin_blue/bounding_box", 
             lambda msg: self._on_receive_cv_data(msg, "bin_blue"), 
-            10
+            self.QUEUE_SIZE
             )
         
-        # Subscribe to the bottom bin red bounding box
-        rclpy.create_subscription(
+        node.create_subscription(
             CVObject,
             "/cv/bottom/bin_red/bounding_box", 
             lambda msg: self._on_receive_cv_data(msg, "bin_red"), 
-            10
+            self.QUEUE_SIZE
             )
         
-        # Subscribe to the bottom bin center bounding box
-        rclpy.create_subscription(
+        node.create_subscription(
             CVObject, 
             "/cv/bottom/bin_center/bounding_box", 
             lambda msg: self._on_receive_cv_data(msg, "bin_center"), 
-            10
+            self.QUEUE_SIZE
             )
 
-        rclpy.create_subscription(
+        node.create_subscription(
             Point, 
             "/cv/bottom/bin_blue/distance", 
             lambda msg: self._on_receive_cv_data(msg, "bin_blue"), 
-            10
+            self.QUEUE_SIZE
             )
         
-        rclpy.create_subscription(
+        node.create_subscription(
             Point, 
             "/cv/bottom/bin_red/distance", 
             lambda msg: self._on_receive_cv_data(msg, "bin_red"), 
-            10
+            self.QUEUE_SIZE
             )
         
-        rclpy.create_subscription(
+        node.create_subscription(
             Point, 
             "/cv/bottom/bin_center/distance", 
             lambda msg: self._on_receive_cv_data(msg, "bin_center"), 
-            10
+            self.QUEUE_SIZE
             )
 
         self.bin_distances = {object_type: {"x": [], "y": []} for object_type in ["bin_red", "bin_blue"]}
 
-        # Subscribe to the bottom path marker bounding box
-        rclpy.create_subscription(
+        node.create_subscription(
             CVObject,
             "/cv/bottom/path_marker/bounding_box",  
             lambda msg: self._on_receive_cv_data(msg, "path_marker"),
-            10
+            self.QUEUE_SIZE
             )
         
-        # Subscribe to the bottom path marker distance
-        rclpy.create_subscription(
+        node.create_subscription(
             Point,
             "/cv/bottom/path_marker/distance",  
             lambda msg: self._on_receive_cv_data(msg, "path_marker"),
-            10
+            self.QUEUE_SIZE
             )
 
-        # Subscribe to the front pink bins bounding box
-        rclpy.create_subscription(
+        node.create_subscription(
             CVObject,
             "/cv/front/pink_bins/bounding_box", 
             lambda msg: self._on_receive_cv_data(msg, "bin_pink_front"),
-            10
+            self.QUEUE_SIZE
             )
         
-        # Subscribe to the bottom pink bins bounding box
-        rclpy.create_subscription(
+        node.create_subscription(
             CVObject,
             "/cv/bottom/pink_bins/bounding_box",  
             lambda msg: self._on_receive_cv_data(msg, "bin_pink_bottom"),
-            10
+            self.QUEUE_SIZE
             )
 
 
-
-    ###
-    # _on_receive_cv_data callback
-    ###
     def _on_receive_cv_data(self, cv_data: CVObject, object_type: str) -> None:
         """
         Parse the received CV data and store it
@@ -222,10 +206,6 @@ class CV:
         self.cv_data[object_type] = cv_data
 
 
-
-    ###
-    # _on_receive_distance_data callback
-    ###
     def _on_receive_distance_data(self, distance_data: Point, object_type: str, filter_len=10) -> None:
         """
         Parse the received distance data and store it
@@ -288,10 +268,6 @@ class CV:
             self.cv_data["bin_angle"] = angle
 
 
-
-    ###
-    # _on_receive_lane_marker_angle callback
-    ###
     def _on_receive_lane_marker_angle(self, angle: Float64) -> None:
         """
         Parse the received angle of the blue rectangle and store it
@@ -311,10 +287,6 @@ class CV:
         self.lane_marker_angle_publisher.publish(self.cv_data["lane_marker_angle"])
 
 
-
-    ###
-    # _on_receive_lane_marker_dist callback
-    ###
     # TODO: remove this and integrate into _on_receive_distance_data
     def _on_receive_lane_marker_dist(self, dist: Float64) -> None:
         """
@@ -334,10 +306,6 @@ class CV:
         self.cv_data["lane_marker_dist"] = lane_marker_dist
 
 
-
-    ###
-    # _on_receive_lane_marker_info callback
-    ###
     def _on_receive_lane_marker_info(self, lane_marker_info: RectInfo) -> None:
         """
         Parse the received info of the blue rectangle and store it
@@ -360,10 +328,6 @@ class CV:
         self.cv_data["lane_marker_touching_bottom"] = lane_marker_info.center_y + lane_marker_info.height / 2 >= 480
 
 
-
-    ###
-    # _on_receive_gate_red_cw_detection_depthai callback
-    ###
     def _on_receive_gate_red_cw_detection_depthai(self, msg: CVObject) -> None:
         """
         Parse the received detection of the red gate and store it
@@ -378,10 +342,6 @@ class CV:
         }
 
 
-
-    ###
-    # _on_receive_gate_whole_detection_depthai callback
-    ###
     def _on_receive_gate_whole_detection_depthai(self, msg: CVObject) -> None:
         """
         Parse the received detection of the whole gate and store it
@@ -398,10 +358,6 @@ class CV:
         }
 
 
-
-    ###
-    # _on_receive_gate_detection callback
-    ###
     def _on_receive_gate_detection(self, msg: Detection2DArray) -> None:
         for detection in msg.detections:
             for result in detection.results:
@@ -432,10 +388,6 @@ class CV:
             self.compute_gate_properties("gate_red_cw")
 
 
-
-    ###
-    # compute_gate_properties
-    ###
     def compute_gate_properties(self, gate_class):
         if gate_class + "_bbox" not in self.cv_data or self.cv_data[gate_class + "_bbox"] is None:
             self.get_logger().warn(f"No bounding box data available for {gate_class}")
@@ -470,28 +422,16 @@ class CV:
         }
 
 
-
-    ###
-    # mono_cam_dist_with_obj_width
-    ###
     def mono_cam_dist_with_obj_width(self, width_pixels, width_meters):
         return (self.MONO_CAM_FOCAL_LENGTH * width_meters * self.MONO_CAM_IMG_SHAPE[0]) \
             / (width_pixels * self.MONO_CAM_SENSOR_SIZE[0])
 
 
-
-    ###
-    # mono_cam_dist_with_obj_height
-    ###
     def mono_cam_dist_with_obj_height(self, height_pixels, height_meters):
         return (self.MONO_CAM_FOCAL_LENGTH * height_meters * self.MONO_CAM_IMG_SHAPE[1]) \
             / (height_pixels * self.MONO_CAM_SENSOR_SIZE[1])
 
 
-
-    ###
-    # get_pose
-    ###
     def get_pose(self, name: str) -> Pose:
         """
         Get the pose of a detected object
@@ -512,26 +452,3 @@ class CV:
         pose.orientation.z = 0
         pose.orientation.w = 1
         return pose
-
-
-
-
-def main(args=None):
-    # ROS2 node initialization
-    rclpy.init(args=args)
-    cv = CV()
-    
-    try:
-        rclpy.spin(task_planning)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        task_planning.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
-
-
-
-
-if __name__ == '__main__':
-    main()
