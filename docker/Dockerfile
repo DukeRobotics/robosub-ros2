@@ -3,10 +3,12 @@ FROM osrf/ros:jazzy-desktop-full
 # Install packages from apt
 # Each package is installed in a separate RUN command so that each package is cached separately in Docker
 RUN apt update
-RUN apt install -y --no-install-recommends openssh-server
 RUN apt install -y --no-install-recommends tini
+RUN apt install -y --no-install-recommends openssh-server
 RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends nano
+RUN apt install -y --no-install-recommends shellcheck
+RUN apt install -y --no-install-recommends clang-format
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-serial
