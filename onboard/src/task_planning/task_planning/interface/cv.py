@@ -23,10 +23,10 @@ class CV:
     ###
     # Constants
     ###
-    MODELS_PATH = "package://cv/models/depthai_models.yaml"
-    CV_CAMERA = "front"
+    MODELS_PATH = 'package://cv/models/depthai_models.yaml'
+    CV_CAMERA = 'front'
     # TODO: We may want a better way to sync this between here and the cv node
-    CV_MODEL = "yolov7_tiny_2023_main"
+    CV_MODEL = 'yolov7_tiny_2023_main'
 
     QUEUE_SIZE = 10
 
@@ -43,11 +43,7 @@ class CV:
     MONO_CAM_FOCAL_LENGTH = 2.65  # Focal length in mm
 
 
-
-    ###
-    # Initialization
-    ###
-    def __init__(self, node, bypass: bool = False):
+    def __init__(self, node: Node, bypass: bool = False):
         """
         Initialize the CV interface
         """
@@ -63,7 +59,7 @@ class CV:
 
             for model_class in model['classes']:
                 self.cv_data[model_class] = None
-                topic = f"{model['topic']}{self.CV_CAMERA}/{model_class}"
+                topic = f'{model['topic']}{self.CV_CAMERA}/{model_class}'
                 node.create_subscription(
                     CVObject,
                     topic,
@@ -73,7 +69,7 @@ class CV:
 
         node.create_subscription(
             Float64,
-            "/cv/bottom/lane_marker_angle", 
+            '/cv/bottom/lane_marker_angle',
             self._on_receive_lane_marker_angle,
             self.QUEUE_SIZE
             )
@@ -81,7 +77,7 @@ class CV:
 
         node.create_subscription(
             Float64,
-            "/cv/bottom/lane_marker_dist", 
+            '/cv/bottom/lane_marker_dist',
             self._on_receive_lane_marker_dist,
             self.QUEUE_SIZE
             )
@@ -89,7 +85,7 @@ class CV:
 
         node.create_subscription(
             RectInfo,
-            "/cv/bottom/lane_marker", 
+            '/cv/bottom/lane_marker',
             self._on_receive_lane_marker_info,
             self.QUEUE_SIZE
             )
@@ -97,100 +93,100 @@ class CV:
 
         self.lane_marker_angle_publisher = node.create_publisher(
             Float64,
-            "/task_planning/cv/bottom/lane_marker_angle",
+            '/task_planning/cv/bottom/lane_marker_angle',
             self.QUEUE_SIZE
             )
 
         node.create_subscription(
             CVObject,
-            "/cv/front_usb/buoy/bounding_box",  
-            lambda msg: self._on_receive_cv_data(msg, "buoy"),
-            self.QUEUE_SIZE
-            )
-        
-        node.create_subscription(
-            CVObject,
-            '/cv/front/gate_red_cw', 
-            lambda msg: self._on_receive_cv_data(msg, "gate_red_cw"), 
-            self.QUEUE_SIZE
-            )
-        
-        node.create_subscription(
-            CVObject,
-            '/cv/front/gate_whole',  
-            lambda msg: self._on_receive_cv_data(msg, "gate_whole"), 
+            '/cv/front_usb/buoy/bounding_box',
+            lambda msg: self._on_receive_cv_data(msg, 'buoy'),
             self.QUEUE_SIZE
             )
 
         node.create_subscription(
             CVObject,
-            "/cv/bottom/bin_blue/bounding_box", 
-            lambda msg: self._on_receive_cv_data(msg, "bin_blue"), 
+            '/cv/front/gate_red_cw',
+            lambda msg: self._on_receive_cv_data(msg, 'gate_red_cw'),
             self.QUEUE_SIZE
             )
-        
-        node.create_subscription(
-            CVObject,
-            "/cv/bottom/bin_red/bounding_box", 
-            lambda msg: self._on_receive_cv_data(msg, "bin_red"), 
-            self.QUEUE_SIZE
-            )
-        
-        node.create_subscription(
-            CVObject, 
-            "/cv/bottom/bin_center/bounding_box", 
-            lambda msg: self._on_receive_cv_data(msg, "bin_center"), 
-            self.QUEUE_SIZE
-            )
-
-        node.create_subscription(
-            Point, 
-            "/cv/bottom/bin_blue/distance", 
-            lambda msg: self._on_receive_cv_data(msg, "bin_blue"), 
-            self.QUEUE_SIZE
-            )
-        
-        node.create_subscription(
-            Point, 
-            "/cv/bottom/bin_red/distance", 
-            lambda msg: self._on_receive_cv_data(msg, "bin_red"), 
-            self.QUEUE_SIZE
-            )
-        
-        node.create_subscription(
-            Point, 
-            "/cv/bottom/bin_center/distance", 
-            lambda msg: self._on_receive_cv_data(msg, "bin_center"), 
-            self.QUEUE_SIZE
-            )
-
-        self.bin_distances = {object_type: {"x": [], "y": []} for object_type in ["bin_red", "bin_blue"]}
 
         node.create_subscription(
             CVObject,
-            "/cv/bottom/path_marker/bounding_box",  
-            lambda msg: self._on_receive_cv_data(msg, "path_marker"),
+            '/cv/front/gate_whole',
+            lambda msg: self._on_receive_cv_data(msg, 'gate_whole'),
             self.QUEUE_SIZE
             )
-        
+
+        node.create_subscription(
+            CVObject,
+            '/cv/bottom/bin_blue/bounding_box',
+            lambda msg: self._on_receive_cv_data(msg, 'bin_blue'),
+            self.QUEUE_SIZE
+            )
+
+        node.create_subscription(
+            CVObject,
+            '/cv/bottom/bin_red/bounding_box',
+            lambda msg: self._on_receive_cv_data(msg, 'bin_red'),
+            self.QUEUE_SIZE
+            )
+
+        node.create_subscription(
+            CVObject,
+            '/cv/bottom/bin_center/bounding_box',
+            lambda msg: self._on_receive_cv_data(msg, 'bin_center'),
+            self.QUEUE_SIZE
+            )
+
         node.create_subscription(
             Point,
-            "/cv/bottom/path_marker/distance",  
-            lambda msg: self._on_receive_cv_data(msg, "path_marker"),
+            '/cv/bottom/bin_blue/distance',
+            lambda msg: self._on_receive_cv_data(msg, 'bin_blue'),
+            self.QUEUE_SIZE
+            )
+
+        node.create_subscription(
+            Point,
+            '/cv/bottom/bin_red/distance',
+            lambda msg: self._on_receive_cv_data(msg, 'bin_red'),
+            self.QUEUE_SIZE
+            )
+
+        node.create_subscription(
+            Point,
+            '/cv/bottom/bin_center/distance',
+            lambda msg: self._on_receive_cv_data(msg, 'bin_center'),
+            self.QUEUE_SIZE
+            )
+
+        self.bin_distances = {object_type: {'x': [], 'y': []} for object_type in ['bin_red', 'bin_blue']}
+
+        node.create_subscription(
+            CVObject,
+            '/cv/bottom/path_marker/bounding_box',
+            lambda msg: self._on_receive_cv_data(msg, 'path_marker'),
+            self.QUEUE_SIZE
+            )
+
+        node.create_subscription(
+            Point,
+            '/cv/bottom/path_marker/distance',
+            lambda msg: self._on_receive_cv_data(msg, 'path_marker'),
             self.QUEUE_SIZE
             )
 
         node.create_subscription(
             CVObject,
-            "/cv/front/pink_bins/bounding_box", 
-            lambda msg: self._on_receive_cv_data(msg, "bin_pink_front"),
+            '/cv/front/pink_bins/bounding_box',
+            lambda msg: self._on_receive_cv_data(msg, 'bin_pink_front'),
             self.QUEUE_SIZE
             )
-        
+
         node.create_subscription(
             CVObject,
-            "/cv/bottom/pink_bins/bounding_box",  
-            lambda msg: self._on_receive_cv_data(msg, "bin_pink_bottom"),
+            '/cv/bottom/pink_bins/bounding_box',
+            lambda msg: self._on_receive_cv_data(msg, 'bin_pink_bottom'),
             self.QUEUE_SIZE
             )
 
@@ -214,37 +210,37 @@ class CV:
             distance_data: The received distance data as a Point
             object_type: The name/type of the object
         """
-        # TODO: migrate all self.{object}_distances type objects into a 
+        # TODO: migrate all self.{object}_distances type objects into a
         #   single self.distances dictionary
         # TODO: implement a generic moving average filter
         # TODO: integrate _on_receive_lane_marker_dist
-        if object_type == "path_marker":
-            self.cv_data["path_marker_distance"] = distance_data
+        if object_type == 'path_marker':
+            self.cv_data['path_marker_distance'] = distance_data
             return
 
-        if len(self.bin_distances[object_type]["x"]) == filter_len:
-            self.bin_distances[object_type]["x"].pop(0)
-        if len(self.bin_distances[object_type]["y"]) == filter_len:
-            self.bin_distances[object_type]["y"].pop(0)
+        if len(self.bin_distances[object_type]['x']) == filter_len:
+            self.bin_distances[object_type]['x'].pop(0)
+        if len(self.bin_distances[object_type]['y']) == filter_len:
+            self.bin_distances[object_type]['y'].pop(0)
 
-        self.bin_distances[object_type]["x"].append(distance_data.x)
-        self.bin_distances[object_type]["y"].append(distance_data.y)
+        self.bin_distances[object_type]['x'].append(distance_data.x)
+        self.bin_distances[object_type]['y'].append(distance_data.y)
 
-        if "bin_red_distance" not in self.cv_data:
-            self.cv_data["bin_red_distance"] = Point()
-        if "bin_blue_distance" not in self.cv_data:
-            self.cv_data["bin_blue_distance"] = Point()
+        if 'bin_red_distance' not in self.cv_data:
+            self.cv_data['bin_red_distance'] = Point()
+        if 'bin_blue_distance' not in self.cv_data:
+            self.cv_data['bin_blue_distance'] = Point()
 
-        distance_x = sum(self.bin_distances[object_type]["x"]) / len(self.bin_distances[object_type]["x"])
-        self.cv_data[f"{object_type}_distance"].x = distance_x
+        distance_x = sum(self.bin_distances[object_type]['x']) / len(self.bin_distances[object_type]['x'])
+        self.cv_data[f'{object_type}_distance'].x = distance_x
 
-        distance_y = sum(self.bin_distances[object_type]["y"]) / len(self.bin_distances[object_type]["y"])
-        self.cv_data[f"{object_type}_distance"].y = distance_y
+        distance_y = sum(self.bin_distances[object_type]['y']) / len(self.bin_distances[object_type]['y'])
+        self.cv_data[f'{object_type}_distance'].y = distance_y
 
-        red_data = self.cv_data["bin_red_distance"]
-        blue_data = self.cv_data["bin_blue_distance"]
+        red_data = self.cv_data['bin_red_distance']
+        blue_data = self.cv_data['bin_blue_distance']
 
-        if (red_data := self.cv_data["bin_red_distance"]) and (blue_data := self.cv_data["bin_blue_distance"]):
+        if (red_data := self.cv_data['bin_red_distance']) and (blue_data := self.cv_data['bin_blue_distance']):
             red_x, red_y = red_data.x, red_data.y
             blue_x, blue_y = blue_data.x, blue_data.y
 
@@ -265,7 +261,7 @@ class CV:
             elif angle < -np.pi / 2:
                 angle += np.pi
 
-            self.cv_data["bin_angle"] = angle
+            self.cv_data['bin_angle'] = angle
 
 
     def _on_receive_lane_marker_angle(self, angle: Float64) -> None:
@@ -283,8 +279,8 @@ class CV:
         self.lane_marker_angles.append(angle.data)
 
         lane_marker_angle = sum(self.lane_marker_angles[skip:filter_len-skip]) / len(self.lane_marker_angles)
-        self.cv_data["lane_marker_angle"] = lane_marker_angle
-        self.lane_marker_angle_publisher.publish(self.cv_data["lane_marker_angle"])
+        self.cv_data['lane_marker_angle'] = lane_marker_angle
+        self.lane_marker_angle_publisher.publish(self.cv_data['lane_marker_angle'])
 
 
     # TODO: remove this and integrate into _on_receive_distance_data
@@ -303,7 +299,7 @@ class CV:
         self.lane_marker_dists.append(dist.data)
 
         lane_marker_dist = sum(self.lane_marker_dists[skip:filter_len-skip]) / len(self.lane_marker_dists)
-        self.cv_data["lane_marker_dist"] = lane_marker_dist
+        self.cv_data['lane_marker_dist'] = lane_marker_dist
 
 
     def _on_receive_lane_marker_info(self, lane_marker_info: RectInfo) -> None:
@@ -321,11 +317,11 @@ class CV:
         self.lane_marker_heights.append(lane_marker_info.height)
 
         lane_marker_height = sum(self.lane_marker_heights[skip:filter_len-skip]) / len(self.lane_marker_heights)
-        self.cv_data["lane_marker_height"] = lane_marker_height
+        self.cv_data['lane_marker_height'] = lane_marker_height
 
         # Based on lane_marker_info.center_y and height, determine if lane marker is touching top and/or bottom of frame
-        self.cv_data["lane_marker_touching_top"] = lane_marker_info.center_y - lane_marker_info.height / 2 <= 0
-        self.cv_data["lane_marker_touching_bottom"] = lane_marker_info.center_y + lane_marker_info.height / 2 >= 480
+        self.cv_data['lane_marker_touching_top'] = lane_marker_info.center_y - lane_marker_info.height / 2 <= 0
+        self.cv_data['lane_marker_touching_bottom'] = lane_marker_info.center_y + lane_marker_info.height / 2 >= 480
 
 
     def _on_receive_gate_red_cw_detection_depthai(self, msg: CVObject) -> None:
@@ -335,10 +331,10 @@ class CV:
         Args:
             msg: The received detection of the red gate
         """
-        self.cv_data["gate_red_cw_properties"] = {
-            "x": msg.coords.x,
-            "y": msg.coords.y,
-            "z": msg.coords.z
+        self.cv_data['gate_red_cw_properties'] = {
+            'x': msg.coords.x,
+            'y': msg.coords.y,
+            'z': msg.coords.z
         }
 
 
@@ -349,12 +345,12 @@ class CV:
         Args:
             msg: The received detection of the whole gate
         """
-        self.cv_data["gate_whole_properties"] = {
-            "x": msg.coords.x,
-            "y": msg.coords.y,
-            "z": msg.coords.z,
-            "yaw": msg.coords.yaw,
-            "secs": msg.header.stamp.secs
+        self.cv_data['gate_whole_properties'] = {
+            'x': msg.coords.x,
+            'y': msg.coords.y,
+            'z': msg.coords.z,
+            'yaw': msg.coords.yaw,
+            'secs': msg.header.stamp.secs
         }
 
 
@@ -362,9 +358,9 @@ class CV:
         for detection in msg.detections:
             for result in detection.results:
                 if result.id == 0:  # gate_blue_ccw
-                    self.cv_data["gate_blue_ccw_bbox"] = detection.bbox
+                    self.cv_data['gate_blue_ccw_bbox'] = detection.bbox
                 elif result.id == 1:  # gate_red_cw
-                    self.cv_data["gate_red_cw_bbox"] = detection.bbox
+                    self.cv_data['gate_red_cw_bbox'] = detection.bbox
 
         highest_confidence_blue = -1 # why -1?
         highest_confidence_red = -1 # why -1?
@@ -381,19 +377,19 @@ class CV:
                     best_bbox_red = detection.bbox
 
         if best_bbox_blue is not None:
-            self.cv_data["gate_blue_ccw_bbox"] = best_bbox_blue
-            self.compute_gate_properties("gate_blue_ccw")
+            self.cv_data['gate_blue_ccw_bbox'] = best_bbox_blue
+            self.compute_gate_properties('gate_blue_ccw')
         if best_bbox_red is not None:
-            self.cv_data["gate_red_cw_bbox"] = best_bbox_red
-            self.compute_gate_properties("gate_red_cw")
+            self.cv_data['gate_red_cw_bbox'] = best_bbox_red
+            self.compute_gate_properties('gate_red_cw')
 
 
     def compute_gate_properties(self, gate_class):
-        if gate_class + "_bbox" not in self.cv_data or self.cv_data[gate_class + "_bbox"] is None:
-            self.get_logger().warn(f"No bounding box data available for {gate_class}")
+        if gate_class + '_bbox' not in self.cv_data or self.cv_data[gate_class + '_bbox'] is None:
+            self.get_logger().warn(f'No bounding box data available for {gate_class}')
             return None
 
-        bbox = self.cv_data[gate_class + "_bbox"]
+        bbox = self.cv_data[gate_class + '_bbox']
 
         # Assuming bbox is of type vision_msgs/BoundingBox2D
         bbox_width, bbox_height = bbox.size_x, bbox.size_y
@@ -412,13 +408,13 @@ class CV:
 
         dist_to_obj = self.mono_cam_dist_with_obj_width(bbox_width, self.GATE_IMAGE_WIDTH)
 
-        self.cv_data[gate_class + "_properties"] = {
-            "bbox_width": bbox_width,
-            "bbox_height": bbox_height,
-            "meters_per_pixel": meters_per_pixel,
-            "x": dist_to_obj,
-            "y": dist_x_meters,
-            "z": dist_y_meters,
+        self.cv_data[gate_class + '_properties'] = {
+            'bbox_width': bbox_width,
+            'bbox_height': bbox_height,
+            'meters_per_pixel': meters_per_pixel,
+            'x': dist_to_obj,
+            'y': dist_x_meters,
+            'z': dist_y_meters,
         }
 
 

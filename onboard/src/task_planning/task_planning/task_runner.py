@@ -49,9 +49,9 @@ class TaskPlanning(Node):
         _ = tf2_ros.TransformListener(tfBuffer)
 
         # Initialize interfaces
-        Controls(bypass, self)
-        state = State(bypass, tfBuffer, self)
-        CV(bypass, self)
+        Controls(self, bypass)
+        state = State(self, bypass, tfBuffer)
+        CV(self, bypass)
 
         # Initialize the task update publisher
         TaskUpdatePublisher()

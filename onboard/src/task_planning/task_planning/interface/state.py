@@ -1,4 +1,5 @@
-import rospy
+import rclpy
+from rclpy.node import Node
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from robot_localization.srv import SetPose
@@ -25,7 +26,7 @@ class State:
     IMU_TOPIC = '/vectornav/IMU'
     RESET_POSE_SERVICE = '/set_pose'
 
-    def __init__(self, bypass: bool = False, tfBuffer: Buffer = None):
+    def __init__(self, node: Node, bypass: bool = False, tfBuffer: Buffer = None):
         """
         Args:
             tfBuffer: The transform buffer for the robot
@@ -38,16 +39,16 @@ class State:
         self.received_depth = False
         self.received_imu = False
 
-        rospy.Subscriber(self.STATE_TOPIC, Odometry, self._on_receive_state)
+        node.create_subscription(Odometry, self.STATE_TOPIC, self._on_receive_state, 10)
         self._state = None
 
         if not bypass:
-            rospy.wait_for_service(self.RESET_POSE_SERVICE)
-        self._reset_pose = rospy.ServiceProxy(self.RESET_POSE_SERVICE, SetPose)
+            rclpy.wait_for_service(self.RESET_POSE_SERVICE)
+        self._reset_pose = node.create_client(SetPose, self.RESET_POSE_SERVICE)
 
-        rospy.Subscriber(self.DEPTH_TOPIC, PoseWithCovarianceStamped, self._on_receive_depth)
+        node.create_subscription(PoseWithCovarianceStamped, self.DEPTH_TOPIC, self._on_receive_depth, 10)
 
-        rospy.Subscriber(self.IMU_TOPIC, Imu, self._on_receive_imu)
+        node.create_subscription(Imu, self.IMU_TOPIC, self._on_receive_imu, 10)
 
     @property
     def state(self):

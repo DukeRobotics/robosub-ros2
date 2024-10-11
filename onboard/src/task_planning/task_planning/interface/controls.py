@@ -1,4 +1,5 @@
-import rospy
+import rclpy
+from rclpy.node import Node
 
 from std_srvs.srv import Trigger, SetBool
 from geometry_msgs.msg import Pose, Twist
@@ -39,26 +40,32 @@ class Controls:
     THRUSTER_ALLOCS_TOPIC = 'controls/thruster_allocs'
     CONTROL_TYPES_TOPIC = 'controls/control_types'
 
-    def __init__(self, bypass: bool = False):
+    def __init__(self, node: Node, bypass: bool = False):
+        self.node = node
 
         if not bypass:
-            rospy.wait_for_service(self.CONTROL_TYPES_SERVICE)
-        self._set_control_types = rospy.ServiceProxy(self.CONTROL_TYPES_SERVICE, SetControlTypes)
+            rclpy.wait_for_service(self.CONTROL_TYPES_SERVICE)
+        self._set_control_types = node.create_client(SetControlTypes, self.CONTROL_TYPES_SERVICE)
         # NOTE: if this variable gets out of sync with the actual control types, bad things may happen
         self._all_axes_control_type = None
 
         self.control_types: ControlTypes = None
-        rospy.Subscriber(self.CONTROL_TYPES_TOPIC, ControlTypes, self._update_control_types)
+        node.create_subscription(
+            ControlTypes,
+            self.CONTROL_TYPES_TOPIC,
+            self._update_control_types,
+            10
+        )
 
         if not bypass:
-            rospy.wait_for_service(self.RESET_PID_LOOPS_SERVICE)
-        self._reset_pid_loops = rospy.ServiceProxy(self.RESET_PID_LOOPS_SERVICE, Trigger)
+            rclpy.wait_for_service(self.RESET_PID_LOOPS_SERVICE)
+        self._reset_pid_loops = node.create_client(Trigger, self.RESET_PID_LOOPS_SERVICE)
 
-        self._enable_controls = rospy.ServiceProxy(self.ENABLE_CONTROLS_SERVICE, SetBool)
+        self._enable_controls = node.create_client(SetBool, self.ENABLE_CONTROLS_SERVICE)
 
-        self._desired_position_pub = rospy.Publisher(self.DESIRED_POSITION_TOPIC, Pose, queue_size=1)
-        self._desired_velocity_pub = rospy.Publisher(self.DESIRED_VELOCITY_TOPIC, Twist, queue_size=1)
-        self._desired_power_pub = rospy.Publisher(self.DESIRED_POWER_TOPIC, Twist, queue_size=1)
+        self._desired_position_pub = node.create_publisher(Pose, self.DESIRED_POSITION_TOPIC, 1)
+        self._desired_velocity_pub = node.create_publisher(Twist, self.DESIRED_VELOCITY_TOPIC, 1)
+        self._desired_power_pub = node.create_publisher(Twist, self.DESIRED_POWER_TOPIC, 1)
 
         self._read_config = None
 
@@ -66,7 +73,7 @@ class Controls:
         self.thruster_dict = None
 
         self.get_thruster_dict()
-        self._thruster_pub = rospy.Publisher(self.THRUSTER_ALLOCS_TOPIC, ThrusterAllocs, queue_size=1)
+        self._thruster_pub = node.create_publisher(ThrusterAllocs, self.THRUSTER_ALLOCS_TOPIC, 1)
         self.bypass = bypass
 
     def _update_control_types(self, control_types):
@@ -80,7 +87,7 @@ class Controls:
             The thruster dictionary
         """
         CONFIG_FILE_PATH = 'package://controls/config/%s.yaml'
-        filename = rr.get_filename(CONFIG_FILE_PATH % os.getenv("ROBOT_NAME", "oogway"), use_protocol=False)
+        filename = rr.get_filename(CONFIG_FILE_PATH % os.getenv('ROBOT_NAME', 'oogway'), use_protocol=False)
         with open(filename) as f:
             full_thruster_dict = yaml.safe_load(f)
 
@@ -94,7 +101,7 @@ class Controls:
         return thruster_dict
 
     def call_enable_controls(self, enable: bool):
-        """"
+        """'
         Enable or disable controls.
 
         Args:
@@ -136,7 +143,7 @@ class Controls:
 
         self._set_control_types(ControlTypes(x=x, y=y, z=z, roll=roll, pitch=pitch, yaw=yaw))
 
-    # Resets the PID loops. Should be called for every "new" movement
+    # Resets the PID loops. Should be called for every 'new' movement
     def start_new_move(self) -> None:
         """
         Start a new movement
@@ -198,16 +205,16 @@ class Controls:
         for kwarg_name, kwarg_value in kwargs.items():
 
             if kwarg_name not in self.thruster_dict:
-                raise ValueError(f"Thruster name not in thruster_dict {kwarg_name}")
+                raise ValueError(f'Thruster name not in thruster_dict {kwarg_name}')
 
             if kwarg_value > 1 or kwarg_value < -1:
-                raise ValueError(f"Recieved {kwarg_value} for thruster {kwarg_name}. Thruster alloc must be between " +
-                                 "-1 and 1 inclusive.")
+                raise ValueError(f'Recieved {kwarg_value} for thruster {kwarg_name}. Thruster alloc must be between ' +
+                                 '-1 and 1 inclusive.')
 
             thruster_allocs[self.thruster_dict[kwarg_name]] = kwarg_value
 
         thruster_allocs_msg = ThrusterAllocs()
-        thruster_allocs_msg.header.stamp = rospy.Time.now()
+        thruster_allocs_msg.header.stamp = self.node.get_clock().now()
         thruster_allocs_msg.allocs = thruster_allocs
 
         self._thruster_pub.publish(thruster_allocs_msg)
