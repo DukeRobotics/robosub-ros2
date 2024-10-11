@@ -5,7 +5,7 @@ from nav_msgs.msg import Odometry
 from robot_localization.srv import SetPose
 from sensor_msgs.msg import Imu
 from tf2_ros.buffer import Buffer
-from utils.other_utils import singleton
+from task_planning.utils.other_utils import singleton
 
 
 @singleton

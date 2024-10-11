@@ -4,11 +4,11 @@
 import math
 import time
 
-import comp_tasks
+# import comp_tasks
 
-from interface.controls import Controls
-from interface.cv import CV
-from interface.state import State
+from task_planning.interface.controls import Controls
+from task_planning.interface.cv import CV
+from task_planning.interface.state import State
 
 import rclpy
 from rclpy.node import Node
@@ -30,6 +30,27 @@ class TaskPlanning(Node):
         super().__init__(self.NODE_NAME)
         self.declare_parameter('bypass', False)
         self.declare_parameter('untethered', False)
+
+        main_initialized = False
+        bypass = self.get_parameter('bypass').get_parameter_value().bool_value
+        untethered = self.get_parameter('untethered').get_parameter_value().bool_value
+
+        # When rospy is shutdown, if main finished initializing, publish that it has closed
+        def publish_close():
+            if main_initialized:
+                TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
+
+        rclpy.shutdown_callback(publish_close)
+
+        # Initialize transform buffer and listener
+        tfBuffer = tf2_ros.Buffer()
+        _ = tf2_ros.TransformListener(tfBuffer)
+
+        # Initialize interfaces
+        Controls(self, bypass)
+        state = State(self, bypass, tfBuffer)
+        CV(self, bypass)
+
 
     def main(self):
         """TODO."""
@@ -116,7 +137,7 @@ class TaskPlanning(Node):
             self.get_logger().info('Running tasks.')
 
             # TODO: migrate this correctly
-            # Step through tasks, stopping if rospy is shutdown
+            # Step through tasks, stopping if rpy is shutdown
             rate = self.create_rate(30)
             for t in tasks:
                 while not t.done and rclpy.ok():

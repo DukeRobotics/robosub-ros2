@@ -5,7 +5,7 @@ from std_srvs.srv import Trigger, SetBool
 from geometry_msgs.msg import Pose, Twist
 from custom_msgs.msg import ControlTypes, ThrusterAllocs
 from custom_msgs.srv import SetControlTypes
-from utils.other_utils import singleton
+from task_planning.utils.other_utils import singleton
 import resource_retriever as rr
 import os
 import yaml

@@ -7,7 +7,7 @@ from custom_msgs.msg import CVObject, RectInfo
 from geometry_msgs.msg import Pose, Point
 from std_msgs.msg import Float64
 from vision_msgs.msg import Detection2DArray
-from utils.other_utils import singleton
+from task_planning.utils.other_utils import singleton
 
 
 @singleton
