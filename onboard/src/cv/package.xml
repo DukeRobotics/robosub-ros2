@@ -7,9 +7,8 @@
   <maintainer email="root@todo.todo">root</maintainer>
   <license>Apache-2.0</license>
 
-  /// <summary>
-  /// Used pip install depthai --break-system-packages, please add to docker file?
-  /// </summary>
+  <!--Used pip install depthai \-\-break-system-packages, please add to docker file?
+  -->
 
   <depend>sensor_msgs</depend>
   <depend>custom_msgs</depend>
