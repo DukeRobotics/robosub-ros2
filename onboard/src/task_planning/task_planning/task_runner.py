@@ -13,7 +13,7 @@ from task_planning.interface.state import State
 import rclpy
 from rclpy.node import Node
 
-from task import Task, TaskStatus, TaskUpdatePublisher
+from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
 
 import tf2_ros
 
