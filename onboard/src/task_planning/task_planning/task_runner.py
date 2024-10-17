@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""TODO."""
+"""
+Task Planning Node. This node is responsible for running tasks in the task planning package.
+Tasks include:
+- CV
+- Controls
+- State
+"""
 
 import math
 import time
 
 # import comp_tasks
-
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.state import State
@@ -13,11 +18,11 @@ from task_planning.interface.state import State
 import rclpy
 from rclpy.node import Node
 
-from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
+# from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
 
 import tf2_ros
 
-from tqdm import tqdm
+# from tqdm import tqdm
 
 
 class TaskPlanning(Node):
@@ -26,7 +31,11 @@ class TaskPlanning(Node):
     NODE_NAME = 'task_planning'
 
     def __init__(self):
-        """TODO."""
+        """
+        Initialize the task planning node.
+
+        Including intializing the interfaces and the task update publisher.
+        """
         super().__init__(self.NODE_NAME)
         self.declare_parameter('bypass', False)
         self.declare_parameter('untethered', False)
@@ -35,16 +44,16 @@ class TaskPlanning(Node):
         bypass = self.get_parameter('bypass').get_parameter_value().bool_value
         untethered = self.get_parameter('untethered').get_parameter_value().bool_value
 
-        # When rospy is shutdown, if main finished initializing, publish that it has closed
-        def publish_close():
-            if main_initialized:
-                TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
+        # # When rospy is shutdown, if main finished initializing, publish that it has closed
+        # def publish_close():
+        #     if main_initialized:
+        #         TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
 
-        rclpy.shutdown_callback(publish_close)
+        # rclpy.shutdown_callback(publish_close)
 
-        # Initialize transform buffer and listener
-        tfBuffer = tf2_ros.Buffer()
-        _ = tf2_ros.TransformListener(tfBuffer)
+        # # Initialize transform buffer and listener
+        # tfBuffer = tf2_ros.Buffer()
+        # _ = tf2_ros.TransformListener(tfBuffer)
 
         # Initialize interfaces
         Controls(self, bypass)
@@ -53,7 +62,26 @@ class TaskPlanning(Node):
 
 
     def main(self):
-        """TODO."""
+        """
+        Initialize interfaces and publishers:
+        - Controls
+        - State
+        - CV
+        - TaskUpdatePublisher
+
+        Run tasks (requires user input to start):
+        - initial_submerge
+        - coin_flip
+        - yaw_to_cv_object
+        - gate_task
+        - gate_style_task
+        - yaw_to_cv_object
+        - buoy_task
+        - after_buoy_task
+
+
+
+        """
         main_initialized = False
         bypass = self.get_parameter('bypass').get_parameter_value().bool_value
         untethered = self.get_parameter('untethered').get_parameter_value().bool_value
@@ -69,7 +97,7 @@ class TaskPlanning(Node):
         tfBuffer = tf2_ros.Buffer()
         _ = tf2_ros.TransformListener(tfBuffer)
 
-        # Initialize interfaces
+        # Initialize interfaces that were imported
         Controls(self, bypass)
         state = State(self, bypass, tfBuffer)
         CV(self, bypass)
@@ -124,17 +152,17 @@ class TaskPlanning(Node):
                 #                             depth_level=1.0, parent=Task.MAIN_ID),
                 # comp_tasks.octagon_task(direction=1, parent=Task.MAIN_ID),
             ]
-            input('Press enter to run tasks...')
+            input('Press enter to run tasks...\n')
 
             if untethered:
-                self.get_logger().info('Countdown started...')
+                self.get_logger().info('\nCountdown started...\n')
                 for i in tqdm(range(10, 0, -1)):
                     time.sleep(1)
                     if not rclpy.ok():
                         break
                 Controls().call_enable_controls(True)
 
-            self.get_logger().info('Running tasks.')
+            self.get_logger().info('\nRunning tasks.\n')
 
             # TODO: migrate this correctly
             # Step through tasks, stopping if rpy is shutdown
@@ -162,7 +190,9 @@ class TaskPlanning(Node):
 
 
 def main(args=None):
-    """TODO."""
+    """
+    Spin up the task planning node.
+    """
     rclpy.init(args=args)
     task_planning = TaskPlanning()
 
