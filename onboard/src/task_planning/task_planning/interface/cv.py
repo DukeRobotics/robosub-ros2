@@ -11,7 +11,7 @@ from task_planning.utils.other_utils import singleton
 
 
 @singleton
-class CV:
+class CV(Node):
     """
     Interface for the CV.
 
@@ -41,6 +41,7 @@ class CV:
     MONO_CAM_IMG_SHAPE = (640, 480)  # Width, height in pixels
     MONO_CAM_SENSOR_SIZE = (3.054, 1.718)  # Width, height in mm
     MONO_CAM_FOCAL_LENGTH = 2.65  # Focal length in mm
+    NODE_NAME = 'jared_cv'
 
 
     def __init__(self, node: Node, bypass: bool = False):

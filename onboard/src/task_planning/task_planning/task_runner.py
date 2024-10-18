@@ -44,6 +44,8 @@ class TaskPlanning(Node):
         bypass = self.get_parameter('bypass').get_parameter_value().bool_value
         untethered = self.get_parameter('untethered').get_parameter_value().bool_value
 
+        self.get_logger().info('Task Planning Node Initialized')
+
         # # When rospy is shutdown, if main finished initializing, publish that it has closed
         # def publish_close():
         #     if main_initialized:
@@ -51,14 +53,15 @@ class TaskPlanning(Node):
 
         # rclpy.shutdown_callback(publish_close)
 
-        # # Initialize transform buffer and listener
+        # TODO: FIX THIS, as we are trying to bring this code up from the main method
+        # # # Initialize transform buffer and listener
         # tfBuffer = tf2_ros.Buffer()
         # _ = tf2_ros.TransformListener(tfBuffer)
 
-        # Initialize interfaces
-        Controls(self, bypass)
-        state = State(self, bypass, tfBuffer)
-        CV(self, bypass)
+        # # Initialize interfaces
+        # Controls(self, bypass)
+        # state = State(self, bypass, tfBuffer)
+        # CV(self, bypass)
 
 
     def main(self):
@@ -86,21 +89,33 @@ class TaskPlanning(Node):
         bypass = self.get_parameter('bypass').get_parameter_value().bool_value
         untethered = self.get_parameter('untethered').get_parameter_value().bool_value
 
-        # When rospy is shutdown, if main finished initializing, publish that it has closed
-        def publish_close():
-            if main_initialized:
-                TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
 
-        rclpy.shutdown_callback(publish_close)
+        #TODO: FIX shutdown_callback
+        # self.get_logger().info('-1')
+        # # When rospy is shutdown, if main finished initializing, publish that it has closed
+        # def publish_close():
+        #     if main_initialized:
+        #         self.get_logger().info('main has closed')
+        #         TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
+
+        # self.get_logger().info('0')
+        # self.shutdown_callback(publish_close)
 
         # Initialize transform buffer and listener
+        '''
+        TODO: Get Rid of tfBuffer in main and bring up to the init method
+        '''
         tfBuffer = tf2_ros.Buffer()
-        _ = tf2_ros.TransformListener(tfBuffer)
+        _ = tf2_ros.TransformListener(tfBuffer, self)
 
         # Initialize interfaces that were imported
+        self.get_logger().info('1')
         Controls(self, bypass)
+        self.get_logger().info('2')
         state = State(self, bypass, tfBuffer)
+        self.get_logger().info('3')
         CV(self, bypass)
+        self.get_logger().info('4')
 
         # Initialize the task update publisher
         TaskUpdatePublisher()
@@ -195,6 +210,7 @@ def main(args=None):
     """
     rclpy.init(args=args)
     task_planning = TaskPlanning()
+    task_planning.main()
 
     try:
         rclpy.spin(task_planning)

@@ -1,5 +1,6 @@
 import rclpy
 from rclpy.node import Node
+import asyncio
 
 from std_srvs.srv import Trigger, SetBool
 from geometry_msgs.msg import Pose, Twist
@@ -43,9 +44,16 @@ class Controls:
     def __init__(self, node: Node, bypass: bool = False):
         self.node = node
 
+        # if not bypass:
+        # TODO: this is a hack to wait for the control types service to be available
+        # self.wait_for_service(self.CONTROL_TYPES_SERVICE)
+        # self._set_control_types = node.create_client(SetControlTypes, self.CONTROL_TYPES_SERVICE)
         if not bypass:
-            rclpy.wait_for_service(self.CONTROL_TYPES_SERVICE)
-        self._set_control_types = node.create_client(SetControlTypes, self.CONTROL_TYPES_SERVICE)
+            self._set_control_types = node.create_client(SetControlTypes, self.CONTROL_TYPES_SERVICE)
+            if not self._set_control_types.wait_for_service(timeout_sec=5.0):
+                self.node.get_logger().warn(f'Service {self.CONTROL_TYPES_SERVICE} not available')
+
+
         # NOTE: if this variable gets out of sync with the actual control types, bad things may happen
         self._all_axes_control_type = None
 
@@ -57,9 +65,16 @@ class Controls:
             10
         )
 
-        if not bypass:
-            rclpy.wait_for_service(self.RESET_PID_LOOPS_SERVICE)
+        # if not bypass:
+        #     # TODO: this is a hack to wait for the control types service to be available
+
+        #     self.wait_for_message(self.RESET_PID_LOOPS_SERVICE)
         self._reset_pid_loops = node.create_client(Trigger, self.RESET_PID_LOOPS_SERVICE)
+        if not bypass:
+            self._reset_pid_loops = node.create_client(Trigger, self.RESET_PID_LOOPS_SERVICE)
+            if not self._reset_pid_loops.wait_for_service(timeout_sec=5.0):
+                self.node.get_logger().warn(f'Service {self.RESET_PID_LOOPS_SERVICE} not available')
+
 
         self._enable_controls = node.create_client(SetBool, self.ENABLE_CONTROLS_SERVICE)
 
