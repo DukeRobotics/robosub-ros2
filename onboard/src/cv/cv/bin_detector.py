@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
-import rospy
+import rclpy
+from rclpy.node import Node
 import cv2
 import numpy as np
 from sensor_msgs.msg import CompressedImage, Image
 from cv_bridge import CvBridge
 from custom_msgs.msg import CVObject
 from geometry_msgs.msg import Point
-from utils import compute_yaw, calculate_relative_pose, compute_center_distance
+from cv.utils import compute_yaw, calculate_relative_pose, compute_center_distance
 
 
-class BinDetector:
+class BinDetector(Node):
     BIN_WIDTH = 0.3048  # width of one square of the bin, in m
 
     MONO_CAM_IMG_SHAPE = (640, 480)  # Width, height in pixels
@@ -18,28 +19,29 @@ class BinDetector:
     MONO_CAM_FOCAL_LENGTH = 2.65  # Focal length in mm
 
     def __init__(self):
+
+        super().__init__("bin_detector")
         self.bridge = CvBridge()
         # subscribe to image topic to get images
-        self.image_sub = rospy.Subscriber("/camera/usb/bottom/compressed", CompressedImage, self.image_callback)
+        self.image_sub = self.create_subscription(CompressedImage, "/camera/usb/bottom/compressed", self.image_callback)
 
         # blue bin publiishers
-        self.blue_bin_hsv_filtered_pub = rospy.Publisher("/cv/bottom/bin_blue/hsv_filtered", Image, queue_size=10)
-        self.blue_bin_contour_image_pub = rospy.Publisher("/cv/bottom/bin_blue/contour_image", Image, queue_size=10)
-        self.blue_bin_bounding_box_pub = rospy.Publisher("/cv/bottom/bin_blue/bounding_box", CVObject, queue_size=10)
-        self.blue_bin_distance_pub = rospy.Publisher("/cv/bottom/bin_blue/distance", Point, queue_size=10)
+        self.blue_bin_hsv_filtered_pub = self.create_publisher(Image, "/cv/bottom/bin_blue/hsv_filtered", 10)
+        self.blue_bin_contour_image_pub = self.create_publisher(Image, "/cv/bottom/bin_blue/contour_image", 10)
+        self.blue_bin_bounding_box_pub = self.create_publisher(CVObject, "/cv/bottom/bin_blue/bounding_box", 10)
+        self.blue_bin_distance_pub = self.create_publisher(Point, "/cv/bottom/bin_blue/distance", 10)
 
         # red bin publishers
-        self.red_bin_hsv_filtered_pub = rospy.Publisher("/cv/bottom/bin_red/hsv_filtered", Image, queue_size=10)
-        self.red_bin_contour_image_pub = rospy.Publisher("/cv/bottom/bin_red/contour_image", Image, queue_size=10)
-        self.red_bin_bounding_box_pub = rospy.Publisher("/cv/bottom/bin_red/bounding_box", CVObject, queue_size=10)
-        self.red_bin_distance_pub = rospy.Publisher("/cv/bottom/bin_red/distance", Point, queue_size=10)
+        self.red_bin_hsv_filtered_pub = self.create_publisher(Image, "/cv/bottom/bin_red/hsv_filtered", 10)
+        self.red_bin_contour_image_pub = self.create_publisher(Image, "/cv/bottom/bin_red/contour_image", 10)
+        self.red_bin_bounding_box_pub = self.create_publisher(CVObject, "/cv/bottom/bin_red/bounding_box", 10)
+        self.red_bin_distance_pub = self.create_publisher(Point, "/cv/bottom/bin_red/distance", 10)
 
         # centre bin publsihers (NOTE we don't actually publish to these heheheha)
-        self.bin_center_hsv_filtered_pub = rospy.Publisher("/cv/bottom/bin_center/hsv_filtered", Image, queue_size=10)
-        self.bin_center_contour_image_pub = rospy.Publisher("/cv/bottom/bin_center/contour_image", Image, queue_size=10)
-        self.bin_center_bounding_box_pub = rospy.Publisher("/cv/bottom/bin_center/bounding_box", CVObject,
-                                                           queue_size=10)
-        self.bin_center_distance_pub = rospy.Publisher("/cv/bottom/bin_center/distance", Point, queue_size=10)
+        self.bin_center_hsv_filtered_pub = self.create_publisher(Image, "/cv/bottom/bin_center/hsv_filtered", 10)
+        self.bin_center_contour_image_pub = self.create_publisher(Image, "/cv/bottom/bin_center/contour_image", 10)
+        self.bin_center_bounding_box_pub = self.create_publisher(CVObject, "/cv/bottom/bin_center/bounding_box", 10)
+        self.bin_center_distance_pub = self.create_publisher(Point, "/cv/bottom/bin_center/distance", 10)
 
     def image_callback(self, data):
         # Convert the compressed ROS image to OpenCV format
@@ -141,8 +143,8 @@ class BinDetector:
         # create CVObject message, and populate relavent attributes
         bounding_box = CVObject()
 
-        bounding_box.header.stamp.secs = rospy.Time.now().secs
-        bounding_box.header.stamp.nsecs = rospy.Time.now().nsecs
+        bounding_box.header.stamp.secs = self.get_clock().now().secs
+        bounding_box.header.stamp.nsecs = self.get_clock().now().nsecs
 
         # gets dimns that CVObject wants for our rectangle
         bounding_box.xmin = (x) * meters_per_pixel
@@ -191,11 +193,18 @@ class BinDetector:
         return (self.MONO_CAM_FOCAL_LENGTH * width_meters * self.MONO_CAM_IMG_SHAPE[0]) \
             / (width_pixels * self.MONO_CAM_SENSOR_SIZE[0])
 
+def main(args=None):
+    rclpy.init(args=args)
+    bin_detector = BinDetector()
+
+    try:
+        rclpy.spin(bin_detector)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        bin_detector.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == "__main__":
-    rospy.init_node('bin_detector', anonymous=True)
-    detector = BinDetector()
-    try:
-        rospy.spin()
-    except KeyboardInterrupt:
-        rospy.loginfo("Shutting down Bin Detector node")
+    main()

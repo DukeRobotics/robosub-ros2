@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 
 import depthai as dai
-import rospy
+import rclpy
+from rclpy.node import Node
 import nmap
 
 
-def connect(pipeline):
+class DepthAiCameraConnect(Node):
+    def __init__(self):
+        super().__init__("depthai_camera_connect")
+
+def connect(self,pipeline):
     """
     Connects to the DepthAI camera and uploads the pipeline.
 
@@ -25,8 +30,11 @@ def connect(pipeline):
     # Number of attempts that will be made to connect to the camera
     total_tries = 5
 
+    # A node
+    node = DepthAiCameraConnect()
+
     for _ in range(total_tries):
-        if rospy.is_shutdown():
+        if not rclpy.ok():
             break
 
         try:
@@ -43,18 +51,18 @@ def connect(pipeline):
         except RuntimeError:
             pass
 
-        if rospy.is_shutdown():
+        if not rclpy.ok():
             break
 
         # Wait two seconds before trying again
         # This ensures the script does not terminate if the camera is just temporarily unavailable
-        rospy.sleep(2)
+        rclpy.spin_once(node, timeout_sec=2)
 
     raise RuntimeError(f"{total_tries} attempts were made to connect to the DepthAI camera using "
-                       f"autodiscovery and static IP address specification. All attempts failed.")
+                    f"autodiscovery and static IP address specification. All attempts failed.")
 
 
-def custom_autodiscovery():
+def custom_autodiscovery(self):
     """
     Scans all IP addresses from 192.168.1.0 to 192.168.1.255 looking for the DepthAI camera's MAC address.
 
@@ -74,8 +82,11 @@ def custom_autodiscovery():
 
     raise RuntimeError("Custom autodiscovery failed to find camera.")
 
-
+'''
+If needed for testing please port this over too thanks!
 if __name__ == "__main__":
     rospy.init_node("depthai_camera_connect")
     if connect(dai.Pipeline()):
         rospy.loginfo("Connected to DepthAI device successfully.")
+
+'''
