@@ -121,9 +121,6 @@ class TaskUpdatePublisher(Node):
             self.get_logger().warn(f"Task with id {task_id} failed to encode data to JSON when publishing {status.name}: {data}")
             msg_data = jsonpickle.encode(str(data), **jsonpickle_options)
 
-        # Create message header
-        header = rospy.Header(stamp=rospy.Time.now())
-
         # Create Message
         msg = TaskUpdate()
 

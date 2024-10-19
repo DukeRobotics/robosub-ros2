@@ -1,4 +1,9 @@
-import rospy
+import rclpy
+from rclpy.logging import get_logger
+from rclpy.clock import Clock
+from rclpy.duration import Duration
+from example_interfaces.srv import SetBool
+
 import math
 import copy
 import numpy as np
@@ -20,6 +25,7 @@ from enum import Enum
 from interface.state import State
 from interface.cv import CV
 from interface.controls import Controls
+from interface.marker_dropper import MarkerDropper
 
 from utils.coroutine_utils import sleep
 
@@ -53,6 +59,9 @@ from utils.coroutine_utils import sleep
 
 RECT_HEIGHT_METERS = 0.3048
 
+# Set-up ROS2 Logger
+logger = get_logger('gate_style_task')
+
 
 @task
 async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]:
@@ -60,32 +69,33 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
     Complete two full barrel rolls.
     """
 
-    rospy.loginfo("Started gate style task")
+    logger.info("Started gate style task")
 
     DEPTH_LEVEL = State().orig_depth - depth_level
 
+    # TODO:ros2 sleep statement
     async def sleep(secs):
-        duration = rospy.Duration(secs)
-        start_time = rospy.Time.now()
-        while start_time + duration > rospy.Time.now():
+        duration = Duration(seconds=secs)
+        start_time = Clock().now()
+        while start_time + duration > Clock().now():
             await Yield()
 
     async def roll():
         power = Twist()
         power.angular.x = 1
         Controls().publish_desired_power(power)
-        rospy.loginfo("Published roll power")
+        logger.info("Published roll power")
 
         await sleep(2.25)
 
-        rospy.loginfo("Completed roll")
+        logger.info("Completed roll")
 
         Controls().publish_desired_power(Twist())
-        rospy.loginfo("Published zero power")
+        logger.info("Published zero power")
 
         await sleep(2)
 
-        rospy.loginfo("Completed zero")
+        logger.info("Completed zero")
 
     await move_tasks.depth_correction(DEPTH_LEVEL, parent=self)
     await roll()
@@ -101,11 +111,11 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
     roll_correction = -euler_angles[0]
     pitch_correction = -euler_angles[1]
 
-    rospy.loginfo(f"Roll, pitch correction: {roll_correction, pitch_correction}")
+    logger.info(f"Roll, pitch correction: {roll_correction, pitch_correction}")
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, 0),
                                         parent=self)
     State().reset_pose()
-    rospy.loginfo("Reset orientation")
+    logger.info("Reset orientation")
 
 
 @task
@@ -114,7 +124,7 @@ async def buoy_task(self: Task, turn_to_face_buoy=False, depth=0.7) -> Task[None
     Circumnavigate the buoy. Requires robot to have submerged 0.5 meters.
     """
 
-    rospy.loginfo("Starting buoy task")
+    logger.info("Starting buoy task")
 
     DEPTH_LEVEL = State().orig_depth - depth
 
@@ -148,7 +158,7 @@ async def buoy_task(self: Task, turn_to_face_buoy=False, depth=0.7) -> Task[None
 
         while buoy_dist > buoy_dist_threshold:
             await move_x(step=get_step_size(buoy_dist, buoy_dist_threshold))
-            rospy.loginfo(f"Buoy dist: {CV().cv_data['buoy'].coords.x}")
+            logger.info(f"Buoy dist: {CV().cv_data['buoy'].coords.x}")
             await correct_y()
             if buoy_dist < 3:
                 await correct_z()
@@ -157,7 +167,7 @@ async def buoy_task(self: Task, turn_to_face_buoy=False, depth=0.7) -> Task[None
 
             await Yield()
             buoy_dist = CV().cv_data["buoy"].coords.x
-            rospy.loginfo(f"Buoy dist: {CV().cv_data['buoy'].coords.x}")
+            logger.info(f"Buoy dist: {CV().cv_data['buoy'].coords.x}")
 
         await correct_z()
 
@@ -174,14 +184,14 @@ async def buoy_task(self: Task, turn_to_face_buoy=False, depth=0.7) -> Task[None
 
     async def correct_yaw():
         yaw_correction = get_yaw_correction()
-        rospy.loginfo(f"Yaw correction: {yaw_correction}")
+        logger.info(f"Yaw correction: {yaw_correction}")
         sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction + (sign * 0.1)),
             keep_level=True,
             parent=self
         )
-        rospy.loginfo("Corrected yaw")
+        logger.info("Corrected yaw")
     self.correct_yaw = correct_yaw
 
     async def move_with_directions(directions, correct_yaw=True):
@@ -195,21 +205,21 @@ async def buoy_task(self: Task, turn_to_face_buoy=False, depth=0.7) -> Task[None
                 return max(dist - dist_threshold - 0.1, -0.25)
 
         async def move_away_from_buoy(buoy_dist_threshold=1.0):
-            rospy.loginfo("Moving away from buoy")
+            logger.info("Moving away from buoy")
             buoy_dist = CV().cv_data["buoy"].coords.x
             await correct_y()
             await correct_z()
             while buoy_dist < buoy_dist_threshold:
                 await move_x(step=get_step_size_move_away(buoy_dist, buoy_dist_threshold))
 
-                rospy.loginfo(f"Buoy dist: {CV().cv_data['buoy'].coords.x}")
+                logger.info(f"Buoy dist: {CV().cv_data['buoy'].coords.x}")
                 await correct_y()
                 await correct_z()
                 await Yield()
                 buoy_dist = CV().cv_data["buoy"].coords.x
-                rospy.loginfo(f"Buoy dist: {CV().cv_data['buoy'].coords.x}")
+                logger.info(f"Buoy dist: {CV().cv_data['buoy'].coords.x}")
 
-            rospy.loginfo("Moved away from buoy")
+            logger.info("Moved away from buoy")
 
         # Circumnavigate buoy
         for _ in range(4):
@@ -221,7 +231,7 @@ async def buoy_task(self: Task, turn_to_face_buoy=False, depth=0.7) -> Task[None
             await move_with_directions(directions, correct_yaw=False)
             await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, -math.radians(90)),
                                                 parent=self)
-            rospy.loginfo("Yaw 90 deg")
+            logger.info("Yaw 90 deg")
             await move_away_from_buoy()
 
     else:
@@ -249,7 +259,7 @@ async def after_buoy_task(self: Task):
 
     def is_receiving_cv_data():
         return "path_marker" in CV().cv_data and \
-            rospy.Time.now().secs - CV().cv_data["path_marker"].header.stamp.secs < latency_threshold
+            Clock().now().seconds_nanoseconds()[0] - CV().cv_data["path_marker"].header.stamp.secs < latency_threshold
 
     def stabilize():
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
@@ -304,7 +314,7 @@ async def after_buoy_task(self: Task):
 async def buoy_to_octagon(self: Task, direction: int = 1, move_forward: int = 0):
     DEPTH_LEVEL = State().orig_depth - 0.7
 
-    rospy.loginfo("Started buoy to octagon")
+    logger.info("Started buoy to octagon")
 
     async def move_with_directions(directions):
         await move_tasks.move_with_directions(directions, correct_yaw=False, correct_depth=True, parent=self)
@@ -346,13 +356,13 @@ async def buoy_circumnavigation_power(self: Task, depth=0.7) -> Task[None, None,
 
     for _ in range(4):
         publish_power()
-        rospy.loginfo("Publish power")
+        logger.info("Publish power")
         await sleep(6)
-        rospy.loginfo("Sleep 5 (1)")
+        logger.info("Sleep 5 (1)")
         stabilize()
-        rospy.loginfo("Stabilized")
+        logger.info("Stabilized")
         await sleep(5)
-        rospy.loginfo("Sleep 5 (2)")
+        logger.info("Sleep 5 (2)")
         await correct_depth()
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 1, 0, 0, 0, 0), parent=self)
 
@@ -371,7 +381,7 @@ async def initial_submerge(self: Task, submerge_dist: float) -> Task[None, None,
         keep_level=True,
         parent=self
     )
-    rospy.loginfo(f"Submerged {submerge_dist} meters")
+    logger.info(f"Submerged {submerge_dist} meters")
 
     async def correct_roll_and_pitch():
         imu_orientation = State().imu.orientation
@@ -379,7 +389,7 @@ async def initial_submerge(self: Task, submerge_dist: float) -> Task[None, None,
         roll_correction = -euler_angles[0] * 1.2
         pitch_correction = -euler_angles[1] * 1.2
 
-        rospy.loginfo(f"Roll, pitch correction: {roll_correction, pitch_correction}")
+        logger.info(f"Roll, pitch correction: {roll_correction, pitch_correction}")
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, 0),
                                             parent=self)
 
@@ -388,7 +398,7 @@ async def initial_submerge(self: Task, submerge_dist: float) -> Task[None, None,
 
 @task
 async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
-    rospy.loginfo("Started coin flip")
+    logger.info("Started coin flip")
     DEPTH_LEVEL = State().orig_depth - depth_level
     MAXIMUM_YAW = math.radians(30)
 
@@ -406,33 +416,33 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
 
         sign_correction = np.sign(correction)
         desired_yaw = sign_correction * get_step_size(correction)
-        rospy.loginfo(f'Coinflip: desired_yaw = {desired_yaw}')
+        logger.info(f'Coinflip: desired_yaw = {desired_yaw}')
 
         return correction
         # return desired_yaw
 
     while abs(yaw_correction := get_yaw_correction()) > math.radians(5):
-        rospy.loginfo(f"Yaw correction: {yaw_correction}")
+        logger.info(f"Yaw correction: {yaw_correction}")
         sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction + (sign * 0.1)),
             keep_level=True,
             parent=self
         )
-        rospy.loginfo("Back to original orientation")
+        logger.info("Back to original orientation")
 
-    rospy.loginfo(f"Final yaw correction: {get_yaw_correction()}")
+    logger.info(f"Final yaw correction: {get_yaw_correction()}")
 
     depth_delta = DEPTH_LEVEL - State().depth
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0), parent=self)
-    rospy.loginfo(f"Corrected depth {depth_delta}")
+    logger.info(f"Corrected depth {depth_delta}")
 
-    rospy.loginfo("Completed coin flip")
+    logger.info("Completed coin flip")
 
 
 @task
 async def gate_task_dead_reckoning(self: Task) -> Task[None, None, None]:
-    rospy.loginfo("Started gate task")
+    logger.info("Started gate task")
     DEPTH_LEVEL = State().orig_depth - 0.6
     STEPS = 5
 
@@ -440,12 +450,12 @@ async def gate_task_dead_reckoning(self: Task) -> Task[None, None, None]:
         await move_tasks.move_x(step=1, parent=self)
         await move_tasks.correct_depth(desired_depth=DEPTH_LEVEL, parent=self)
 
-    rospy.loginfo("Moved through gate")
+    logger.info("Moved through gate")
 
 
 @task
 async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[None, None, None]:
-    rospy.loginfo("Started gate task")
+    logger.info("Started gate task")
     DEPTH_LEVEL = State().orig_depth - 0.7
 
     async def correct_y(factor=1):
@@ -467,15 +477,16 @@ async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[Non
         else:
             return max(dist-3 + 0.25, 0.25)
 
+    # TODO:ros2 sleep statement
     async def sleep(secs):
-        duration = rospy.Duration(secs)
-        start_time = rospy.Time.now()
-        while start_time + duration > rospy.Time.now():
+        duration = Duration(seconds=secs)
+        start_time = Clock().now()
+        while start_time + duration > Clock().now():
             await Yield()
 
-    rospy.loginfo("Begin sleep")
+    logger.info("Begin sleep")
     await sleep(2)
-    rospy.loginfo("End sleep")
+    logger.info("End sleep")
 
     gate_dist = CV().cv_data["gate_red_cw"].coords.x
     # await correct_y(factor=0.5)
@@ -489,7 +500,7 @@ async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[Non
         await correct_depth()
         await Yield()
         gate_dist = CV().cv_data["gate_red_cw"].coords.x
-        rospy.loginfo(f"Gate dist: {gate_dist}")
+        logger.info(f"Gate dist: {gate_dist}")
         num_corrections += 1
 
     directions = [
@@ -501,7 +512,7 @@ async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[Non
 
     await move_tasks.move_with_directions(directions, correct_yaw=False, correct_depth=True, parent=self)
 
-    rospy.loginfo("Moved through gate")
+    logger.info("Moved through gate")
 
 
 @task
@@ -514,12 +525,13 @@ async def yaw_to_cv_object(self: Task, cv_object: str, direction=1,
     DEPTH_LEVEL = State().orig_depth - depth_level
     MAXIMUM_YAW = math.radians(20)
 
-    rospy.loginfo("Starting yaw_to_cv_object")
+    logger.info("Starting yaw_to_cv_object")
 
+    # TODO:ros2 sleep statement
     async def sleep(secs):
-        duration = rospy.Duration(secs)
-        start_time = rospy.Time.now()
-        while start_time + duration > rospy.Time.now():
+        duration = Duration(seconds=secs)
+        start_time = Clock().now()
+        while start_time + duration > Clock().now():
             await Yield()
 
     async def correct_depth():
@@ -528,7 +540,7 @@ async def yaw_to_cv_object(self: Task, cv_object: str, direction=1,
 
     def is_receiving_cv_data():
         return cv_object in CV().cv_data and \
-                rospy.Time.now().secs - CV().cv_data[cv_object].header.stamp.secs < latency_threshold
+                Clock().now().seconds_nanoseconds()[0] - CV().cv_data[cv_object].header.stamp.secs < latency_threshold
 
     def get_step_size(desired_yaw):
         # desired yaw in radians
@@ -536,7 +548,7 @@ async def yaw_to_cv_object(self: Task, cv_object: str, direction=1,
 
     async def yaw_until_object_detection():
         while not is_receiving_cv_data():
-            rospy.loginfo(f"No {cv_object} detection, setting yaw setpoint {MAXIMUM_YAW}")
+            logger.info(f"No {cv_object} detection, setting yaw setpoint {MAXIMUM_YAW}")
             await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, MAXIMUM_YAW * direction),
                                                 parent=self)
             await correct_depth()
@@ -546,31 +558,31 @@ async def yaw_to_cv_object(self: Task, cv_object: str, direction=1,
     await correct_depth()
     await yaw_until_object_detection()
 
-    rospy.loginfo(f"{cv_object} detected. Now centering {cv_object} in frame...")
+    logger.info(f"{cv_object} detected. Now centering {cv_object} in frame...")
 
     # Center detected object in camera frame
     cv_object_yaw = CV().cv_data[cv_object].yaw
     await correct_depth()
-    rospy.loginfo('abs(cv_object_yaw)='+str(abs(cv_object_yaw)))
-    rospy.loginfo('yaw_threshold='+str(yaw_threshold))
+    logger.info('abs(cv_object_yaw)='+str(abs(cv_object_yaw)))
+    logger.info('yaw_threshold='+str(yaw_threshold))
     while abs(cv_object_yaw) > yaw_threshold:
         sign_cv_object_yaw = np.sign(cv_object_yaw)
         correction = get_step_size(cv_object_yaw)
         desired_yaw = sign_cv_object_yaw * correction
 
-        rospy.loginfo(f"Detected yaw {cv_object_yaw} is greater than threshold {yaw_threshold}. Yawing: {desired_yaw}")
+        logger.info(f"Detected yaw {cv_object_yaw} is greater than threshold {yaw_threshold}. Yawing: {desired_yaw}")
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, desired_yaw),
                                             parent=self)
         await correct_depth()
         await Yield()
 
         if (not is_receiving_cv_data()):
-            rospy.loginfo(f"{cv_object} detection lost, running yaw_until_object_detection()")
+            logger.info(f"{cv_object} detection lost, running yaw_until_object_detection()")
             await yaw_until_object_detection()
 
         cv_object_yaw = CV().cv_data[cv_object].yaw
 
-    rospy.loginfo(f"{cv_object} centered.")
+    logger.info(f"{cv_object} centered.")
 
     await correct_depth()
 
@@ -585,7 +597,7 @@ async def align_path_marker(self: Task, direction=1) -> Task[None, None, None]:
     YAW_THRESHOLD = math.radians(5)
     PIXEL_THRESHOLD = 70
 
-    rospy.loginfo("Starting align path marker")
+    logger.info("Starting align path marker")
 
     async def move_x(step=1):
         await move_tasks.move_x(step=step, parent=self)
@@ -596,10 +608,11 @@ async def align_path_marker(self: Task, direction=1) -> Task[None, None, None]:
     async def correct_depth():
         await move_tasks.depth_correction(desired_depth=DEPTH_LEVEL, parent=self)
 
+    # TODO:ros2 sleep statement
     async def sleep(secs):
-        duration = rospy.Duration(secs)
-        start_time = rospy.Time.now()
-        while start_time + duration > rospy.Time.now():
+        duration = Duration(seconds=secs)
+        start_time = Clock().now()
+        while start_time + duration > Clock().now():
             await Yield()
 
     def get_step_size(desired_yaw):
@@ -615,13 +628,13 @@ async def align_path_marker(self: Task, direction=1) -> Task[None, None, None]:
             return -1
 
     async def center_path_marker(pixel_threshold, step_size=0.20, x_offset=0, y_offset=0):
-        rospy.loginfo(CV().cv_data["path_marker_distance"])
+        logger.info(CV().cv_data["path_marker_distance"])
         pixel_x = CV().cv_data["path_marker_distance"].x + x_offset
         pixel_y = CV().cv_data["path_marker_distance"].y + y_offset
 
         count = 1
         while (max(pixel_x, pixel_y) > pixel_threshold or min(pixel_x, pixel_y) < -pixel_threshold):
-            rospy.loginfo(CV().cv_data["path_marker_distance"])
+            logger.info(CV().cv_data["path_marker_distance"])
 
             await move_x(step=step_size * get_step_mult_factor(pixel_x, pixel_threshold))
             await move_y(step=step_size * get_step_mult_factor(pixel_y, pixel_threshold))
@@ -630,32 +643,32 @@ async def align_path_marker(self: Task, direction=1) -> Task[None, None, None]:
             pixel_y = CV().cv_data["path_marker_distance"].y + y_offset
 
             if count % 3 == 0:
-                rospy.loginfo("Correcting depth")
+                logger.info("Correcting depth")
                 await correct_depth()
 
             await Yield()
 
-            rospy.loginfo(f"x: {pixel_x}, y: {pixel_y}")
+            logger.info(f"x: {pixel_x}, y: {pixel_y}")
 
             count += 1
 
-        rospy.loginfo("Finished centering path marker")
-        rospy.loginfo(f"x: {pixel_x}, y: {pixel_y}")
+        logger.info("Finished centering path marker")
+        logger.info(f"x: {pixel_x}, y: {pixel_y}")
 
-    rospy.loginfo("Now aligning path marker in frame...")
+    logger.info("Now aligning path marker in frame...")
 
     # Center detected object in camera frame
     path_marker_yaw = CV().cv_data["path_marker"].yaw
     await correct_depth()
-    rospy.loginfo(f"abs(path_marker_yaw) = '{abs(path_marker_yaw)}")
-    rospy.loginfo(f"yaw_threshold = {str(YAW_THRESHOLD)}")
+    logger.info(f"abs(path_marker_yaw) = '{abs(path_marker_yaw)}")
+    logger.info(f"yaw_threshold = {str(YAW_THRESHOLD)}")
 
     while abs(path_marker_yaw) > YAW_THRESHOLD:
         sign_path_marker_yaw = np.sign(path_marker_yaw)
         correction = get_step_size(path_marker_yaw)
         desired_yaw = sign_path_marker_yaw * correction
 
-        rospy.loginfo(f"Detected yaw {path_marker_yaw} is greater than threshold {YAW_THRESHOLD}. Yawing: {desired_yaw}"
+        logger.info(f"Detected yaw {path_marker_yaw} is greater than threshold {YAW_THRESHOLD}. Yawing: {desired_yaw}"
                       )
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, desired_yaw),
                                             parent=self)
@@ -667,7 +680,7 @@ async def align_path_marker(self: Task, direction=1) -> Task[None, None, None]:
 
         path_marker_yaw = CV().cv_data["path_marker"].yaw
 
-    rospy.loginfo("Path marker centered.")
+    logger.info("Path marker centered.")
 
     await correct_depth()
 
@@ -696,13 +709,13 @@ async def center_path_marker(self: Task):
             return -1
 
     async def center_path_marker(pixel_threshold, step_size=0.20, x_offset=0, y_offset=0):
-        rospy.loginfo(CV().cv_data["path_marker_distance"])
+        logger.info(CV().cv_data["path_marker_distance"])
         pixel_x = CV().cv_data["path_marker_distance"].x + x_offset
         pixel_y = CV().cv_data["path_marker_distance"].y + y_offset
 
         count = 1
         while (max(pixel_x, pixel_y) > pixel_threshold or min(pixel_x, pixel_y) < -pixel_threshold):
-            rospy.loginfo(CV().cv_data["path_marker_distance"])
+            logger.info(CV().cv_data["path_marker_distance"])
 
             await move_x(step=step_size * get_step_mult_factor(pixel_x, pixel_threshold))
             await move_y(step=step_size * get_step_mult_factor(pixel_y, pixel_threshold))
@@ -711,17 +724,17 @@ async def center_path_marker(self: Task):
             pixel_y = CV().cv_data["path_marker_distance"].y + y_offset
 
             if count % 3 == 0:
-                rospy.loginfo("Correcting depth")
+                logger.info("Correcting depth")
                 await correct_depth()
 
             await Yield()
 
-            rospy.loginfo(f"x: {pixel_x}, y: {pixel_y}")
+            logger.info(f"x: {pixel_x}, y: {pixel_y}")
 
             count += 1
 
-        rospy.loginfo("Finished centering path marker")
-        rospy.loginfo(f"x: {pixel_x}, y: {pixel_y}")
+        logger.info("Finished centering path marker")
+        logger.info(f"x: {pixel_x}, y: {pixel_y}")
 
     await correct_depth()
     await center_path_marker(pixel_threshold=PIXEL_THRESHOLD, x_offset=-120, y_offset=-120)
@@ -733,7 +746,7 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
     AREA_THRESHOLD = 1000
     LATENCY_THRESHOLD = 1
 
-    rospy.loginfo("Starting path marker to bins")
+    logger.info("Starting path marker to bins")
 
     async def correct_depth(desired_depth):
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
@@ -746,7 +759,7 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
         height = CV().cv_data[bin_object].height
 
         return width * height >= AREA_THRESHOLD and \
-            rospy.Time.now().to_sec() - CV().cv_data[bin_object].header.stamp.secs < LATENCY_THRESHOLD and \
+            Clock().now().seconds_nanoseconds()[0] - CV().cv_data[bin_object].header.stamp.secs < LATENCY_THRESHOLD and \
             abs(CV().cv_data[bin_object].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
 
     async def move_x(step=1):
@@ -756,10 +769,11 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
+    # TODO:ros2 sleep statement
     async def sleep(secs):
-        duration = rospy.Duration(secs)
-        start_time = rospy.Time.now()
-        while start_time + duration > rospy.Time.now():
+        duration = Duration(seconds=secs)
+        start_time = Clock().now()
+        while start_time + duration > Clock().now():
             await Yield()
 
     async def move_to_bins():
@@ -781,8 +795,8 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
             is_receiving_red_bin_data = is_receiving_bin_data("bin_red", bin_red_time)
             is_receiving_blue_bin_data = is_receiving_bin_data("bin_blue", bin_blue_time)
 
-            rospy.loginfo(f"Receiving red bin data: {is_receiving_red_bin_data}")
-            rospy.loginfo(f"Receiving blue bin data: {is_receiving_blue_bin_data}")
+            logger.info(f"Receiving red bin data: {is_receiving_red_bin_data}")
+            logger.info(f"Receiving blue bin data: {is_receiving_blue_bin_data}")
 
             step = 0.5 if (is_receiving_red_bin_data or is_receiving_blue_bin_data) else 1
             await move_x(step=step)
@@ -790,13 +804,14 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
             await Yield()
 
             if count >= maximum_distance:
-                rospy.loginfo("Bin not spotted, exiting the loop...")
+                logger.info("Bin not spotted, exiting the loop...")
                 break
 
             count += 1
 
-        rospy.loginfo("Reached pink bins, stabilizing...")
+        logger.info("Reached pink bins, stabilizing...")
         stabilize()
+        # TODO:ros2 sleep statement
         await sleep(5)
 
     await move_to_bins()
@@ -877,28 +892,29 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
         height = CV().cv_data[bin_object].height
 
         return width * height >= AREA_THRESHOLD and \
-            rospy.Time.now().to_sec() - CV().cv_data[bin_object].header.stamp.secs < LATENCY_THRESHOLD and \
+            Clock().now().seconds_nanoseconds()[0] - CV().cv_data[bin_object].header.stamp.secs < LATENCY_THRESHOLD and \
             abs(CV().cv_data[bin_object].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
 
     def stabilize():
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
+    # TODO:ros2 sleep statement
     async def sleep(secs):
-        duration = rospy.Duration(secs)
-        start_time = rospy.Time.now()
-        while start_time + duration > rospy.Time.now():
+        duration = Duration(seconds=secs)
+        start_time = Clock().now()
+        while start_time + duration > Clock().now():
             await Yield()
 
     async def search_for_bins():
-        rospy.loginfo("Searching for red/blue bins...")
+        logger.info("Searching for red/blue bins...")
         bin_red_time = None
         bin_blue_time = None
 
         for direction, secs in DIRECTIONS:
             bin_found = False
             secs *= 0.5
-            rospy.loginfo(f"Publishing power: {direction, secs}")
+            logger.info(f"Publishing power: {direction, secs}")
 
             await move_step(direction, secs)
 
@@ -917,17 +933,18 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
                 if bin_found:
                     break
 
+                # TODO:ros2 sleep statement
                 await sleep(0.1)
                 await Yield()
 
             await correct_depth(DEPTH_LEVEL)
 
             if bin_found:
-                rospy.loginfo("Found bin, terminating...")
+                logger.info("Found bin, terminating...")
                 break
 
-        rospy.loginfo(f"Received red bin data: {is_receiving_red_bin_data}")
-        rospy.loginfo(f"Received blue bin data: {is_receiving_blue_bin_data}")
+        logger.info(f"Received red bin data: {is_receiving_red_bin_data}")
+        logger.info(f"Received blue bin data: {is_receiving_blue_bin_data}")
 
         return bin_found
 
@@ -940,7 +957,7 @@ async def bin_task(self: Task) -> Task[None, None, None]:
     Detects and drops markers into the red bin. Requires robot to have submerged 0.7 meters.
     """
 
-    rospy.loginfo("Started bin task")
+    logger.info("Started bin task")
     START_DEPTH_LEVEL = State().orig_depth - 0.6
     START_PIXEL_THRESHOLD = 70
     MID_DEPTH_LEVEL = State().orig_depth - 1.0
@@ -948,11 +965,12 @@ async def bin_task(self: Task) -> Task[None, None, None]:
 
     FRAME_AREA = 480 * 600
 
-    TIMEOUT = rospy.Duration(240)
+    P
+    TIMEOUT = Duration(seconds=240)
+    start_time = Clock().now()
 
-    start_time = rospy.Time.now()
-
-    drop_marker = rospy.ServiceProxy('servo_control', SetBool)
+    # TODO:ros2 create new interface for the drop_marker
+    drop_marker = MarkerDropper().drop_marker
 
     async def correct_x(target):
         await cv_tasks.correct_x(prop=target, parent=self)
@@ -969,14 +987,14 @@ async def bin_task(self: Task) -> Task[None, None, None]:
 
     async def correct_yaw():
         yaw_correction = CV().cv_data["bin_angle"]
-        rospy.loginfo(f"Yaw correction: {yaw_correction}")
+        logger.info(f"Yaw correction: {yaw_correction}")
         sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction + (sign * 0.1)),
             keep_level=True,
             parent=self
         )
-        rospy.loginfo("Corrected yaw")
+        logger.info("Corrected yaw")
     self.correct_yaw = correct_yaw
 
     async def correct_roll_and_pitch():
@@ -985,7 +1003,7 @@ async def bin_task(self: Task) -> Task[None, None, None]:
         roll_correction = -euler_angles[0] * 1.2
         pitch_correction = -euler_angles[1] * 1.2
 
-        rospy.loginfo(f"Roll, pitch correction: {roll_correction, pitch_correction}")
+        logger.info(f"Roll, pitch correction: {roll_correction, pitch_correction}")
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, 0),
                                             parent=self)
 
@@ -1003,14 +1021,19 @@ async def bin_task(self: Task) -> Task[None, None, None]:
         else:
             return -1
 
+    # TODO:ros2 sleep statement
+
+    '''
+
+    '''
     async def sleep(secs):
-        duration = rospy.Duration(secs)
-        start_time = rospy.Time.now()
-        while start_time + duration > rospy.Time.now():
+        duration = Duration(seconds=secs)
+        start_time = Clock().now()
+        while start_time + duration > Clock().now():
             await Yield()
 
     async def track_bin(target, desired_depth, pixel_threshold, step_size=0.20, x_offset=0, y_offset=0):
-        rospy.loginfo(CV().cv_data[f"{target}_distance"])
+        logger.info(CV().cv_data[f"{target}_distance"])
         pixel_x = CV().cv_data[f"{target}_distance"].x + x_offset
         pixel_y = CV().cv_data[f"{target}_distance"].y + y_offset
 
@@ -1020,7 +1043,7 @@ async def bin_task(self: Task) -> Task[None, None, None]:
         count = 1
         while (max(pixel_x, pixel_y) > pixel_threshold or min(pixel_x, pixel_y) < -pixel_threshold) \
                 and width * height <= 1/3 * FRAME_AREA:
-            rospy.loginfo(CV().cv_data[f"{target}_distance"])
+            logger.info(CV().cv_data[f"{target}_distance"])
 
             await move_x(step=step_size * get_step_mult_factor(pixel_x, pixel_threshold))
             await move_y(step=step_size * get_step_mult_factor(pixel_y, pixel_threshold))
@@ -1032,28 +1055,28 @@ async def bin_task(self: Task) -> Task[None, None, None]:
             pixel_y = CV().cv_data[f"{target}_distance"].y + y_offset
 
             if count % 3 == 0:
-                rospy.loginfo("correcting depth")
+                logger.info("correcting depth")
                 await correct_depth(desired_depth=desired_depth)
-                rospy.loginfo("correcting roll and pitch")
+                logger.info("correcting roll and pitch")
                 await correct_roll_and_pitch()
 
             if width * height >= 1/6 * FRAME_AREA and \
                     abs(pixel_x) < pixel_threshold * 1.75 and abs(pixel_y) < pixel_threshold * 1.75:
-                rospy.loginfo(f"Reached area threshold: area = {width * height}")
+                logger.info(f"Reached area threshold: area = {width * height}")
                 break
 
-            if rospy.Time.now() - start_time > TIMEOUT:
-                rospy.logwarn("Track bin timed out")
+            if Clock().now() - start_time > TIMEOUT:
+                logger.warn("Track bin timed out")
                 break
 
             await Yield()
 
-            rospy.loginfo(f"x: {pixel_x}, y: {pixel_y}, area: {width * height}")
+            logger.info(f"x: {pixel_x}, y: {pixel_y}, area: {width * height}")
 
             count += 1
 
-        rospy.loginfo("Finished tracking bin")
-        rospy.loginfo(f"x: {pixel_x}, y: {pixel_y}, area: {width * height}")
+        logger.info("Finished tracking bin")
+        logger.info(f"x: {pixel_x}, y: {pixel_y}, area: {width * height}")
 
     await correct_depth(desired_depth=START_DEPTH_LEVEL)
     await track_bin(target="bin_red", desired_depth=START_DEPTH_LEVEL, pixel_threshold=START_PIXEL_THRESHOLD)
@@ -1066,17 +1089,17 @@ async def bin_task(self: Task) -> Task[None, None, None]:
 
     # If both balls loaded on the RIGHT, this is False
     drop_marker(False)
-    rospy.loginfo("Dropped first marker")
+    logger.info("Dropped first marker")
     await sleep(3)
 
     drop_marker(True)
-    rospy.loginfo("Dropped second marker")
+    logger.info("Dropped second marker")
     await sleep(2)
 
     await correct_depth(desired_depth=START_DEPTH_LEVEL)
-    rospy.loginfo(f"Corrected depth to {START_DEPTH_LEVEL}")
+    logger.info(f"Corrected depth to {START_DEPTH_LEVEL}")
 
-    rospy.loginfo("Completed bin task")
+    logger.info("Completed bin task")
 
 
 @task
@@ -1084,7 +1107,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     """
     Detects, move towards the pink bins, then surfaces inside the octagon. Requires robot to have submerged 0.7 meters.
     """
-    rospy.loginfo("Starting octagon task")
+    logger.info("Starting octagon task")
 
     DEPTH_LEVEL_AT_BINS = State().orig_depth - 1.0
     DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.6
@@ -1097,19 +1120,19 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
     async def correct_yaw():
         yaw_correction = CV().cv_data["bin_pink_front"].yaw
-        rospy.loginfo(f"Yaw correction: {yaw_correction}")
+        logger.info(f"Yaw correction: {yaw_correction}")
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction * 0.7),
             keep_level=True,
             parent=self
         )
-        rospy.loginfo("Corrected yaw")
+        logger.info("Corrected yaw")
     self.correct_yaw = correct_yaw
 
     def is_receiving_pink_bin_data(latest_detection_time):
         return latest_detection_time and "bin_pink_bottom" in CV().cv_data and \
             CV().cv_data["bin_pink_bottom"].score >= CONTOUR_SCORE_THRESHOLD and \
-            rospy.Time.now().to_sec() - CV().cv_data["bin_pink_bottom"].header.stamp.secs < LATENCY_THRESHOLD and \
+            Clock().now().seconds_nanoseconds()[0] - CV().cv_data["bin_pink_bottom"].header.stamp.secs < LATENCY_THRESHOLD and \
             abs(CV().cv_data["bin_pink_bottom"].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
 
     def publish_power():
@@ -1125,10 +1148,11 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
+    #TODO:ros2 sleep statement
     async def sleep(secs):
-        duration = rospy.Duration(secs)
-        start_time = rospy.Time.now()
-        while start_time + duration > rospy.Time.now():
+        duration = Duration(seconds=secs)
+        start_time = Clock().now()
+        while start_time + duration > Clock().now():
             await Yield()
 
     def get_step_size(last_step_size):
@@ -1165,32 +1189,32 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             await move_x(step=step)
             last_step_size = step
 
-            rospy.loginfo(f"Bin pink front score: {CV().cv_data['bin_pink_front'].score}")
+            logger.info(f"Bin pink front score: {CV().cv_data['bin_pink_front'].score}")
 
             if CV().cv_data["bin_pink_front"].score > 4000 and not moved_above:
                 await correct_depth(DEPTH_LEVEL_ABOVE_BINS + 0.1)
                 moved_above = True
 
-                rospy.loginfo("Moved above pink bins")
+                logger.info("Moved above pink bins")
 
             await Yield()
 
             count += 1
 
-            rospy.loginfo(f"Receiving pink bin data: {is_receiving_pink_bin_data(latest_detection_time)}")
+            logger.info(f"Receiving pink bin data: {is_receiving_pink_bin_data(latest_detection_time)}")
 
         if moved_above:
             await move_tasks.move_with_directions([(1.5, 0, 0)], parent=self)
         else:
-            rospy.loginfo("Detected bin_pink_bottom")
+            logger.info("Detected bin_pink_bottom")
 
-        rospy.loginfo("Reached pink bins, stabilizing...")
+        logger.info("Reached pink bins, stabilizing...")
         stabilize()
         await sleep(5)
 
     await move_to_pink_bins()
 
-    rospy.loginfo("Surfacing...")
+    logger.info("Surfacing...")
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
                                         timeout=10, parent=self)
-    rospy.loginfo("Finished surfacing")
+    logger.info("Finished surfacing")

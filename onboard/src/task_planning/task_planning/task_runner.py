@@ -2,6 +2,7 @@
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.state import State
+from task_planning.interface.marker_dropper import MarkerDropper
 
 import rclpy
 from rclpy.node import Node
@@ -43,6 +44,8 @@ class TaskPlanning(Node):
         Controls(self, bypass=True)
         state = State(self, tfBuffer=tfBuffer, bypass=True)
         CV(self, bypass=True)
+        MarkerDropper(self, bypass=True)
+
 
         """
         # Initialize the task update publisher
