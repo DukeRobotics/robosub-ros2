@@ -1,3 +1,15 @@
+#!/usr/bin/env python3
+"""
+Task Planning Node. This node is responsible for running tasks in the task planning package.
+Tasks include:
+- CV
+- Controls
+- State
+"""
+
+import math
+import time
+
 # import comp_tasks
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
@@ -10,8 +22,12 @@ from rclpy.node import Node
 
 import tf2_ros
 
+# from tqdm import tqdm
+
 
 class TaskPlanning(Node):
+    """TODO."""
+
     NODE_NAME = 'task_planning'
 
     def __init__(self):
@@ -20,30 +36,88 @@ class TaskPlanning(Node):
 
         Including intializing the interfaces and the task update publisher.
         """
-        main_initialized = False
         super().__init__(self.NODE_NAME)
-        bypass = self.declare_parameter('bypass', False).value
-        untethered = self.declare_parameter('untethered', False).value
-        self.get_logger().info('task_planning node initialized')
+        self.declare_parameter('bypass', False)
+        self.declare_parameter('untethered', False)
 
-        # When rospy is shutdown, if main finished initializing, publish that it has closed
-        # TODO:
+        main_initialized = False
+        bypass = self.get_parameter('bypass').get_parameter_value().bool_value
+        untethered = self.get_parameter('untethered').get_parameter_value().bool_value
+
+        self.get_logger().info('Task Planning Node Initialized')
+
+        # # When rospy is shutdown, if main finished initializing, publish that it has closed
         # def publish_close():
         #     if main_initialized:
         #         TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
 
         # rclpy.shutdown_callback(publish_close)
 
+        # TODO: FIX THIS, as we are trying to bring this code up from the main method
+        # # # Initialize transform buffer and listener
+        # tfBuffer = tf2_ros.Buffer()
+        # _ = tf2_ros.TransformListener(tfBuffer)
+
+        # # Initialize interfaces
+        # Controls(self, bypass)
+        # state = State(self, bypass, tfBuffer)
+        # CV(self, bypass)
+
+
+    def main(self):
+        """
+        Initialize interfaces and publishers:
+        - Controls
+        - State
+        - CV
+        - TaskUpdatePublisher
+
+        Run tasks (requires user input to start):
+        - initial_submerge
+        - coin_flip
+        - yaw_to_cv_object
+        - gate_task
+        - gate_style_task
+        - yaw_to_cv_object
+        - buoy_task
+        - after_buoy_task
+
+
+
+        """
+        main_initialized = False
+        bypass = self.get_parameter('bypass').get_parameter_value().bool_value
+        untethered = self.get_parameter('untethered').get_parameter_value().bool_value
+
+
+        #TODO: FIX shutdown_callback
+        # self.get_logger().info('-1')
+        # # When rospy is shutdown, if main finished initializing, publish that it has closed
+        # def publish_close():
+        #     if main_initialized:
+        #         self.get_logger().info('main has closed')
+        #         TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
+
+        # self.get_logger().info('0')
+        # self.shutdown_callback(publish_close)
+
         # Initialize transform buffer and listener
+        '''
+        TODO: Get Rid of tfBuffer in main and bring up to the init method
+        '''
         tfBuffer = tf2_ros.Buffer()
         _ = tf2_ros.TransformListener(tfBuffer, self)
 
-        # Initialize interfaces
-        Controls(self, bypass)
-        state = State(self, bypass, tfBuffer)
-        CV(self, bypass)
+        # Initialize interfaces that were imported
+        # TODO:ros2 se
+        self.get_logger().info('1')
+        Controls(self, bypass=True)
+        self.get_logger().info('2')
+        state = State(self, bypass=True, tfBuffer)
+        self.get_logger().info('3')
+        CV(self, bypass=True)
+        self.get_logger().info('4')
 
-        """
         # Initialize the task update publisher
         TaskUpdatePublisher()
 
@@ -129,7 +203,7 @@ class TaskPlanning(Node):
 
             # Main has returned
             TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.RETURNED, None)
-        """
+
 
 def main(args=None):
     """
@@ -137,6 +211,7 @@ def main(args=None):
     """
     rclpy.init(args=args)
     task_planning = TaskPlanning()
+    task_planning.main()
 
     try:
         rclpy.spin(task_planning)
