@@ -1,0 +1,3 @@
+[flake8]
+extend-ignore = D200  # One-line docstring should fit on one line with quotes
+extend-ignore = Q000  # Double quotes found but single quotes preferred
