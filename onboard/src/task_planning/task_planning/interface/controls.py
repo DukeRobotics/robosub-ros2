@@ -57,11 +57,6 @@ class Controls:
             10
         )
 
-        # if not bypass:
-        #     # TODO: this is a hack to wait for the control types service to be available
-
-        #     self.wait_for_message(self.RESET_PID_LOOPS_SERVICE)
-        self._reset_pid_loops = node.create_client(Trigger, self.RESET_PID_LOOPS_SERVICE)
         if not bypass:
             self._reset_pid_loops = node.create_client(Trigger, self.RESET_PID_LOOPS_SERVICE)
 
