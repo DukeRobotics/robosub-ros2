@@ -5,7 +5,9 @@ import inspect
 import jsonpickle
 from typing import Any, Callable, Coroutine, Generator, Generic, Optional, Type, TypeVar, Union
 
-import rospy
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 from custom_msgs.msg import TaskUpdate
 
 from message_conversion.jsonpickle_custom_handlers import register_custom_jsonpickle_handlers
@@ -40,7 +42,7 @@ class TaskStatus(IntEnum):
     ERRORED = TaskUpdate.ERRORED
 
 
-class TaskUpdatePublisher:
+class TaskUpdatePublisher(Node):
     """
     A singleton class to publish task updates.
 
@@ -57,8 +59,25 @@ class TaskUpdatePublisher:
             cls._instance.__init__()
         return cls._instance
 
-    def __init__(self):
-        self.publisher = rospy.Publisher("/task_planning/updates", TaskUpdate, queue_size=0)
+    def __init__(self,node):
+
+        # self.publisher = rospy.Publisher("/task_planning/updates", TaskUpdate, queue_size=0)
+        super().__init__('task_update_publisher')
+
+        # Define QoS profile (equivalent to queue_size in ROS1)
+        qos_profile = QoSProfile(
+            reliability=QoSReliabilityPolicy.RELIABLE,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=0  # This is equivalent to queue_size=0 in ROS1
+        )
+
+        self.publisher = self.create_publisher(
+            TaskUpdate,
+            '/task_planning/updates',
+            qos_profile
+        )
+
+
 
     def publish_update(self, task_id: int, parent_id: int, name: str, status: TaskStatus, data: Any) -> None:
         """
@@ -99,18 +118,31 @@ class TaskUpdatePublisher:
         try:
             msg_data = jsonpickle.encode(data, **jsonpickle_options)
         except Exception:
-            rospy.warn(f"Task with id {task_id} failed to encode data to JSON when publishing {status.name}: {data}")
+            self.get_logger().warn(f"Task with id {task_id} failed to encode data to JSON when publishing {status.name}: {data}")
             msg_data = jsonpickle.encode(str(data), **jsonpickle_options)
 
         # Create message header
         header = rospy.Header(stamp=rospy.Time.now())
 
-        # Publish the message
-        msg = TaskUpdate(header=header, id=task_id, parent_id=parent_id, name=name, status=status, data=msg_data)
+        # Create Message
+        msg = TaskUpdate()
+
+        # Set header
+        msg.header.stamp = self.get_clock().now().to_msg()
+
+        # Set other fields
+        msg.id = task_id
+        msg.parent_id = parent_id
+        msg.name = name
+        msg.status = status
+        msg.data = msg_data
+
+        # Publish the Message
         self.publisher.publish(msg)
 
     def __del__(self):
-        self.publisher.unregister()
+        # In ROS2, explicit unregisterring is not needed
+        pass
 
 
 YieldType = TypeVar("YieldType")
@@ -254,7 +286,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
             AssertionError: If the status is not a valid TaskStatus
         """
 
-        TaskUpdatePublisher().publish_update(self._id, self._parent_id, self._name, status, data)
+        TaskUpdatePublisher.get_instance().publish_update(self._id, self._parent_id, self._name, status, data)
 
     def step(self):
         """

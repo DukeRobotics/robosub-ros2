@@ -6,7 +6,7 @@ from task_planning.interface.state import State
 import rclpy
 from rclpy.node import Node
 
-# from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
+from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
 
 import tf2_ros
 
@@ -27,7 +27,7 @@ class TaskPlanning(Node):
         self.get_logger().info('task_planning node initialized')
 
         # When rospy is shutdown, if main finished initializing, publish that it has closed
-        # TODO:
+        # TODO:ros2
         # def publish_close():
         #     if main_initialized:
         #         TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
@@ -46,7 +46,7 @@ class TaskPlanning(Node):
 
         """
         # Initialize the task update publisher
-        TaskUpdatePublisher()
+        TaskUpdatePublisher(self)
 
         # Wait one second for all publishers and subscribers to start
         time.sleep(1)
