@@ -41,7 +41,7 @@ class TaskPlanning(Node):
         # Initialize interfaces
         # TODO: set bypass=false
         Controls(self, bypass=True)
-        state = State(self, bypass=True, tfBuffer)
+        state = State(self, tfBuffer, bypass=True)
         CV(self, bypass=True)
 
         """
