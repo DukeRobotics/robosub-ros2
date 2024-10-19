@@ -1,6 +1,4 @@
-import rclpy
 from rclpy.node import Node
-import asyncio
 
 from std_srvs.srv import Trigger, SetBool
 from geometry_msgs.msg import Pose, Twist
@@ -45,7 +43,7 @@ class Controls:
         self.node = node
 
         # if not bypass:
-        # TODO: this is a hack to wait for the control types service to be available
+        # TODO:ros2 this is a hack to wait for the control types service to be available
         # self.wait_for_service(self.CONTROL_TYPES_SERVICE)
         # self._set_control_types = node.create_client(SetControlTypes, self.CONTROL_TYPES_SERVICE)
         if not bypass:
@@ -66,7 +64,7 @@ class Controls:
         )
 
         # if not bypass:
-        #     # TODO: this is a hack to wait for the control types service to be available
+        #     # TODO:ros2 this is a hack to wait for the control types service to be available
 
         #     self.wait_for_message(self.RESET_PID_LOOPS_SERVICE)
         self._reset_pid_loops = node.create_client(Trigger, self.RESET_PID_LOOPS_SERVICE)
