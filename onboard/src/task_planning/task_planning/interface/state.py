@@ -42,15 +42,7 @@ class State:
         node.create_subscription(Odometry, self.STATE_TOPIC, self._on_receive_state, 10)
         self._state = None
 
-        # TODO: this is a hack to wait for the control types service to be available
-        # if not bypass:
-        #     rclpy.wait_for_service(self.RESET_POSE_SERVICE)
-        # self._reset_pose = node.create_client(SetPose, self.RESET_POSE_SERVICE)
         if not bypass:
-            self._reset_pose = node.create_client(SetPose, self.RESET_POSE_SERVICE)
-            if not self._reset_pose.wait_for_service(timeout_sec=5.0):
-                node.get_logger().warn(f'Service {self.RESET_POSE_SERVICE} not available')
-        else:
             self._reset_pose = node.create_client(SetPose, self.RESET_POSE_SERVICE)
 
         node.create_subscription(PoseWithCovarianceStamped, self.DEPTH_TOPIC, self._on_receive_depth, 10)
