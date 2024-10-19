@@ -4,7 +4,7 @@ import rclpy
 import resource_retriever as rr
 import yaml
 import math
-#import depthai_camera_connect
+import cv.depthai_camera_connect
 import depthai as dai
 import numpy as np
 from cv.utils import DetectionVisualizer, calculate_relative_pose
@@ -17,7 +17,7 @@ from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String
 
 from rclpy.node import Node
-
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
 MM_IN_METER = 1000
 DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH = 'package://cv/models/depthai_models.yaml'
@@ -59,7 +59,7 @@ class DepthAISpatialDetector(Node):
 
         self.camera = 'front'
         self.pipeline = None
-        self.publishers = {}  # Keys are the class names of a given model
+        self.publishers_dict = {}  # Keys are the class names of a given model
         self.output_queues = {}  # Keys are "rgb", "depth", and "detections"
         self.connected = False
         self.current_model_name = None
@@ -78,13 +78,19 @@ class DepthAISpatialDetector(Node):
         # By default the first task is going through the gate
         self.current_priority = "buoy_abydos_serpenscaput"
 
+        qos_profile = QoSProfile(
+            reliability=QoSReliabilityPolicy.RELIABLE,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=10 # queue_size in ros 1
+        )
+
         # Initialize publishers and subscribers for sonar/task planning
         self.sonar_requests_publisher = self.create_publisher(
-            SonarSweepRequest, SONAR_REQUESTS_PATH, queue_size=10)
+            SonarSweepRequest, SONAR_REQUESTS_PATH, 10)
         self.sonar_response_subscriber = self.create_subscription(
-            SonarSweepResponse, SONAR_RESPONSES_PATH, self.update_sonar)
+            SonarSweepResponse, SONAR_RESPONSES_PATH, self.update_sonar,qos_profile)
         self.desired_detection_feature = self.create_subscription(
-            String, TASK_PLANNING_REQUESTS_PATH, self.update_priority)
+            String, TASK_PLANNING_REQUESTS_PATH, self.update_priority,qos_profile)
 
         self.run()
 
@@ -221,7 +227,7 @@ class DepthAISpatialDetector(Node):
             publisher_dict[model_class] = self.create_publisher(CVObject,
                                                           publisher_name,
                                                           queue_size=10)
-        self.publishers = publisher_dict
+        self.publishers_dict = publisher_dict
 
         # Create CompressedImage publishers for the raw RGB feed, detections feed, and depth feed
         if self.rgb_raw:
@@ -393,9 +399,10 @@ class DepthAISpatialDetector(Node):
 
         object_msg.sonar = using_sonar
 
-        if self.publishers:
+        if self.publishers_dict:
             # Flush out 0, 0, 0 values
-            self.publishers[label].publish(object_msg)
+            self.get_logger().debug("Publishing")
+            self.publishers_dict[label].publish(object_msg)
 
     def update_sonar(self, sonar_results):
         """
