@@ -108,6 +108,12 @@ If you're using VS Code and have the Dev Containers extension installed:
 > Windows users **must** execute the `docker-build.sh` script via Git Bash _prior_ to reopening the VS Code window in the Dev Container. This script sets up the container to allow you to sign commits, pull, and push changes to the remote repository.
 >
 > Do **not** rebuild the container through the Dev Containers extension in VS Code. This will cause the container to lose the necessary configuration to sign commits. Instead execute `docker-build.sh` _locally_ (outside the container) in Git Bash to rebuild the container.
+>
+> If you get the error `onboard2 is already in use`, run the following command in Git Bash to remove the existing container:
+> ```bash
+> docker rm -f onboard2
+> ```
+> Then, run the `docker-build.sh` script again.
 
 #### Without VS Code Dev Containers
 If you're **not** using VS Code or do **not** have the Dev Containers extension installed:
