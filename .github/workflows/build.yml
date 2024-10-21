@@ -1,0 +1,31 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  docker-build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create .env file with NO_GIT
+        run: echo "NO_GIT=true" > .env
+
+      - name: Run docker-build.sh
+        run: |
+          ./docker-build.sh
+
+      - name: Linter
+        run: |
+          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/linter.sh
+
+      - name: Build ROS2
+        run: |
+          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build.sh
