@@ -22,7 +22,7 @@ class DVLRawPublisher(SerialReublisherNode):
     LINE_DELIM = ','
 
     CONNECTION_RETRY_PERIOD = 1.0 #S
-    LOOP_RATE = 20.0 #Hz
+    LOOP_RATE = 100.0 #Hz
 
     def __init__(self):
 

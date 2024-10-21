@@ -20,11 +20,11 @@ class PressureVoltagePublisher(SerialReublisherNode):
     VOLTAGE_DEST_TOPIC = 'sensors/voltage'
 
     CONNECTION_RETRY_PERIOD = 1.0 #S
-    LOOP_RATE = 20.0 #Hz
+    LOOP_RATE = 50.0 #Hz
     MEDIAN_FILTER_SIZE = 3
 
     def __init__(self):
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, 'pv', self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE)
+        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, 'pv', self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE, use_nonblocking=False)
 
         self._pressure = None  # Pressure to publish
         self._previous_pressure = None  # Previous pressure readings for median filter
@@ -58,7 +58,7 @@ class PressureVoltagePublisher(SerialReublisherNode):
             self._parse_pressure()  # Parse pressure data
             self._publish_current_pressure_msg()  # Publish pressure data
         if "V:" in tag:
-            self._current_voltage_msg = float(data)
+            self._current_voltage_msg = Float64(data=float(data))
             self._publish_current_voltage_msg()
 
     def _update_pressure(self, new_reading):
