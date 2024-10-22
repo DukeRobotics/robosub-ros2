@@ -80,6 +80,10 @@ Make sure you have Docker running on your machine. Then, follow the instructions
 If you're using VS Code and have the Dev Containers extension installed:
 
 1. Open the repo in VS Code.
+2. **Windows users only:** Open a Git Bash terminal in VS Code and run the following command to start the Docker container (make sure your working directory is the repository root):
+    ```bash
+    ./docker-build.sh
+    ```
 2. Open the Command Palette (`Ctrl/Cmd + Shift + P`).
 3. Run the `Dev Containers: Reopen in Container` command.
 4. Wait for the container to finish building.
@@ -97,6 +101,19 @@ If you're using VS Code and have the Dev Containers extension installed:
     - If you set `NO_GIT=false` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
     - You must build the packages in the container before running the code. See the [Build Packages](#build-packages) section for more information.
 6. When you're done, simply close the VS Code window to stop the container.
+
+> [!IMPORTANT]
+> **Windows Users:**
+>
+> Windows users **must** execute the `docker-build.sh` script via Git Bash _prior_ to reopening the VS Code window in the Dev Container. This script sets up the container to allow you to sign commits, pull, and push changes to the remote repository.
+>
+> Do **not** rebuild the container through the Dev Containers extension in VS Code. This will cause the container to lose the necessary configuration to sign commits. Instead execute `docker-build.sh` _locally_ (outside the container) in Git Bash to rebuild the container.
+>
+> If you get the error `onboard2 is already in use`, run the following command in Git Bash to remove the existing container:
+> ```bash
+> docker rm -f onboard2
+> ```
+> Then, run the `docker-build.sh` script again.
 
 #### Without VS Code Dev Containers
 If you're **not** using VS Code or do **not** have the Dev Containers extension installed:
