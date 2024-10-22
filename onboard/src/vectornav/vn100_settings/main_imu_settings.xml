@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<VectorNav_Sensor xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Model>VN-100T-CR</Model>
+  <HardwareRevision>7</HardwareRevision>
+  <SerialNumber>0100027124</SerialNumber>
+  <FirmwareVersion>2.0.1.0</FirmwareVersion>
+  <Register>
+    <Id>6</Id>
+    <Name>Async Data Output Type</Name>
+    <Values>0;14</Values>
+  </Register>
+  <Register>
+    <Id>35</Id>
+    <Name>VPE Basic Control</Name>
+    <Values>1,0,1,1</Values>
+  </Register>
+  <Register>
+    <Id>44</Id>
+    <Name>Real-Time HSI Control</Name>
+    <Values>0,3,1</Values>
+  </Register>
+  <Register>
+    <Id>75</Id>
+    <Name>Binary Output Message Configuration #1</Name>
+    <Values>1,40,01,3F3D</Values>
+  </Register>
+</VectorNav_Sensor>
