@@ -26,7 +26,7 @@ class SensorServoPublisher(SerialReublisherNode):
     MEDIAN_FILTER_SIZE = 3
 
     def __init__(self):
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, 'servo', self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE)
+        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, 'servo', self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE, use_nonblocking=True)
 
         self._temperature = None  # Temperature to publish
         self._humidity = None
