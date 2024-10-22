@@ -1,6 +1,6 @@
 vectornav:
   ros__parameters:
-    port: "/dev/ttyUSB0"
+    port: "/dev/ttyUSB_VN100"
     baud: 115200
     reconnect_ms: 500
     # Reference vnproglib-1.2.0.0 headers for enum definitions
@@ -26,15 +26,16 @@ vectornav:
     errorMode: 1                     # ERRORMODE_SEND
     # Binary output register 1
     BO1:
-      asyncMode: 3                   # ASYNCMODE_BOTH
+      asyncMode: 1                   # ASYNCMODE_PORT1
       rateDivisor: 40                # 20 Hz
       commonField: 0x7FFF
       timeField: 0x0000              # TIMEGROUP_NONE
-      imuField: 0x0000               # IMUGROUP_NONE
+      imuField: 0x0000               
       # set gpsField directly in source to enforce or condition
       attitudeField: 0x0000          # ATTITUDEGROUP_NONE
       # set insField directly in source to enforce or condition
       gps2Field: 0x0000              # GPSGROUP_NONE
+      gpsField: 0x0000
     # Binary output register 2
     BO2:
       asyncMode: 0                   # ASYNCMODE_NONE
