@@ -10,7 +10,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 from custom_msgs.msg import TaskUpdate
 
-from message_conversion.jsonpickle_custom_handlers import register_custom_jsonpickle_handlers
+from task_planning.message_conversion.jsonpickle_custom_handlers import register_custom_jsonpickle_handlers
 
 # Register all JSONPickle handlers for custom classes
 register_custom_jsonpickle_handlers()

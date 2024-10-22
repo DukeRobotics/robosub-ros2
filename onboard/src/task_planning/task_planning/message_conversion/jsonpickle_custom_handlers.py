@@ -5,7 +5,7 @@ import traceback
 import genpy
 
 
-from message_conversion.ros_message_converter import convert_ros_message_to_dictionary, \
+from task_planning.message_conversion.ros_message_converter import convert_ros_message_to_dictionary, \
     convert_dictionary_to_ros_message
 
 
