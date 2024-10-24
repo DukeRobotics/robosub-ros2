@@ -11,7 +11,11 @@ RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends clang-format
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-pip
-RUN apt install -y --no-install-recommends python3-serial
+RUN apt install -y --no-install-recommends python3-venv
+
+RUN python3 -m venv /root/dev/venv
+RUN /root/dev/venv/bin/pip install pyserial
+RUN /root/dev/venv/bin/pip install GitPython
 
 # Set no password for root user
 RUN passwd -d root
