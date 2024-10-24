@@ -42,6 +42,12 @@ class TaskStatus(IntEnum):
     ERRORED = TaskUpdate.ERRORED
 
 
+"""
+TODO:ros2
+
+Same idea as the TODO in marker_dropper. Don't create another node for TaskUpdatePublisher.
+"""
+
 class TaskUpdatePublisher(Node):
     """
     A singleton class to publish task updates.
