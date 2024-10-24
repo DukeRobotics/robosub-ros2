@@ -40,7 +40,7 @@ class TaskPlanning(Node):
         _ = tf2_ros.TransformListener(tfBuffer, self)
 
         # Initialize interfaces
-        # TODO: set bypass=false
+        # TODO:ros2 set bypass=false
         Controls(self, bypass=True)
         state = State(self, tfBuffer=tfBuffer, bypass=True)
         CV(self, bypass=True)
