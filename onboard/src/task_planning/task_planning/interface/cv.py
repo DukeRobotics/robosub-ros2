@@ -11,7 +11,7 @@ from task_planning.utils.other_utils import singleton
 
 
 @singleton
-class CV(Node):
+class CV:
     """
     Interface for the CV.
 
@@ -48,9 +48,8 @@ class CV(Node):
         """
         Initialize the CV interface
         """
-        super().__init__(self.NODE_NAME)
-        self.declare_parameter('bypass', False)
-        self.declare_parameter('untethered', False)
+        self.node = node
+
         self.cv_data = {}
         self.bypass = bypass
 

@@ -13,20 +13,19 @@ object in its constructor (note that MarkerDropper is a @singleton).
 """
 
 @singleton
-class MarkerDropper(Node):
-    def __init__(self, bypass: bool = False):
-        super().__init__('marker_dropper')
+class MarkerDropper:
+
+    # ROS service names
+    SERVO_CONTROL_SERVICE = 'marker_dropper/servo_control'
+
+    def __init__(self, node: Node, bypass: bool = False):
+        self.node = node
 
         # Create a callback group that allows concurrent callbacks
         self.callback_group = ReentrantCallbackGroup()
 
         # Create a client for the servo_control service
-        self.drop_marker_client = self.create_client(
-            SetBool,
-            'servo_control',
-            callback_group=self.callback_group,
-            qos_profile=QoSProfile(reliability=ReliabilityPolicy.RELIABLE)
-        )
+        self.drop_marker_client = node.create_client(SetBool, self.SERVO_CONTROL_SERVICE)
 
         if not bypass:
             while not self.drop_marker_client.wait_for_service(timeout_sec=1.0):
