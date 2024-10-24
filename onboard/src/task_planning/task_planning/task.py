@@ -48,7 +48,7 @@ TODO:ros2
 Same idea as the TODO in marker_dropper. Don't create another node for TaskUpdatePublisher.
 """
 
-class TaskUpdatePublisher(Node):
+class TaskUpdatePublisher:
     """
     A singleton class to publish task updates.
 
@@ -59,29 +59,14 @@ class TaskUpdatePublisher(Node):
 
     _instance = None
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super(TaskUpdatePublisher, cls).__new__(cls)
-            cls._instance.__init__()
+            # cls._instance.__init__()
         return cls._instance
 
-    def __init__(self,node):
-
-        # self.publisher = rospy.Publisher("/task_planning/updates", TaskUpdate, queue_size=0)
-        super().__init__('task_update_publisher')
-
-        # Define QoS profile (equivalent to queue_size in ROS1)
-        qos_profile = QoSProfile(
-            reliability=QoSReliabilityPolicy.RELIABLE,
-            history=QoSHistoryPolicy.KEEP_LAST,
-            depth=0  # This is equivalent to queue_size=0 in ROS1
-        )
-
-        self.publisher = self.create_publisher(
-            TaskUpdate,
-            '/task_planning/updates',
-            qos_profile
-        )
+    def __init__(self, node:Node):
+        self.publisher = node.create_publisher(TaskUpdate, '/task_planning/updates', 100000000)
 
 
 

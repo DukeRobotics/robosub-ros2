@@ -2,7 +2,6 @@ import rclpy
 from rclpy.node import Node
 from example_interfaces.srv import SetBool
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.qos import QoSProfile, ReliabilityPolicy
 from task_planning.utils.other_utils import singleton
 
 """

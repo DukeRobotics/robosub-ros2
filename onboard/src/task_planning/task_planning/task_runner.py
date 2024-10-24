@@ -47,10 +47,11 @@ class TaskPlanning(Node):
         MarkerDropper(self, bypass=True)
 
 
-        """
+
         # Initialize the task update publisher
         TaskUpdatePublisher(self)
 
+        """
         # Wait one second for all publishers and subscribers to start
         time.sleep(1)
 
@@ -68,7 +69,6 @@ class TaskPlanning(Node):
         # Main has initialized
         TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.INITIALIZED, None)
         main_initialized = True
-
         # Run tasks
         try:
             # Tasks to run
