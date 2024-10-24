@@ -22,3 +22,6 @@ else
 fi
 
 export _colcon_cd_root=/opt/ros/jazzy
+
+source /root/dev/venv/bin/activate
+export PYTHONPATH=$PYTHONPATH:/root/dev/venv/lib/python3.12/site-packages
