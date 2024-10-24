@@ -2,8 +2,6 @@ import builtins
 import jsonpickle
 import traceback
 
-import genpy
-
 
 from task_planning.message_conversion.ros_message_converter import convert_ros_message_to_dictionary, \
     convert_dictionary_to_ros_message
@@ -49,5 +47,9 @@ def register_custom_jsonpickle_handlers():
     """
     Register all custom JSONPickle handlers
     """
-    jsonpickle.handlers.register(genpy.Message, ROSMessageHandler, base=True)
+
+    # TODO:ros2
+    # genpy no longer used in ROS2. Doesn't appear to be a base class for all ROS2 messages anymore...
+    # jsonpickle.handlers.register(genpy.Message, ROSMessageHandler, base=True)
+
     jsonpickle.handlers.register(BaseException, BaseExceptionHandler, base=True)
