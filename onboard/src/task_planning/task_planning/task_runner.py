@@ -100,6 +100,7 @@ class TaskPlanning(Node):
             ]
             input('Press enter to run tasks...\n')
 
+            # TODO:ros2 migrate this correctly using timers
             if untethered:
                 self.get_logger().info('\nCountdown started...\n')
                 for i in tqdm(range(10, 0, -1)):
@@ -110,7 +111,7 @@ class TaskPlanning(Node):
 
             self.get_logger().info('\nRunning tasks.\n')
 
-            # TODO: migrate this correctly
+            # TODO:ros2 migrate this correctly using timers
             # Step through tasks, stopping if rpy is shutdown
             rate = self.create_rate(30)
             for t in tasks:
