@@ -47,10 +47,7 @@
                 "git.enableCommitSigning": true,
 
                 // Python-related settings
-                "python.defaultInterpreterPath": "/usr/bin/python3",
-                "flake8.args": [
-                    "--max-line-length=120"
-                ],
+                "python.defaultInterpreterPath": "/root/dev/venv/bin/python3",
 
                 // Doxygen doc generator settings
                 "doxdocgen.generic.returnTemplate": "@return ",
