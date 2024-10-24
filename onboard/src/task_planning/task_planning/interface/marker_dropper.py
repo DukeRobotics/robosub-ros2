@@ -5,9 +5,16 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 from task_planning.utils.other_utils import singleton
 
+"""
+TODO:ros2
+
+Look at the other interfaces. MarkDropper does *not* inherit from rclypy.node since it receives a node
+object in its constructor (note that MarkerDropper is a @singleton).
+"""
+
 @singleton
 class MarkerDropper(Node):
-    def __init__(self, bypass: bool= False):
+    def __init__(self, bypass: bool = False):
         super().__init__('marker_dropper')
 
         # Create a callback group that allows concurrent callbacks
