@@ -8,7 +8,7 @@ from task_planning.utils.other_utils import singleton
 """
 TODO:ros2
 
-Look at the other interfaces. MarkDropper does *not* inherit from rclypy.node since it receives a node
+Look at the other interfaces. MarkDropper does *not* inherit from rclypy.node since it should receive a node
 object in its constructor (note that MarkerDropper is a @singleton).
 """
 
