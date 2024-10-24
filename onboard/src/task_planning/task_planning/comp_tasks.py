@@ -60,7 +60,7 @@ from utils.coroutine_utils import sleep
 RECT_HEIGHT_METERS = 0.3048
 
 # Set-up ROS2 Logger
-logger = get_logger('gate_style_task')
+logger = get_logger('comp_tasks')
 
 
 @task
@@ -73,7 +73,7 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
 
     DEPTH_LEVEL = State().orig_depth - depth_level
 
-    # TODO:ros2 sleep statement
+
     async def sleep(secs):
         duration = Duration(seconds=secs)
         start_time = Clock().now()
@@ -477,7 +477,7 @@ async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[Non
         else:
             return max(dist-3 + 0.25, 0.25)
 
-    # TODO:ros2 sleep statement
+
     async def sleep(secs):
         duration = Duration(seconds=secs)
         start_time = Clock().now()
@@ -527,7 +527,7 @@ async def yaw_to_cv_object(self: Task, cv_object: str, direction=1,
 
     logger.info("Starting yaw_to_cv_object")
 
-    # TODO:ros2 sleep statement
+
     async def sleep(secs):
         duration = Duration(seconds=secs)
         start_time = Clock().now()
@@ -608,7 +608,7 @@ async def align_path_marker(self: Task, direction=1) -> Task[None, None, None]:
     async def correct_depth():
         await move_tasks.depth_correction(desired_depth=DEPTH_LEVEL, parent=self)
 
-    # TODO:ros2 sleep statement
+
     async def sleep(secs):
         duration = Duration(seconds=secs)
         start_time = Clock().now()
@@ -769,7 +769,7 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
-    # TODO:ros2 sleep statement
+
     async def sleep(secs):
         duration = Duration(seconds=secs)
         start_time = Clock().now()
@@ -811,7 +811,7 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
 
         logger.info("Reached pink bins, stabilizing...")
         stabilize()
-        # TODO:ros2 sleep statement
+
         await sleep(5)
 
     await move_to_bins()
@@ -899,7 +899,7 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
-    # TODO:ros2 sleep statement
+
     async def sleep(secs):
         duration = Duration(seconds=secs)
         start_time = Clock().now()
@@ -933,7 +933,7 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
                 if bin_found:
                     break
 
-                # TODO:ros2 sleep statement
+
                 await sleep(0.1)
                 await Yield()
 
@@ -969,7 +969,7 @@ async def bin_task(self: Task) -> Task[None, None, None]:
     TIMEOUT = Duration(seconds=240)
     start_time = Clock().now()
 
-    # TODO:ros2 create new interface for the drop_marker
+
     drop_marker = MarkerDropper().drop_marker
 
     async def correct_x(target):
@@ -1021,7 +1021,7 @@ async def bin_task(self: Task) -> Task[None, None, None]:
         else:
             return -1
 
-    # TODO:ros2 sleep statement
+
 
     '''
 
@@ -1148,7 +1148,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
-    #TODO:ros2 sleep statement
+
     async def sleep(secs):
         duration = Duration(seconds=secs)
         start_time = Clock().now()

@@ -1,11 +1,18 @@
 from typing import Optional
-import rospy
+import rclpy
+from rclpy.logging import get_logger
+from rclpy.logging import LoggingSeverity
 
 from interface.cv import CV
 from move_tasks import move_to_pose_local
 from task import task, Yield, Task
 import move_tasks
 from utils import geometry_utils
+
+
+
+# Create logger directly
+logger = get_logger('cv_tasks')
 
 
 # TODO: this task will likely be depleted once we complete the refactoring tasks in comp_tasks.py
@@ -47,18 +54,18 @@ async def move_to_cv_obj(self: Task, name: str) -> Task[None, Optional[str], Non
 async def correct_x(self: Task, prop: str, add_factor: float = 0, mult_factor: float = 1):
     x = (CV().cv_data[prop].coords.x + add_factor) * mult_factor
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(x, 0, 0, 0, 0, 0), parent=self)
-    rospy.loginfo(f"Corrected x {x}")
+    logger.info(f"Corrected x {x}")
 
 
 @task
 async def correct_y(self: Task, prop: str, add_factor: float = 0, mult_factor: float = 1):
     y = (CV().cv_data[prop].coords.y + add_factor) * mult_factor
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, y, 0, 0, 0, 0), parent=self)
-    rospy.loginfo(f"Corrected y {y}")
+    logger.info(f"Corrected y {y}")
 
 
 @task
 async def correct_z(self: Task, prop: str):
     z = CV().cv_data[prop].coords.z
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, z, 0, 0, 0), parent=self)
-    rospy.loginfo(f"Corrected z {z}")
+    logger.info(f"Corrected z {z}")

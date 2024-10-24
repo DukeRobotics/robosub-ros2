@@ -1,4 +1,4 @@
-import rospy
+import rclpy
 import time
 import math
 
@@ -13,6 +13,8 @@ from interface.state import State
 
 RECT_HEIGHT_METERS = 0.3048
 
+logger = rclpy.logging.get_logger('prequal_tasks')
+
 
 @task
 async def prequal_task(self: Task) -> Task[None, None, None]:
@@ -23,7 +25,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
 
     countdown_length = 10
     for i in range(countdown_length):
-        rospy.loginfo(f"Starting in {countdown_length - i}")
+        logger.info(f"Starting in {countdown_length - i}")
         start_time = time.time()
         while time.time() - start_time < 1:
             await Yield()
@@ -36,7 +38,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
     await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, DEPTH_LEVEL, 0, 0, 0),
             parent=self)
-    rospy.loginfo(f"Moved to (0, 0, {DEPTH_LEVEL})")
+    logger.info(f"Moved to (0, 0, {DEPTH_LEVEL})")
 
     DEPTH_LEVEL = State().depth
 
@@ -45,10 +47,10 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, rad_angle),
             parent=self)
-        rospy.loginfo(f"Rotate {angle}")
+        logger.info(f"Rotate {angle}")
 
     async def track_blue_rectangle(distance, direction):
-        rospy.loginfo(f"track_blue_rectangle {distance} {direction}")
+        logger.info(f"track_blue_rectangle {distance} {direction}")
         repeats = math.ceil(distance)
         total_dist = 0
         prev_touching_top = False
@@ -60,7 +62,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
                 parent=self)
 
             total_dist += step
-            rospy.loginfo(f"Moved forward {total_dist}")
+            logger.info(f"Moved forward {total_dist}")
 
             touching_top = CV().cv_data["lane_marker_touching_top"]
             touching_bottom = CV().cv_data["lane_marker_touching_bottom"]
@@ -68,14 +70,14 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, 0.2, 0, 0, 0, 0),
                     parent=self)
-                rospy.loginfo("Touching top correction (0, 0.2, 0)")
+                logger.info("Touching top correction (0, 0.2, 0)")
                 if prev_touching_top and not prev_touching_bottom:
                     await rotate_deg(20)
             elif not touching_top and touching_bottom:
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, -0.2, 0, 0, 0, 0),
                     parent=self)
-                rospy.loginfo("Touching bottom correction (0, -0.2, 0)")
+                logger.info("Touching bottom correction (0, -0.2, 0)")
                 if not prev_touching_top and prev_touching_bottom:
                     await rotate_deg(-20)
 
@@ -85,7 +87,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, 0, 0, 0, 0, rad_angle),
                     parent=self)
-                rospy.loginfo(f"Yaw correction {angle}")
+                logger.info(f"Yaw correction {angle}")
 
             dist_pixels = CV().cv_data["lane_marker_dist"]
             height_pixels = CV().cv_data["lane_marker_height"]
@@ -94,14 +96,14 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, dist_meters, 0, 0, 0, 0),
                     parent=self)
-                rospy.loginfo(f"Correction {dist_meters}")
+                logger.info(f"Correction {dist_meters}")
 
             depth_delta = DEPTH_LEVEL - State().depth
             if abs(depth_delta) > 0:
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0),
                     parent=self)
-                rospy.loginfo(f"Depth correction {depth_delta}")
+                logger.info(f"Depth correction {depth_delta}")
 
             prev_touching_top = touching_top
             prev_touching_bottom = touching_bottom
@@ -111,7 +113,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, -0.3, 0, 0, 0),
         parent=self)
-    rospy.loginfo("Moved to (0, 0, -0.3)")
+    logger.info("Moved to (0, 0, -0.3)")
     DEPTH_LEVEL = State().depth
 
     await track_blue_rectangle(2, 1)
@@ -119,7 +121,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, 0.3, 0, 0, 0),
         parent=self)
-    rospy.loginfo("Moved to (0, 0, 0.3)")
+    logger.info("Moved to (0, 0, 0.3)")
     DEPTH_LEVEL = State().depth
 
     await track_blue_rectangle(7, 1)
@@ -140,14 +142,14 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
             parent=self)
-        rospy.loginfo(f"Moved to {direction}")
+        logger.info(f"Moved to {direction}")
 
     await track_blue_rectangle(7, -1)
 
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, -0.2, 0, 0, 0),
         parent=self)
-    rospy.loginfo("Moved to (0, 0, -0.2)")
+    logger.info("Moved to (0, 0, -0.2)")
     DEPTH_LEVEL = State().depth
 
     await track_blue_rectangle(2, -1)
@@ -155,7 +157,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, 0.2, 0, 0, 0),
         parent=self)
-    rospy.loginfo("Moved to (0, 0, 0.2)")
+    logger.info("Moved to (0, 0, 0.2)")
     DEPTH_LEVEL = State().depth
 
     await track_blue_rectangle(3, -1)

@@ -3,7 +3,9 @@ import copy
 
 from transforms3d.euler import quat2euler, euler2quat
 
-import rospy
+import rclpy
+from rclpy.clock import Clock
+from rclpy.duration import Duration
 from geometry_msgs.msg import Pose, Twist
 
 from interface.controls import Controls
@@ -26,7 +28,8 @@ async def move_to_pose_global(self: Task, pose: Pose, timeout: int = 30) -> Task
     """
     Controls().start_new_move()
     Controls().publish_desired_position(pose)
-    start_time = rospy.Time.now()
+    clock = Clock()
+    start_time = clock.now()
     while not geometry_utils.stopped_at_pose(State().state.pose.pose, pose, State().state.twist.twist):
         # Allow users of this task to update the pose
         new_pose = await Yield()
@@ -36,8 +39,8 @@ async def move_to_pose_global(self: Task, pose: Pose, timeout: int = 30) -> Task
         Controls().publish_desired_position(pose)
 
         # Check if the timeout has been reached
-        if (rospy.Time.now() - start_time).to_sec() > timeout:
-            rospy.logwarn("Move to pose timed out")
+        if (clock.now() - start_time).to_sec() > timeout:
+            rclpy.logging.get_logger('move_to_pose_global').warn("Move to pose timed out")
             return None
 
 
@@ -102,8 +105,9 @@ async def move_with_power_for_seconds(self: Task, power: Twist, seconds: float) 
         New desired power to move with
     """
     Controls().publish_desired_power(power)
-    endtime = rospy.time.now() + seconds
-    while (rospy.time.now() < endtime):
+    clock = Clock()
+    endtime = clock.now() + seconds
+    while (clock.now() < endtime):
         new_power = await Yield()
         if new_power is not None:
             power = new_power
@@ -127,15 +131,15 @@ async def hold_position(self: Task) -> Task[bool, None, None]:
 
 @task
 async def depth_correction(self: Task, desired_depth: float) -> Task[None, None, None]:
-    rospy.loginfo(f"State().depth: {State().depth}")
+    rclpy.logging.get_logger('depth_correction').info(f"State().depth: {State().depth}")
     depth_delta = desired_depth - State().depth
-    rospy.loginfo(f"depth_delta: {depth_delta}")
+    rclpy.logging.get_logger('depth_correction').info(f"depth_delta: {depth_delta}")
 
-    rospy.loginfo(f"Started depth correction {depth_delta}")
+    rclpy.logging.get_logger('depth_correction').info(f"Started depth correction {depth_delta}")
     await move_to_pose_local(
         geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0),
         parent=self)
-    rospy.loginfo(f"Finished depth correction {depth_delta}")
+    rclpy.logging.get_logger('depth_correction').info(f"Finished depth correction {depth_delta}")
 
 
 @task
@@ -146,13 +150,13 @@ async def correct_depth(self: Task, desired_depth: float):
 @task
 async def move_x(self: Task, step=1):
     await move_to_pose_local(geometry_utils.create_pose(step, 0, 0, 0, 0, 0), parent=self)
-    rospy.loginfo(f"Moved x {step}")
+    rclpy.logging.get_logger('move_x').info(f"Moved x {step}")
 
 
 @task
 async def move_y(self: Task, step=1):
     await move_to_pose_local(geometry_utils.create_pose(0, step, 0, 0, 0, 0), parent=self)
-    rospy.loginfo(f"Moved y {step}")
+    rclpy.logging.get_logger('move_y').info(f"Moved y {step}")
 
 
 Direction = Union[Tuple[float, float, float], Tuple[float, float, float, float, float, float]]
@@ -169,7 +173,7 @@ async def move_with_directions(self: Task, directions: Directions, correct_yaw=F
         await move_to_pose_local(
             geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
             parent=self)
-        rospy.loginfo(f"Moved to {direction}")
+        rclpy.logging.get_logger('move_with_directions').info(f"Moved to {direction}")
 
         if correct_yaw:
             await self.parent.correct_yaw()

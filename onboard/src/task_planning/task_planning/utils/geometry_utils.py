@@ -1,7 +1,7 @@
 import numpy as np
 from typing import List, Tuple
 
-import rospy
+import rclpy
 from geometry_msgs.msg import Vector3, Pose, PoseStamped, \
     Twist, Point, Quaternion
 import tf2_geometry_msgs

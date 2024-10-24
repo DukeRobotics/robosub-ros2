@@ -65,7 +65,8 @@ class TaskUpdatePublisher:
             cls._instance.__init__(node)
         return cls._instance
 
-    def __init__(self, node:Node):
+    def __init__(self, node: Node):
+        # TODO:ros2 better way to do this?
         self.publisher = node.create_publisher(TaskUpdate, '/task_planning/updates', 100000000)
 
 

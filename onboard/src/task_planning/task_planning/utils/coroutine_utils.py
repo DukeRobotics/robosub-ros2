@@ -1,4 +1,6 @@
-import rospy
+import rclpy
+from rclpy.clock import Clock
+from rclpy.duration import Duration
 from typing import Callable, Coroutine, Optional, TypeVar
 
 from task import Task, Yield
@@ -73,8 +75,8 @@ async def sleep(secs: float):
     Sleep for a given number of seconds. Yields frequently, then returns when the time has elapsed.
     """
 
-    # TODO:ros2 migrate to use rclpy
-    duration = rospy.Duration(secs)
-    start_time = rospy.Time.now()
-    while start_time + duration > rospy.Time.now():
+    duration = Duration(seconds=secs)
+    clock = Clock()
+    start_time = clock.now()
+    while start_time + duration > clock.now():
         await Yield()
