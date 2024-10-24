@@ -59,10 +59,10 @@ class TaskUpdatePublisher:
 
     _instance = None
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, node):
         if cls._instance is None:
             cls._instance = super(TaskUpdatePublisher, cls).__new__(cls)
-            # cls._instance.__init__()
+            cls._instance.__init__(node)
         return cls._instance
 
     def __init__(self, node:Node):
