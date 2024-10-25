@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import rospy
+import rclpy
+from rclpy.node import Node
 import cv2
 import numpy as np
 from sensor_msgs.msg import CompressedImage
@@ -9,14 +10,15 @@ from cv_bridge import CvBridge, CvBridgeError
 from custom_msgs.msg import RectInfo
 
 
-class BlueRectangleDetector:
+class BlueRectangleDetector(Node):
     def __init__(self):
+        super().__init__("blue_rectangle_detector")
         self.bridge = CvBridge()
-        self.image_sub = rospy.Subscriber("/camera/usb_camera/compressed", CompressedImage, self.image_callback)
-        self.angle_pub = rospy.Publisher("/cv/bottom/lane_marker_angle", Float64, queue_size=10)
-        self.distance_pub = rospy.Publisher("/cv/bottom/lane_marker_dist", Float64, queue_size=10)
-        self.detections_pub = rospy.Publisher("/cv/bottom/detections/compressed", CompressedImage, queue_size=10)
-        self.rect_info_pub = rospy.Publisher("/cv/bottom/lane_marker", RectInfo, queue_size=10)
+        self.image_sub = self.create_subscription(CompressedImage, "/camera/usb_camera/compressed", self.image_callback)
+        self.angle_pub = self.create_publisher(Float64, "/cv/bottom/lane_marker_angle", 10)
+        self.distance_pub = self.create_publisher("/cv/bottom/lane_marker_dist", Float64, 10)
+        self.detections_pub = self.create_publisher("/cv/bottom/detections/compressed", CompressedImage, 10)
+        self.rect_info_pub = self.create_publisher("/cv/bottom/lane_marker", RectInfo, 10)
 
     def image_callback(self, data):
         try:
@@ -27,10 +29,10 @@ class BlueRectangleDetector:
             # Process the frame to find the angle of the blue rectangle and draw the rectangle
             angle, distance, rect_info, processed_frame = self.get_angle_and_distance_of_rectangle(frame)
             if angle is not None:
-                self.angle_pub.publish(Float64(data=angle))
+                self.angle_pub.publish(Float64(angle))
 
             if distance is not None:
-                self.distance_pub.publish(Float64(data=distance))
+                self.distance_pub.publish(Float64(distance))
 
             if rect_info is not None:
                 self.rect_info_pub.publish(rect_info)
@@ -40,10 +42,10 @@ class BlueRectangleDetector:
                 compressed_image_msg = self.bridge.cv2_to_compressed_imgmsg(processed_frame)
                 self.detections_pub.publish(compressed_image_msg)
             except CvBridgeError as e:
-                rospy.logerr(f"Failed to publish processed image: {e}")
+                self.get_logger().error(f"Failed to publish processed image: {e}")
 
         except CvBridgeError as e:
-            rospy.logerr(f"Could not convert image: {e}")
+            self.get_logger().error(f"Could not convert image: {e}")
 
     def get_angle_and_distance_of_rectangle(self, frame):
         # Convert frame to HSV color space
@@ -118,10 +120,18 @@ class BlueRectangleDetector:
         return angle, distance, rect_info, frame
 
 
-if __name__ == "__main__":
-    rospy.init_node('blue_rectangle_detector', anonymous=True)
-    brd = BlueRectangleDetector()
-    try:
-        rospy.spin()
-    except KeyboardInterrupt:
-        rospy.loginfo("Shutting down Blue Rectangle Detector node")
+    def main(args=None):
+            rclpy.init(args=args)
+            blue_rectangle_detector = BlueRectangleDetector()
+
+            try:
+                rclpy.spin(blue_rectangle_detector)
+            except KeyboardInterrupt:
+                pass
+            finally:
+                blue_rectangle_detector.destroy_node()
+                if rclpy.ok():
+                    rclpy.shutdown()
+
+    if __name__ == "__main__":
+        main()
