@@ -143,7 +143,7 @@ class TaskPlanning(Node):
             def run_tasks():
                 if current_task >= len(tasks) or not rclpy.ok():
                     return
-                if not t.done:
+                if not tasks[self.current_task].done:
                     tasks[self.current_task].step()
                 else:
                     self.current_task += 1
