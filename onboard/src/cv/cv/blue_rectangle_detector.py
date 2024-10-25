@@ -16,9 +16,9 @@ class BlueRectangleDetector(Node):
         self.bridge = CvBridge()
         self.image_sub = self.create_subscription(CompressedImage, "/camera/usb_camera/compressed", self.image_callback)
         self.angle_pub = self.create_publisher(Float64, "/cv/bottom/lane_marker_angle", 10)
-        self.distance_pub = self.create_publisher("/cv/bottom/lane_marker_dist", Float64, 10)
-        self.detections_pub = self.create_publisher("/cv/bottom/detections/compressed", CompressedImage, 10)
-        self.rect_info_pub = self.create_publisher("/cv/bottom/lane_marker", RectInfo, 10)
+        self.distance_pub = self.create_publisher(Float64, "/cv/bottom/lane_marker_dist", 10)
+        self.detections_pub = self.create_publisher(CompressedImage, "/cv/bottom/detections/compressed", 10)
+        self.rect_info_pub = self.create_publisher(RectInfo, "/cv/bottom/lane_marker", 10)
 
     def image_callback(self, data):
         try:
