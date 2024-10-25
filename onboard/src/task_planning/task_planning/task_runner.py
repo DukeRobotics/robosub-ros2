@@ -6,6 +6,11 @@ from task_planning.interface.marker_dropper import MarkerDropper
 
 import rclpy
 from rclpy.node import Node
+import time
+from builtin_interfaces.msg import Time
+from rclpy.time import Time as rclpy_time
+from rclpy.duration import Duration
+from rclpy.clock import Clock
 
 from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
 
@@ -51,14 +56,17 @@ class TaskPlanning(Node):
         # Initialize the task update publisher
         TaskUpdatePublisher(self)
 
-        """
+
         # Wait one second for all publishers and subscribers to start
-        time.sleep(1)
+        # time.sleep(1) TODO:ros2 uncomment
 
         # Ensure transform from odom to base_link is available
         try:
-            _ = tfBuffer.lookup_transform('odom', 'base_link', rclpy.time.Time(), rclpy.duration(seconds=15))
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            clock = Clock()
+            duration = Duration(seconds=timeout_sec)
+            _ = tfBuffer.lookup_transform('odom', 'base_link', clock.now(), duration)
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+            self.get_logger().info("str(e)")
             self.get_logger().error('Failed to get transform')
             return
 
@@ -101,25 +109,55 @@ class TaskPlanning(Node):
             input('Press enter to run tasks...\n')
 
             # TODO:ros2 migrate this correctly using timers
+
+            def countdown_callback():
+                self.get_logger().info(f'Countdown: {self.countdown_value}')
+
+                if self.countdown_value <= 0:
+                    self.countdown_timer.cancel()  # Stop the timer
+                    Controls().call_enable_controls(True)
+                    self.get_logger().info('Countdown complete!')
+
+                self.countdown_value -= 1
+
             if untethered:
+                # self.get_logger().info('\nCountdown started...\n')
+                # self.countdown_timer = self.create_timer(1, self.countdown)
+                # for i in tqdm(range(10, 0, -1)):
+                #     time.sleep(1)
+                #     if not rclpy.ok():
+                #         break
+                # Controls().call_enable_controls(True)
+                self.countdown_value = 10  # Start from 10
                 self.get_logger().info('\nCountdown started...\n')
-                for i in tqdm(range(10, 0, -1)):
-                    time.sleep(1)
-                    if not rclpy.ok():
-                        break
-                Controls().call_enable_controls(True)
+                self.countdown_timer = self.create_timer(1.0, countdown_callback)
+                self.countdown_timer.cancel()
+
 
             self.get_logger().info('\nRunning tasks.\n')
 
             # TODO:ros2 migrate this correctly using timers
             # Step through tasks, stopping if rpy is shutdown
-            rate = self.create_rate(30)
-            for t in tasks:
-                while not t.done and rclpy.ok():
-                    t.step()
-                    rate.sleep()
-                if not rclpy.ok():
-                    break
+
+            current_task = 0
+            def run_tasks():
+                if current_task >= len(tasks) or not rclpy.ok():
+                    return
+                if not t.done:
+                    tasks[self.current_task].step()
+                else:
+                    self.current_task += 1
+
+            self.task_runner_timer = self.create_timer(30, run_tasks)
+
+
+            # rate = self.create_rate(30)
+            # for t in tasks:
+            #     while not t.done and rclpy.ok():
+            #         t.step()
+            #         rate.sleep()
+            #     if not rclpy.ok():
+            #         break
 
             if untethered:
                 Controls().call_enable_controls(False)
@@ -134,7 +172,7 @@ class TaskPlanning(Node):
 
             # Main has returned
             TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.RETURNED, None)
-        """
+
 
 def main(args=None):
     """

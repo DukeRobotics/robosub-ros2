@@ -210,7 +210,7 @@ def transform_pose(tfBuffer: tf2_ros.Buffer, base_frame: str, target_frame: str,
     pose_stamped.pose = pose
     pose_stamped.header.frame_id = base_frame
 
-    trans = tfBuffer.lookup_transform(target_frame, base_frame, node.get_clock().now()) # TODO:ros2 migrate (look at tf2_ros documentation)
+    trans = tfBuffer.lookup_transform(target_frame, base_frame, node.get_clock().now())
     transformed = tf2_geometry_msgs.do_transform_pose(pose_stamped, trans)
 
     return transformed.pose
