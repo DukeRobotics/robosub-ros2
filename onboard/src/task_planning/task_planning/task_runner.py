@@ -13,6 +13,7 @@ from rclpy.duration import Duration
 from rclpy.clock import Clock
 
 from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
+import task_planning.comp_tasks as comp_tasks
 
 import tf2_ros
 
