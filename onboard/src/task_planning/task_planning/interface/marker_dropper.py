@@ -1,7 +1,6 @@
 import rclpy
 from rclpy.node import Node
 from example_interfaces.srv import SetBool
-from rclpy.callback_groups import ReentrantCallbackGroup
 from task_planning.utils.other_utils import singleton
 
 """
@@ -19,9 +18,6 @@ class MarkerDropper:
 
     def __init__(self, node: Node, bypass: bool = False):
         self.node = node
-
-        # Create a callback group that allows concurrent callbacks
-        self.callback_group = ReentrantCallbackGroup()
 
         # Create a client for the servo_control service
         self.drop_marker_client = node.create_client(SetBool, self.SERVO_CONTROL_SERVICE)

@@ -7,7 +7,6 @@ from typing import Any, Callable, Coroutine, Generator, Generic, Optional, Type,
 
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 from custom_msgs.msg import TaskUpdate
 
 from task_planning.message_conversion.jsonpickle_custom_handlers import register_custom_jsonpickle_handlers
