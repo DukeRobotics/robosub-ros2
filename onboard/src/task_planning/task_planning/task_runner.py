@@ -49,11 +49,8 @@ class TaskPlanning(Node):
         CV(self, bypass=True)
         MarkerDropper(self, bypass=True)
 
-
-
         # Initialize the task update publisher
         TaskUpdatePublisher(self)
-
 
         # Wait one second for all publishers and subscribers to start
         # time.sleep(1) TODO:ros2 uncomment
@@ -61,8 +58,11 @@ class TaskPlanning(Node):
         # Ensure transform from odom to base_link is available
         try:
             _ = tfBuffer.lookup_transform('odom', 'base_link', Clock().now(), Duration(seconds=15))
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-            self.get_logger().info("str(e)")
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ):
             self.get_logger().error('Failed to get transform')
             return
 
@@ -126,7 +126,6 @@ class TaskPlanning(Node):
                 self.countdown_timer = self.create_timer(1.0, countdown_callback)
                 self.countdown_timer.cancel()
 
-
             self.get_logger().info('\nRunning tasks.\n')
 
             # TODO:ros2 migrate this correctly using timers
@@ -142,7 +141,6 @@ class TaskPlanning(Node):
                     self.current_task += 1
 
             self.task_runner_timer = self.create_timer(30, run_tasks)
-
 
             # rate = self.create_rate(30)
             # for t in tasks:
