@@ -1,4 +1,3 @@
-import comp_tasks
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.state import State
@@ -39,7 +38,11 @@ class TaskPlanning(Node):
             if main_initialized:
                 TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
 
-        rclpy.shutdown_callback(publish_close)
+
+
+
+
+        rclpy.get_default_context().on_shutdown(publish_close)#sdkfj
 
         # Initialize transform buffer and listener
         tfBuffer = tf2_ros.Buffer()
@@ -90,8 +93,6 @@ class TaskPlanning(Node):
                 comp_tasks.buoy_task(turn_to_face_buoy=False, depth=0.7, parent=Task.MAIN_ID),
                 comp_tasks.after_buoy_task(parent=Task.MAIN_ID)
 
-
-
                 # comp_tasks.align_path_marker(direction=-1, parent=Task.MAIN_ID),
                 # comp_tasks.center_path_marker(parent=Task.MAIN_ID),
                 # comp_tasks.yaw_to_cv_object('path_marker', yaw_threshold=math.radians(5), direction=-1,
@@ -108,7 +109,6 @@ class TaskPlanning(Node):
             input('Press enter to run tasks...\n')
 
             # TODO:ros2 migrate this correctly using timers
-
             def countdown_callback():
                 self.get_logger().info(f'Countdown: {self.countdown_value}')
 

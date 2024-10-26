@@ -1,8 +1,6 @@
-import rclpy
 from rclpy.logging import get_logger
 from rclpy.clock import Clock
 from rclpy.duration import Duration
-from example_interfaces.srv import SetBool
 
 import math
 import copy
@@ -10,13 +8,12 @@ import numpy as np
 
 from transforms3d.euler import quat2euler
 
-from std_srvs.srv import SetBool
 from geometry_msgs.msg import Twist
 from custom_msgs.msg import ControlTypes
 
 from task_planning.task import Task, task
-import task_planning.move_tasks
-import task_planning.cv_tasks
+import task_planning.move_tasks as move_tasks
+import task_planning.cv_tasks as cv_tasks
 from task_planning.utils import geometry_utils
 from task_planning.task import Yield
 
@@ -965,7 +962,6 @@ async def bin_task(self: Task) -> Task[None, None, None]:
 
     FRAME_AREA = 480 * 600
 
-    P
     TIMEOUT = Duration(seconds=240)
     start_time = Clock().now()
 

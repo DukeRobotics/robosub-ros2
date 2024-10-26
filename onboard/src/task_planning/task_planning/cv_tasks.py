@@ -5,6 +5,7 @@ from rclpy.logging import LoggingSeverity
 
 from task_planning.interface.cv import CV
 from task_planning.move_tasks import move_to_pose_local
+import task_planning.move_tasks as move_tasks
 from task_planning.task import task, Yield, Task
 import task_planning.move_tasks
 from task_planning.utils import geometry_utils

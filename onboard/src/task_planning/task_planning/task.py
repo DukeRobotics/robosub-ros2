@@ -14,7 +14,6 @@ from task_planning.message_conversion.jsonpickle_custom_handlers import register
 # Register all JSONPickle handlers for custom classes
 register_custom_jsonpickle_handlers()
 
-
 class TaskStatus(IntEnum):
     """
     An enum to represent the status of a task. All values are equivalent to the constants defined in
