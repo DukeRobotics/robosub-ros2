@@ -10,7 +10,7 @@ class DepthAiCameraConnect(Node):
     def __init__(self):
         super().__init__("depthai_camera_connect")
 
-def connect(self,pipeline):
+def connect(pipeline):
     """
     Connects to the DepthAI camera and uploads the pipeline.
 
