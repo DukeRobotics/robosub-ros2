@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rclpy
+from rclpy.node import Node
 import depthai as dai
 import cv2
 from sensor_msgs.msg import CompressedImage
