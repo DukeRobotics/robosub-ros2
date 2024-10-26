@@ -42,9 +42,9 @@ class Controls:
     def __init__(self, node: Node, bypass: bool = False):
         self.node = node
 
+        self._set_control_types = node.create_client(SetControlTypes, self.CONTROL_TYPES_SERVICE)
         if not bypass:
-            self._set_control_types = node.create_client(SetControlTypes, self.CONTROL_TYPES_SERVICE)
-
+            self._set_control_types.wait_for_service()
 
         # NOTE: if this variable gets out of sync with the actual control types, bad things may happen
         self._all_axes_control_type = None
@@ -57,9 +57,9 @@ class Controls:
             10
         )
 
+        self._reset_pid_loops = node.create_client(Trigger, self.RESET_PID_LOOPS_SERVICE)
         if not bypass:
-            self._reset_pid_loops = node.create_client(Trigger, self.RESET_PID_LOOPS_SERVICE)
-
+            self._reset_pid_loops.wait_for_service()
 
         self._enable_controls = node.create_client(SetBool, self.ENABLE_CONTROLS_SERVICE)
 
@@ -101,7 +101,7 @@ class Controls:
         return thruster_dict
 
     def call_enable_controls(self, enable: bool):
-        """'
+        """
         Enable or disable controls.
 
         Args:
@@ -143,7 +143,7 @@ class Controls:
 
         self._set_control_types(ControlTypes(x=x, y=y, z=z, roll=roll, pitch=pitch, yaw=yaw))
 
-    # Resets the PID loops. Should be called for every 'new' movement
+    # Resets the PID loops. Should be called for every "new" movement
     def start_new_move(self) -> None:
         """
         Start a new movement
@@ -205,11 +205,11 @@ class Controls:
         for kwarg_name, kwarg_value in kwargs.items():
 
             if kwarg_name not in self.thruster_dict:
-                raise ValueError(f'Thruster name not in thruster_dict {kwarg_name}')
+                raise ValueError(f"Thruster name not in thruster_dict {kwarg_name}")
 
             if kwarg_value > 1 or kwarg_value < -1:
-                raise ValueError(f'Recieved {kwarg_value} for thruster {kwarg_name}. Thruster alloc must be between ' +
-                                 '-1 and 1 inclusive.')
+                raise ValueError(f"Recieved {kwarg_value} for thruster {kwarg_name}. Thruster alloc must be between " +
+                                 "-1 and 1 inclusive.")
 
             thruster_allocs[self.thruster_dict[kwarg_name]] = kwarg_value
 
