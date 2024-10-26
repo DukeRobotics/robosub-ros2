@@ -1,4 +1,4 @@
-# import comp_tasks
+import comp_tasks
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.state import State
@@ -16,6 +16,7 @@ from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
 import task_planning.comp_tasks as comp_tasks
 
 import tf2_ros
+import math
 
 
 class TaskPlanning(Node):
