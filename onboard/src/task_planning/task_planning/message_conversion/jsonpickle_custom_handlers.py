@@ -1,23 +1,29 @@
 import builtins
-import jsonpickle
+import importlib
 import traceback
-import rosidl_runtime_py
+
+import jsonpickle
+
 from rclpy.logging import get_logger
-from rosidl_runtime_py import get_message_interfaces
 
+import rosidl_runtime_py
 
-from task_planning.message_conversion.ros_message_converter import convert_ros_message_to_dictionary, \
-    convert_dictionary_to_ros_message
+from task_planning.message_conversion.ros_message_converter import \
+    convert_dictionary_to_ros_message, convert_ros_message_to_dictionary
 
 
 logger = get_logger('jsonpickle_custom_handlers')
 
+
 class ROSMessageHandler(jsonpickle.handlers.BaseHandler):
     """
-    JSONPickle handler to convert ROS messages to and from dictionaries
+    JSONPickle handler to convert ROS messages to and from dictionaries.
     """
+
     def flatten(self, obj, data):
-        data['ros/type'] = obj._type
+        data["ros/type"] = (
+            "/".join(type(obj).__module__.split(".")[:-1]) + "/" + type(obj).__name__
+        )
         data['ros/data'] = convert_ros_message_to_dictionary(obj)
         return data
 
@@ -29,8 +35,9 @@ class ROSMessageHandler(jsonpickle.handlers.BaseHandler):
 
 class BaseExceptionHandler(jsonpickle.handlers.BaseHandler):
     """
-    JSONPickle handler to convert exceptions to and from dictionaries
+    JSONPickle handler to convert exceptions to and from dictionaries.
     """
+
     def flatten(self, obj, data):
         data['exception/type'] = type(obj).__name__
         data['exception/message'] = str(obj)
@@ -50,24 +57,46 @@ class BaseExceptionHandler(jsonpickle.handlers.BaseHandler):
 
 def register_custom_jsonpickle_handlers():
     """
-    Register all custom JSONPickle handlers
+    Register all custom JSONPickle handlers.
     """
-    # Register ROS 2 message types (including custom messages)
-    message_types = get_all_message_types()
-    for message_type in message_types:
-        jsonpickle.handlers.register(message_type, ROSMessageHandler, base=True)
-    logger.info(f'Registered {len(message_types)} message types')
+    interface_classes = get_interface_classes()
+    for cls in interface_classes:
+        jsonpickle.handlers.register(cls, ROSMessageHandler, base=True)
+    logger.info(f'Registered {len(interface_classes)} message types')
 
     jsonpickle.handlers.register(BaseException, BaseExceptionHandler, base=True)
 
-def get_all_message_types():
-    message_interfaces = rosidl_runtime_py.get_message_interfaces()
 
-    all_message_types = []
-    for package_name, message_names in message_interfaces.items():
-        for message_name in message_names:
-            module = __import__(f'{package_name}.msg', fromlist=[message_name])
-            message_type = getattr(module, message_name.split('/')[-1])
-            all_message_types.append(message_type)
+def get_interface_classes():
+    """
+    Return all ROS 2 interface classes (including custom interfaces).
+    """
+    interfaces = rosidl_runtime_py.get_interfaces()
 
-    return all_message_types
+    all_classes = []
+    for package, interface_names in interfaces.items():
+        for name in interface_names:
+            _type = name.split("/")[0]  # msg, srv, action
+
+            suffixes = {
+                "msg": [""],
+                "srv": ["", "_Event", "_Request", "_Response"],
+
+                # TODO: Action messages don't seem to be working even though we are registering all possible classes
+                "action": [
+                    "",
+                    "_GetResult_Event",
+                    "_GetResult_Request",
+                    "_GetResult_Response",
+                    "_SendGoal_Event",
+                    "_SendGoal_Request",
+                    "_SendGoal_Response",
+                ],
+            }
+
+            for suffix in suffixes[_type]:
+                module = importlib.import_module(f"{package}.{_type}")
+                cls = getattr(module, name.split("/")[-1] + suffix)
+                all_classes.append(cls)
+
+    return all_classes
