@@ -467,19 +467,19 @@ class DepthAIStreamsPublisherAndSaver(Node):
             self.stream_publisher_depth.publish(image_msg_depth)
 
         # Save messages to files
-        while self.save_rgb_video and veRgbVideoQueue.has() and not rospy.is_shutdown():
+        while self.save_rgb_video and veRgbVideoQueue.has():
             veRgbVideoQueue.get().getData().tofile(rgb_video_file)
 
-        while self.save_rgb_preview and veRgbPreviewQueue.has() and not rospy.is_shutdown():
+        while self.save_rgb_preview and veRgbPreviewQueue.has():
             veRgbPreviewQueue.get().getData().tofile(rgb_preview_file)
 
-        while self.save_left and veLeftQueue.has() and not rospy.is_shutdown():
+        while self.save_left and veLeftQueue.has():
             veLeftQueue.get().getData().tofile(left_file)
 
-        while self.save_right and veRightQueue.has() and not rospy.is_shutdown():
+        while self.save_right and veRightQueue.has():
             veRightQueue.get().getData().tofile(right_file)
 
-        while self.save_disparity and veDisparityQueue.has() and not rospy.is_shutdown():
+        while self.save_disparity and veDisparityQueue.has():
             veDisparityQueue.get().getData().tofile(disparity_file)
 
 
