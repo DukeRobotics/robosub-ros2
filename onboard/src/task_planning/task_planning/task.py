@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from rclpy.qos import QoSProfile, HistoryPolicy
 from enum import IntEnum
 import inspect
 import jsonpickle
@@ -61,8 +62,8 @@ class TaskUpdatePublisher:
         return cls._instance
 
     def __init__(self, node: Node):
-        qos_profile = rclpy.QoSProfile(
-            history=rclpy.HistoryPolicy.KEEP_ALL,
+        qos_profile = QoSProfile(
+            history=HistoryPolicy.KEEP_ALL,
         )
         self.publisher = node.create_publisher(TaskUpdate, '/task_planning/updates', qos_profile)
 
