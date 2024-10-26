@@ -23,7 +23,7 @@ class BinDetector(Node):
         super().__init__("bin_detector")
         self.bridge = CvBridge()
         # subscribe to image topic to get images
-        self.image_sub = self.create_subscription(CompressedImage, "/camera/usb/bottom/compressed", self.image_callback)
+        self.image_sub = self.create_subscription(CompressedImage, "/camera/usb/bottom/compressed", self.image_callback, 10)
 
         # blue bin publiishers
         self.blue_bin_hsv_filtered_pub = self.create_publisher(Image, "/cv/bottom/bin_blue/hsv_filtered", 10)
