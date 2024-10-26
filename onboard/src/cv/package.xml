@@ -19,7 +19,7 @@
 
   <exec_depend>python-yaml</exec_depend>
   <exec_depend>python-opencv</exec_depend>
-
+  <exec_depend>ros2launch</exec_depend>
   <exec_depend> rclpy </exec_depend>
   <exec_depend>ros2launch</exec_depend>
 

@@ -4,7 +4,7 @@ import rclpy
 import resource_retriever as rr
 import yaml
 import math
-import cv.depthai_camera_connect
+import cv.depthai_camera_connect as depthai_camera_connect
 import depthai as dai
 import numpy as np
 from cv.utils import DetectionVisualizer, calculate_relative_pose
@@ -39,19 +39,20 @@ ISP_IMG_SHAPE = (4056, 3040)  # Size of ISP image
 # Compute detections on live camera feed and publish spatial coordinates for detected objects
 class DepthAISpatialDetector(Node):
     def __init__(self):
+
         """
         Initializes the ROS node. Loads the yaml file at cv/models/depthai_models.yaml
         """
-        super().__init__("depthai_spatial_detection")
-        self.running_model = self.declare_parameter("~model").value
-        self.rgb_raw = self.declare_parameter("~rgb_raw").value
-        self.rgb_detections = self.declare_parameter("~rgb_detections").value
-        self.queue_depth = self.declare_parameter("~depth").value  # Whether to output depth map
-        self.sync_nn = self.declare_parameter("~sync_nn").value
-        self.using_sonar = self.declare_parameter("~using_sonar").value
-        self.show_class_name = self.declare_parameter("~show_class_name").value
-        self.show_confidence = self.declare_parameter("~show_confidence").value
-        self.correct_color = self.declare_parameter("~correct_color").value
+        super().__init__('depthai_spatial_detection')
+        self.running_model = self.declare_parameter('running_model', '2024_gate_glyphs').value
+        self.rgb_raw = self.declare_parameter('rgb_raw', True).value
+        self.rgb_detections = self.declare_parameter('rgb_detections', True).value
+        self.queue_depth = self.declare_parameter('queue_depth', False).value  # Whether to output depth map
+        self.sync_nn = self.declare_parameter('sync_nn', True).value
+        self.using_sonar = self.declare_parameter('using_sonar', False).value
+        self.show_class_name = self.declare_parameter('show_class_name', True).value
+        self.show_confidence = self.declare_parameter('show_confidence', True).value
+        self.correct_color = self.declare_parameter('correct_color', True).value
 
         with open(rr.get_filename(DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH,
                                   use_protocol=False)) as f:
@@ -367,7 +368,6 @@ class DepthAISpatialDetector(Node):
                            shape, using_sonar):
         """
         Publish predictions to label-specific topic. Publishes to /cv/[camera]/[label].
-
         :param bbox: Tuple for the bounding box.
             Values are from 0-1, where X increases left to right and Y increases top to bottom.
         :param det_coords: Tuple with the X, Y, and Z values in meters, and in the robot rotational reference frame.
@@ -431,6 +431,7 @@ class DepthAISpatialDetector(Node):
         :return: False if the model is not in cv/models/depthai_models.yaml.
         Otherwise, the model will be run on the device.
         """
+
         # Check if model is valid
         if self.running_model not in self.models:
             return False
