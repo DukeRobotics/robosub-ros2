@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import rospy
+import rclpy
+from rclpy.node import Node
 import cv2
 import numpy as np
 import math
@@ -12,20 +13,19 @@ from cv_bridge import CvBridge
 from utils import compute_center_distance
 
 
-class PathMarkerDetector:
+class PathMarkerDetector(Node):
     MONO_CAM_IMG_SHAPE = (640, 480)  # Width, height in pixels
 
     def __init__(self):
+        super().__init__('path_marker_detector')
         self.bridge = CvBridge()
-        self.image_sub = rospy.Subscriber("/camera/usb/bottom/compressed", CompressedImage, self.image_callback)
+        self.image_sub = self.create_publisher(CompressedImage, "/camera/usb/bottom/compressed", self.image_callback, 10)
 
         # define information published for path marker
-        self.path_marker_hsv_filtered_pub = rospy.Publisher("/cv/bottom/path_marker/hsv_filtered", Image, queue_size=10)
-        self.path_marker_contour_image_pub = rospy.Publisher("/cv/bottom/path_marker/contour_image", Image,
-                                                             queue_size=10)
-        self.path_marker_bounding_box_pub = rospy.Publisher("/cv/bottom/path_marker/bounding_box", CVObject,
-                                                            queue_size=10)
-        self.path_marker_distance_pub = rospy.Publisher("/cv/bottom/path_marker/distance", Point, queue_size=10)
+        self.path_marker_hsv_filtered_pub = self.create_publisher(Image, "/cv/bottom/path_marker/hsv_filtered", 10)
+        self.path_marker_contour_image_pub = self.create_publisher(Image, "/cv/bottom/path_marker/contour_image", 10)
+        self.path_marker_bounding_box_pub = self.create_publisher(CVObject, "/cv/bottom/path_marker/bounding_box", 10)
+        self.path_marker_distance_pub = self.create_publisher(Point, "/cv/bottom/path_marker/distance", 10)
 
     def image_callback(self, data):
         # Convert the compressed ROS image to OpenCV format
@@ -69,7 +69,7 @@ class PathMarkerDetector:
             # create CVObject message and populate relevant attributes
             bounding_box = CVObject()
 
-            bounding_box.header.stamp = rospy.Time.now()
+            bounding_box.header.stamp = self.get_clock().now()
 
             orientation_in_radians = math.pi / 2 - orientation_in_radians
 
@@ -129,10 +129,18 @@ class PathMarkerDetector:
         return frame_copy
 
 
-if __name__ == "__main__":
-    rospy.init_node('path_marker_detector', anonymous=True)
-    detector = PathMarkerDetector()
+def main(args=None):
+    rclpy.init(args=args)
+    path_marker_detector = PathMarkerDetector()
+
     try:
-        rospy.spin()
+        rclpy.spin(path_marker_detector)
     except KeyboardInterrupt:
-        rospy.loginfo("Shutting down Path Marker Detector node")
+        pass
+    finally:
+        path_marker_detector.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+if __name__ == "__main__":
+    main()
