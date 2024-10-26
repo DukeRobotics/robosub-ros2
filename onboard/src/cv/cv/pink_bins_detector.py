@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import rospy
+import rclpy
+from rclpy.node import Node
 import cv2
 import numpy as np
 from functools import reduce
@@ -11,25 +12,24 @@ from cv_bridge import CvBridge
 from utils import compute_yaw
 
 
-class PinkBinsDetector:
+class PinkBinsDetector(Node):
 
     MONO_CAM_IMG_SHAPE = (640, 480)  # Width, height in pixels
 
     def __init__(self):
+        super().__init__('pink_bins_detector')
         self.bridge = CvBridge()
+        # rospy.init_node("pink_bins_detector", anonymous=True)
+        self.camera = self.get_parameter("~camera").get_parameter_value() # could be self.decare_parameter
+        self.image_sub = self.create_subscription(CompressedImage, f"/camera/usb/{self.camera}/compressed", self.image_callback,
+                                          10)
 
-        rospy.init_node("pink_bins_detector", anonymous=True)
-
-        self.camera = rospy.get_param("~camera")
-        self.image_sub = rospy.Subscriber(f"/camera/usb/{self.camera}/compressed", CompressedImage, self.image_callback,
-                                          queue_size=1)
-
-        self.pink_bins_hsv_filtered_pub = rospy.Publisher(f"/cv/{self.camera}/pink_bins/hsv_filtered", Image,
-                                                          queue_size=10)
-        self.pink_bins_dbscan_pub = rospy.Publisher(f"/cv/{self.camera}/pink_bins/dbscan", Image, queue_size=10)
-        self.pink_bins_detections_pub = rospy.Publisher(f"/cv/{self.camera}/pink_bins/detections", Image, queue_size=10)
-        self.pink_bins_bounding_box_pub = rospy.Publisher(f"/cv/{self.camera}/pink_bins/bounding_box", CVObject,
-                                                          queue_size=10)
+        self.pink_bins_hsv_filtered_pub = self.create_publisher(Image, f"/cv/{self.camera}/pink_bins/hsv_filtered",
+                                                          10)
+        self.pink_bins_dbscan_pub = self.create_publisher(Image, f"/cv/{self.camera}/pink_bins/dbscan", queue_size=10)
+        self.pink_bins_detections_pub = self.create_publisher(Image, f"/cv/{self.camera}/pink_bins/detections", queue_size=10)
+        self.pink_bins_bounding_box_pub = self.create_publisher(CVObject, f"/cv/{self.camera}/pink_bins/bounding_box",
+                                                          10)
 
     def image_callback(self, data):
         # Convert the compressed ROS image to OpenCV format
@@ -118,7 +118,7 @@ class PinkBinsDetector:
         # Publish the bounding box of the bin
         final_x_normalized = final_x / self.MONO_CAM_IMG_SHAPE[0]
         cv_object = CVObject()
-        cv_object.header.stamp = rospy.Time.now()
+        cv_object.header.stamp = self.get_clock().now()
         cv_object.yaw = -compute_yaw(final_x_normalized, final_x_normalized, self.MONO_CAM_IMG_SHAPE[0])
         cv_object.score = chosen_label_score
         self.pink_bins_bounding_box_pub.publish(cv_object)
@@ -130,9 +130,18 @@ class PinkBinsDetector:
         self.pink_bins_detections_pub.publish(frame_msg)
 
 
-if __name__ == "__main__":
-    detector = PinkBinsDetector()
+def main(args=None):
+    rclpy.init(args=args)
+    pink_bins_detector = PinkBinsDetector()
+
     try:
-        rospy.spin()
+        rclpy.spin(pink_bins_detector)
     except KeyboardInterrupt:
-        rospy.loginfo("Shutting down Pink Bins Detector node")
+        pass
+    finally:
+        pink_bins_detector.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+if __name__ == "__main__":
+    main()
