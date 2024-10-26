@@ -14,7 +14,7 @@ class BlueRectangleDetector(Node):
     def __init__(self):
         super().__init__("blue_rectangle_detector")
         self.bridge = CvBridge()
-        self.image_sub = self.create_subscription(CompressedImage, "/camera/usb_camera/compressed", self.image_callback)
+        self.image_sub = self.create_subscription(CompressedImage, "/camera/usb_camera/compressed", self.image_callback, 10)
         self.angle_pub = self.create_publisher(Float64, "/cv/bottom/lane_marker_angle", 10)
         self.distance_pub = self.create_publisher(Float64, "/cv/bottom/lane_marker_dist", 10)
         self.detections_pub = self.create_publisher(CompressedImage, "/cv/bottom/detections/compressed", 10)
@@ -120,18 +120,18 @@ class BlueRectangleDetector(Node):
         return angle, distance, rect_info, frame
 
 
-    def main(args=None):
-            rclpy.init(args=args)
-            blue_rectangle_detector = BlueRectangleDetector()
+def main(args=None):
+    rclpy.init(args=args)
+    blue_rectangle_detector = BlueRectangleDetector()
 
-            try:
-                rclpy.spin(blue_rectangle_detector)
-            except KeyboardInterrupt:
-                pass
-            finally:
-                blue_rectangle_detector.destroy_node()
-                if rclpy.ok():
-                    rclpy.shutdown()
+    try:
+        rclpy.spin(blue_rectangle_detector)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        blue_rectangle_detector.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
