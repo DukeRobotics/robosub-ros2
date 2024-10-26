@@ -54,23 +54,18 @@ class TaskUpdatePublisher:
     """
 
     _instance = None
-    _publisher = None
 
-    def __new__(cls, node=None):
+    def __new__(cls, node):
         if cls._instance is None:
             cls._instance = super(TaskUpdatePublisher, cls).__new__(cls)
             cls._instance.__init__(node)
         return cls._instance
 
-    def __init__(self, node: Node = None):
-        if TaskUpdatePublisher._instance is None and node is None:
-            raise ValueError("Node must be provided to initialize TaskUpdatePublisher")
-
-        if node:
-            qos_profile = QoSProfile(
-                history=HistoryPolicy.KEEP_ALL,
-            )
-            TaskUpdatePublisher.publisher = node.create_publisher(TaskUpdate, '/task_planning/updates', qos_profile)
+    def __init__(self, node: Node):
+        qos_profile = QoSProfile(
+            history=HistoryPolicy.KEEP_ALL,
+        )
+        self.publisher = node.create_publisher(TaskUpdate, '/task_planning/updates', qos_profile)
 
     def publish_update(self, task_id: int, parent_id: int, name: str, status: TaskStatus, data: Any) -> None:
         """
