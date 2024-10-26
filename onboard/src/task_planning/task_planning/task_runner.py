@@ -33,13 +33,12 @@ class TaskPlanning(Node):
         untethered = self.declare_parameter('untethered', False).value
         self.get_logger().info('task_planning node initialized')
 
-        # When rospy is shutdown, if main finished initializing, publish that it has closed
-        # TODO:ros2
-        # def publish_close():
-        #     if main_initialized:
-        #         TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
+        # When ros is shutdown, if main finished initializing, publish that it has closed
+        def publish_close():
+            if main_initialized:
+                TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
 
-        # rclpy.shutdown_callback(publish_close)
+        rclpy.shutdown_callback(publish_close)
 
         # Initialize transform buffer and listener
         tfBuffer = tf2_ros.Buffer()
