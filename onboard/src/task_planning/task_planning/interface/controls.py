@@ -1,3 +1,4 @@
+from rclpy.logging import get_logger
 from rclpy.node import Node
 
 from std_srvs.srv import Trigger, SetBool
@@ -9,6 +10,7 @@ import resource_retriever as rr
 import os
 import yaml
 
+logger = get_logger('controls')
 
 @singleton
 class Controls:
@@ -44,7 +46,8 @@ class Controls:
 
         self._set_control_types = node.create_client(SetControlTypes, self.CONTROL_TYPES_SERVICE)
         if not bypass:
-            self._set_control_types.wait_for_service()
+            while not self._set_control_types.wait_for_service(timeout_sec=1.0):
+                logger.info(f'{self.CONTROL_TYPES_SERVICE} not available, waiting again...')
 
         # NOTE: if this variable gets out of sync with the actual control types, bad things may happen
         self._all_axes_control_type = None
@@ -59,7 +62,8 @@ class Controls:
 
         self._reset_pid_loops = node.create_client(Trigger, self.RESET_PID_LOOPS_SERVICE)
         if not bypass:
-            self._reset_pid_loops.wait_for_service()
+            while not self._reset_pid_loops.wait_for_service(timeout_sec=1.0):
+                logger.info(f'{self.RESET_PID_LOOPS_SERVICE} not available, waiting again...')
 
         self._enable_controls = node.create_client(SetBool, self.ENABLE_CONTROLS_SERVICE)
 

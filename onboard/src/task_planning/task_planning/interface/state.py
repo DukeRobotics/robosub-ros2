@@ -1,3 +1,4 @@
+from rclpy.logging import get_logger
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseWithCovarianceStamped
@@ -7,6 +8,7 @@ from sensor_msgs.msg import Imu
 from tf2_ros.buffer import Buffer
 from task_planning.utils.other_utils import singleton
 
+logger = get_logger('state')
 
 @singleton
 class State:
@@ -42,8 +44,10 @@ class State:
         node.create_subscription(Odometry, self.STATE_TOPIC, self._on_receive_state, 10)
         self._state = None
 
+        self._reset_pose = node.create_client(SetPose, self.RESET_POSE_SERVICE)
         if not bypass:
-            self._reset_pose = node.create_client(SetPose, self.RESET_POSE_SERVICE)
+            while not self._reset_pose.wait_for_service(timeout_sec=1.0):
+                logger.info(f'{self.RESET_POSE_SERVICE} not available, waiting again...')
 
         node.create_subscription(PoseWithCovarianceStamped, self.DEPTH_TOPIC, self._on_receive_depth, 10)
 
