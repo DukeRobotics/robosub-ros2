@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import rospy
+import rclpy
+from rclpy.node import Node
 import resource_retriever as rr
 import cv2
 import numpy as np
@@ -10,7 +11,7 @@ from custom_msgs.msg import CVObject
 from utils import compute_yaw, calculate_relative_pose
 
 
-class BuoyDetectorContourMatching:
+class BuoyDetectorContourMatching(Node):
 
     BUOY_WIDTH = 0.2032  # Width of buoy in meters
 
@@ -19,7 +20,8 @@ class BuoyDetectorContourMatching:
     MONO_CAM_FOCAL_LENGTH = 2.65  # Focal length in mm
 
     def __init__(self):
-        rospy.init_node('buoy_detector_contour_matching', anonymous=True)
+        super().__init__('buoy_detector_contour_matching')
+        # rospy.init_node('buoy_detector_contour_matching', anonymous=True)
 
         # ima
         path_to_reference_img = rr.get_filename('package://cv/assets/polyform-a0-buoy-contour.png', use_protocol=False)
@@ -31,11 +33,11 @@ class BuoyDetectorContourMatching:
         self.ref_contours, _ = cv2.findContours(self.reference_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         self.bridge = CvBridge()
-        self.image_sub = rospy.Subscriber('/camera/usb/front/compressed', CompressedImage, self.image_callback)
-        self.bounding_box_pub = rospy.Publisher('/cv/front_usb/buoy/bounding_box', CVObject, queue_size=1)
-        self.hsv_filtered_pub = rospy.Publisher('/cv/front_usb/buoy/hsv_filtered', Image, queue_size=1)
-        self.contour_image_pub = rospy.Publisher('/cv/front_usb/buoy/contour_image', Image, queue_size=1)
-        self.contour_image_with_bbox_pub = rospy.Publisher('/cv/front_usb/buoy/detections', Image, queue_size=1)
+        self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/front/compressed', self.image_callback, 10)
+        self.bounding_box_pub = self.create_publisher(CVObject,'/cv/front_usb/buoy/bounding_box', 1)
+        self.hsv_filtered_pub = self.create_publisher(Image, '/cv/front_usb/buoy/hsv_filtered', 1)
+        self.contour_image_pub = self.create_publisher(Image, '/cv/front_usb/buoy/contour_image', 1)
+        self.contour_image_with_bbox_pub = self.create_publisher(Image, '/cv/front_usb/buoy/detections', 1)
 
         self.last_n_bboxes = []
         self.n = 10  # Set the number of last bounding boxes to store
@@ -47,8 +49,8 @@ class BuoyDetectorContourMatching:
             image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         except Exception as e:
-            rospy.logerr("Failed to convert image: %s", e)
-            return
+          self.get_logger().error("Failed to convert image: %s", e)
+          return
 
         # Define the range for HSV filtering on the red buoy
         lower_red = np.array([0, 110, 190])
@@ -152,8 +154,7 @@ class BuoyDetectorContourMatching:
 
         bounding_box = CVObject()
 
-        bounding_box.header.stamp.secs = rospy.Time.now().secs
-        bounding_box.header.stamp.nsecs = rospy.Time.now().nsecs
+        bounding_box.header.stamp.secs, bounding_box.header.stamp.nsecs = self.get_clock().now().seconds_nanoseconds()
 
         bounding_box.xmin = x
         bounding_box.ymin = y
@@ -184,9 +185,18 @@ class BuoyDetectorContourMatching:
         self.bounding_box_pub.publish(bounding_box)
 
 
-if __name__ == '__main__':
+def main(args=None):
+    rclpy.init(args=args)
+    buoy_detector_contour_matching = BuoyDetectorContourMatching()
+
     try:
-        node = BuoyDetectorContourMatching()
-        rospy.spin()
-    except rospy.ROSInterruptException:
+        rclpy.spin(buoy_detector_contour_matching)
+    except KeyboardInterrupt:
         pass
+    finally:
+        buoy_detector_contour_matching.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+if __name__ == "__main__":
+    main()
