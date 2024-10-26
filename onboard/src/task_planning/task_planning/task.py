@@ -5,6 +5,8 @@ import inspect
 import jsonpickle
 from typing import Any, Callable, Coroutine, Generator, Generic, Optional, Type, TypeVar, Union
 
+from rclpy.time import Time
+from std_msgs.msg import Header
 import rclpy
 from rclpy.node import Node
 from custom_msgs.msg import TaskUpdate
@@ -13,6 +15,7 @@ from task_planning.message_conversion.jsonpickle_custom_handlers import register
 
 # Register all JSONPickle handlers for custom classes
 register_custom_jsonpickle_handlers()
+
 
 class TaskStatus(IntEnum):
     """
@@ -40,12 +43,6 @@ class TaskStatus(IntEnum):
     ERRORED = TaskUpdate.ERRORED
 
 
-"""
-TODO:ros2
-
-Same idea as the TODO in marker_dropper. Don't create another node for TaskUpdatePublisher.
-"""
-
 class TaskUpdatePublisher:
     """
     A singleton class to publish task updates.
@@ -64,10 +61,10 @@ class TaskUpdatePublisher:
         return cls._instance
 
     def __init__(self, node: Node):
-        # TODO:ros2 better way to do this?
-        self.publisher = node.create_publisher(TaskUpdate, '/task_planning/updates', 100000000)
-
-
+        qos_profile = rclpy.QoSProfile(
+            history=rclpy.HistoryPolicy.KEEP_ALL,
+        )
+        self.publisher = node.create_publisher(TaskUpdate, '/task_planning/updates', qos_profile)
 
     def publish_update(self, task_id: int, parent_id: int, name: str, status: TaskStatus, data: Any) -> None:
         """
@@ -111,25 +108,15 @@ class TaskUpdatePublisher:
             self.get_logger().warn(f"Task with id {task_id} failed to encode data to JSON when publishing {status.name}: {data}")
             msg_data = jsonpickle.encode(str(data), **jsonpickle_options)
 
-        # Create Message
-        msg = TaskUpdate()
+        # Create message header
+        header = Header(stamp=Time().to_msg())
 
-        # Set header
-        msg.header.stamp = self.get_clock().now().to_msg()
-
-        # Set other fields
-        msg.id = task_id
-        msg.parent_id = parent_id
-        msg.name = name
-        msg.status = status
-        msg.data = msg_data
-
-        # Publish the Message
+        # Publish the message
+        msg = TaskUpdate(header=header, id=task_id, parent_id=parent_id, name=name, status=status, data=msg_data)
         self.publisher.publish(msg)
 
     def __del__(self):
-        # In ROS2, explicit unregisterring is not needed
-        pass
+        self.node.destroy_publisher(self.publisher)
 
 
 YieldType = TypeVar("YieldType")
@@ -273,7 +260,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
             AssertionError: If the status is not a valid TaskStatus
         """
 
-        TaskUpdatePublisher.get_instance().publish_update(self._id, self._parent_id, self._name, status, data)
+        TaskUpdatePublisher().publish_update(self._id, self._parent_id, self._name, status, data)
 
     def step(self):
         """
