@@ -1,35 +1,26 @@
+from rclpy.logging import get_logger
 from rclpy.node import Node
 from example_interfaces.srv import SetBool
 from task_planning.utils.other_utils import singleton
 
-"""
-TODO:ros2
-
-Look at the other interfaces. MarkDropper does *not* inherit from rclypy.node since it should receive a node
-object in its constructor (note that MarkerDropper is a @singleton).
-"""
+logger = get_logger('marker_dropper')
 
 @singleton
 class MarkerDropper:
-
-    # ROS service names
     SERVO_CONTROL_SERVICE = 'marker_dropper/servo_control'
 
     def __init__(self, node: Node, bypass: bool = False):
         self.node = node
 
-        # Create a client for the servo_control service
         self.drop_marker_client = node.create_client(SetBool, self.SERVO_CONTROL_SERVICE)
 
         if not bypass:
             while not self.drop_marker_client.wait_for_service(timeout_sec=1.0):
-                self.get_logger().info('servo_control service not available, waiting again...')
+                logger.info(f'{self.SERVO_CONTROL_SERVICE} not available, waiting again...')
 
     def drop_marker(self, data: bool):
-        # Create a request
         request = SetBool.Request()
-        request.data = data  # Assuming True means "drop the marker"
+        request.data = data
 
-        # Call the service
         future = self.drop_marker_client.call_async(request)
         return future
