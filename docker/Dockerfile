@@ -9,11 +9,17 @@ RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends nano
 RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends clang-format
-RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-venv
 
 RUN python3 -m venv /root/dev/venv
+RUN /root/dev/venv/bin/pip install colcon-common-extensions
+RUN /root/dev/venv/bin/pip install flake8
+RUN /root/dev/venv/bin/pip install flake8-builtins
+RUN /root/dev/venv/bin/pip install flake8-comprehensions
+RUN /root/dev/venv/bin/pip install flake8-docstrings
+RUN /root/dev/venv/bin/pip install flake8-import-order
+RUN /root/dev/venv/bin/pip install flake8-quotes
 RUN /root/dev/venv/bin/pip install pyserial
 RUN /root/dev/venv/bin/pip install GitPython
 
