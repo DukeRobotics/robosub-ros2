@@ -17,7 +17,6 @@ setup(
     maintainer_email='root@todo.todo',
     description='TODO: Package description',
     license='TODO: License declaration',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
         ],
