@@ -48,7 +48,7 @@ class TaskPlanning(Node):
         TaskUpdatePublisher(self)
 
         # Wait one second for all publishers and subscribers to start
-        # time.sleep(1) TODO:ros2 uncomment
+        time.sleep(1)
 
         # Ensure transform from odom to base_link is available
         try:
