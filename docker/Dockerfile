@@ -1,4 +1,4 @@
-FROM osrf/ros:jazzy-desktop-full
+FROM ros:jzzy
 
 # Install packages from apt
 # Each package is installed in a separate RUN command so that each package is cached separately in Docker
