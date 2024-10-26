@@ -1,4 +1,3 @@
-import rclpy
 from rclpy.node import Node
 from example_interfaces.srv import SetBool
 from task_planning.utils.other_utils import singleton
