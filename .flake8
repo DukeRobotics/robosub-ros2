@@ -1,6 +1,7 @@
 [flake8]
-extend-ignore = D100, D200, Q000
+extend-ignore = D100, D200, Q000, D102
 
 # D100: Missing docstring in public module
 # D200: One-line docstring should fit on one line with quotes
 # Q000: Double quotes found but single quotes preferred
+# D102: Missing docstring in public method
