@@ -14,8 +14,6 @@ from rclpy.duration import Duration
 from transforms3d.euler import euler2quat, quat2euler
 from transforms3d.quaternions import qmult
 
-# Time in ROS2
-tf2_time = rclpy.time.Time()
 
 def vector3_to_numpy(vector: Vector3) -> np.ndarray:
     """

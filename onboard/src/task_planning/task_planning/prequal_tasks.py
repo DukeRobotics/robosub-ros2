@@ -11,9 +11,9 @@ from interface.controls import Controls
 from interface.cv import CV
 from interface.state import State
 
-RECT_HEIGHT_METERS = 0.3048
-
 logger = rclpy.logging.get_logger('prequal_tasks')
+
+RECT_HEIGHT_METERS = 0.3048
 
 
 @task

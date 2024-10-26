@@ -76,7 +76,6 @@ async def sleep(secs: float):
     """
 
     duration = Duration(seconds=secs)
-    clock = Clock()
-    start_time = clock.now()
-    while start_time + duration > clock.now():
+    start_time = Clock().now()
+    while start_time + duration > Clock().now():
         await Yield()

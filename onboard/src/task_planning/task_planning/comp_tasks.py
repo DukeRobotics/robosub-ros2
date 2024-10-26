@@ -53,11 +53,9 @@ from task_planning.utils.coroutine_utils import sleep
 #     - takes in the termination condition function as a parameter
 #     - can improve on cv_tasks.move_to_cv_obj implementation (or replace it completely)
 
+logger = get_logger('comp_tasks')
 
 RECT_HEIGHT_METERS = 0.3048
-
-# Set-up ROS2 Logger
-logger = get_logger('comp_tasks')
 
 
 @task
@@ -69,7 +67,6 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
     logger.info("Started gate style task")
 
     DEPTH_LEVEL = State().orig_depth - depth_level
-
 
     async def sleep(secs):
         duration = Duration(seconds=secs)
@@ -605,7 +602,6 @@ async def align_path_marker(self: Task, direction=1) -> Task[None, None, None]:
     async def correct_depth():
         await move_tasks.depth_correction(desired_depth=DEPTH_LEVEL, parent=self)
 
-
     async def sleep(secs):
         duration = Duration(seconds=secs)
         start_time = Clock().now()
@@ -766,7 +762,6 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
-
     async def sleep(secs):
         duration = Duration(seconds=secs)
         start_time = Clock().now()
@@ -808,7 +803,6 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
 
         logger.info("Reached pink bins, stabilizing...")
         stabilize()
-
         await sleep(5)
 
     await move_to_bins()
@@ -896,7 +890,6 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
-
     async def sleep(secs):
         duration = Duration(seconds=secs)
         start_time = Clock().now()
@@ -930,7 +923,6 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
                 if bin_found:
                     break
 
-
                 await sleep(0.1)
                 await Yield()
 
@@ -963,8 +955,8 @@ async def bin_task(self: Task) -> Task[None, None, None]:
     FRAME_AREA = 480 * 600
 
     TIMEOUT = Duration(seconds=240)
-    start_time = Clock().now()
 
+    start_time = Clock().now()
 
     drop_marker = MarkerDropper().drop_marker
 
@@ -1017,11 +1009,6 @@ async def bin_task(self: Task) -> Task[None, None, None]:
         else:
             return -1
 
-
-
-    '''
-
-    '''
     async def sleep(secs):
         duration = Duration(seconds=secs)
         start_time = Clock().now()

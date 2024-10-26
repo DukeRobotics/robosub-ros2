@@ -10,11 +10,7 @@ from task_planning.task import task, Yield, Task
 import task_planning.move_tasks
 from task_planning.utils import geometry_utils
 
-
-
-# Create logger directly
 logger = get_logger('cv_tasks')
-
 
 # TODO: this task will likely be depleted once we complete the refactoring tasks in comp_tasks.py
 @task
