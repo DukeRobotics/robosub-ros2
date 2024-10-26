@@ -3,11 +3,11 @@ import rclpy
 from rclpy.logging import get_logger
 from rclpy.logging import LoggingSeverity
 
-from interface.cv import CV
-from move_tasks import move_to_pose_local
-from task import task, Yield, Task
-import move_tasks
-from utils import geometry_utils
+from task_planning.interface.cv import CV
+from task_planning.move_tasks import move_to_pose_local
+from task_planning.task import task, Yield, Task
+import task_planning.move_tasks
+from task_planning.utils import geometry_utils
 
 
 

@@ -14,20 +14,20 @@ from std_srvs.srv import SetBool
 from geometry_msgs.msg import Twist
 from custom_msgs.msg import ControlTypes
 
-from task import Task, task
-import move_tasks
-import cv_tasks
-from utils import geometry_utils
-from task import Yield
+from task_planning.task import Task, task
+import task_planning.move_tasks
+import task_planning.cv_tasks
+from task_planning.utils import geometry_utils
+from task_planning.task import Yield
 
 from enum import Enum
 
-from interface.state import State
-from interface.cv import CV
-from interface.controls import Controls
-from interface.marker_dropper import MarkerDropper
+from task_planning.interface.state import State
+from task_planning.interface.cv import CV
+from task_planning.interface.controls import Controls
+from task_planning.interface.marker_dropper import MarkerDropper
 
-from utils.coroutine_utils import sleep
+from task_planning.utils.coroutine_utils import sleep
 
 
 # TODO: move stablize() to move_tasks.py

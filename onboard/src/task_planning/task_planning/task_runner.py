@@ -63,9 +63,7 @@ class TaskPlanning(Node):
 
         # Ensure transform from odom to base_link is available
         try:
-            clock = Clock()
-            duration = Duration(seconds=timeout_sec)
-            _ = tfBuffer.lookup_transform('odom', 'base_link', clock.now(), duration)
+            _ = tfBuffer.lookup_transform('odom', 'base_link', Clock().now(), Duration(seconds=15))
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             self.get_logger().info("str(e)")
             self.get_logger().error('Failed to get transform')

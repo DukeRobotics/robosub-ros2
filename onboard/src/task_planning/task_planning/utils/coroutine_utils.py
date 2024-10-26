@@ -3,7 +3,7 @@ from rclpy.clock import Clock
 from rclpy.duration import Duration
 from typing import Callable, Coroutine, Optional, TypeVar
 
-from task import Task, Yield
+from task_planning.task import Task, Yield
 
 
 SendType = TypeVar('SendType')
