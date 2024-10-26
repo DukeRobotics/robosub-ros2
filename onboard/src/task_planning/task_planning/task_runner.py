@@ -20,14 +20,10 @@ class TaskPlanning(Node):
     NODE_NAME = 'task_planning'
 
     def __init__(self):
-        """
-        Initialize the task planning node.
-
-        Including intializing the interfaces and the task update publisher.
-        """
         main_initialized = False
         super().__init__(self.NODE_NAME)
-        bypass = self.declare_parameter('bypass', False).value
+        # TODO:ros2 set bypass=false
+        bypass = self.declare_parameter('bypass', True).value
         untethered = self.declare_parameter('untethered', False).value
         self.get_logger().info('task_planning node initialized')
 
@@ -43,11 +39,10 @@ class TaskPlanning(Node):
         _ = tf2_ros.TransformListener(tfBuffer, self)
 
         # Initialize interfaces
-        # TODO:ros2 set bypass=false
-        Controls(self, bypass=True)
-        state = State(self, tfBuffer=tfBuffer, bypass=True)
-        CV(self, bypass=True)
-        MarkerDropper(self, bypass=True)
+        Controls(self, bypass=bypass)
+        state = State(self, tfBuffer=tfBuffer, bypass=bypass)
+        CV(self, bypass=bypass)
+        MarkerDropper(self, bypass=bypass)
 
         # Initialize the task update publisher
         TaskUpdatePublisher(self)
@@ -100,9 +95,8 @@ class TaskPlanning(Node):
                 #                             depth_level=1.0, parent=Task.MAIN_ID),
                 # comp_tasks.octagon_task(direction=1, parent=Task.MAIN_ID),
             ]
-            input('Press enter to run tasks...\n')
+            input('Press enter to run tasks...')
 
-            # TODO:ros2 migrate this correctly using timers
             def countdown_callback():
                 self.get_logger().info(f'Countdown: {self.countdown_value}')
 
@@ -114,24 +108,15 @@ class TaskPlanning(Node):
                 self.countdown_value -= 1
 
             if untethered:
-                # self.get_logger().info('\nCountdown started...\n')
-                # self.countdown_timer = self.create_timer(1, self.countdown)
-                # for i in tqdm(range(10, 0, -1)):
-                #     time.sleep(1)
-                #     if not rclpy.ok():
-                #         break
-                # Controls().call_enable_controls(True)
-                self.countdown_value = 10  # Start from 10
-                self.get_logger().info('\nCountdown started...\n')
+                self.countdown_value = 10
+                self.get_logger().info('Countdown started...')
                 self.countdown_timer = self.create_timer(1.0, countdown_callback)
                 self.countdown_timer.cancel()
 
-            self.get_logger().info('\nRunning tasks.\n')
-
-            # TODO:ros2 migrate this correctly using timers
-            # Step through tasks, stopping if rpy is shutdown
+            self.get_logger().info('Running tasks.')
 
             current_task = 0
+
             def run_tasks():
                 if current_task >= len(tasks) or not rclpy.ok():
                     return
@@ -141,14 +126,6 @@ class TaskPlanning(Node):
                     self.current_task += 1
 
             self.task_runner_timer = self.create_timer(30, run_tasks)
-
-            # rate = self.create_rate(30)
-            # for t in tasks:
-            #     while not t.done and rclpy.ok():
-            #         t.step()
-            #         rate.sleep()
-            #     if not rclpy.ok():
-            #         break
 
             if untethered:
                 Controls().call_enable_controls(False)
