@@ -47,7 +47,7 @@ class State:
         self._reset_pose = node.create_client(SetPose, self.RESET_POSE_SERVICE)
         if not bypass:
             while not self._reset_pose.wait_for_service(timeout_sec=1.0):
-                logger.info(f'{self.RESET_POSE_SERVICE} not available, waiting again...')
+                logger.info(f'{self.RESET_POSE_SERVICE} not ready, waiting...')
 
         node.create_subscription(PoseWithCovarianceStamped, self.DEPTH_TOPIC, self._on_receive_depth, 10)
 

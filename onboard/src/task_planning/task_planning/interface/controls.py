@@ -47,7 +47,7 @@ class Controls:
         self._set_control_types = node.create_client(SetControlTypes, self.CONTROL_TYPES_SERVICE)
         if not bypass:
             while not self._set_control_types.wait_for_service(timeout_sec=1.0):
-                logger.info(f'{self.CONTROL_TYPES_SERVICE} not available, waiting again...')
+                logger.info(f'{self.CONTROL_TYPES_SERVICE} not ready, waiting...')
 
         # NOTE: if this variable gets out of sync with the actual control types, bad things may happen
         self._all_axes_control_type = None
@@ -63,7 +63,7 @@ class Controls:
         self._reset_pid_loops = node.create_client(Trigger, self.RESET_PID_LOOPS_SERVICE)
         if not bypass:
             while not self._reset_pid_loops.wait_for_service(timeout_sec=1.0):
-                logger.info(f'{self.RESET_PID_LOOPS_SERVICE} not available, waiting again...')
+                logger.info(f'{self.RESET_PID_LOOPS_SERVICE} not ready, waiting...')
 
         self._enable_controls = node.create_client(SetBool, self.ENABLE_CONTROLS_SERVICE)
 
