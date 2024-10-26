@@ -1,6 +1,7 @@
 import numpy as np
 from typing import List, Tuple
 
+from rclpy.clock import Clock
 import rclpy
 from geometry_msgs.msg import Vector3, Pose, PoseStamped, \
     Twist, Point, Quaternion
@@ -210,7 +211,7 @@ def transform_pose(tfBuffer: tf2_ros.Buffer, base_frame: str, target_frame: str,
     pose_stamped.pose = pose
     pose_stamped.header.frame_id = base_frame
 
-    trans = tfBuffer.lookup_transform(target_frame, base_frame, node.get_clock().now())
+    trans = tfBuffer.lookup_transform(target_frame, base_frame, Clock().now())
     transformed = tf2_geometry_msgs.do_transform_pose(pose_stamped, trans)
 
     return transformed.pose

@@ -6,8 +6,6 @@ from task_planning.interface.marker_dropper import MarkerDropper
 import rclpy
 from rclpy.node import Node
 import time
-from builtin_interfaces.msg import Time
-from rclpy.time import Time as rclpy_time
 from rclpy.duration import Duration
 from rclpy.clock import Clock
 
@@ -38,11 +36,7 @@ class TaskPlanning(Node):
             if main_initialized:
                 TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
 
-
-
-
-
-        rclpy.get_default_context().on_shutdown(publish_close)#sdkfj
+        rclpy.get_default_context().on_shutdown(publish_close)
 
         # Initialize transform buffer and listener
         tfBuffer = tf2_ros.Buffer()
