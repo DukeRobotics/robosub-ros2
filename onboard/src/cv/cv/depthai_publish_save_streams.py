@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import rospy
+import rclpy
 import depthai as dai
 import cv2
 from sensor_msgs.msg import CompressedImage
@@ -11,8 +11,10 @@ import utils
 import subprocess
 import os
 
+LOOP_RATE = 10
 
-class DepthAIStreamsPublisherAndSaver:
+
+class DepthAIStreamsPublisherAndSaver(Node):
     """
     Class to publish the RGB video, preview, mono left, mono right, disparity, and depth streams to respective topics.
     Also saves the RGB video, preview, mono left, mono right, and disparity streams to respective files.
@@ -34,37 +36,37 @@ class DepthAIStreamsPublisherAndSaver:
         """
         Set up publisher and camera node pipeline.
         """
-        rospy.init_node('depthai_publish_save_streams')
+        super().__init__('depthai_publish_save_streams')
 
         # Framerate of the streams
-        self.framerate = rospy.get_param('~framerate')
+        self.framerate = self.declare_parameter('~framerate').value
 
         # Whether to publish the streams to topics
-        self.publish_rgb_video = rospy.get_param('~rgb_video')
-        self.publish_rgb_preview = rospy.get_param('~rgb_preview')
-        self.publish_left = rospy.get_param('~left')
-        self.publish_right = rospy.get_param('~right')
-        self.publish_disparity = rospy.get_param('~disparity')
-        self.publish_depth = rospy.get_param('~depth')
+        self.publish_rgb_video = self.declare_parameter('~rgb_video').value
+        self.publish_rgb_preview = self.declare_parameter('~rgb_preview').value
+        self.publish_left = self.declare_parameter('~left').value
+        self.publish_right = self.declare_parameter('~right').value
+        self.publish_disparity = self.declare_parameter('~disparity').value
+        self.publish_depth = self.declare_parameter('~depth').value
 
         # File paths to save the streams to. If param is empty, the stream will not be saved.
-        self.rgb_video_file_path = os.path.join(self.BASE_PATH, rospy.get_param('~rgb_video_file_path'))
-        self.rgb_preview_file_path = os.path.join(self.BASE_PATH, rospy.get_param('~rgb_preview_file_path'))
-        self.left_file_path = os.path.join(self.BASE_PATH, rospy.get_param('~left_file_path'))
-        self.right_file_path = os.path.join(self.BASE_PATH, rospy.get_param('~right_file_path'))
-        self.disparity_file_path = os.path.join(self.BASE_PATH, rospy.get_param('~disparity_file_path'))
+        self.rgb_video_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~rgb_video_file_path').value)
+        self.rgb_preview_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~rgb_preview_file_path').value)
+        self.left_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~left_file_path').value)
+        self.right_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~right_file_path').value)
+        self.disparity_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~disparity_file_path').value)
 
         # Whether to convert the saved encoded streams into a video
-        self.convert_to_video = rospy.get_param('~convert_to_video')
+        self.convert_to_video = self.declare_parameter('~convert_to_video').value
         # Whether to convert video to QuickTime compatible format
-        self.qt_compatible = rospy.get_param('~qt_compatible')
+        self.qt_compatible = self.declare_parameter('~qt_compatible').value
 
         # Whether to save the streams to files
-        self.save_rgb_video = rospy.get_param('~rgb_video_file_path') != ''
-        self.save_rgb_preview = rospy.get_param('~rgb_preview_file_path') != ''
-        self.save_left = rospy.get_param('~left_file_path') != ''
-        self.save_right = rospy.get_param('~right_file_path') != ''
-        self.save_disparity = rospy.get_param('~disparity_file_path') != ''
+        self.save_rgb_video = self.rgb_video_file_path != ''
+        self.save_rgb_preview = self.rgb_preview_file_path != ''
+        self.save_left = self.left_file_path != ''
+        self.save_right = self.right_file_path != ''
+        self.save_disparity = self.disparity_file_path != ''
 
         num_saved_streams = (int(self.save_rgb_video) + int(self.save_rgb_preview) + int(self.save_left) +
                              int(self.save_right) + int(self.save_disparity))
@@ -93,8 +95,8 @@ class DepthAIStreamsPublisherAndSaver:
             max_encoded_pixels_per_second = 3840 * 2160 * 30
             max_framerate = int(max_encoded_pixels_per_second / encoded_pixels_per_frame)
             if self.framerate > max_framerate:
-                rospy.logwarn(f'Framerate {self.framerate} goes over the encoding limit. '
-                              f'Using maximum possible framerate: {max_framerate}')
+                self.get_logger().warn(f'Framerate {self.framerate} goes over the encoding limit. '
+                                       f'Using maximum possible framerate: {max_framerate}')
                 self.framerate = max_framerate
 
         if num_saved_streams > 3:
@@ -121,29 +123,31 @@ class DepthAIStreamsPublisherAndSaver:
 
         # Set up publishers
         if self.publish_rgb_video:
-            self.stream_publisher_rgb_video = rospy.Publisher(self.STREAM_TOPIC_RGB_VIDEO, CompressedImage,
+            self.stream_publisher_rgb_video = self.create_publisher(CompressedImage, self.STREAM_TOPIC_RGB_VIDEO,
                                                               queue_size=10)
 
         if self.publish_rgb_preview:
-            self.stream_publisher_rgb_preview = rospy.Publisher(self.STREAM_TOPIC_RGB_PREVIEW, CompressedImage,
+            self.stream_publisher_rgb_preview = self.create_publisher(CompressedImage, self.STREAM_TOPIC_RGB_PREVIEW,
                                                                 queue_size=10)
 
         if self.publish_left:
-            self.stream_publisher_left = rospy.Publisher(self.STREAM_TOPIC_LEFT, CompressedImage, queue_size=10)
+            self.stream_publisher_left = self.create_publisher(CompressedImage, self.STREAM_TOPIC_LEFT, queue_size=10)
 
         if self.publish_right:
-            self.stream_publisher_right = rospy.Publisher(self.STREAM_TOPIC_RIGHT, CompressedImage, queue_size=10)
+            self.stream_publisher_right = self.create_publisher(CompressedImage, self.STREAM_TOPIC_RIGHT, queue_size=10)
 
         if self.publish_disparity:
-            self.stream_publisher_disparity = rospy.Publisher(self.STREAM_TOPIC_DISPARITY, CompressedImage,
+            self.stream_publisher_disparity = self.create_publisher(CompressedImage, self.STREAM_TOPIC_DISPARITY,
                                                               queue_size=10)
 
         if self.publish_depth:
-            self.stream_publisher_depth = rospy.Publisher(self.STREAM_TOPIC_DEPTH, CompressedImage, queue_size=10)
+            self.stream_publisher_depth = self.create_publisher(CompressedImage, self.STREAM_TOPIC_DEPTH, queue_size=10)
 
         self.image_tools = ImageTools()
         self.pipeline = dai.Pipeline()
         self.build_pipeline()
+
+        self.run()
 
     def build_pipeline(self):
         """
@@ -360,63 +364,7 @@ class DepthAIStreamsPublisherAndSaver:
                 veDisparityQueue = device.getOutputQueue(name="veDisparity", maxSize=4, blocking=False)
                 disparity_file = open(self.disparity_file_path + ".h265", 'wb')
 
-            while not rospy.is_shutdown():
-
-                # Get messages that came from the queue
-                if self.publish_rgb_video:
-                    raw_img_rgb_video = rgbVideoQueue.get()
-                    img_rgb_video = raw_img_rgb_video.getCvFrame()
-                    image_msg_rgb_video = self.image_tools.convert_to_ros_compressed_msg(img_rgb_video)
-                    self.stream_publisher_rgb_video.publish(image_msg_rgb_video)
-
-                if self.publish_rgb_preview:
-                    raw_img_rgb_preview = rgbPreviewQueue.get()
-                    img_rgb_preview = raw_img_rgb_preview.getCvFrame()
-                    image_msg_rgb_preview = self.image_tools.convert_to_ros_compressed_msg(img_rgb_preview)
-                    self.stream_publisher_rgb_preview.publish(image_msg_rgb_preview)
-
-                if self.publish_left:
-                    raw_img_left = leftQueue.get()
-                    img_left = raw_img_left.getCvFrame()
-                    image_msg_left = self.image_tools.convert_depth_to_ros_compressed_msg(img_left, 'mono8')
-                    self.stream_publisher_left.publish(image_msg_left)
-
-                if self.publish_right:
-                    raw_img_right = rightQueue.get()
-                    img_right = raw_img_right.getCvFrame()
-                    image_msg_right = self.image_tools.convert_depth_to_ros_compressed_msg(img_right, 'mono8')
-                    self.stream_publisher_right.publish(image_msg_right)
-
-                if self.publish_disparity:
-                    # Normalize and apply color map to disparity image
-                    raw_img_disparity = disparityQueue.get()
-                    img_disparity = raw_img_disparity.getFrame()
-                    img_disparity = (img_disparity * (255 / self.stereoMaxDisparity)).astype(np.uint8)
-                    img_disparity = cv2.applyColorMap(img_disparity, cv2.COLORMAP_AUTUMN)
-                    image_msg_disparity = self.image_tools.convert_to_ros_compressed_msg(img_disparity)
-                    self.stream_publisher_disparity.publish(image_msg_disparity)
-
-                if self.publish_depth:
-                    raw_img_depth = depthQueue.get()
-                    img_depth = raw_img_depth.getCvFrame()
-                    image_msg_depth = self.image_tools.convert_depth_to_ros_compressed_msg(img_depth, 'mono16')
-                    self.stream_publisher_depth.publish(image_msg_depth)
-
-                # Save messages to files
-                while self.save_rgb_video and veRgbVideoQueue.has() and not rospy.is_shutdown():
-                    veRgbVideoQueue.get().getData().tofile(rgb_video_file)
-
-                while self.save_rgb_preview and veRgbPreviewQueue.has() and not rospy.is_shutdown():
-                    veRgbPreviewQueue.get().getData().tofile(rgb_preview_file)
-
-                while self.save_left and veLeftQueue.has() and not rospy.is_shutdown():
-                    veLeftQueue.get().getData().tofile(left_file)
-
-                while self.save_right and veRightQueue.has() and not rospy.is_shutdown():
-                    veRightQueue.get().getData().tofile(right_file)
-
-                while self.save_disparity and veDisparityQueue.has() and not rospy.is_shutdown():
-                    veDisparityQueue.get().getData().tofile(disparity_file)
+            self.publish_and_save_timer = self.create_timer(1 / LOOP_RATE, self.publish_and_save)
 
             # Close files
             if self.save_rgb_video:
@@ -453,7 +401,7 @@ class DepthAIStreamsPublisherAndSaver:
                              f"{h265_convert_options} {self.disparity_file_path}.mp4")
 
         if self.convert_to_video:
-            rospy.loginfo("Converting encoded video files to playable videos.")
+            self.get_logger().info("Converting encoded video files to playable videos.")
             if self.save_rgb_video:
                 subprocess.Popen(rgb_video_command.split(" "))
             if self.save_rgb_preview:
@@ -465,21 +413,89 @@ class DepthAIStreamsPublisherAndSaver:
             if self.save_disparity:
                 subprocess.Popen(disparity_command.split(" "))
 
-        rospy.loginfo("To convert the encoded video files to a playable videos, run the following commands:")
+        self.get_logger().info("To convert the encoded video files to a playable videos, run the following commands:")
         if self.save_rgb_video:
-            rospy.loginfo(rgb_video_command)
+            self.get_logger().info(rgb_video_command)
         if self.save_rgb_preview:
-            rospy.loginfo(rgb_preview_command)
+            self.get_logger().info(rgb_preview_command)
         if self.save_left:
-            rospy.loginfo(left_command)
+            self.get_logger().info(left_command)
         if self.save_right:
-            rospy.loginfo(right_command)
+            self.get_logger().info(right_command)
         if self.save_disparity:
-            rospy.loginfo(disparity_command)
+            self.get_logger().info(disparity_command)
+
+    def publish_and_save(self):
+        # Get messages that came from the queue
+        if self.publish_rgb_video:
+            raw_img_rgb_video = rgbVideoQueue.get()
+            img_rgb_video = raw_img_rgb_video.getCvFrame()
+            image_msg_rgb_video = self.image_tools.convert_to_ros_compressed_msg(img_rgb_video)
+            self.stream_publisher_rgb_video.publish(image_msg_rgb_video)
+
+        if self.publish_rgb_preview:
+            raw_img_rgb_preview = rgbPreviewQueue.get()
+            img_rgb_preview = raw_img_rgb_preview.getCvFrame()
+            image_msg_rgb_preview = self.image_tools.convert_to_ros_compressed_msg(img_rgb_preview)
+            self.stream_publisher_rgb_preview.publish(image_msg_rgb_preview)
+
+        if self.publish_left:
+            raw_img_left = leftQueue.get()
+            img_left = raw_img_left.getCvFrame()
+            image_msg_left = self.image_tools.convert_depth_to_ros_compressed_msg(img_left, 'mono8')
+            self.stream_publisher_left.publish(image_msg_left)
+
+        if self.publish_right:
+            raw_img_right = rightQueue.get()
+            img_right = raw_img_right.getCvFrame()
+            image_msg_right = self.image_tools.convert_depth_to_ros_compressed_msg(img_right, 'mono8')
+            self.stream_publisher_right.publish(image_msg_right)
+
+        if self.publish_disparity:
+            # Normalize and apply color map to disparity image
+            raw_img_disparity = disparityQueue.get()
+            img_disparity = raw_img_disparity.getFrame()
+            img_disparity = (img_disparity * (255 / self.stereoMaxDisparity)).astype(np.uint8)
+            img_disparity = cv2.applyColorMap(img_disparity, cv2.COLORMAP_AUTUMN)
+            image_msg_disparity = self.image_tools.convert_to_ros_compressed_msg(img_disparity)
+            self.stream_publisher_disparity.publish(image_msg_disparity)
+
+        if self.publish_depth:
+            raw_img_depth = depthQueue.get()
+            img_depth = raw_img_depth.getCvFrame()
+            image_msg_depth = self.image_tools.convert_depth_to_ros_compressed_msg(img_depth, 'mono16')
+            self.stream_publisher_depth.publish(image_msg_depth)
+
+        # Save messages to files
+        while self.save_rgb_video and veRgbVideoQueue.has() and not rospy.is_shutdown():
+            veRgbVideoQueue.get().getData().tofile(rgb_video_file)
+
+        while self.save_rgb_preview and veRgbPreviewQueue.has() and not rospy.is_shutdown():
+            veRgbPreviewQueue.get().getData().tofile(rgb_preview_file)
+
+        while self.save_left and veLeftQueue.has() and not rospy.is_shutdown():
+            veLeftQueue.get().getData().tofile(left_file)
+
+        while self.save_right and veRightQueue.has() and not rospy.is_shutdown():
+            veRightQueue.get().getData().tofile(right_file)
+
+        while self.save_disparity and veDisparityQueue.has() and not rospy.is_shutdown():
+            veDisparityQueue.get().getData().tofile(disparity_file)
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    depthai_streams_publisher_and_saver = DepthAIStreamsPublisherAndSaver()
+
+    try:
+        rclpy.spin(depthai_streams_publisher_and_saver)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        depthai_streams_publisher_and_saver.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':
-    try:
-        DepthAIStreamsPublisherAndSaver().run()
-    except rospy.ROSInterruptException:
-        pass
+    main()
