@@ -102,7 +102,7 @@ class TaskPlanning(Node):
 
                 if self.countdown_value <= 0:
                     self.countdown_timer.cancel()  # Stop the timer
-                    Controls().call_enable_controls(True)
+                    Controls().call_enable_controls(True) # TODO:ros2 runtime error
                     self.get_logger().info('Countdown complete!')
 
                 self.countdown_value -= 1
@@ -127,6 +127,7 @@ class TaskPlanning(Node):
 
             self.task_runner_timer = self.create_timer(30, run_tasks)
 
+            # TODO:ros2 need to put this at the end of the run_tasks function
             if untethered:
                 Controls().call_enable_controls(False)
 
