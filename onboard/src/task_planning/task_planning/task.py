@@ -12,6 +12,8 @@ import rclpy
 from rclpy.node import Node
 from custom_msgs.msg import TaskUpdate
 
+from task_planning.utils.other_utils import singleton
+
 from task_planning.message_conversion.jsonpickle_custom_handlers import register_custom_jsonpickle_handlers
 
 # Register all JSONPickle handlers for custom classes
@@ -44,6 +46,7 @@ class TaskStatus(IntEnum):
     ERRORED = TaskUpdate.ERRORED
 
 
+@singleton
 class TaskUpdatePublisher:
     """
     A singleton class to publish task updates.
@@ -52,15 +55,6 @@ class TaskUpdatePublisher:
         _instance: The singleton instance of this class. Is a static attribute.
         publisher: The publisher for the task_updates topic
     """
-
-    _instance = None
-
-    def __new__(cls, node):
-        if cls._instance is None:
-            cls._instance = super(TaskUpdatePublisher, cls).__new__(cls)
-            cls._instance.__init__(node)
-        return cls._instance
-
     def __init__(self, node: Node):
         qos_profile = QoSProfile(
             history=HistoryPolicy.KEEP_ALL,
