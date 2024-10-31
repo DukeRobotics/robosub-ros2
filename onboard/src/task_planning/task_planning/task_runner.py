@@ -51,19 +51,20 @@ class TaskPlanning(Node):
         time.sleep(1)
 
         # Ensure transform from odom to base_link is available
-        try:
-            _ = tfBuffer.lookup_transform('odom', 'base_link', Clock().now(), Duration(seconds=15))
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ):
-            self.get_logger().error('Failed to get transform')
-            return
+        if not bypass:
+            try:
+                _ = tfBuffer.lookup_transform('odom', 'base_link', Clock().now(), Duration(seconds=15))
+            except (
+                tf2_ros.LookupException,
+                tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException,
+            ):
+                self.get_logger().error('Failed to get transform')
+                return
 
-        # Ensure state is available
-        while not state.state:
-            pass
+            # Ensure state is available
+            while not state.state:
+                pass
 
         # Main has initialized
         TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.INITIALIZED, None)
