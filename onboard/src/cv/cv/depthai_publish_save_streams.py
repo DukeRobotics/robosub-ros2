@@ -124,25 +124,22 @@ class DepthAIStreamsPublisherAndSaver(Node):
 
         # Set up publishers
         if self.publish_rgb_video:
-            self.stream_publisher_rgb_video = self.create_publisher(CompressedImage, self.STREAM_TOPIC_RGB_VIDEO,
-                                                              queue_size=10)
+            self.stream_publisher_rgb_video = self.create_publisher(CompressedImage, self.STREAM_TOPIC_RGB_VIDEO, 10)
 
         if self.publish_rgb_preview:
-            self.stream_publisher_rgb_preview = self.create_publisher(CompressedImage, self.STREAM_TOPIC_RGB_PREVIEW,
-                                                                queue_size=10)
+            self.stream_publisher_rgb_preview = self.create_publisher(CompressedImage, self.STREAM_TOPIC_RGB_PREVIEW, 10)
 
         if self.publish_left:
-            self.stream_publisher_left = self.create_publisher(CompressedImage, self.STREAM_TOPIC_LEFT, queue_size=10)
+            self.stream_publisher_left = self.create_publisher(CompressedImage, self.STREAM_TOPIC_LEFT, 10)
 
         if self.publish_right:
-            self.stream_publisher_right = self.create_publisher(CompressedImage, self.STREAM_TOPIC_RIGHT, queue_size=10)
+            self.stream_publisher_right = self.create_publisher(CompressedImage, self.STREAM_TOPIC_RIGHT, 10)
 
         if self.publish_disparity:
-            self.stream_publisher_disparity = self.create_publisher(CompressedImage, self.STREAM_TOPIC_DISPARITY,
-                                                              queue_size=10)
+            self.stream_publisher_disparity = self.create_publisher(CompressedImage, self.STREAM_TOPIC_DISPARITY, 10)
 
         if self.publish_depth:
-            self.stream_publisher_depth = self.create_publisher(CompressedImage, self.STREAM_TOPIC_DEPTH, queue_size=10)
+            self.stream_publisher_depth = self.create_publisher(CompressedImage, self.STREAM_TOPIC_DEPTH, 10)
 
         self.image_tools = ImageTools()
         self.pipeline = dai.Pipeline()
