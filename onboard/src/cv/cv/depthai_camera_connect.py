@@ -62,7 +62,7 @@ def connect(pipeline):
                     f"autodiscovery and static IP address specification. All attempts failed.")
 
 
-def custom_autodiscovery(self):
+def custom_autodiscovery():
     """
     Scans all IP addresses from 192.168.1.0 to 192.168.1.255 looking for the DepthAI camera's MAC address.
 
@@ -77,7 +77,9 @@ def custom_autodiscovery(self):
     scan = nm.scan(hosts=IP_range, arguments='-sP')['scan']
 
     for ip, info in scan.items():
+        print(f"Searching,... {ip}")
         if info['status']['state'] == 'up' and info['addresses'].get('mac') == MAC_address:
+            print("FOUND!!")
             return ip
 
     raise RuntimeError("Custom autodiscovery failed to find camera.")

@@ -227,17 +227,17 @@ class DepthAISpatialDetector(Node):
             publisher_name = f"cv/{self.camera}/{model_class}"
             publisher_dict[model_class] = self.create_publisher(CVObject,
                                                           publisher_name,
-                                                          queue_size=10)
+                                                          10)
         self.publishers_dict = publisher_dict
 
         # Create CompressedImage publishers for the raw RGB feed, detections feed, and depth feed
         if self.rgb_raw:
             self.rgb_preview_publisher = self.create_publisher(CompressedImage, "camera/front/rgb/preview/compressed",
-                                                         queue_size=10)
+                                                         10)
 
         if self.rgb_detections:
             self.detection_feed_publisher = self.create_publisher(CompressedImage, "cv/front/detections/compressed",
-                                                            queue_size=10)
+                                                            10)
 
     def init_queues(self, device):
         """
