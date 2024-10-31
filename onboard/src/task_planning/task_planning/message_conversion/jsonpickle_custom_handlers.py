@@ -14,6 +14,13 @@ from task_planning.message_conversion.ros_message_converter import \
 
 logger = get_logger('jsonpickle_custom_handlers')
 
+ACTION_CLASSES_TO_TYPES = {
+    "Goal": lambda cls_base: cls_base.Goal,
+    "Result": lambda cls_base: cls_base.Result,
+    "Feedback": lambda cls_base: cls_base.Feedback,
+}
+ACTION_CLASSES_TO_TYPES_KEYS_TUPLE = tuple(ACTION_CLASSES_TO_TYPES.keys())
+
 
 class ROSMessageHandler(jsonpickle.handlers.BaseHandler):
     """
@@ -30,6 +37,15 @@ class ROSMessageHandler(jsonpickle.handlers.BaseHandler):
     def restore(self, obj):
         message_type = obj['ros/type']
         dictionary = obj['ros/data']
+
+        # Handle action messages that can't be directly imported
+        package, interface_type, cls_name = message_type.split("/")
+        if interface_type == "action" and cls_name.endswith(ACTION_CLASSES_TO_TYPES_KEYS_TUPLE):
+            module = importlib.import_module(f"{package}.{interface_type}")
+            cls_base_name, cls_suffix = cls_name.rsplit("_", 1)
+            cls_base = getattr(module, cls_base_name)
+            message_type = ACTION_CLASSES_TO_TYPES[cls_suffix](cls_base)
+
         return convert_dictionary_to_ros_message(message_type, dictionary)
 
 
@@ -59,30 +75,29 @@ def register_custom_jsonpickle_handlers():
     """
     Register all custom JSONPickle handlers.
     """
-    interface_classes = get_interface_classes()
-    for cls in interface_classes:
+    num_interface_classes = 0
+    for cls in get_interface_classes():
         jsonpickle.handlers.register(cls, ROSMessageHandler, base=True)
-    logger.info(f'Registered {len(interface_classes)} ROS interfaces')
+        num_interface_classes += 1
+    logger.info(f'Registered {num_interface_classes} interface types')
 
     jsonpickle.handlers.register(BaseException, BaseExceptionHandler, base=True)
 
 
 def get_interface_classes():
     """
-    Return all ROS 2 interface classes (including custom interfaces).
+    Generator that yields ROS 2 interface classes (including custom interfaces).
     """
     interfaces = rosidl_runtime_py.get_interfaces()
 
-    all_classes = []
     for package, interface_names in interfaces.items():
         for name in interface_names:
-            _type = name.split("/")[0]  # msg, srv, action
+            interface_type, cls_name = name.split("/")
+            module = importlib.import_module(f"{package}.{interface_type}")
 
             suffixes = {
                 "msg": [""],
                 "srv": ["", "_Event", "_Request", "_Response"],
-
-                # TODO: Action messages don't seem to be working even though we are registering all possible classes
                 "action": [
                     "",
                     "_GetResult_Event",
@@ -94,9 +109,12 @@ def get_interface_classes():
                 ],
             }
 
-            for suffix in suffixes[_type]:
-                module = importlib.import_module(f"{package}.{_type}")
-                cls = getattr(module, name.split("/")[-1] + suffix)
-                all_classes.append(cls)
+            for suffix in suffixes[interface_type]:
+                cls = getattr(module, cls_name + suffix)
+                yield cls
 
-    return all_classes
+            # Action messages have additional classes that are only accessible through the main action class
+            if interface_type == "action":
+                action_cls = getattr(module, cls_name)
+                for class_to_type_func in ACTION_CLASSES_TO_TYPES.values():
+                    yield class_to_type_func(action_cls)
