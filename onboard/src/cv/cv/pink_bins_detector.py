@@ -20,14 +20,15 @@ class PinkBinsDetector(Node):
         super().__init__('pink_bins_detector')
         self.bridge = CvBridge()
         # rospy.init_node("pink_bins_detector", anonymous=True)
-        self.camera = self.get_parameter("~camera").get_parameter_value() # could be self.decare_parameter
+        # self.camera = self.get_parameter("~camera").get_parameter_value() # could be self.decare_parameter --> get_param does not work currently
+        self.camera = self.declare_parameter("camera", "front").value
         self.image_sub = self.create_subscription(CompressedImage, f"/camera/usb/{self.camera}/compressed", self.image_callback,
                                           10)
 
         self.pink_bins_hsv_filtered_pub = self.create_publisher(Image, f"/cv/{self.camera}/pink_bins/hsv_filtered",
                                                           10)
-        self.pink_bins_dbscan_pub = self.create_publisher(Image, f"/cv/{self.camera}/pink_bins/dbscan", queue_size=10)
-        self.pink_bins_detections_pub = self.create_publisher(Image, f"/cv/{self.camera}/pink_bins/detections", queue_size=10)
+        self.pink_bins_dbscan_pub = self.create_publisher(Image, f"/cv/{self.camera}/pink_bins/dbscan", 10)
+        self.pink_bins_detections_pub = self.create_publisher(Image, f"/cv/{self.camera}/pink_bins/detections", 10)
         self.pink_bins_bounding_box_pub = self.create_publisher(CVObject, f"/cv/{self.camera}/pink_bins/bounding_box",
                                                           10)
 
