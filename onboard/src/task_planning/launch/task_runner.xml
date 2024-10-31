@@ -1,8 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <launch>
-	<arg name="bypass" doc='{"type":"bool","allowEmpty":true,"help":"Whether to bypass wait_for_service()"}'/>
-	<arg name="untethered" doc='{"type":"bool","allowEmpty":true,"help":"Whether to run untethered"}'/>
-	<node pkg="task_planning" name="task_runner" type="task_runner.py" output="screen">
-		<param name="bypass" value="$(arg bypass)" />
-		<param name="untethered" value="$(arg untethered)" />
+	<arg name="bypass" default="false" description="Bypass mode"/>
+    <arg name="untethered" default="false" description="Untethered mode"/>
+	<node pkg="task_planning" name="task_runner" exec="task_runner" output="screen">
+		<param name="bypass" value="$(var bypass)" />
+		<param name="untethered" value="$(var untethered)" />
 	</node>
 </launch>
