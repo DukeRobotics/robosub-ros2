@@ -10,6 +10,9 @@ RUN apt install -y --no-install-recommends nano
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-serial
+RUN apt install -y --no-install-recommends ros-jazzy-robot-localization
+RUN apt install -y --no-install-recommends python3-jsonpickle
+RUN apt install -y --no-install-recommends python3-transforms3d
 
 # Set no password for root user
 RUN passwd -d root
