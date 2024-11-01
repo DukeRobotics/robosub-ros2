@@ -3,8 +3,8 @@
 import rclpy
 from rclpy.node import Node
 
-import psutil
 import GPUtil
+import psutil
 from custom_msgs.msg import SystemUsage
 
 

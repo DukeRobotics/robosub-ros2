@@ -2,6 +2,8 @@
 
 from pathlib import Path
 from std_msgs.msg import Float64
+from rclpy.clock import Clock
+from rclpy.duration import Duration
 
 import rclpy
 from rclpy.node import Node
@@ -15,20 +17,23 @@ from datetime import datetime
 class RecordBag(Node):
 
     # Duration of time to wait for a voltage message before stopping recording
-    TIMEOUT_DURATION = 5
+    TIMEOUT_DURATION = Duration(seconds=5)
+    NODE_NAME = 'record_bag'
 
     def __init__(self):
+        super().__init__(self.NODE_NAME)
+
         # Initialize variables
         self.process = None
 
         # Initialize last message time to current time
-        self.last_msg_time = self.get_clock().now()
+        self.last_msg_time = Clock().now()
 
         # Subscribe to the voltage topic
-        self.create_subscriber(Float64, "/sensors/voltage", self.voltage_callback)
+        self.create_subscription(Float64, 'sensors/voltage', self.voltage_callback, 10)
 
         # Create a timer to check for timeout; calls check_timeout every second
-        self.timer = self.create_timer().Timer(1, self.check_timeout)
+        self.timer = self.create_timer(1, self.check_timeout)
 
         self.get_logger().info("Record bag node started.")
 
@@ -42,7 +47,7 @@ class RecordBag(Node):
         """
 
         # Update last received message time
-        self.last_msg_time = self.get_clock().now()
+        self.last_msg_time = Clock().now()
 
         # If voltage is below 5V and the node is currently recording, stop recording
         if data.data < 5:
@@ -64,15 +69,15 @@ class RecordBag(Node):
         """
 
         # Get the current time in seconds since the Unix epoch
-        current_time_sec = self.get_clock().now().to_sec()
+        current_time_sec = Clock().now().seconds_nanoseconds()[0]
 
         # Convert to a human-readable format
         human_readable_time = datetime.fromtimestamp(current_time_sec).strftime('%Y.%m.%d_%I-%M-%S_%p')
 
         # Start recording all topics to a bag file
-        Path("/root/dev/robosub-ros/bag_files/").mkdir(parents=False, exist_ok=True)
+        Path("/root/dev/robosub-ros2/bag_files/").mkdir(parents=False, exist_ok=True)
 
-        command = f"rosbag record -a -O /root/dev/robosub-ros/bag_files/{human_readable_time}.bag"
+        command = f"ros2 bag record -a -o /root/dev/robosub-ros2/bag_files/{human_readable_time}.bag"
         self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, shell=True,
                                         preexec_fn=os.setsid)
 
@@ -87,7 +92,7 @@ class RecordBag(Node):
             self.process = None
             self.get_logger().info("Recording stopped.")
 
-    def check_timeout(self, event):
+    def check_timeout(self):
         """
         Check if the last voltage message received was more than TIMEOUT_DURATION ago. If so, and if the node is
         currently recording, stop recording and shutdown the node.
@@ -95,7 +100,7 @@ class RecordBag(Node):
         Args:
             event: The timer event that triggered this function.
         """
-        current_time = self.get_clock().now()
+        current_time = Clock().now()
         if (current_time - self.last_msg_time) > self.TIMEOUT_DURATION:
             if self.process is not None:
                 self.get_logger().info(f"No voltage messages received for {self.TIMEOUT_DURATION.to_sec()} seconds. "
@@ -110,16 +115,6 @@ class RecordBag(Node):
         self.get_logger().info("Stopping node due to recording stop.")
         rclpy.shutdown()
 
-    def run(self):
-        """
-        Run the node. The node will wait for voltage messages to start recording. If the node is shutdown, it will stop
-        recording.
-        """
-        rclpy.spin()
-
-        if self.process:
-            self.get_logger().info("Shutting down. Stopping recording.")
-            self.stop_recording()
 
 def main(args=None):
     rclpy.init(args=args)
@@ -130,6 +125,8 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
+        recorder.stop_recording()
+        recorder.get_logger().info("Shutting down. Stopping recording.")
         recorder.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()

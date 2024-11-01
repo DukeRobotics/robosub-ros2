@@ -20,6 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'record_bag = system_utils.record_bag:main',
+            'system_info_publisher = system_utils.system_info_publisher:main',
+            'topic_transforms = system_utils.topic_transforms:main'
         ],
     },
 )

@@ -15,7 +15,7 @@ from sensor_msgs.msg import Imu
 # Class to store data for topic transformations
 class TopicTransformData:
     def __init__(self, input_topic, input_type, input_type_conversion, output_topic, output_type,
-                 output_type_conversion, subscriber=None, publisher=None, publisher_queue_size=1):
+                 output_type_conversion, subscriber=None, publisher=None, publisher_queue_size=1, subscriber_queue_size=1):
         self.input_topic = input_topic
         self.input_type = input_type
         self.input_type_conversion = input_type_conversion
@@ -25,6 +25,7 @@ class TopicTransformData:
         self.subscriber = subscriber
         self.publisher = publisher
         self.publisher_queue_size = publisher_queue_size
+        self.subscriber_queue_size = subscriber_queue_size
 
 
 # Class to store conversion functions
@@ -60,7 +61,7 @@ class Conversions:
 
 # Class to perform topic transformations
 class TopicTransforms(Node):
-
+    NODE_NAME = 'topic_transforms'
     # List of topic transformation data
     TOPIC_TRANSFORM_DATA = [
         TopicTransformData('/state', Odometry, lambda x: x.pose.pose, '/transforms/state/pose', Twist,
@@ -72,13 +73,15 @@ class TopicTransforms(Node):
     ]
 
     def __init__(self):
-        rclpy.init()
-        rclpy.create_node('topic_transforms')
+        super().__init__(self.NODE_NAME)
+        #rclpy.create_node(self.NODE_NAME)
 
         # Create subscribers and publishers for each topic transformation
         for data in self.TOPIC_TRANSFORM_DATA:
-            data.subscriber = self.create_subscriber(data.input_type, data.input_topic, self.callback, data)
-            data.publisher = self.create_publisher(data.output_type, data.output_topic, queue_size=data.publisher_queue_size)
+            data.subscriber = self.create_subscription(data.input_type, data.input_topic, self.callback,
+                                                       data.subscriber_queue_size)
+            data.publisher = self.create_publisher(data.output_type, data.output_topic,
+                                                   data.publisher_queue_size)
 
     # Callback function to transform input message and publish output message
     # First, transform input message using input_type_conversion function, input the result to output_type_conversion,
