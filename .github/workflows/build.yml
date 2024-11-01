@@ -25,9 +25,9 @@ jobs:
         run: |
           ./docker-build.sh
 
-      - name: Change repo ownership to user
+      - name: Mark repo as safe
         run: |
-           docker compose exec robosub-ros2 sudo chown -R $USER:$USER /root/dev/robosub-ros2
+           docker compose exec robosub-ros2 git config --global --add safe.directory /root/dev/robosub-ros2
 
       - name: Linter
         run: |
