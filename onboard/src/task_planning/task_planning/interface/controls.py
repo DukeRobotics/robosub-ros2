@@ -111,7 +111,9 @@ class Controls:
         Args:
             enable: Whether to enable (true) or disable (false).
         """
-        self._enable_controls(enable)
+        request = SetBool.Request() # TODO:ros2 ensure that is correct, I (Avrick) am not sure
+        request.data = enable
+        self._enable_controls.call_async(request)
 
     def _set_all_axes_control_type(self, type: ControlTypes) -> None:
         """

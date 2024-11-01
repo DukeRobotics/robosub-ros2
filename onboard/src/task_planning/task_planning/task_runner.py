@@ -39,7 +39,7 @@ class TaskPlanning(Node):
         _ = tf2_ros.TransformListener(tfBuffer, self)
 
         # Initialize interfaces
-        Controls(self, bypass=bypass)
+        controls = Controls(self, bypass=bypass)
         state = State(self, tfBuffer=tfBuffer, bypass=bypass)
         CV(self, bypass=bypass)
         MarkerDropper(self, bypass=bypass)
@@ -69,6 +69,7 @@ class TaskPlanning(Node):
         # Main has initialized
         TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.INITIALIZED, None)
         main_initialized = True
+
         # Run tasks
         try:
             # Tasks to run
@@ -96,13 +97,14 @@ class TaskPlanning(Node):
                 #                             depth_level=1.0, parent=Task.MAIN_ID),
                 # comp_tasks.octagon_task(direction=1, parent=Task.MAIN_ID),
             ]
-            input('Press enter to run tasks...')
+
+            #input('Press enter to run tasks...') # TODO:ros2 this doesn't work when you use ros2 launch, but does when you do ros2 run because launch doesn't create an interactive terminal. Is this intended behaviour?
 
             def countdown_callback():
                 self.get_logger().info(f'Countdown: {self.countdown_value}')
                 if self.countdown_value <= 0:
                     self.countdown_timer.cancel()  # Stop the timer
-                    Controls(self).call_enable_controls(True)  # TODO:ros2 runtime error
+                    controls.call_enable_controls(True)  # TODO:ros2 runtime error
                     self.get_logger().info('Countdown complete!')
 
                 self.countdown_value -= 1
@@ -115,20 +117,21 @@ class TaskPlanning(Node):
                 else:
                     self.current_task += 1
                 if untethered:
-                    Controls().call_enable_controls(False)
+                    controls.call_enable_controls(False)
 
             if untethered:
                 self.countdown_value = 10
                 self.get_logger().info('Countdown started...')
                 self.countdown_timer = self.create_timer(1.0, countdown_callback)
-                self.countdown_timer.cancel()
-                self.countdown_timer.reset()
                 self.task_runner_timer = self.create_timer(30, run_tasks)
                 self.task_runner_timer.cancel()
 
             while self.countdown_value > 0:
+                print(self.countdown_value)
                 pass
 
+            controls.call_enable_controls(True)  # TODO:ros2 runtime error
+            self.get_logger().info('Countdown complete!')
             self.task_runner_timer.reset()
             self.get_logger().info('Running tasks.')
 
