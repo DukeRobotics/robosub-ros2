@@ -5,10 +5,11 @@ This script lints Python, C++, and Bash files in a specified directory or file.
 It uses flake8 for Python, clang-format for C++, and shellcheck for Bash.
 """
 
-
 import argparse
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
+from typing import List
 
 from git import Repo
 
@@ -26,65 +27,119 @@ LINT_COMMANDS = {
     'bash': ['shellcheck']
 }
 
+STATUS_EMOJI = {
+    True: '✅',
+    False: '❌'
+}
 
-def lint_file(file_path: Path, language: str, print_success: bool):
+MAX_LANGUAGE_LENGTH = max(len(language) for language in LANGUAGES_TO_FILE_EXTENSIONS.keys())
+
+
+@dataclass
+class LanguageStats:
+    """Dataclass to store linting statistics for a specific language."""
+
+    total: int = 0
+    success: int = 0
+
+
+def lint_file(file_path: Path, language: str, print_success: bool, quiet: bool):
     """
     Lint a single file using the appropriate linter for the specified language.
 
     Args:
         file_path (Path): The path of the file to lint.
-        language (str): The programming language of the file (python, cpp, bash).
+        language (str): The programming language of the file.
         print_success (bool): If True, print a success message when linting is successful.
     """
     command = LINT_COMMANDS[language] + [str(file_path)]
+    out = subprocess.DEVNULL if quiet else None
+    padded_language = f'{language}:'.ljust(MAX_LANGUAGE_LENGTH + 1)
     try:
-        subprocess.run(command, check=True)
+        subprocess.run(command, stdout=out, stderr=out, check=True)
         if print_success:
-            print(f'Successfully linted {language} file: {file_path}')
+            print(f'{STATUS_EMOJI[True]} {padded_language} {file_path}')
         return True
     except subprocess.CalledProcessError:
-        print(f'Issues found in {language} file: {file_path}')
+        print(f'{STATUS_EMOJI[False]} {padded_language} {file_path}')
         return False
 
 
-def lint_files(target_path: Path, language: str | None = None, print_success: str | None = False):
+def print_summary(language_stats: dict[str, LanguageStats]):
+    """
+    Print a summary of the linting results.
+
+    Args:
+        language_stats (dict[str, LanguageStats]): A dictionary containing the linting statistics for each language.
+    """
+    overall_success = all(stats.success == stats.total for stats in language_stats.values())
+    overall_emoji = STATUS_EMOJI[overall_success]
+    print()
+    print(f"{overall_emoji} Linting Summary (success/total):")
+    for lang, stats in language_stats.items():
+        lang_emoji = STATUS_EMOJI[stats.success == stats.total]
+        print(f"  {lang_emoji} {lang.capitalize()}: {stats.success}/{stats.total}")
+    print()
+
+
+def lint_files(target_path: Path, language: List[str] | None = None, print_success: bool | None = False,
+               quiet: bool = False) -> bool:
     """
     Lint files in the specified directory or file.
 
     Args:
         target_path (Path): The directory or file to lint.
-        language (str, optional): The programming language to lint (python, cpp, bash). If not specified, lint all.
+        language (str, optional): The programming language to lint. If not specified, lint all supported languages.
         print_success (bool, optional): If True, print a success message when linting is successful.
     """
     repo = Repo(target_path, search_parent_directories=True)
+    languages = set(language) if language else LANGUAGES_TO_FILE_EXTENSIONS.keys()
+    language_stats = {lang: LanguageStats() for lang in languages}
     all_success = True
-
-    # Prepare the extensions and languages to be used in the linting loop
-    languages = [language] if language else LANGUAGES_TO_FILE_EXTENSIONS.keys()
+    prev_success = True
 
     for item in repo.tree().traverse():
-        if item.type == 'blob' and (file_path := Path(item.path)).is_file() and \
-                (language := FILE_EXTENSIONS_TO_LANGUAGES.get(file_path.suffix)) in languages:
-            success = lint_file(file_path, language, print_success)
-            all_success = all_success and success
+        file_path = Path(item.path).resolve()
+        if item.type == 'blob' and file_path.is_file() and target_path in file_path.parents:
+            detected_language = FILE_EXTENSIONS_TO_LANGUAGES.get(file_path.suffix)
+            if detected_language in languages:
+                language_stats[detected_language].total += 1
 
-    return all_success
+                if not prev_success and not quiet:
+                    print()
+
+                success = lint_file(file_path, detected_language, print_success, quiet)
+                if success:
+                    language_stats[detected_language].success += 1
+
+                all_success = all_success and success
+                prev_success = success
+
+    return all_success, language_stats
 
 
 def main():
     """Parse command-line arguments and initiate the linting process."""
     default_path = Path('/root/dev/robosub-ros2')
 
-    parser = argparse.ArgumentParser(description='Lint Python, C++, and Bash files.')
-    parser.add_argument('language', nargs='?', choices=['python', 'bash', 'cpp'],
-                        help='Specify the language to lint (python, bash, cpp). If not specified, lint all.')
+    parser = argparse.ArgumentParser(description='Lint files.')
     parser.add_argument('path', nargs='?', default=default_path,
                         help='Specify the directory or file to lint. Defaults to the robosub-ros2 directory.')
+    parser.add_argument('-l', '--language', choices=LANGUAGES_TO_FILE_EXTENSIONS.keys(), nargs='+',
+                        help=f'Specify the language(s) to lint ({", ".join(LANGUAGES_TO_FILE_EXTENSIONS.keys())}). '
+                             'If not specified, lint all.')
     parser.add_argument('--print-success', action='store_true',
                         help='If specified, print the names of files that were successfully linted.')
+    parser.add_argument('-q', '--quiet', action='store_true',
+                        help=('If specified, suppress output from the linting commands except for success or issue '
+                              'messages.'))
+    parser.add_argument('-s', '--sorted', action='store_true',
+                        help='If specified, sort the output by language.')
+    parser.add_argument('--github-action', action='store_true',
+                        help='If specified, use GitHub Actions workflow commands in the output.')
     args = parser.parse_args()
 
-    target_path = Path(args.path)
+    target_path = Path(args.path).resolve()
 
     if not target_path.exists():
         raise FileNotFoundError(f'The specified path "{target_path}" does not exist.')
@@ -105,10 +160,27 @@ def main():
         if not language:
             raise ValueError('Unsupported file type.')
 
-        all_success = lint_file(target_path, language, args.print_success)
+        all_success = lint_file(target_path, language, args.print_success, args.quiet)
     else:
-        # If a directory is provided, lint accordingly
-        all_success = lint_files(target_path, args.language, args.print_success)
+        if args.sorted:
+            # Lint one language at a time to group the output by language
+            aggregate_language_stats = {}
+            for language in LANGUAGES_TO_FILE_EXTENSIONS.keys():
+                if args.github_action:
+                    print(f'::group::Linting {language.capitalize()} ')
+                else:
+                    print(f'\nLinting {language.capitalize()} files...')
+                lang_success, language_stats = lint_files(target_path, [language], args.print_success, args.quiet)
+                if args.github_action:
+                    print('::endgroup::')
+
+                all_success = lang_success and all_success
+                aggregate_language_stats.update(language_stats)
+
+            print_summary(aggregate_language_stats)
+        else:
+            all_success, language_stats = lint_files(target_path, args.language, args.print_success, args.quiet)
+            print_summary(language_stats)
 
     if not all_success:
         raise SystemExit(1)
