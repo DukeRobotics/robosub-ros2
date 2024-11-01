@@ -24,7 +24,7 @@ class TaskPlanning(Node):
         super().__init__(self.NODE_NAME)
         # TODO:ros2 set bypass=false
         bypass = self.declare_parameter('bypass', True).value
-        untethered = self.declare_parameter('untethered', False).value
+        untethered = self.declare_parameter('untethered', True).value
         self.get_logger().info('task_planning node initialized')
 
         # When ros is shutdown, if main finished initializing, publish that it has closed
@@ -100,23 +100,12 @@ class TaskPlanning(Node):
 
             def countdown_callback():
                 self.get_logger().info(f'Countdown: {self.countdown_value}')
-
                 if self.countdown_value <= 0:
                     self.countdown_timer.cancel()  # Stop the timer
-                    Controls().call_enable_controls(True) # TODO:ros2 runtime error
+                    Controls(self).call_enable_controls(True)  # TODO:ros2 runtime error
                     self.get_logger().info('Countdown complete!')
 
                 self.countdown_value -= 1
-
-            if untethered:
-                self.countdown_value = 10
-                self.get_logger().info('Countdown started...')
-                self.countdown_timer = self.create_timer(1.0, countdown_callback)
-                self.countdown_timer.cancel()
-
-            self.get_logger().info('Running tasks.')
-
-            current_task = 0
 
             def run_tasks():
                 if current_task >= len(tasks) or not rclpy.ok():
@@ -125,12 +114,25 @@ class TaskPlanning(Node):
                     tasks[self.current_task].step()
                 else:
                     self.current_task += 1
+                if untethered:
+                    Controls().call_enable_controls(False)
 
-            self.task_runner_timer = self.create_timer(30, run_tasks)
-
-            # TODO:ros2 need to put this at the end of the run_tasks function
             if untethered:
-                Controls().call_enable_controls(False)
+                self.countdown_value = 10
+                self.get_logger().info('Countdown started...')
+                self.countdown_timer = self.create_timer(1.0, countdown_callback)
+                self.countdown_timer.cancel()
+                self.countdown_timer.reset()
+                self.task_runner_timer = self.create_timer(30, run_tasks)
+                self.task_runner_timer.cancel()
+
+            while self.countdown_value > 0:
+                pass
+
+            self.task_runner_timer.reset()
+            self.get_logger().info('Running tasks.')
+
+            current_task = 0
 
         except BaseException as e:
 
