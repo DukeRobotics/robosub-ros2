@@ -18,7 +18,10 @@ jobs:
       #     fetch-depth: 0
 
       - name: Checkout repository manually
-        run: git clone --branch ${{ github.ref }} https://github.com/${{ github.repository }}.git
+        run: git clone https://github.com/${{ github.repository }}.git
+
+      - name: Switch to ref
+        run: git checkout ${{ github.ref }}
 
       - name: Create .env file with NO_GIT
         run: echo "NO_GIT=true" > .env
