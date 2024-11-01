@@ -18,10 +18,10 @@ jobs:
       #     fetch-depth: 0
 
       - name: Checkout repository manually
-        run: git clone https://github.com/${{ github.repository }}.git
-
-      - name: Switch to ref
-        run: git checkout ${{ github.ref }}
+        run: |
+          git clone https://github.com/${{ github.repository }}.git &&
+          cd robosub-ros2 &&
+          git checkout ${{ github.ref }}
 
       - name: Create .env file with NO_GIT
         run: echo "NO_GIT=true" > .env
