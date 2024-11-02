@@ -22,10 +22,6 @@ jobs:
         run: |
           ./docker-build.sh
 
-      - name: Mark repo as safe
-        run: |
-           docker compose exec robosub-ros2 git config --global --add safe.directory /root/dev/robosub-ros2
-
       - name: Linter
         run: |
           docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --sorted --github-action --no-git-tree
