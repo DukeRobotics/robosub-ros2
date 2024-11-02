@@ -53,14 +53,13 @@ class SerialReublisherNode(Node, ABC):
         """
         try:
             self._serial_port = next(list_ports.grep(self._config_data[self._config_name]['ftdi'])).device.strip()
-            print(f"{self._config_name} sensor found at {self._serial_port} Connecting with baud {self._baud}.")
             self._serial = serial.Serial(self._serial_port, self._baud,
                                             timeout=1, write_timeout=None,
                                             bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE,
                                             stopbits=serial.STOPBITS_ONE)
             self.connect_timer.cancel()
             self.run_timer.reset()
-            print(f"Connected to {self._config_name} sensor at {self._serial_port}.")
+            self.get_logger().info(f"Connected to {self._config_name} sensor at {self._serial_port}.")
         except StopIteration:
             self.get_logger().error(f"Error in connecting to serial device in {self._node_name}, trying again in {self._connection_retry_period} seconds.")
 
