@@ -19,14 +19,15 @@ jobs:
         run: echo "NO_GIT=true" > .env
 
       - name: Run docker-build.sh
+        id: docker-build
         run: |
           ./docker-build.sh
 
       - name: Linter
         run: |
-          docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --sorted --github-action --no-git-tree
-        continue-on-error: true
+          docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --sorted --github-action --no-git-tree --quiet
 
       - name: Build ROS2
+        if: steps.docker-build.outcome == 'success'
         run: |
           docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build.sh
