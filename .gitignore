@@ -4,7 +4,10 @@ __pycache__
 **/build/*
 **/install/*
 **/log/*
+**/ros2_mcap_test/*
 
 .config
 .env
 .vscode
+.mcap
+.db3
