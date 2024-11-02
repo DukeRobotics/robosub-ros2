@@ -43,22 +43,17 @@ class DVLOdomPublisher(Node):
         odom.header.stamp = self.get_clock().now().to_msg()
         odom.header.frame_id = 'odom'
 
-        # Position data does not exist, is set to 0 here and should not be used
-        x = 0
-        y = 0
-        z = 0
-
         # bs velocity, normalized to meters (given in mm)
         # parentheses denote new negative signs
         vx = np.float64(msg.bs_transverse) / 1000
         vy = np.float64(msg.bs_longitudinal) / 1000
         vz = np.float64(msg.bs_normal) / 1000
 
-        if self._config_data["negate_x_vel"]:
+        if self._config_data["dvl"]["negate_x_vel"]:
             vx = -vx
-        if self._config_data["negate_y_vel"]:
+        if self._config_data["dvl"]["negate_y_vel"]:
             vy = -vy
-        if self._config_data["negate_z_vel"]:
+        if self._config_data["dvl"]["negate_z_vel"]:
             vz = -vz
 
         # quat
@@ -68,11 +63,11 @@ class DVLOdomPublisher(Node):
         odom_quat = quaternion_from_euler(roll, pitch, yaw)
 
         # set pose
-        odom.pose.pose = Pose(Point(x, y, z), Quaternion(odom_quat[1], odom_quat[2], odom_quat[3], odom_quat[0]))
+        odom.pose.pose = Pose(position=Point(x=0.0, y=0.0, z=0.0), orientation=Quaternion(x=odom_quat[1], y=odom_quat[2], z=odom_quat[3], w=odom_quat[0]))
         odom.child_frame_id = "dvl_link"
 
         # set twist (set angular velocity to (0, 0, 0), should not be used)
-        odom.twist.twist = Twist(Vector3(vx, vy, vz), Vector3(0, 0, 0))
+        odom.twist.twist = Twist(linear=Vector3(x=vx, v=vy, z=vz), angular=Vector3(x=0.0, y=0.0, z=0.0))
         odom.twist.covariance[0] = 0.01
         odom.twist.covariance[7] = 0.01
         odom.twist.covariance[14] = 0.01
