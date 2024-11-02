@@ -22,7 +22,7 @@ LANGUAGES_TO_FILE_EXTENSIONS = {
 FILE_EXTENSIONS_TO_LANGUAGES = {ext: lang for lang, exts in LANGUAGES_TO_FILE_EXTENSIONS.items() for ext in exts}
 
 LINT_COMMANDS = {
-    'python': ['/root/dev/venv/bin/python3', '-m', 'flake8'],
+    'python': ['/root/dev/venv/bin/python3', '-m', 'flake8', '--config', '/root/dev/robosub-ros2/setup.cfg'],
     'cpp': ['clang-format', '-style=file', '--dry-run'],
     'bash': ['shellcheck']
 }
@@ -189,7 +189,7 @@ def main():
             aggregate_language_stats = {}
             for language in LANGUAGES_TO_FILE_EXTENSIONS.keys():
                 if args.github_action:
-                    print(f'::group::Linting {language.capitalize()} ')
+                    print(f'::group::Lint {language.capitalize()} ')
                 else:
                     print(f'\nLinting {language.capitalize()} files...')
                 lang_success, language_stats = lint_files(target_path, [language], args.print_success, args.quiet,
