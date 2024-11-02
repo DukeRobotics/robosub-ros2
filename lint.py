@@ -22,7 +22,7 @@ LANGUAGES_TO_FILE_EXTENSIONS = {
 FILE_EXTENSIONS_TO_LANGUAGES = {ext: lang for lang, exts in LANGUAGES_TO_FILE_EXTENSIONS.items() for ext in exts}
 
 LINT_COMMANDS = {
-    'python': ['python3', '-m', 'flake8'],
+    'python': ['/root/dev/venv/bin/python3', '-m', 'flake8'],
     'cpp': ['clang-format', '-style=file', '--dry-run'],
     'bash': ['shellcheck']
 }
@@ -53,14 +53,20 @@ def lint_file(file_path: Path, language: str, print_success: bool, quiet: bool):
         print_success (bool): If True, print a success message when linting is successful.
     """
     command = LINT_COMMANDS[language] + [str(file_path)]
-    out = subprocess.DEVNULL if quiet else None
+    out = subprocess.DEVNULL if quiet else subprocess.PIPE
     padded_language = f'{language}:'.ljust(MAX_LANGUAGE_LENGTH + 1)
-    try:
-        subprocess.run(command, stdout=out, stderr=out, check=True)
+
+    process = subprocess.Popen(command, stdout=out, stderr=out)
+    stdout, stderr = process.communicate()
+
+    if process.returncode == 0:
         if print_success:
             print(f'{STATUS_EMOJI[True]} {padded_language} {file_path}')
         return True
-    except subprocess.CalledProcessError:
+    else:
+        if not quiet:
+            indented_output = '\n'.join('    ' + line for line in (stdout.decode() if stdout else '').splitlines())
+            print(indented_output)
         print(f'{STATUS_EMOJI[False]} {padded_language} {file_path}')
         return False
 
