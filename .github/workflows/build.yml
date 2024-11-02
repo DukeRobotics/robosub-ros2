@@ -12,16 +12,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # - name: Checkout repository
-      #   uses: actions/checkout@v4
-      #   with:
-      #     fetch-depth: 0
-
-      - name: Checkout repository manually
-        run: |
-          git clone https://github.com/${{ github.repository }}.git &&
-          cd robosub-ros2 &&
-          git checkout ${{ github.ref }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Create .env file with NO_GIT
         run: echo "NO_GIT=true" > .env
@@ -36,7 +28,7 @@ jobs:
 
       - name: Linter
         run: |
-          docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --sorted --github-action
+          docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --sorted --github-action --no-git-tree
 
       - name: Build ROS2
         run: |

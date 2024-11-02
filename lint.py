@@ -82,15 +82,18 @@ def print_summary(language_stats: dict[str, LanguageStats]):
     print()
 
 
-def lint_files(target_path: Path, language: List[str] | None = None, print_success: bool | None = False,
-               quiet: bool = False) -> bool:
+def lint_files(target_path: Path, language: List[str] | None = None, print_success: bool = False, quiet: bool = False,
+               no_git_tree: bool = False) -> bool:
     """
     Lint files in the specified directory or file.
 
     Args:
         target_path (Path): The directory or file to lint.
         language (str, optional): The programming language to lint. If not specified, lint all supported languages.
-        print_success (bool, optional): If True, print a success message when linting is successful.
+        print_success (bool): If True, print a success message when linting is successful.
+        quiet (bool): If True, suppress output from the linting commands except for success or issue messages.
+        no_git_tree (bool): If True, do not use the git tree to traverse only files tracked by git. Instead, lint all
+            files in the specified directory.
     """
     repo = Repo(target_path, search_parent_directories=True)
     languages = set(language) if language else LANGUAGES_TO_FILE_EXTENSIONS.keys()
@@ -98,22 +101,32 @@ def lint_files(target_path: Path, language: List[str] | None = None, print_succe
     all_success = True
     prev_success = True
 
-    for item in repo.tree().traverse():
-        file_path = Path(item.path).resolve()
-        if item.type == 'blob' and file_path.is_file() and target_path in file_path.parents:
-            detected_language = FILE_EXTENSIONS_TO_LANGUAGES.get(file_path.suffix)
-            if detected_language in languages:
-                language_stats[detected_language].total += 1
+    def process_file(file_path: Path):
+        nonlocal prev_success, all_success
 
-                if not prev_success and not quiet:
-                    print()
+        detected_language = FILE_EXTENSIONS_TO_LANGUAGES.get(file_path.suffix)
+        if detected_language in languages:
+            language_stats[detected_language].total += 1
 
-                success = lint_file(file_path, detected_language, print_success, quiet)
-                if success:
-                    language_stats[detected_language].success += 1
+            if not prev_success and not quiet:
+                print()
 
-                all_success = all_success and success
-                prev_success = success
+            success = lint_file(file_path, detected_language, print_success, quiet)
+            if success:
+                language_stats[detected_language].success += 1
+
+            all_success = all_success and success
+            prev_success = success
+
+    if no_git_tree:
+        for file_path in target_path.rglob('*'):
+            if file_path.is_file() and target_path in file_path.parents:
+                process_file(file_path)
+    else:
+        for item in repo.tree().traverse():
+            file_path = Path(item.path).resolve()
+            if item.type == 'blob' and file_path.is_file() and target_path in file_path.parents:
+                process_file(file_path)
 
     return all_success, language_stats
 
@@ -137,6 +150,9 @@ def main():
                         help='If specified, sort the output by language.')
     parser.add_argument('--github-action', action='store_true',
                         help='If specified, use GitHub Actions workflow commands in the output.')
+    parser.add_argument('--no-git-tree', action='store_true',
+                        help='If specified, do not use the git tree to traverse only files tracked by git. Instead, '
+                             'lint all files in the specified directory, including git-ignored and untracked files.')
     args = parser.parse_args()
 
     target_path = Path(args.path).resolve()
@@ -170,7 +186,8 @@ def main():
                     print(f'::group::Linting {language.capitalize()} ')
                 else:
                     print(f'\nLinting {language.capitalize()} files...')
-                lang_success, language_stats = lint_files(target_path, [language], args.print_success, args.quiet)
+                lang_success, language_stats = lint_files(target_path, [language], args.print_success, args.quiet,
+                                                          args.no_git_tree)
                 if args.github_action:
                     print('::endgroup::')
 
@@ -179,7 +196,8 @@ def main():
 
             print_summary(aggregate_language_stats)
         else:
-            all_success, language_stats = lint_files(target_path, args.language, args.print_success, args.quiet)
+            all_success, language_stats = lint_files(target_path, args.language, args.print_success, args.quiet,
+                                                     args.no_git_tree)
             print_summary(language_stats)
 
     if not all_success:
