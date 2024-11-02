@@ -23,7 +23,7 @@ class BinDetector(Node):
         super().__init__("bin_detector")
         self.bridge = CvBridge()
         # subscribe to image topic to get images
-        self.image_sub = self.create_subscription(CompressedImage, "/camera/usb/bottom/compressed", self.image_callback, 10)
+        self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/bottom/compressed', self.image_callback, 10) # For testing purposes with the .mcap file, we're using a diff path "/camera/usb_camera/compressed"
 
         # blue bin publiishers
         self.blue_bin_hsv_filtered_pub = self.create_publisher(Image, "/cv/bottom/bin_blue/hsv_filtered", 10)
@@ -42,8 +42,10 @@ class BinDetector(Node):
         self.bin_center_contour_image_pub = self.create_publisher(Image, "/cv/bottom/bin_center/contour_image", 10)
         self.bin_center_bounding_box_pub = self.create_publisher(CVObject, "/cv/bottom/bin_center/bounding_box", 10)
         self.bin_center_distance_pub = self.create_publisher(Point, "/cv/bottom/bin_center/distance", 10)
+        print("Init")
 
     def image_callback(self, data):
+        print("Image Callback")
         # Convert the compressed ROS image to OpenCV format
         np_arr = np.frombuffer(data.data, np.uint8)
         frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
@@ -52,6 +54,7 @@ class BinDetector(Node):
         self.process_frame(frame)
 
     def process_frame(self, frame):
+        print("process frame 1")
         # Convert frame to HSV color space
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
@@ -98,12 +101,15 @@ class BinDetector(Node):
             # only processes if area (in pixels) if selected contour >500
             # publishes bbox, image, distance
             bbox, image, dist = self.process_contours(frame.copy(), contours_blue)
+            print("process frame 2")
             if bbox and image and dist and cv2.contourArea(contours_blue) > 500:
                 self.blue_bin_contour_image_pub.publish(image)
                 self.blue_bin_bounding_box_pub.publish(bbox)
                 self.blue_bin_distance_pub.publish(dist)
+                print("process frame 3")
 
         if contours_red:
+            print("process frame 4")
             # takes largest contour
             contours_red = sorted(contours_red, key=cv2.contourArea, reverse=True)
             contours_red = contours_red[0]
@@ -112,6 +118,7 @@ class BinDetector(Node):
             # publishes bbox, image, distance
             bbox, image, dist = self.process_contours(frame.copy(), contours_red)
             if bbox and image and dist and cv2.contourArea(contours_red) > 500:
+                print("process frame 5")
                 self.red_bin_contour_image_pub.publish(image)
                 self.red_bin_bounding_box_pub.publish(bbox)
                 self.red_bin_distance_pub.publish(dist)
@@ -143,8 +150,7 @@ class BinDetector(Node):
         # create CVObject message, and populate relavent attributes
         bounding_box = CVObject()
 
-        bounding_box.header.stamp.secs = self.get_clock().now().secs
-        bounding_box.header.stamp.nsecs = self.get_clock().now().nsecs
+        bounding_box.header.stamp.sec, bounding_box.header.stamp.nanosec = self.get_clock().now().seconds_nanoseconds()
 
         # gets dimns that CVObject wants for our rectangle
         bounding_box.xmin = (x) * meters_per_pixel
@@ -196,9 +202,11 @@ class BinDetector(Node):
 def main(args=None):
     rclpy.init(args=args)
     bin_detector = BinDetector()
-
+    print("Node created")
     try:
+        print("Trying to spin node")
         rclpy.spin(bin_detector)
+        print("Node spun")
     except KeyboardInterrupt:
         pass
     finally:
