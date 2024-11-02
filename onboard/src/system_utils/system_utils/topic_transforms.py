@@ -2,14 +2,16 @@
 
 import math
 
-from transforms3d.euler import quat2euler
+from geometry_msgs.msg import Pose, Twist, Vector3
+
+from nav_msgs.msg import Odometry
+
+from sensor_msgs.msg import Imu
 
 import rclpy
 from rclpy.node import Node
 
-from geometry_msgs.msg import Pose, Twist, Vector3
-from nav_msgs.msg import Odometry
-from sensor_msgs.msg import Imu
+from transforms3d.euler import quat2euler
 
 
 # Class to store data for topic transformations
@@ -74,11 +76,10 @@ class TopicTransforms(Node):
 
     def __init__(self):
         super().__init__(self.NODE_NAME)
-        #rclpy.create_node(self.NODE_NAME)
 
         # Create subscribers and publishers for each topic transformation
         for data in self.TOPIC_TRANSFORM_DATA:
-            data.subscriber = self.create_subscription(data.input_type, data.input_topic, self.callback,
+            data.subscriber = self.create_subscription(data.input_type, data.input_topic, lambda msg: self.callback(data, msg),
                                                        data.subscriber_queue_size)
             data.publisher = self.create_publisher(data.output_type, data.output_topic,
                                                    data.publisher_queue_size)
@@ -86,7 +87,7 @@ class TopicTransforms(Node):
     # Callback function to transform input message and publish output message
     # First, transform input message using input_type_conversion function, input the result to output_type_conversion,
     # and publish the final result
-    def callback(self, msg, data):
+    def callback(self, data: TopicTransformData, msg):
         converted_input = data.input_type_conversion(msg)
         output_msg = data.output_type_conversion(converted_input)
         data.publisher.publish(output_msg)
