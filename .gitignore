@@ -5,6 +5,15 @@ __pycache__
 **/install/*
 **/log/*
 
+# Robot playback folders
+**/ros2_mcap_test/*
+
+# Robot playback file formats
+*.zip
+*.mcap
+*.db3
+*.bag
+
 .config
 .env
 .vscode
