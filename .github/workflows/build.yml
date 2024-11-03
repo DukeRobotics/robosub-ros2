@@ -36,7 +36,7 @@ jobs:
 
       - name: Lint Files
         run: |
-          docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --sorted --github-action --no-git-tree --quiet
+          docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --sorted --github-action --no-git-tree
 
       - name: Build ROS2
         if: steps.docker-build.outcome == 'success'
