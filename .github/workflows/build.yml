@@ -32,7 +32,6 @@ jobs:
       # - name: Build Docker image
       #   id: docker-build
       #   run: |
-      #     .github/workflows/docker-build.sh
 
       - name: Build Docker image
         uses: docker/build-push-action@v5
