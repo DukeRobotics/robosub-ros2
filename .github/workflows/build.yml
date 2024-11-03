@@ -29,10 +29,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           load: true
-          # outputs: type=docker,dest=/tmp/robosub-ros2.tar
-
-      # - name: Load Docker image
-      #   run: docker load -i /tmp/robosub-ros2.tar
 
       - name: Start Docker Compose
         id: docker-compose
@@ -43,6 +39,6 @@ jobs:
           docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --sorted --github-action --no-git-tree
 
       - name: Build ROS2
-        if: steps.docker-compose.outcome == 'success'
+        if: always() && steps.docker-compose.outcome == 'success'
         run: |
           docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build.sh
