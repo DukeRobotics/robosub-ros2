@@ -18,27 +18,39 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.ref }}
 
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
+      # - name: Cache Docker layers
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: /tmp/.buildx-cache
+      #     key: ${{ runner.os }}-buildx-${{ github.sha }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-buildx-
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      # - name: Build Docker image
+      #   id: docker-build
+      #   run: |
+      #     .github/workflows/docker-build.sh
+
       - name: Build Docker image
-        id: docker-build
-        run: |
-          .github/workflows/docker-build.sh
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          tags: robosub-ros2:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Start Docker Compose
+        id: docker-compose
+        run: docker compose up -d
 
       - name: Lint Files
         run: |
           docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --sorted --github-action --no-git-tree
 
       - name: Build ROS2
-        if: steps.docker-build.outcome == 'success'
+        if: steps.docker-compose.outcome == 'success'
         run: |
           docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build.sh
