@@ -5,8 +5,8 @@ __pycache__
 **/install/*
 **/log/*
 
-# Robot playback folders
-**/ros2_mcap_test/*
+# All playback subfolders
+**/bag_files/*
 
 # Robot playback file formats
 *.zip
