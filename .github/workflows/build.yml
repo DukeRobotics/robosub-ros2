@@ -18,6 +18,9 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.ref }}
 
+      - name: Create .env file with NO_GIT
+        run: echo "NO_GIT=true" > .env
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
