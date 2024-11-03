@@ -40,6 +40,10 @@ jobs:
           tags: robosub-ros2:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/robosub-ros2.tar
+
+      - name: Load Docker image
+        run: docker load -i /tmp/robosub-ros2.tar
 
       - name: Start Docker Compose
         id: docker-compose
