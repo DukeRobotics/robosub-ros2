@@ -6,7 +6,7 @@ __pycache__
 **/log/*
 
 # All playback subfolders
-**/bag_files/*
+**/bag_files/**
 
 # Robot playback file formats
 *.zip
