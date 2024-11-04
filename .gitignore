@@ -15,6 +15,15 @@ __pycache__
 *.db3
 *.bag
 
+# All playback subfolders
+**/bag_files/**
+
+# Robot playback file formats
+*.zip
+*.mcap
+*.db3
+*.bag
+
 .config
 .env
 .vscode
