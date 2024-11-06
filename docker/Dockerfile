@@ -22,6 +22,7 @@ RUN /root/dev/venv/bin/pip install flake8-import-order
 RUN /root/dev/venv/bin/pip install flake8-quotes
 RUN /root/dev/venv/bin/pip install pyserial
 RUN /root/dev/venv/bin/pip install GitPython
+RUN /root/dev/venv/bin/pip install ruff
 
 # Set no password for root user
 RUN passwd -d root

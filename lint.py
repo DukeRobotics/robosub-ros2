@@ -9,30 +9,29 @@ import argparse
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
 
 from git import Repo
 
 LANGUAGES_TO_FILE_EXTENSIONS = {
     'python': ['.py'],
     'cpp': ['.cpp', '.h', '.c', '.hpp'],
-    'bash': ['.sh']
+    'bash': ['.sh'],
 }
 
 FILE_EXTENSIONS_TO_LANGUAGES = {ext: lang for lang, exts in LANGUAGES_TO_FILE_EXTENSIONS.items() for ext in exts}
 
 LINT_COMMANDS = {
-    'python': ['/root/dev/venv/bin/python3', '-m', 'flake8', '--config', '/root/dev/robosub-ros2/setup.cfg'],
+    'python': ['/root/dev/venv/bin/python3', '-m', 'ruff', 'check'],
     'cpp': ['clang-format', '-style=file', '--dry-run'],
-    'bash': ['shellcheck']
+    'bash': ['shellcheck'],
 }
 
 STATUS_EMOJI = {
     True: '✅',
-    False: '❌'
+    False: '❌',
 }
 
-MAX_LANGUAGE_LENGTH = max(len(language) for language in LANGUAGES_TO_FILE_EXTENSIONS.keys())
+MAX_LANGUAGE_LENGTH = max(len(language) for language in LANGUAGES_TO_FILE_EXTENSIONS)
 
 
 @dataclass
@@ -53,7 +52,7 @@ def lint_file(file_path: Path, language: str, print_success: bool, quiet: bool):
         print_success (bool): If True, print a success message when linting is successful.
     """
     command = LINT_COMMANDS[language] + [str(file_path)]
-    out = subprocess.DEVNULL if quiet else subprocess.PIPE
+    out = subprocess.DEVNULL if quiet else None
     padded_language = f'{language}:'.ljust(MAX_LANGUAGE_LENGTH + 1)
 
     process = subprocess.Popen(command, stdout=out, stderr=out)
@@ -63,15 +62,14 @@ def lint_file(file_path: Path, language: str, print_success: bool, quiet: bool):
         if print_success:
             print(f'{STATUS_EMOJI[True]} {padded_language} {file_path}')
         return True
-    else:
-        if not quiet:
-            indented_output = '\n'.join('    ' + line for line in (stdout.decode() if stdout else '').splitlines())
-            print(indented_output)
-        print(f'{STATUS_EMOJI[False]} {padded_language} {file_path}')
-        return False
+    if not quiet and stdout:
+        indented_output = '\n'.join('    ' + line for line in stdout.decode().splitlines())
+        print(indented_output)
+    print(f'{STATUS_EMOJI[False]} {padded_language} {file_path}')
+    return False
 
 
-def print_summary(language_stats: dict[str, LanguageStats]):
+def print_summary(language_stats: dict[str, LanguageStats]) -> None:
     """
     Print a summary of the linting results.
 
@@ -81,14 +79,14 @@ def print_summary(language_stats: dict[str, LanguageStats]):
     overall_success = all(stats.success == stats.total for stats in language_stats.values())
     overall_emoji = STATUS_EMOJI[overall_success]
     print()
-    print(f"{overall_emoji} Linting Summary (success/total):")
+    print(f'{overall_emoji} Linting Summary (success/total):')
     for lang, stats in language_stats.items():
         lang_emoji = STATUS_EMOJI[stats.success == stats.total]
-        print(f"  {lang_emoji} {lang.capitalize()}: {stats.success}/{stats.total}")
+        print(f'  {lang_emoji} {lang.capitalize()}: {stats.success}/{stats.total}')
     print()
 
 
-def lint_files(target_path: Path, language: List[str] | None = None, print_success: bool = False, quiet: bool = False,
+def lint_files(target_path: Path, language: list[str] | None = None, print_success: bool = False, quiet: bool = False,
                no_git_tree: bool = False) -> bool:
     """
     Lint files in the specified directory or file.
@@ -175,7 +173,7 @@ def main():
 
     if target_path.is_file():
         # If a specific file is provided, ensure it matches the language if specified
-        if args.language and not (target_path.suffix in LANGUAGES_TO_FILE_EXTENSIONS[args.language]):
+        if args.language and target_path.suffix not in LANGUAGES_TO_FILE_EXTENSIONS[args.language]:
             raise ValueError(f'Specified file is not a {args.language} file.')
 
         language = FILE_EXTENSIONS_TO_LANGUAGES.get(target_path.suffix)
@@ -183,28 +181,27 @@ def main():
             raise ValueError('Unsupported file type.')
 
         all_success = lint_file(target_path, language, args.print_success, args.quiet)
+    elif args.sorted:
+        # Lint one language at a time to group the output by language
+        aggregate_language_stats = {}
+        for language in LANGUAGES_TO_FILE_EXTENSIONS:
+            if args.github_action:
+                print(f'::group::Lint {language.capitalize()} ')
+            else:
+                print(f'\nLinting {language.capitalize()} files...')
+            lang_success, language_stats = lint_files(target_path, [language], args.print_success, args.quiet,
+                                                      args.no_git_tree)
+            if args.github_action:
+                print('::endgroup::')
+
+            all_success = lang_success and all_success
+            aggregate_language_stats.update(language_stats)
+
+        print_summary(aggregate_language_stats)
     else:
-        if args.sorted:
-            # Lint one language at a time to group the output by language
-            aggregate_language_stats = {}
-            for language in LANGUAGES_TO_FILE_EXTENSIONS.keys():
-                if args.github_action:
-                    print(f'::group::Lint {language.capitalize()} ')
-                else:
-                    print(f'\nLinting {language.capitalize()} files...')
-                lang_success, language_stats = lint_files(target_path, [language], args.print_success, args.quiet,
-                                                          args.no_git_tree)
-                if args.github_action:
-                    print('::endgroup::')
-
-                all_success = lang_success and all_success
-                aggregate_language_stats.update(language_stats)
-
-            print_summary(aggregate_language_stats)
-        else:
-            all_success, language_stats = lint_files(target_path, args.language, args.print_success, args.quiet,
-                                                     args.no_git_tree)
-            print_summary(language_stats)
+        all_success, language_stats = lint_files(target_path, args.language, args.print_success, args.quiet,
+                                                 args.no_git_tree)
+        print_summary(language_stats)
 
     if not all_success:
         raise SystemExit(1)
