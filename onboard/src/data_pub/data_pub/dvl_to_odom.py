@@ -23,7 +23,7 @@ class DVLOdomPublisher(Node):
 
     DVL_BAD_STATUS_MSG = 'V'
 
-    def __init__(self):
+    def __init__(self) -> None:
         with open(rr.get_filename(self.CONFIG_FILE_PATH, use_protocol=False)) as f:
             self._config_data = yaml.safe_load(f)
 
