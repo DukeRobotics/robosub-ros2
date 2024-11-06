@@ -12,8 +12,8 @@ RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-serial
 RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
 
-# Set no password for root user
-RUN passwd -d root
+# Set password for root user
+RUN echo "root:robotics" | chpasswd
 
 # Modify SSH server configuration to allow SSH into the container without password
 RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
@@ -21,6 +21,12 @@ RUN echo "PermitEmptyPasswords yes" >> /etc/ssh/sshd_config
 RUN echo "PermitUserEnvironment yes" >> /etc/ssh/sshd_config
 RUN mkdir -p /root/.ssh
 RUN touch /root/.ssh/environment
+
+# Add authorized SSH key to container
+ARG AUTHORIZED_SSH_KEY
+RUN touch /root/.ssh/authorized_keys
+RUN chmod 600 /root/.ssh/authorized_keys
+RUN echo "$AUTHORIZED_SSH_KEY" > /root/.ssh/authorized_keys
 
 # SSH server at port 2202
 RUN echo "Port 2202" >> /etc/ssh/sshd_config

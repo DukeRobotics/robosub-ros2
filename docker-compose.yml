@@ -6,6 +6,7 @@ services:
       dockerfile: Dockerfile
       args:
         NO_GIT: ${NO_GIT}
+        AUTHORIZED_SSH_KEY: ${AUTHORIZED_SSH_KEY}
     container_name: onboard2
     tty: true
     volumes:
