@@ -8,6 +8,7 @@
         "vscode": {
             "extensions": [
                 "bierner.github-markdown-preview",
+                "charliermarsh.ruff",
                 "cschlosser.doxdocgen",
                 "dbaeumer.vscode-eslint",
                 "eamodio.gitlens",
@@ -20,13 +21,13 @@
                 "ms-azuretools.vscode-docker",
                 "ms-iot.vscode-ros",
                 "ms-python.debugpy",
-                "ms-python.flake8",
                 "ms-python.python",
                 "ms-python.vscode-pylance",
                 "ms-vscode-remote.vscode-remote-extensionpack",
                 "ms-vscode.cpptools-extension-pack",
                 "ms-vsliveshare.vsliveshare",
                 "redhat.vscode-yaml",
+                "tamasfe.even-better-toml",
                 "timonwong.shellcheck",
                 "yahyabatulu.vscode-markdown-alert"
             ],
