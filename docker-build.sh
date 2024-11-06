@@ -27,5 +27,11 @@ fi
 
 AUTHORIZED_SSH_KEY=$(cat ${AUTHORIZED_SSH_KEY_PUB_PATH})
 
-# Build the Docker image with the SSH keys passed as build arguments
-docker compose -f docker-compose-with-git.yml up -d --build
+# If $ROBOT_NAME is set, use docker-compose-robot.yml
+if [ -n "$ROBOT_NAME" ]; then
+    # Build the Docker image with the SSH keys passed as build arguments
+    docker compose -f docker-compose-robot.yml up -d --build
+else
+    # Build the Docker image with the SSH keys passed as build arguments
+    docker compose -f docker-compose-with-git.yml up -d --build
+fi
