@@ -25,7 +25,7 @@ if [ "$NO_GIT" != "true" ]; then
     GIT_ALLOWED_SIGNERS=$(cat ${GIT_ALLOWED_SIGNERS_PATH})
 fi
 
-AUTHORIZED_SSH_KEY=$(cat ${AUTHORIZED_SSH_KEY_PATH})
+AUTHORIZED_SSH_KEY=$(cat ${AUTHORIZED_SSH_KEY_PUB_PATH})
 
 # Build the Docker image with the SSH keys passed as build arguments
 docker compose -f docker-compose-with-git.yml up -d --build
