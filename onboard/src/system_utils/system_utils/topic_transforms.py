@@ -15,19 +15,25 @@ from transforms3d.euler import quat2euler
 
 
 # Class to store data for topic transformations
-class TopicTransformData:
+class TopicTransformData(Node):
     def __init__(self, input_topic, input_type, input_type_conversion, output_topic, output_type,
-                 output_type_conversion, subscriber=None, publisher=None, publisher_queue_size=1, subscriber_queue_size=1):
+                 output_type_conversion, publisher_queue_size=1, subscriber_queue_size=1):
+        super().__init__(f"{input_topic}_to{output_topic}".replace("/", "_"))
+
         self.input_topic = input_topic
         self.input_type = input_type
         self.input_type_conversion = input_type_conversion
         self.output_topic = output_topic
         self.output_type = output_type
         self.output_type_conversion = output_type_conversion
-        self.subscriber = subscriber
-        self.publisher = publisher
         self.publisher_queue_size = publisher_queue_size
         self.subscriber_queue_size = subscriber_queue_size
+
+    def topic_create_subscriber(self, callback):
+        self.create_subscription(self.input_type, self.input_topic, callback, 10)
+
+    def topic_create_publisher(self):
+        self.publisher = self.create_publisher(self.output_type, self.output_topic, self.publisher_queue_size)
 
 
 # Class to store conversion functions
@@ -64,25 +70,24 @@ class Conversions:
 # Class to perform topic transformations
 class TopicTransforms(Node):
     NODE_NAME = 'topic_transforms'
-    # List of topic transformation data
-    TOPIC_TRANSFORM_DATA = [
-        TopicTransformData('/state', Odometry, lambda x: x.pose.pose, '/transforms/state/pose', Twist,
-                           Conversions.pose_to_twist),
-        TopicTransformData('/vectornav/IMU', Imu, lambda x: x.orientation, '/transforms/vectornav/IMU/orientation',
-                           Vector3, Conversions.quat_to_vector),
-        TopicTransformData('/controls/desired_position', Pose, lambda x: x, '/transforms/controls/desired_position',
-                           Twist, Conversions.pose_to_twist),
-    ]
 
     def __init__(self):
         super().__init__(self.NODE_NAME)
 
+        # List of topic transformation data
+        self.TOPIC_TRANSFORM_DATA = [
+            TopicTransformData('/state', Odometry, lambda x: x.pose.pose, '/transforms/state/pose', Twist,
+                               Conversions.pose_to_twist),
+            TopicTransformData('/vectornav/IMU', Imu, lambda x: x.orientation, '/transforms/vectornav/IMU/orientation',
+                               Vector3, Conversions.quat_to_vector),
+            TopicTransformData('/controls/desired_position', Pose, lambda x: x, '/transforms/controls/desired_position',
+                               Twist, Conversions.pose_to_twist),
+        ]
+
         # Create subscribers and publishers for each topic transformation
         for data in self.TOPIC_TRANSFORM_DATA:
-            data.subscriber = self.create_subscription(data.input_type, data.input_topic, lambda msg: self.callback(data, msg),
-                                                       data.subscriber_queue_size)
-            data.publisher = self.create_publisher(data.output_type, data.output_topic,
-                                                   data.publisher_queue_size)
+            data.topic_create_subscriber(lambda msg: self.callback(data, msg))
+            data.topic_create_publisher()
 
     # Callback function to transform input message and publish output message
     # First, transform input message using input_type_conversion function, input the result to output_type_conversion,

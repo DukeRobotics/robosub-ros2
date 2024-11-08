@@ -3,7 +3,7 @@
 import rclpy
 from rclpy.node import Node
 
-import GPUtil
+# import GPUtil
 import psutil
 from custom_msgs.msg import SystemUsage
 
@@ -13,28 +13,27 @@ class SystemInfoPublisher(Node):
     NODE_NAME = 'system_usage_publisher'
 
     def __init__(self):
+        super().__init__(self.NODE_NAME)
         self._pub = self.create_publisher(SystemUsage, self.TOPIC_NAME, 10)
         self._current_msg = SystemUsage()
-        rclpy.init()
-        rclpy.create_node(self.NODE_NAME)
 
     def get_cpu(self):
         self._current_msg.cpu_percent = psutil.cpu_percent(interval=0.5)
         self._current_msg.cpu_speed = psutil.cpu_freq().current if psutil.cpu_freq() else 0
 
-    def get_gpu(self):
-        GPUs = GPUtil.getGPUs()
-        if len(GPUs) > 0:
-            gpu = GPUs[0]
-            self._current_msg.gpu_memory.used = gpu.memoryUsed / 1000
-            self._current_msg.gpu_memory.total = gpu.memoryTotal / 1000
-            self._current_msg.gpu_memory.percentage = gpu.memoryUsed / gpu.memoryTotal * 100
-            self._current_msg.gpu_percent = gpu.load * 100
-            self._current_msg.gpu_speed = 0
-        else:
-            self._current_msg.gpu_memory.used = 0
-            self._current_msg.gpu_memory.total = 0
-            self._current_msg.gpu_memory.percentage = 0
+    # def get_gpu(self):
+    #     GPUs = GPUtil.getGPUs()
+    #     if len(GPUs) > 0:
+    #         gpu = GPUs[0]
+    #         self._current_msg.gpu_memory.used = gpu.memoryUsed / 1000
+    #         self._current_msg.gpu_memory.total = gpu.memoryTotal / 1000
+    #         self._current_msg.gpu_memory.percentage = gpu.memoryUsed / gpu.memoryTotal * 100
+    #         self._current_msg.gpu_percent = gpu.load * 100
+    #         self._current_msg.gpu_speed = 0
+    #     else:
+    #         self._current_msg.gpu_memory.used = 0
+    #         self._current_msg.gpu_memory.total = 0
+    #         self._current_msg.gpu_memory.percentage = 0
 
     def get_ram(self):
         self._current_msg.ram.used = (psutil.virtual_memory().total - psutil.virtual_memory().available) / (10**9)
@@ -51,7 +50,7 @@ class SystemInfoPublisher(Node):
         while not rclpy.ok():
             self._current_msg = SystemUsage()
             self.get_cpu()
-            self.get_gpu()
+            # self.get_gpu()
             self.get_ram()
             self.get_disk()
 
