@@ -21,10 +21,11 @@ class TaskPlanning(Node):
     NODE_NAME = 'task_planning'
 
     def __init__(self):
-        main_initialized = False
         super().__init__(self.NODE_NAME)
-        # TODO:ros2 set bypass=false
+
+        # TODO: ros2 set bypass=false
         bypass = self.declare_parameter('bypass', True).value
+        main_initialized = False
         untethered = self.declare_parameter('untethered', True).value
         self.get_logger().info('task_planning node initialized')
 
@@ -104,7 +105,7 @@ class TaskPlanning(Node):
 
             input('Press enter to run tasks...')  # TODO:ros2 this doesn't work when you use ros2 launch, but does when you do ros2 run because launch doesn't create an interactive terminal. Is this intended behaviour?
 
-            current_task = 0
+            self.current_task = 0
 
             def countdown_callback():
                 self.get_logger().info(f'Countdown: {self.countdown_value}')
