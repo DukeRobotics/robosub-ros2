@@ -42,3 +42,12 @@ async def print_smiley_face(self: Task) -> Task[None, None, None]:
 
     logger.info(":)")
 
+
+@task
+async def wait_then_print(self: Task, wait_time=3) -> Task[None, None, None]:
+    """
+    Complete two full barrel rolls
+    """
+
+    await wait_for_seconds(wait_time, parent=self)
+    await print_smiley_face(parent=self)

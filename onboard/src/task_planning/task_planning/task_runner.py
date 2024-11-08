@@ -76,7 +76,8 @@ class TaskPlanning(Node):
             # Tasks to run
             tasks = [
                 test_tasks.wait_for_seconds(3, parent=Task.MAIN_ID),
-                test_tasks.print_smiley_face(parent=Task.MAIN_ID)
+                test_tasks.print_smiley_face(parent=Task.MAIN_ID),
+                test_tasks.wait_then_print(parent=Task.MAIN_ID)
                 # comp_tasks.initial_submerge(-0.7, parent=Task.MAIN_ID),
                 # comp_tasks.coin_flip(parent=Task.MAIN_ID),
                 # comp_tasks.yaw_to_cv_object('gate_red_cw', direction=1, yaw_threshold=math.radians(10),
