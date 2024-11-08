@@ -11,6 +11,7 @@ from rclpy.clock import Clock
 
 from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
 import task_planning.comp_tasks as comp_tasks
+import task_planning.test_tasks as test_tasks
 
 import tf2_ros
 import math
@@ -74,15 +75,17 @@ class TaskPlanning(Node):
         try:
             # Tasks to run
             tasks = [
-                comp_tasks.initial_submerge(-0.7, parent=Task.MAIN_ID),
-                comp_tasks.coin_flip(parent=Task.MAIN_ID),
-                comp_tasks.yaw_to_cv_object('gate_red_cw', direction=1, yaw_threshold=math.radians(10),
-                                            latency_threshold=1, depth_level=0.7, parent=Task.MAIN_ID),
-                comp_tasks.gate_task(offset=-0.1, direction=-1, parent=Task.MAIN_ID),
-                comp_tasks.gate_style_task(depth_level=0.9, parent=Task.MAIN_ID),
-                comp_tasks.yaw_to_cv_object('buoy', direction=1, depth_level=0.7, parent=Task.MAIN_ID),
-                comp_tasks.buoy_task(turn_to_face_buoy=False, depth=0.7, parent=Task.MAIN_ID),
-                comp_tasks.after_buoy_task(parent=Task.MAIN_ID)
+                test_tasks.wait_for_seconds(3, parent=Task.MAIN_ID),
+                test_tasks.print_smiley_face(parent=Task.MAIN_ID)
+                # comp_tasks.initial_submerge(-0.7, parent=Task.MAIN_ID),
+                # comp_tasks.coin_flip(parent=Task.MAIN_ID),
+                # comp_tasks.yaw_to_cv_object('gate_red_cw', direction=1, yaw_threshold=math.radians(10),
+                #                             latency_threshold=1, depth_level=0.7, parent=Task.MAIN_ID),
+                # comp_tasks.gate_task(offset=-0.1, direction=-1, parent=Task.MAIN_ID),
+                # comp_tasks.gate_style_task(depth_level=0.9, parent=Task.MAIN_ID),
+                # comp_tasks.yaw_to_cv_object('buoy', direction=1, depth_level=0.7, parent=Task.MAIN_ID),
+                # comp_tasks.buoy_task(turn_to_face_buoy=False, depth=0.7, parent=Task.MAIN_ID),
+                # comp_tasks.after_buoy_task(parent=Task.MAIN_ID)
 
                 # comp_tasks.align_path_marker(direction=-1, parent=Task.MAIN_ID),
                 # comp_tasks.center_path_marker(parent=Task.MAIN_ID),
@@ -98,7 +101,9 @@ class TaskPlanning(Node):
                 # comp_tasks.octagon_task(direction=1, parent=Task.MAIN_ID),
             ]
 
-            #input('Press enter to run tasks...') # TODO:ros2 this doesn't work when you use ros2 launch, but does when you do ros2 run because launch doesn't create an interactive terminal. Is this intended behaviour?
+            input('Press enter to run tasks...')  # TODO:ros2 this doesn't work when you use ros2 launch, but does when you do ros2 run because launch doesn't create an interactive terminal. Is this intended behaviour?
+
+            current_task = 0
 
             def countdown_callback():
                 self.get_logger().info(f'Countdown: {self.countdown_value}')
@@ -106,11 +111,14 @@ class TaskPlanning(Node):
                     self.countdown_timer.cancel()  # Stop the timer
                     controls.call_enable_controls(True)  # TODO:ros2 runtime error
                     self.get_logger().info('Countdown complete!')
+                    self.task_runner_timer.reset()
+                    self.get_logger().info('Running tasks.')
+                    self.current_task = 0
 
                 self.countdown_value -= 1
 
             def run_tasks():
-                if current_task >= len(tasks) or not rclpy.ok():
+                if self.current_task >= len(tasks) or not rclpy.ok():
                     return
                 if not tasks[self.current_task].done:
                     tasks[self.current_task].step()
@@ -123,19 +131,8 @@ class TaskPlanning(Node):
                 self.countdown_value = 10
                 self.get_logger().info('Countdown started...')
                 self.countdown_timer = self.create_timer(1.0, countdown_callback)
-                self.task_runner_timer = self.create_timer(30, run_tasks)
+                self.task_runner_timer = self.create_timer(0.03, run_tasks)  # TODO:ros2 what should this time be?
                 self.task_runner_timer.cancel()
-
-            while self.countdown_value > 0:
-                print(self.countdown_value)
-                pass
-
-            controls.call_enable_controls(True)  # TODO:ros2 runtime error
-            self.get_logger().info('Countdown complete!')
-            self.task_runner_timer.reset()
-            self.get_logger().info('Running tasks.')
-
-            current_task = 0
 
         except BaseException as e:
 
