@@ -111,7 +111,7 @@ class Controls:
         Args:
             enable: Whether to enable (true) or disable (false).
         """
-        request = SetBool.Request() # TODO:ros2 ensure that is correct, I (Avrick) am not sure
+        request = SetBool.Request()
         request.data = enable
         self._enable_controls.call_async(request)
 

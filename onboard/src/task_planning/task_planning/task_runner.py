@@ -23,8 +23,7 @@ class TaskPlanning(Node):
     def __init__(self):
         super().__init__(self.NODE_NAME)
 
-        # TODO: ros2 set bypass=false
-        bypass = self.declare_parameter('bypass', True).value
+        bypass = self.declare_parameter('bypass', False).value
         main_initialized = False
         untethered = self.declare_parameter('untethered', True).value
         self.get_logger().info('task_planning node initialized')
@@ -111,7 +110,7 @@ class TaskPlanning(Node):
                 self.get_logger().info(f'Countdown: {self.countdown_value}')
                 if self.countdown_value <= 0:
                     self.countdown_timer.cancel()  # Stop the timer
-                    controls.call_enable_controls(True)  # TODO:ros2 runtime error
+                    controls.call_enable_controls(True)
                     self.get_logger().info('Countdown complete!')
                     self.task_runner_timer.reset()
                     self.get_logger().info('Running tasks.')
