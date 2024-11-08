@@ -9,7 +9,7 @@ from sklearn.cluster import DBSCAN
 from sensor_msgs.msg import CompressedImage, Image
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
-from utils import compute_yaw
+from cv.utils import compute_yaw
 
 
 class PinkBinsDetector(Node):

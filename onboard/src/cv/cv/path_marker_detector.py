@@ -10,7 +10,7 @@ from custom_msgs.msg import CVObject
 from geometry_msgs.msg import Point
 from cv_bridge import CvBridge
 
-from utils import compute_center_distance
+from cv.utils import compute_center_distance
 
 
 class PathMarkerDetector(Node):
