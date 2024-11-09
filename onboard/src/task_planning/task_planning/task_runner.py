@@ -14,7 +14,8 @@ import task_planning.comp_tasks as comp_tasks
 import task_planning.test_tasks as test_tasks
 
 import tf2_ros
-import math
+
+TASK_RATE_SECS = 1 / 30
 
 
 class TaskPlanning(Node):
@@ -22,11 +23,12 @@ class TaskPlanning(Node):
 
     def __init__(self):
         super().__init__(self.NODE_NAME)
-
-        bypass = self.declare_parameter('bypass', False).value
-        main_initialized = False
-        untethered = self.declare_parameter('untethered', True).value
         self.get_logger().info('task_planning node initialized')
+
+        main_initialized = False
+
+        bypass = self.declare_parameter('bypass', True).value
+        untethered = self.declare_parameter('untethered', True).value
 
         # When ros is shutdown, if main finished initializing, publish that it has closed
         def publish_close():
@@ -102,7 +104,7 @@ class TaskPlanning(Node):
                 # comp_tasks.octagon_task(direction=1, parent=Task.MAIN_ID),
             ]
 
-            input('Press enter to run tasks...')  # TODO:ros2 this doesn't work when you use ros2 launch, but does when you do ros2 run because launch doesn't create an interactive terminal. Is this intended behaviour?
+            input('Press enter to run tasks...')
 
             self.current_task = 0
 
@@ -132,8 +134,9 @@ class TaskPlanning(Node):
                 self.countdown_value = 10
                 self.get_logger().info('Countdown started...')
                 self.countdown_timer = self.create_timer(1.0, countdown_callback)
-                self.task_runner_timer = self.create_timer(0.03, run_tasks)  # TODO:ros2 what should this time be?
-                self.task_runner_timer.cancel()
+                self.task_runner_timer = self.create_timer(TASK_RATE_SECS, run_tasks, autostart=False)
+            else:
+                self.create_timer(TASK_RATE_SECS, run_tasks)
 
         except BaseException as e:
 
