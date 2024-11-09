@@ -59,6 +59,7 @@ class TaskUpdatePublisher:
         qos_profile = QoSProfile(
             history=HistoryPolicy.KEEP_ALL,
         )
+        self.node = node
         self.publisher = node.create_publisher(TaskUpdate, '/task_planning/updates', qos_profile)
 
     def publish_update(self, task_id: int, parent_id: int, name: str, status: TaskStatus, data: Any) -> None:
@@ -104,7 +105,7 @@ class TaskUpdatePublisher:
             msg_data = jsonpickle.encode(str(data), **jsonpickle_options)
 
         # Create message header
-        header = Header(stamp=Time().to_msg())
+        header = Header(stamp=self.node.get_clock().now().to_msg())
 
         # Publish the message
         msg = TaskUpdate(header=header, id=task_id, parent_id=parent_id, name=name, status=status, data=msg_data)
