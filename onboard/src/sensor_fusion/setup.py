@@ -18,7 +18,7 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='root',
-    maintainer_email='oogway@duke-robotics.com',
+    maintainer_email='hello@duke-robotics.com',
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
