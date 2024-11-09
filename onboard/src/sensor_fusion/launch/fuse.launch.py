@@ -18,7 +18,7 @@ def generate_launch_description():
             ("odometry/filtered", "state")
         ])
 
-    #TODO also add a node to publish robot URDF (which we have??)
+    # TODO: also add a node to publish robot URDF (which we have??)
 
     ld.add_action(robot_localization)
     return ld
