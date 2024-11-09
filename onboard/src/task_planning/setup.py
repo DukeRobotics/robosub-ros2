@@ -16,10 +16,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='root',
-    maintainer_email='root@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer='Duke Robotics',
+    maintainer_email='hello@duke-robotics.com',
+    description='Task planning package',
+    license='MIT',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
