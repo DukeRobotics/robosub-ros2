@@ -9,6 +9,7 @@ RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends nano
 RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends clang-format
+RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-venv
 
