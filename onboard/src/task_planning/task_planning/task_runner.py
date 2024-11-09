@@ -22,10 +22,10 @@ class TaskPlanning(Node):
     NODE_NAME = 'task_planning'
 
     def __init__(self):
+        main_initialized = False
+
         super().__init__(self.NODE_NAME)
         self.get_logger().info('task_planning node initialized')
-
-        main_initialized = False
 
         bypass = self.declare_parameter('bypass', False).value
         untethered = self.declare_parameter('untethered', False).value
@@ -112,24 +112,25 @@ class TaskPlanning(Node):
             def countdown_callback():
                 self.get_logger().info(f'Countdown: {self.countdown_value}')
                 if self.countdown_value <= 0:
-                    self.countdown_timer.cancel()  # Stop the timer
-                    controls.call_enable_controls(True)
                     self.get_logger().info('Countdown complete!')
+                    self.countdown_timer.cancel()
+                    controls.call_enable_controls(True)
                     self.task_runner_timer.reset()
-                    self.get_logger().info('Running tasks.')
+                    self.get_logger().info('Running tasks...')
                     self.current_task = 0
 
                 self.countdown_value -= 1
 
             def run_tasks():
                 if self.current_task >= len(tasks) or not rclpy.ok():
+                    if untethered:
+                        controls.call_enable_controls(False)
+                    self.task_runner_timer.cancel()
                     return
                 if not tasks[self.current_task].done:
                     tasks[self.current_task].step()
                 else:
                     self.current_task += 1
-                if untethered:
-                    controls.call_enable_controls(False)
 
             if untethered:
                 self.countdown_value = 10
