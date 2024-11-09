@@ -13,10 +13,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='Duke Robotics',
-    maintainer_email='hello@duke-robotics.com',
+    maintainer='root',
+    maintainer_email='root@todo.todo',
     description='TODO: Package description',
-    license='MIT',
+    license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
