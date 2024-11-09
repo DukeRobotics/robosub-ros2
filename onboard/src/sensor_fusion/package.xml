@@ -4,7 +4,7 @@
   <name>sensor_fusion</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="hello@duke-robotics.com">root</maintainer>
+  <maintainer email="hello@duke-robotics.com">Duke Robotics</maintainer>
   <license>TODO: License declaration</license>
 
   <depend>robot_localization</depend>
