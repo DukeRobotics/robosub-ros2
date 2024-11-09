@@ -36,13 +36,13 @@ async def wait_for_seconds(self: Task, wait_time=1) -> Task[None, None, None]:
     logger.info("Completed wait_for_seconds task")
 
 @task
-async def print_task(self: Task, data: str = 'Executing print_task') -> Task[None, None, None]:
+async def print_task(self: Task, data: str = ':)') -> Task[None, None, None]:
     """
     Print a string.
     """
     msg = String()
     msg.data = data
-    logger.info(data)
+    logger.info(f'print_task: {data}')
 
     return msg
 
