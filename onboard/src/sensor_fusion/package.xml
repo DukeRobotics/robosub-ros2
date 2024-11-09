@@ -5,7 +5,7 @@
   <version>0.0.0</version>
   <description>TODO: Package description</description>
   <maintainer email="hello@duke-robotics.com">Duke Robotics</maintainer>
-  <license>TODO: License declaration</license>
+  <license>MIT</license>
 
   <depend>robot_localization</depend>
   <buildtool_depend>ament_python</buildtool_depend>
