@@ -1,0 +1,29 @@
+{
+  "extends": "create-foxglove-extension/tsconfig/tsconfig.json",
+
+  "include": ["./extensions/*/src/**/*", "./shared/*/src/**/*", "./shared/defs/types/**/*"],
+  "compilerOptions": {
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext",
+
+    "lib": ["dom"],
+
+    // Prevent typescript from emitting .d.ts files we don't need in the compiled extension
+    "composite": false,
+    "declaration": false,
+
+    // Additional error reporting checks to improve code quality
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "forceConsistentCasingInFileNames": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@duke-robotics/defs/types": ["shared/defs/types/dist/types.ts"]
+    }
+  }
+}
