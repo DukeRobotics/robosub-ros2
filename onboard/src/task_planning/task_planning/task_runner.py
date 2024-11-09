@@ -27,8 +27,8 @@ class TaskPlanning(Node):
 
         main_initialized = False
 
-        bypass = self.declare_parameter('bypass', True).value
-        untethered = self.declare_parameter('untethered', True).value
+        bypass = self.declare_parameter('bypass', False).value
+        untethered = self.declare_parameter('untethered', False).value
 
         # When ros is shutdown, if main finished initializing, publish that it has closed
         def publish_close():
