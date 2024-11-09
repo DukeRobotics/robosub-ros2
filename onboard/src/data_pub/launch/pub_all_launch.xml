@@ -1,0 +1,6 @@
+	<launch>
+		<node name="dvl_raw" pkg="data_pub" exec="dvl_raw" output="screen" />
+		<node name="dvl_odom" pkg="data_pub" exec="dvl_odom" output="screen" />
+		<node name="pressure_voltage" pkg="data_pub" exec="pressure_voltage" output="screen" />
+		<node name="sensor_servo" pkg="data_pub" exec="sensor_servo" output="screen" />
+	</launch>
