@@ -25,12 +25,18 @@ class RecordBag(Node):
 
         # Initialize variables
         self.process = None
+        bypass = self.declare_parameter('bypass', False).value
+        self.get_logger().info(f"bypass: {bypass}")
+        self.enable_recording = self.declare_parameter('enable_recording', False).value
 
         # Initialize last message time to current time
         self.last_msg_time = Clock().now()
 
         # Subscribe to the voltage topic
-        self.create_subscription(Float64, 'sensors/voltage', self.voltage_callback, 10)
+        if bypass:
+            self.start_recording()
+        else:
+            self.create_subscription(Float64, 'sensors/voltage', self.voltage_callback, 10)
 
         # Create a timer to check for timeout; calls check_timeout every second
         self.timer = self.create_timer(1, self.check_timeout)
@@ -58,7 +64,7 @@ class RecordBag(Node):
 
         # If voltage is above 5V and the node is not currently recording, start recording
         else:
-            if self.process is None:
+            if self.process is None and self.enable_recording:
                 self.start_recording()
 
     def start_recording(self):
@@ -103,7 +109,7 @@ class RecordBag(Node):
         current_time = Clock().now()
         if (current_time - self.last_msg_time) > self.TIMEOUT_DURATION:
             if self.process is not None:
-                self.get_logger().info(f"No voltage messages received for {self.TIMEOUT_DURATION.to_sec()} seconds. "
+                self.get_logger().info(f"No voltage messages received for {self.TIMEOUT_DURATION.nanoseconds / 1e9} seconds. "
                               f"Stopping recording.")
                 self.stop_recording()
                 self.shutdown_node()
@@ -126,7 +132,9 @@ def main(args=None):
         pass
     finally:
         recorder.stop_recording()
-        recorder.get_logger().info("Shutting down. Stopping recording.")
+        if rclpy.ok():
+            recorder.get_logger().info("Shutting down. Stopping recording.")
+
         recorder.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()

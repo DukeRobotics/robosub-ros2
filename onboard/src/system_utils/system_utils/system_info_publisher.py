@@ -16,6 +16,7 @@ class SystemInfoPublisher(Node):
         super().__init__(self.NODE_NAME)
         self._pub = self.create_publisher(SystemUsage, self.TOPIC_NAME, 10)
         self._current_msg = SystemUsage()
+        self.run()
 
     def get_cpu(self):
         self._current_msg.cpu_percent = psutil.cpu_percent(interval=0.5)
@@ -46,8 +47,9 @@ class SystemInfoPublisher(Node):
         self._current_msg.disk.percentage = psutil.disk_usage('/').percent
 
     def run(self):
-        r = self.create_rate(15)
-        while not rclpy.ok():
+        def timer_callback():
+            if rclpy.ok():
+                timer.cancel()
             self._current_msg = SystemUsage()
             self.get_cpu()
             # self.get_gpu()
@@ -55,7 +57,8 @@ class SystemInfoPublisher(Node):
             self.get_disk()
 
             self._pub.publish(self._current_msg)
-            r.sleep()
+
+        timer = self.create_timer(1/15.0, timer_callback)
 
 def main(args=None):
     rclpy.init(args=args)
