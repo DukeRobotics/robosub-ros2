@@ -1,5 +1,13 @@
 # Task Planning
 
+## Execution
+Start the task planning node with
+```bash
+ros2 run task_planning task_runner --ros-args -p bypass:=False -p untethered:=False
+```
+- Set `bypass:=True` to bypass waits for required topics/services which is helpful when debugging in a local container.
+- Set `untethered:=True` to initiate a countdown before tasks are executed.
+
 ## Overview
 ### High Level Overview
 Task planning is the control center - the brains - of the robot. It operates at the highest level of the software subsystems and controls the overall actions of the robot: what tasks the robot attempts and in what order, where the robot moves, when the robot moves to the next task, etc. It uses data from sensor fusion and computer vision and gives instructions to controls. See the [flow diagram](../../../../README.md#flow) in main README to see where it fits in the overall system.
@@ -10,11 +18,11 @@ The robot is controlled through running a series of tasks. Every task inherits f
 Take a look at this example and its output below.
 ```python
 class ExampleTask(Task):
-        
+
     def _on_task_start(self):
         print("This is an echo chamber:")
         self.count = 0
-        
+
     def _on_task_run(self):
         print("echo")
         self.count += 1
