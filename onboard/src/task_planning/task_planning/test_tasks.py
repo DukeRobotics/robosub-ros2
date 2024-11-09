@@ -20,6 +20,7 @@ from task_planning.interface.controls import Controls
 from task_planning.interface.marker_dropper import MarkerDropper
 
 from task_planning.utils.coroutine_utils import sleep
+from std_msgs.msg import String
 
 logger = get_logger('comp_tasks')
 
@@ -27,27 +28,30 @@ logger = get_logger('comp_tasks')
 @task
 async def wait_for_seconds(self: Task, wait_time=3) -> Task[None, None, None]:
     """
-    Complete two full barrel rolls
+    Wait for a number of seconds.
     """
 
     logger.info("Started wait_for_seconds task")
-    await sleep(3)
+    await sleep(wait_time)
     logger.info("Completed wait_for_seconds task")
 
 @task
-async def print_smiley_face(self: Task) -> Task[None, None, None]:
+async def print_task(self: Task, data: str = ':)') -> Task[None, None, None]:
     """
-    Complete two full barrel rolls
+    Print a string.
     """
+    msg = String()
+    msg.data = data
+    logger.info(data)
 
-    logger.info(":)")
+    return msg
 
 
 @task
 async def wait_then_print(self: Task, wait_time=3) -> Task[None, None, None]:
     """
-    Complete two full barrel rolls
+    Execute a wait_for_seconds task and then a print_task task.
     """
 
     await wait_for_seconds(wait_time, parent=self)
-    await print_smiley_face(parent=self)
+    await print_task(parent=self)
