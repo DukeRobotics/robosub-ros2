@@ -16,7 +16,7 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='root',
+    maintainer='Duke Robotics',
     maintainer_email='hello@dukerobotics.com',
     description='TODO: Package description',
     license='TODO: License declaration',
