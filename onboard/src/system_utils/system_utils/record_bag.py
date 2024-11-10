@@ -26,8 +26,12 @@ class RecordBag(Node):
         # Initialize variables
         self.process = None
         bypass = self.declare_parameter('bypass', False).value
-        self.get_logger().info(f"bypass: {bypass}")
         self.enable_recording = self.declare_parameter('enable_recording', False).value
+
+        if not self.enable_recording:
+            self.get_logger().info("Recording is disabled.")
+            self.destroy_node()
+            return
 
         # Initialize last message time to current time
         self.last_msg_time = Clock().now()
@@ -64,7 +68,7 @@ class RecordBag(Node):
 
         # If voltage is above 5V and the node is not currently recording, start recording
         else:
-            if self.process is None and self.enable_recording:
+            if self.process is None:
                 self.start_recording()
 
     def start_recording(self):

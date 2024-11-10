@@ -8,4 +8,5 @@ __pycache__
 .config
 .env
 .vscode
-.bag
+
+bag_files
