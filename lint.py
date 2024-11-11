@@ -42,7 +42,7 @@ class LanguageStats:
     success: int = 0
 
 
-def lint_file(file_path: Path, language: str, print_success: bool, quiet: bool):
+def lint_file(file_path: Path, language: str, print_success: bool, quiet: bool) -> bool:
     """
     Lint a single file using the appropriate linter for the specified language.
 
@@ -50,12 +50,13 @@ def lint_file(file_path: Path, language: str, print_success: bool, quiet: bool):
         file_path (Path): The path of the file to lint.
         language (str): The programming language of the file.
         print_success (bool): If True, print a success message when linting is successful.
+        quiet (bool): If True, suppress output from the linting commands except for success or issue messages.
     """
     command = LINT_COMMANDS[language] + [str(file_path)]
     out = subprocess.DEVNULL if quiet else None
     padded_language = f'{language}:'.ljust(MAX_LANGUAGE_LENGTH + 1)
 
-    process = subprocess.Popen(command, stdout=out, stderr=out)
+    process = subprocess.Popen(command, stdout=out, stderr=out)  # noqa: S603
     stdout, stderr = process.communicate()
 
     if process.returncode == 0:
@@ -105,7 +106,7 @@ def lint_files(target_path: Path, language: list[str] | None = None, print_succe
     all_success = True
     prev_success = True
 
-    def process_file(file_path: Path):
+    def process_file(file_path: Path) -> None:
         nonlocal prev_success, all_success
 
         detected_language = FILE_EXTENSIONS_TO_LANGUAGES.get(file_path.suffix)
@@ -135,7 +136,7 @@ def lint_files(target_path: Path, language: list[str] | None = None, print_succe
     return all_success, language_stats
 
 
-def main():
+def main() -> None:
     """Parse command-line arguments and initiate the linting process."""
     default_path = Path('/root/dev/robosub-ros2')
 
@@ -162,23 +163,26 @@ def main():
     target_path = Path(args.path).resolve()
 
     if not target_path.exists():
-        raise FileNotFoundError(f'The specified path "{target_path}" does not exist.')
+        error_msg = f'The specified path "{target_path}" does not exist.'
+        raise FileNotFoundError(error_msg)
 
     # Ensure target_path is the default directory or a subpath of it
     if not target_path.is_relative_to(default_path):
-        raise ValueError(f'The specified path "{target_path}" must be within the default script directory '
-                         f'"{default_path}".')
+        error_msg = f'The specified path "{target_path}" must be within the default script directory "{default_path}".'
+        raise ValueError(error_msg)
 
     all_success = True
 
     if target_path.is_file():
         # If a specific file is provided, ensure it matches the language if specified
         if args.language and target_path.suffix not in LANGUAGES_TO_FILE_EXTENSIONS[args.language]:
-            raise ValueError(f'Specified file is not a {args.language} file.')
+            error_msg = f'Specified file is not a {args.language} file.'
+            raise ValueError(error_msg)
 
         language = FILE_EXTENSIONS_TO_LANGUAGES.get(target_path.suffix)
         if not language:
-            raise ValueError('Unsupported file type.')
+            error_msg = 'Unsupported file type.'
+            raise ValueError(error_msg)
 
         all_success = lint_file(target_path, language, args.print_success, args.quiet)
     elif args.sorted:

@@ -1,5 +1,6 @@
+from pathlib import Path
+
 from setuptools import find_packages, setup
-from glob import glob
 
 package_name = 'data_pub'
 
@@ -11,8 +12,8 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/config', glob('./config/*.yaml')),
-        ('share/' + package_name + '/launch', glob('./launch/*_launch.xml')),
+        ('share/' + package_name + '/config', list(Path('./config').glob('*.yaml'))),
+        ('share/' + package_name + '/launch', list(Path('./launch').glob('*_launch.xml'))),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

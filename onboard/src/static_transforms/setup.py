@@ -1,6 +1,6 @@
+from pathlib import Path
+
 from setuptools import find_packages, setup
-import os
-from glob import glob
 
 package_name = 'static_transforms'
 
@@ -12,7 +12,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        (os.path.join('share', package_name, 'launch'), glob('./launch/*.launch.py')),
+        (Path('share') / package_name / 'launch', list(Path('launch').glob('*.launch.py'))),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

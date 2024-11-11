@@ -6,40 +6,28 @@ lint.pydocstyle.convention = "google"
 lint.isort.relative-imports-order = "closest-to-furthest"
 lint.select = [
     "ALL", # include all the rules, including new ones
+    "D213",
+    "D400",
+    "D401"
 ]
 lint.ignore = [
-    #### modules
-    # "ANN", # flake8-annotations
-    # "COM", # flake8-commas
+    # Modules
     "C90", # mccabe complexity
     "DJ",  # django
-    "EXE", # flake8-executable
     "FBT", # flake8-boolean-trap
-    "T10", # debugger
     "T20", # flake8-print
-    "TID", # flake8-tidy-imports
 
-    #### specific rules
+    # Specific Rules
     "ANN002",
     "ANN003",
-    "D100",   # ignore missing docs
-    # "D101",
-    # "D102",
-    # "D103",
+    "D100",
     "D104",
-    "D105",
-    "D106",
     "D107",
-    "D200",
-    # "D205",
     "D212",
-    "D400",
-    "D401",
-    "D415",
-    # "E402",   # false positives for local imports
-    # "E501",   # line too long
-    "TRY003", # external messages in exceptions are too verbose
+    "INP001",
+    "N802",
+    "PLR0913",
+    "TRY003",
     "TD002",
     "TD003",
-    "FIX002", # too verbose descriptions of todos
 ]

@@ -9,7 +9,14 @@ SONAR_LINK_TRANSFORM = [0.067, 0.31, 0.05, 0, 0, 0, 'corner_link', 'sonar_link']
 CAMERAS_LINK_TRANSFORM = [0, 0.0362, 0, 0, 0, 0, 'corner_link', 'cameras_link']
 
 # Create the tf2 node for each transform
-def make_transform_publisher(transform):
+def make_transform_publisher(transform: list) -> Node:
+    """
+    Create a tf2 static transform publisher node for a given transform.
+
+    Args:
+        transform (list): Transform values and frame names, in the form
+            [x, y, z, roll, pitch, yaw, frame_id, child_frame_id].
+    """
     return Node(package='tf2_ros',
                 executable='static_transform_publisher',
                 output='screen',
@@ -23,7 +30,18 @@ def make_transform_publisher(transform):
                            '--child-frame-id', transform[7]])
 
 # Create the launch description and populate
-def generate_launch_description():
+def generate_launch_description() -> LaunchDescription:
+    """
+    Generate a ROS 2 launch description for static transforms.
+
+    This function sets up and returns a LaunchDescription object that includes
+    the configuration for launching multiple static transform publishers. Each
+    transform publisher is created using the `make_transform_publisher` function
+    with predefined transform values.
+
+    Returns:
+        LaunchDescription: A LaunchDescription object containing the launch configuration.
+    """
     ld = LaunchDescription()
 
     ld.add_action(make_transform_publisher(CORNER_LINK_TRANSFORM))
