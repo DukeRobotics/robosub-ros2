@@ -12,7 +12,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        (Path('share') / package_name / 'launch', list(Path('launch').glob('*.launch.py'))),
+        (str(Path('share') / package_name / 'launch'), list(map(str, Path('launch').glob('*.launch.py')))),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
