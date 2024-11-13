@@ -23,5 +23,4 @@ fi
 
 export _colcon_cd_root=/opt/ros/jazzy
 
-source /root/dev/venv/bin/activate
-export PYTHONPATH=$PYTHONPATH:/root/dev/venv/lib/python3.12/site-packages
+source /root/dev/robosub-ros2/venv.sh activate
