@@ -2,10 +2,10 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>data_pub</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <version>1.0.0</version>
+  <description>Package that reads and parses through sensor data.</description>
   <maintainer email="hello@duke-robotics.com">Duke Robotics</maintainer>
-  <license>Apache-2.0</license>
+  <license>MIT</license>
 
   <depend>std_msgs</depend>
   <depend>custom_msgs</depend>

@@ -6,7 +6,7 @@ package_name = 'static_transforms'
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version='1.0.0',
     packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -18,6 +18,6 @@ setup(
     zip_safe=True,
     maintainer='Duke Robotics',
     maintainer_email='hello@duke-robotics.com',
-    description='TODO: Package description',
+    description='This package publishes the static transforms that define key parts of the robot.',
     license='MIT',
 )
