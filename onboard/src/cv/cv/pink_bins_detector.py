@@ -9,7 +9,7 @@ from sklearn.cluster import DBSCAN
 from sensor_msgs.msg import CompressedImage, Image
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
-from cv.utils import compute_yaw
+from utils import compute_yaw
 
 
 class PinkBinsDetector(Node):
@@ -22,8 +22,8 @@ class PinkBinsDetector(Node):
         # rospy.init_node("pink_bins_detector", anonymous=True)
         # self.camera = self.get_parameter("~camera").get_parameter_value() # could be self.decare_parameter --> get_param does not work currently
         self.camera = self.declare_parameter("camera", "front").value
-        self.image_sub = self.create_subscription(CompressedImage, "/camera/usb_camera/compressed", self.image_callback,
-                                          10) # actual path --> f"/camera/usb/{self.camera}/compressed"
+        self.image_sub = self.create_subscription(CompressedImage, f"/camera/usb/{self.camera}/compressed", self.image_callback,
+                                          10)
 
         self.pink_bins_hsv_filtered_pub = self.create_publisher(Image, f"/cv/{self.camera}/pink_bins/hsv_filtered",
                                                           10)
@@ -119,10 +119,9 @@ class PinkBinsDetector(Node):
         # Publish the bounding box of the bin
         final_x_normalized = final_x / self.MONO_CAM_IMG_SHAPE[0]
         cv_object = CVObject()
-        cv_object.header.stamp = self.get_clock().now().to_msg()
-        yaw = -compute_yaw(final_x_normalized, final_x_normalized, self.MONO_CAM_IMG_SHAPE[0])
-        cv_object.yaw = float(yaw) if yaw is not None else 0.0
-        cv_object.score = float(chosen_label_score)
+        cv_object.header.stamp = self.get_clock().now()
+        cv_object.yaw = -compute_yaw(final_x_normalized, final_x_normalized, self.MONO_CAM_IMG_SHAPE[0])
+        cv_object.score = chosen_label_score
         self.pink_bins_bounding_box_pub.publish(cv_object)
 
     # called if no detections are made

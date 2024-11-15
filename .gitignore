@@ -6,15 +6,6 @@ __pycache__
 **/log/*
 **/ros2_mcap_test/*
 
-# Robot playback folders
-**/ros2_mcap_test/*
-
-# Robot playback file formats
-*.zip
-*.mcap
-*.db3
-*.bag
-
 # All playback subfolders
 **/bag_files/**
 
@@ -23,6 +14,8 @@ __pycache__
 *.mcap
 *.db3
 *.bag
+
+
 
 .config
 .env
