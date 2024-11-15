@@ -1,56 +1,66 @@
 #!/usr/bin/env python3
 
-import rospy
-import roslaunch
-import yaml
-
 import rclpy
+from rclpy.node import Node
+from rclpy.parameter import Parameter
+import yaml
+import os
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, LogInfo, IncludeLaunchDescription
+from launch_ros.actions import Node as LaunchNode
+import launch_ros
 
-import resource_retriever as rr
+CAMERA_CONFIG_PATH = 'package://cv/configs/usb_cameras.yaml'
 
-class USBCameraConnect():
-    CAMERA_CONFIG_PATH = f'package://cv/configs/usb_cameras.yaml'
+def connect_all(node):
+    # get camera specs
+    # In ROS2, we need to load the YAML file directly.
+    camera_config_path = os.path.expandvars(CAMERA_CONFIG_PATH.replace('package://', ''))
+    with open(camera_config_path, 'r') as f:
+        cameras = yaml.safe_load(f)
 
-    def connect_all(self):
-        # get camera specs
-        with open(rr.get_filename(self.CAMERA_CONFIG_PATH, use_protocol=False)) as f:
-            cameras = yaml.safe_load(f)
+    # List to hold launch nodes
+    launch_nodes = []
 
-        uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
-        roslaunch.configure_logging(uuid)
+    for camera_name, camera in cameras.items():
+        device_path = camera["device_path"]
+        topic = camera["topic"]
 
-        roslaunch_files = []
-        for camera_name in cameras:
-            # add cli args for each camera to run upon init
-            camera = cameras[camera_name]
-            device_path = camera["device_path"]
-            topic = camera["topic"]
+        # Declare node and arguments for each camera
+        launch_nodes.append(
+            LaunchNode(
+                package='cv',
+                executable='usb_camera_node',
+                name=camera_name,
+                output='screen',
+                parameters=[{'topic': topic, 'device_path': device_path, 'framerate': 10}],
+            )
+        )
 
-            cli_args = ["cv", "usb_camera.launch", f"topic:={topic}", f"device_path:={device_path}", "framerate:=10"]
-            roslaunch_file = roslaunch.rlutil.resolve_launch_arguments(cli_args)[0]
-            roslaunch_files.append((roslaunch_file, cli_args[2:]))
+    return launch_nodes
 
-        # actually init
-        parent = roslaunch.parent.ROSLaunchParent(uuid, roslaunch_files)
-        parent.start()
+def generate_launch_description():
+    # Launch description setup
+    return LaunchDescription(
+        [
+            LogInfo(msg="Launching USB Camera nodes..."),
+            *connect_all(Node('usb_camera_connect'))
+        ]
+    )
 
-        while not rospy.is_shutdown():
-            rospy.spin()
+def main():
+    rclpy.init()
 
+    # Initialize a ROS2 Node (though not used directly here, it's good practice to initialize it)
+    node = Node('usb_camera_connect')
 
-def main(args=None):
-    rclpy.init(args=args)
-    camera_connect = USBCameraConnect()
+    # Use a launch file in ROS2
+    launch_service = launch_ros.actions.LaunchService()
+    launch_service.include_launch_description(generate_launch_description())
 
-    try:
-        rclpy.spin(camera_connect)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        camera_connect.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+    launch_service.run()
 
+    rclpy.shutdown()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
