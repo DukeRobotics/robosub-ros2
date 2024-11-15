@@ -3,7 +3,7 @@
 import cv2
 
 from sensor_msgs.msg import CompressedImage
-from image_tools import ImageTools
+from cv.image_tools import ImageTools
 
 import rclpy
 from rclpy.node import Node
@@ -24,7 +24,7 @@ class USBCamera(Node):
         super().__init__(f'usb_camera_{topic}')
 
         # Read custom camera configs from launch command
-        self.topic = topic if topic else self.declare_paramter("topic","/camera/usb_camera/compressed").value
+        self.topic = topic if topic else self.declare_parameter("topic","/camera/usb_camera/compressed").value
         self.topic = f'/camera/usb/{self.topic}/compressed'
 
         self.device_path = device_path if device_path else self.declare_parameter("device_path","/dev/video_front").value
@@ -36,9 +36,13 @@ class USBCamera(Node):
             self.framerate = None
 
         # Create image publisher at given topic
-        self.publisher = self.create_publisher(self.topic, CompressedImage, 10)
+        self.publisher = self.create_publisher(CompressedImage, self.topic, 10)
 
         self.image_tools = ImageTools()
+        try:
+            self.run()
+        except:
+            pass
 
     def run(self):
         """
