@@ -10,7 +10,7 @@ import numpy as np
 from cv.utils import DetectionVisualizer, calculate_relative_pose
 from cv.image_tools import ImageTools
 import cv2
-import cv.correct
+import cv.correct as correct
 
 from custom_msgs.msg import CVObject, SonarSweepRequest, SonarSweepResponse
 from sensor_msgs.msg import CompressedImage
@@ -132,6 +132,7 @@ class DepthAISpatialDetector(Node):
 
         xout_rgb = pipeline.create(dai.node.XLinkOut)
         xout_rgb.setStreamName("rgb")
+        cam_rgb.video.link(xout_rgb.input)
 
         xin_nn_input = pipeline.create(dai.node.XLinkIn)
         xin_nn_input.setStreamName("nn_input")
@@ -250,11 +251,11 @@ class DepthAISpatialDetector(Node):
             return
 
         # Assign output queues
-        self.output_queues["rgb"] = device.getOutputQueue(name="rgb", maxSize=1, blocking=False)
+        self.output_queues["rgb"] = self.device.getOutputQueue(name="rgb", maxSize=1, blocking=False)
 
-        self.output_queues["detections"] = device.getOutputQueue(name="detections", maxSize=1, blocking=False)
+        self.output_queues["detections"] = self.device.getOutputQueue(name="detections", maxSize=1, blocking=False)
 
-        self.input_queue = device.getInputQueue(name="nn_input", maxSize=1, blocking=False)
+        self.input_queue = self.device.getInputQueue(name="nn_input", maxSize=1, blocking=False)
 
         self.connected = True  # Flag that the output queues have been initialized
 
@@ -377,8 +378,8 @@ class DepthAISpatialDetector(Node):
         """
         object_msg = CVObject()
 
-        object_msg.header.stamp.secs = self.get_clock().now().secs
-        object_msg.header.stamp.nsecs = self.get_clock().now().nsecs
+        object_msg.header.stamp.secs = self.get_clock().now().seconds_nanoseconds()[0]
+        object_msg.header.stamp.nsecs = self.get_clock().now().seconds_nanoseconds()[1]
 
         object_msg.label = label
         object_msg.score = confidence
@@ -440,10 +441,11 @@ class DepthAISpatialDetector(Node):
         self.init_model(self.running_model)
         self.init_publishers(self.running_model)
 
-        with depthai_camera_connect.connect(self.pipeline) as device:
-            self.init_queues(device)
 
-            self.detect_timer = self.create_timer(1 / LOOP_RATE, self.detect)
+        self.device = depthai_camera_connect.connect(self.pipeline)
+        self.init_queues(self.device)
+
+        self.detect_timer = self.create_timer(1 / LOOP_RATE, self.detect)
 
         return True
 
@@ -516,8 +518,9 @@ def main(args=None):
     try:
         rclpy.spin(depthai_spatial_detector)
     except KeyboardInterrupt:
-        pass
+        depthai_spatial_detector.device.close()
     finally:
+        depthai_spatial_detector.device.close()
         depthai_spatial_detector.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
