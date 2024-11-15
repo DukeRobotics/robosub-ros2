@@ -29,10 +29,14 @@ class BlueRectangleDetector(Node):
             # Process the frame to find the angle of the blue rectangle and draw the rectangle
             angle, distance, rect_info, processed_frame = self.get_angle_and_distance_of_rectangle(frame)
             if angle is not None:
-                self.angle_pub.publish(Float64(angle))
+                angle_pub = Float64()
+                angle_pub.data = float(angle)
+                self.angle_pub.publish(angle_pub)
 
             if distance is not None:
-                self.distance_pub.publish(Float64(distance))
+                distance_pub = Float64()
+                distance_pub.data = float(distance)
+                self.distance_pub.publish(distance_pub)
 
             if rect_info is not None:
                 self.rect_info_pub.publish(rect_info)
@@ -111,12 +115,11 @@ class BlueRectangleDetector(Node):
 
             # Create RectInfo message
             rect_info = RectInfo()
-            rect_info.center_x = rect_center[0]
-            rect_info.center_y = rect_center[1]
-            rect_info.width = rect[1][0]
-            rect_info.height = rect[1][1]
-            rect_info.angle = angle
-
+            rect_info.center_x = float(rect_center[0])
+            rect_info.center_y = float(rect_center[1])
+            rect_info.width = float(rect[1][0])
+            rect_info.height = float(rect[1][1])
+            rect_info.angle = float(angle)
         return angle, distance, rect_info, frame
 
 
