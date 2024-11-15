@@ -1,11 +1,12 @@
-#include "drc_pid.h"
+#include "drc_pid.hpp"
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rcpputils/asserts.hpp>
 
 #include <memory>
 
-#include "controls_types.h"
-#include "controls_utils.h"
+#include "controls_types.hpp"
+#include "controls_utils.hpp"
 
 PID::PID() {
     // Set all pid gains to zero
@@ -18,12 +19,12 @@ PID::PID() {
 PID::PID(const double &control_effort_min, const double &control_effort_max,
          const PIDDerivativeTypesEnum &derivative_type, const double &error_ramp_rate, const PIDGainsMap &pid_gains) {
     // Validate inputs
-    ROS_ASSERT_MSG(control_effort_min <= control_effort_max,
+    rcpputils::assert_true(control_effort_min <= control_effort_max,
                    "PID initialization error: Control effort min must be less than or equal to control effort max.");
-    ROS_ASSERT_MSG(ControlsUtils::pid_gains_map_valid(pid_gains),
+    rcpputils::assert_true(ControlsUtils::pid_gains_map_valid(pid_gains),
                    "PID initialization error: PID gains map is invalid.");
-    ROS_ASSERT_MSG(error_ramp_rate >= 0, "PID initialization error: Error ramp rate must be non-negative.");
-    ROS_ASSERT_MSG(ControlsUtils::value_in_pid_derivative_types_enum(derivative_type),
+    rcpputils::assert_true(error_ramp_rate >= 0, "PID initialization error: Error ramp rate must be non-negative.");
+    rcpputils::assert_true(ControlsUtils::value_in_pid_derivative_types_enum(derivative_type),
                    "PID initialization error: Derivative type is invalid.");
 
     // Set parameters
@@ -62,7 +63,7 @@ double PID::run(double error, double delta_time, PIDInfo &info, double provided_
 
     // If delta time is nonpositive, return 0 and print error
     if (delta_time <= 0) {
-        ROS_WARN("Delta time must be positive.");
+        RCLCPP_WARN(rclcpp::get_logger("contols_utils"), "Delta time must be positive.");
         return 0;
     }
 
@@ -102,7 +103,7 @@ double PID::run(double error, double delta_time, PIDInfo &info, double provided_
 
     else {
         // Print error and return 0 if derivative type is invalid
-        ROS_ERROR("PID run loop error: Derivative type is invalid.");
+        RCLCPP_ERROR(rclcpp::get_logger("contols_utils"), "PID run loop error: Derivative type is invalid.");
         return 0;
     }
 

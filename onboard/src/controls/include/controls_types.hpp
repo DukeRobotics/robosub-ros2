@@ -4,7 +4,7 @@
 #include <custom_msgs/ControlTypes.h>
 #include <custom_msgs/PIDDerivativeType.h>
 #include <custom_msgs/PIDGain.h>
-#include <ros/package.h>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
 #include <unordered_map>
 

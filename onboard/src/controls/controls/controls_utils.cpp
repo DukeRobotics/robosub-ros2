@@ -1,17 +1,18 @@
-#include "controls_utils.h"
+#include <controls_utils.hpp>
 
-#include <custom_msgs/ControlTypes.h>
-#include <custom_msgs/PIDGain.h>
-#include <custom_msgs/PIDGains.h>
-#include <custom_msgs/ThrusterAllocs.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/Twist.h>
-#include <ros/ros.h>
-#include <tf2/LinearMath/Matrix3x3.h>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2/LinearMath/Vector3.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <yaml-cpp/yaml.h>
+#include <custom_msgs/msg/control_types.hpp>
+#include <custom_msgs/msg/pid_gain.hpp>
+#include <custom_msgs/msg/pid_gains.hpp>
+#include <custom_msgs/msg/thruster_allocs.hpp>
+#include <geometry_msgs/msg/Pose.hpp>
+#include <geometry_msgs/msg/Twist.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <rcpputils/asserts.hpp>
+#include <tf2/LinearMath/Matrix3x3.hpp>
+#include <tf2/LinearMath/Quaternion.hpp>
+#include <tf2/LinearMath/Vector3.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <yaml-cpp/yaml.hpp>
 
 #include <Eigen/Dense>
 #include <algorithm>
@@ -23,7 +24,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "controls_types.h"
+#include <controls_types.hpp>
 
 std::mutex ControlsUtils::robot_config_mutex;
 
@@ -52,8 +53,8 @@ bool ControlsUtils::value_in_pid_derivative_types_enum(uint8_t value) {
     return value_in_array<uint8_t, PIDDerivativeTypesEnum>(value, PID_DERIVATIVE_TYPES, PID_DERIVATIVE_TYPES_COUNT);
 }
 
-bool ControlsUtils::quaternion_valid(const geometry_msgs::Quaternion &quaternion) {
-    tf2::Quaternion q;
+bool ControlsUtils::quaternion_valid(const tf2::LinearMath::Quaternion &quaternion) {
+    tf2::LinearMath::Quaternion q;
     tf2::fromMsg(quaternion, q);
     return std::abs(q.length() - 1.0) < 1e-6;
 }
@@ -72,25 +73,25 @@ bool ControlsUtils::pid_gains_map_valid(const PIDGainsMap &pid_gains_map) {
                        [&pid_gains_map](const PIDGainTypesEnum &gain) { return pid_gains_map.count(gain); });
 }
 
-void ControlsUtils::quaternion_msg_to_euler(const geometry_msgs::Quaternion &quaternion, double &roll, double &pitch,
+void ControlsUtils::quaternion_msg_to_euler(const tf2::LinearMath::Quaternion &quaternion, double &roll, double &pitch,
                                             double &yaw) {
     // Get roll, pitch, yaw from quaternion
     // The order of rotation is roll, pitch, yaw
     // Roll, pitch, yaw are in radians with range [-pi, pi]
-    tf2::Quaternion q;
+    tf2::LinearMath::Quaternion q;
     tf2::fromMsg(quaternion, q);
-    tf2::Matrix3x3 m(q);
+    tf2::LinearMath::Matrix3x3 m(q);
     m.getRPY(roll, pitch, yaw);
 }
 
-void ControlsUtils::pose_to_twist(const geometry_msgs::Pose &pose, geometry_msgs::Twist &twist) {
+void ControlsUtils::pose_to_twist(const geometry_msgs::msg::Pose &pose, geometry_msgs::msg::Twist &twist) {
     twist.linear.x = pose.position.x;
     twist.linear.y = pose.position.y;
     twist.linear.z = pose.position.z;
     quaternion_msg_to_euler(pose.orientation, twist.angular.x, twist.angular.y, twist.angular.z);
 }
 
-void ControlsUtils::twist_to_map(const geometry_msgs::Twist &twist, AxesMap<double> &map) {
+void ControlsUtils::twist_to_map(const geometry_msgs::msg::Twist &twist, AxesMap<double> &map) {
     map[AxesEnum::X] = twist.linear.x;
     map[AxesEnum::Y] = twist.linear.y;
     map[AxesEnum::Z] = twist.linear.z;
@@ -99,7 +100,7 @@ void ControlsUtils::twist_to_map(const geometry_msgs::Twist &twist, AxesMap<doub
     map[AxesEnum::YAW] = twist.angular.z;
 }
 
-void ControlsUtils::map_to_twist(const AxesMap<double> &map, geometry_msgs::Twist &twist) {
+void ControlsUtils::map_to_twist(const AxesMap<double> &map, geometry_msgs::msg::Twist &twist) {
     twist.linear.x = map.at(AxesEnum::X);
     twist.linear.y = map.at(AxesEnum::Y);
     twist.linear.z = map.at(AxesEnum::Z);
@@ -114,7 +115,7 @@ void ControlsUtils::eigen_vector_to_thruster_allocs_msg(const Eigen::VectorXd &v
     for (int i = 0; i < vector.rows(); ++i) thruster_allocs.allocs.push_back(vector(i));
 }
 
-void ControlsUtils::eigen_vector_to_twist(const Eigen::VectorXd &vector, geometry_msgs::Twist &twist) {
+void ControlsUtils::eigen_vector_to_twist(const Eigen::VectorXd &vector, geometry_msgs::msg::Twist &twist) {
     twist.linear.x = vector(0);
     twist.linear.y = vector(1);
     twist.linear.z = vector(2);
@@ -160,7 +161,7 @@ void ControlsUtils::map_to_control_types(const AxesMap<ControlTypesEnum> &map,
     control_types.yaw = map.at(AxesEnum::YAW);
 }
 
-void ControlsUtils::tf_linear_vector_to_map(const tf2::Vector3 &vector, AxesMap<double> &map) {
+void ControlsUtils::tf_linear_vector_to_map(const tf2::LinearMath::Vector3 &vector, AxesMap<double> &map) {
     map[AxesEnum::X] = vector.getX();
     map[AxesEnum::Y] = vector.getY();
     map[AxesEnum::Z] = vector.getZ();
@@ -193,7 +194,9 @@ void ControlsUtils::pid_terms_struct_to_msg(const PIDTerms &terms, custom_msgs::
 }
 
 void ControlsUtils::pid_info_struct_to_msg(const PIDInfo &pid_info, custom_msgs::PIDInfo &pid_info_msg) {
-    pid_info_msg.terms = custom_msgs::PIDTerms();
+    pid_info_msg.terms = custom_msgs::msg::PIDTerms();
+
+    // pid_info_msg.terms = custom_msgs::PIDTerms();
     pid_terms_struct_to_msg(pid_info.terms, pid_info_msg.terms);
 
     pid_info_msg.filtered_error = pid_info.filtered_error;
@@ -232,7 +235,7 @@ void ControlsUtils::read_matrix_from_csv(const std::string &file_path, Eigen::Ma
     // Open the CSV file
     std::ifstream file(file_path);
 
-    ROS_ASSERT_MSG(file.is_open(), "Could not open CSV file. '%s'", file_path.c_str());
+    rcpputils::assert_true(file.is_open(), "Could not open CSV file. '%s'", file_path.c_str());
 
     // Temporarily store matrix as vector of vectors
     std::vector<std::vector<double>> data;
@@ -272,19 +275,19 @@ void ControlsUtils::read_matrix_from_csv(const std::string &file_path, Eigen::Ma
             iss >> comma;
 
             // Ensure every value has comma succeeding it (unless it is the last value in the row)
-            ROS_ASSERT_MSG((iss.good() && comma == ',') || iss.eof(), "File is not in valid CSV format. '%s'",
+            rcpputils::assert_true((iss.good() && comma == ',') || iss.eof(), "File is not in valid CSV format. '%s'",
                            file_path.c_str());
         }
 
         // Ensure the file contains only numeric values
         // If the file contains non-numeric values, the loop will have exited before the line was read completely
-        ROS_ASSERT_MSG(iss.eof(), "CSV file contains non-numeric values. '%s'", file_path.c_str());
+        rcpputils::assert_true(iss.eof(), "CSV file contains non-numeric values. '%s'", file_path.c_str());
 
         // Ensure all rows have the same number of columns
         if (cols == -1)
             cols = row.size();
         else
-            ROS_ASSERT_MSG(row.size() == cols, "CSV file must have same number of columns in all rows. '%s'",
+            rcpputils::assert_true(row.size() == cols, "CSV file must have same number of columns in all rows. '%s'",
                            file_path.c_str());
 
         // Add the row to the temporary matrix
@@ -298,8 +301,8 @@ void ControlsUtils::read_matrix_from_csv(const std::string &file_path, Eigen::Ma
     int rows = data.size();
 
     // Ensure the matrix has at least one row and one column
-    ROS_ASSERT_MSG(cols >= 1, "CSV file must have at least one column. '%s'", file_path.c_str());
-    ROS_ASSERT_MSG(rows >= 1, "CSV file must have at least one row. '%s'", file_path.c_str());
+    rcpputils::assert_true(cols >= 1, "CSV file must have at least one column. '%s'", file_path.c_str());
+    rcpputils::assert_true(rows >= 1, "CSV file must have at least one row. '%s'", file_path.c_str());
 
     // Initialize the Eigen matrix
     matrix.resize(rows, cols);
@@ -316,7 +319,7 @@ void ControlsUtils::read_robot_config(const bool &cascaded_pid,
                                       LoopsMap<AxesMap<double>> &loops_axes_error_ramp_rates,
                                       LoopsMap<AxesMap<PIDGainsMap>> &loops_axes_pid_gains,
                                       AxesMap<double> &desired_power_min, AxesMap<double> &desired_power_max,
-                                      tf2::Vector3 &static_power_global, double &power_scale_factor,
+                                      tf2::LinearMath::Vector3 &static_power_global, double &power_scale_factor,
                                       std::string &wrench_matrix_file_path, std::string &wrench_matrix_pinv_file_path) {
     try {
         // Lock the mutex to prevent other threads from accessing the robot config file while it is being read
@@ -376,8 +379,8 @@ void ControlsUtils::read_robot_config(const bool &cascaded_pid,
         wrench_matrix_file_path = CONTROLS_PACKAGE_PATH + "/" + wrench_matrix_file_path;
         wrench_matrix_pinv_file_path = CONTROLS_PACKAGE_PATH + "/" + wrench_matrix_pinv_file_path;
     } catch (const std::exception &e) {
-        ROS_ERROR("Exception: %s", e.what());
-        ROS_ASSERT_MSG(false, "Could not read robot config file. Make sure it is in the correct format. '%s'",
+        RCLCPP_ERROR(rclcpp::get_logger("contols_utils"), "Exception: %s", e.what());
+        rcpputils::assert_true(false, "Could not read robot config file. Make sure it is in the correct format. '%s'",
                        ROBOT_CONFIG_FILE_PATH.c_str());
     }
 }
@@ -404,8 +407,8 @@ void ControlsUtils::update_robot_config(std::function<void(YAML::Node &)> update
 
         fout.close();
     } catch (const std::exception &e) {
-        ROS_ERROR("Exception: %s", e.what());
-        ROS_ASSERT_MSG(false, "Could not update %s in robot config file. Make sure it is in the correct format. '%s'",
+        RCLCPP_ERROR(rclcpp::get_logger("contols_utils"), "Exception: %s", e.what());
+        rcpputils::assert_true(false, "Could not update %s in robot config file. Make sure it is in the correct format. '%s'",
                        update_name.c_str(), ROBOT_CONFIG_FILE_PATH.c_str());
     }
 }
@@ -432,7 +435,7 @@ void ControlsUtils::update_robot_config_pid_gains(const LoopsMap<AxesMap<PIDGain
     update_robot_config(update_function, "PID gains");
 }
 
-void ControlsUtils::update_robot_config_static_power_global(const tf2::Vector3 &static_power_global) {
+void ControlsUtils::update_robot_config_static_power_global(const tf2::LinearMath::Vector3 &static_power_global) {
     std::function<void(YAML::Node &)> update_function = [&static_power_global](YAML::Node &config) {
         YAML::Node static_power_global_node = config["static_power_global"];
         static_power_global_node[AXES_NAMES.at(AxesEnum::X)] = static_power_global.getX();

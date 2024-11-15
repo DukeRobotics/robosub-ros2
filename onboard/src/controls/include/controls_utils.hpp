@@ -12,7 +12,7 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Vector3.h>
-#include <ros/package.h>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <tf2/LinearMath/Vector3.h>
 
 #include <Eigen/Dense>

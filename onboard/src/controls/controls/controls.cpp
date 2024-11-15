@@ -1,30 +1,30 @@
-#include "controls.h"
-
-#include <custom_msgs/ControlTypes.h>
-#include <custom_msgs/PIDAxesInfo.h>
-#include <custom_msgs/PIDGain.h>
-#include <custom_msgs/PIDGains.h>
-#include <custom_msgs/SetControlTypes.h>
-#include <custom_msgs/SetPIDGains.h>
-#include <custom_msgs/SetPowerScaleFactor.h>
-#include <custom_msgs/SetStaticPower.h>
-#include <custom_msgs/ThrusterAllocs.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/TransformStamped.h>
-#include <geometry_msgs/Twist.h>
-#include <geometry_msgs/Vector3.h>
-#include <geometry_msgs/Vector3Stamped.h>
-#include <nav_msgs/Odometry.h>
-#include <ros/ros.h>
-#include <std_msgs/Bool.h>
-#include <std_msgs/Float64.h>
-#include <std_srvs/SetBool.h>
-#include <std_srvs/Trigger.h>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2/LinearMath/Vector3.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <tf2_ros/transform_listener.h>
+#include <controls.hpp>
+#include <custom_msgs/ControlTypes.hpp>
+#include <custom_msgs/PIDAxesInfo.hpp>
+#include <custom_msgs/PIDGain.hpp>
+#include <custom_msgs/PIDGains.hpp>
+#include <custom_msgs/SetControlTypes.hpp>
+#include <custom_msgs/SetPIDGains.hpp>
+#include <custom_msgs/SetPowerScaleFactor.hpp>
+#include <custom_msgs/SetStaticPower.hpp>
+#include <custom_msgs/ThrusterAllocs.hpp>
+#include <geometry_msgs/msg/Pose.hpp>
+#include <geometry_msgs/msg/PoseStamped.hpp>
+#include <geometry_msgs/msg/TransformStamped.hpp>
+#include <geometry_msgs/msg/Twist.hpp>
+#include <geometry_msgs/msg/Vector3.hpp>
+#include <geometry_msgs/msg/Vector3Stamped.hpp>
+#include <nav_msgs/Odometry.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <rcpputils/asserts.hpp>
+#include <std_msgs/Bool.hpp>
+#include <std_msgs/Float64.hpp>
+#include <std_srvs/SetBool.hpp>
+#include <std_srvs/Trigger.hpp>
+#include <tf2/LinearMath/Quaternion.hpp>
+#include <tf2/LinearMath/Vector3.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2_ros/transform_listener.hpp>
 
 #include <Eigen/Dense>
 #include <array>
@@ -32,19 +32,25 @@
 #include <string>
 #include <unordered_map>
 
-#include "controls_types.h"
-#include "controls_utils.h"
-#include "pid_manager.h"
-#include "thruster_allocator.h"
+#include "controls_types.hpp"
+#include "controls_utils.hpp"
+#include "pid_manager.hpp"
+#include "thruster_allocator.hpp"
 
 const int Controls::THRUSTER_ALLOCS_RATE = 20;
 
-Controls::Controls(int argc, char **argv, ros::NodeHandle &nh, std::unique_ptr<tf2_ros::Buffer> tf_buffer) {
+Controls::Controls() : Node("controls"), tf_buffer_(std::make_unique<tf2_ros::Buffer>(this->get_clock())),
+          tf_listener_(std::make_shared<tf2_ros::TransformListener>(*tf_buffer_)) {
+
     // Get parameters from launch file
-    ros::param::param("~sim", sim, false);
-    ros::param::param("~enable_position_pid", enable_position_pid, false);
-    ros::param::param("~enable_velocity_pid", enable_velocity_pid, false);
-    ros::param::param("~cascaded_pid", cascaded_pid, false);
+    this->declare_parameter<bool>("sim", false);
+    this->get_parameter("sim", sim);
+    this->declare_parameter<bool>("enable_position_pid", false);
+    this->get_parameter("enable_position_pid", enable_position_pid);
+    this->declare_parameter<bool>("enable_velocity_pid", false);
+    this->get_parameter("enable_velocity_pid", enable_velocity_pid);
+    this->declare_parameter<bool>("cascaded_pid", false);
+    this->get_parameter("cascaded_pid", cascaded_pid);
 
     // Initialize controls to be disabled
     controls_enabled = false;
@@ -77,7 +83,7 @@ Controls::Controls(int argc, char **argv, ros::NodeHandle &nh, std::unique_ptr<t
 
     // Ensure that desired power min is less than or equal to desired power max for each axis
     for (const AxesEnum &axis : AXES)
-        ROS_ASSERT_MSG(
+        rcpputils::assert_true(
             desired_power_min.at(axis) <= desired_power_max.at(axis),
             "Invalid desired power min and max for axis %s. Desired power min must be less than or equal to max.",
             AXES_NAMES.at(axis).c_str());
@@ -88,7 +94,7 @@ Controls::Controls(int argc, char **argv, ros::NodeHandle &nh, std::unique_ptr<t
                                         loops_axes_control_effort_maxes.at(loop), loops_axes_derivative_types.at(loop),
                                         loops_axes_error_ramp_rates.at(loop), loops_axes_pid_gains.at(loop));
     // Initialize static power local to zero
-    static_power_local = tf2::Vector3(0, 0, 0);
+    static_power_local = tf2::LinearMath::Vector3(0, 0, 0);
 
     // Initialize axes maps to zero
     ControlsUtils::populate_axes_map<double>(0, position_pid_outputs);
@@ -121,28 +127,28 @@ Controls::Controls(int argc, char **argv, ros::NodeHandle &nh, std::unique_ptr<t
         nh.advertise<custom_msgs::ThrusterAllocs>("controls/constrained_thruster_allocs", 1);
     unconstrained_thruster_allocs_pub =
         nh.advertise<custom_msgs::ThrusterAllocs>("controls/unconstrained_thruster_allocs", 1);
-    base_power_pub = nh.advertise<geometry_msgs::Twist>("controls/base_power", 1);
-    set_power_unscaled_pub = nh.advertise<geometry_msgs::Twist>("controls/set_power_unscaled", 1);
-    set_power_pub = nh.advertise<geometry_msgs::Twist>("controls/set_power", 1);
-    actual_power_pub = nh.advertise<geometry_msgs::Twist>("controls/actual_power", 1);
-    power_disparity_pub = nh.advertise<geometry_msgs::Twist>("controls/power_disparity", 1);
-    power_disparity_norm_pub = nh.advertise<std_msgs::Float64>("controls/power_disparity_norm", 1);
+    base_power_pub = nh.advertise<geometry_msgs::msg::Twist>("controls/base_power", 1);
+    set_power_unscaled_pub = nh.advertise<geometry_msgs::msg::Twist>("controls/set_power_unscaled", 1);
+    set_power_pub = nh.advertise<geometry_msgs::msg::Twist>("controls/set_power", 1);
+    actual_power_pub = nh.advertise<geometry_msgs::msg::Twist>("controls/actual_power", 1);
+    power_disparity_pub = nh.advertise<geometry_msgs::msg::Twist>("controls/power_disparity", 1);
+    power_disparity_norm_pub = nh.advertise<std_msgs::msg::Float64>("controls/power_disparity_norm", 1);
     pid_gains_pub = nh.advertise<custom_msgs::PIDGains>("controls/pid_gains", 1);
     control_types_pub = nh.advertise<custom_msgs::ControlTypes>("controls/control_types", 1);
-    position_efforts_pub = nh.advertise<geometry_msgs::Twist>("controls/position_efforts", 1);
-    velocity_efforts_pub = nh.advertise<geometry_msgs::Twist>("controls/velocity_efforts", 1);
-    position_error_pub = nh.advertise<geometry_msgs::Twist>("controls/position_error", 1);
-    velocity_error_pub = nh.advertise<geometry_msgs::Twist>("controls/velocity_error", 1);
+    position_efforts_pub = nh.advertise<geometry_msgs::msg::Twist>("controls/position_efforts", 1);
+    velocity_efforts_pub = nh.advertise<geometry_msgs::msg::Twist>("controls/velocity_efforts", 1);
+    position_error_pub = nh.advertise<geometry_msgs::msg::Twist>("controls/position_error", 1);
+    velocity_error_pub = nh.advertise<geometry_msgs::msg::Twist>("controls/velocity_error", 1);
     position_pid_infos_pub = nh.advertise<custom_msgs::PIDAxesInfo>("controls/position_pid_infos", 1);
     velocity_pid_infos_pub = nh.advertise<custom_msgs::PIDAxesInfo>("controls/velocity_pid_infos", 1);
     status_pub = nh.advertise<std_msgs::Bool>("controls/status", 1);
     delta_time_pub = nh.advertise<std_msgs::Float64>("controls/delta_time", 1);
-    static_power_global_pub = nh.advertise<geometry_msgs::Vector3>("controls/static_power_global", 1);
-    static_power_local_pub = nh.advertise<geometry_msgs::Vector3>("controls/static_power_local", 1);
+    static_power_global_pub = nh.advertise<geometry_msgs::msg::Vector3>("controls/static_power_global", 1);
+    static_power_local_pub = nh.advertise<geometry_msgs::msg::Vector3>("controls/static_power_local", 1);
     power_scale_factor_pub = nh.advertise<std_msgs::Float64>("controls/power_scale_factor", 1);
 }
 
-void Controls::desired_position_callback(const geometry_msgs::Pose msg) {
+void Controls::desired_position_callback(const geometry_msgs::msg::Pose msg) {
     // Make sure desired position orientation quaternion has length 1
     if (ControlsUtils::quaternion_valid(msg.orientation))
         desired_position = msg;
@@ -150,9 +156,9 @@ void Controls::desired_position_callback(const geometry_msgs::Pose msg) {
         ROS_WARN("Invalid desired position orientation. Quaternion must have length 1.");
 }
 
-void Controls::desired_velocity_callback(const geometry_msgs::Twist msg) { desired_velocity = msg; }
+void Controls::desired_velocity_callback(const geometry_msgs::msg::Twist msg) { desired_velocity = msg; }
 
-void Controls::desired_power_callback(const geometry_msgs::Twist msg) {
+void Controls::desired_power_callback(const geometry_msgs::msg::Twist msg) {
     AxesMap<double> new_desired_power;
     ControlsUtils::twist_to_map(msg, new_desired_power);
 
@@ -178,7 +184,7 @@ void Controls::state_callback(const nav_msgs::Odometry msg) {
 
     // Get current time, compute delta time, and update last state message time
     // If last state message time is zero, then this is the first state message received, so delta time is zero
-    ros::Time current_time = ros::Time::now();
+    rclcpp::Time current_time = rclcpp::Clock.now();
     double delta_time = last_state_msg_time.is_zero() ? 0 : (current_time - last_state_msg_time).toSec();
     last_state_msg_time = current_time;
 
@@ -192,7 +198,7 @@ void Controls::state_callback(const nav_msgs::Odometry msg) {
     if (delta_time <= 0.0) return;
 
     // Get transform from odom to base_link
-    geometry_msgs::TransformStamped transformStamped;
+    geometry_msgs::msg::TransformStamped transformStamped;
     try {
         transformStamped = tf_buffer->lookupTransform("base_link", "odom", ros::Time(0));
     } catch (tf2::TransformException &ex) {
@@ -201,14 +207,14 @@ void Controls::state_callback(const nav_msgs::Odometry msg) {
     }
 
     // Compute position error
-    geometry_msgs::PoseStamped desired_position_stamped;
+    geometry_msgs::msg::PoseStamped desired_position_stamped;
     desired_position_stamped.pose = desired_position;
     desired_position_stamped.header.frame_id = "odom";
-    geometry_msgs::PoseStamped position_error;
+    geometry_msgs::msg::PoseStamped position_error;
     tf2::doTransform(desired_position_stamped, position_error, transformStamped);
 
     // Convert position error pose to twist
-    geometry_msgs::Twist position_error_msg;
+    geometry_msgs::msg::Twist position_error_msg;
     ControlsUtils::pose_to_twist(position_error.pose, position_error_msg);
 
     // Publish position error message
@@ -238,7 +244,7 @@ void Controls::state_callback(const nav_msgs::Odometry msg) {
                       position_pid_provided_derivatives);
 
     // Publish position control efforts
-    geometry_msgs::Twist position_efforts_msg;
+    geometry_msgs::msg::Twist position_efforts_msg;
     ControlsUtils::map_to_twist(position_pid_outputs, position_efforts_msg);
     position_efforts_pub.publish(position_efforts_msg);
 
@@ -263,7 +269,7 @@ void Controls::state_callback(const nav_msgs::Odometry msg) {
     }
 
     // Publish velocity error
-    geometry_msgs::Twist velocity_error;
+    geometry_msgs::msg::Twist velocity_error;
     ControlsUtils::map_to_twist(velocity_error_map, velocity_error);
     velocity_error_pub.publish(velocity_error);
 
@@ -279,7 +285,7 @@ void Controls::state_callback(const nav_msgs::Odometry msg) {
                       velocity_pid_provided_derivatives);
 
     // Publish velocity control efforts
-    geometry_msgs::Twist velocity_efforts_msg;
+    geometry_msgs::msg::Twist velocity_efforts_msg;
     ControlsUtils::map_to_twist(velocity_pid_outputs, velocity_efforts_msg);
     velocity_efforts_pub.publish(velocity_efforts_msg);
 
@@ -295,12 +301,12 @@ void Controls::state_callback(const nav_msgs::Odometry msg) {
     // in the base_link frame, that points in the same direction as static_power_global in the odom frame. Thus, we
     // are performing the inverse of the operation described above.
     // static_power_global * state.pose.pose.orientation.inverse() = static_power_local
-    tf2::Quaternion orientation_tf2;
+    tf2::LinearMath::Quaternion orientation_tf2;
     tf2::fromMsg(state.pose.pose.orientation, orientation_tf2);
     static_power_local = quatRotate(orientation_tf2.inverse(), static_power_global);
 
     // Publish static power local
-    geometry_msgs::Vector3 static_power_local_msg = tf2::toMsg(static_power_local);
+    geometry_msgs::msg::Vector3 static_power_local_msg = tf2::toMsg(static_power_local);
     static_power_local_pub.publish(static_power_local_msg);
 }
 
@@ -372,22 +378,30 @@ bool Controls::set_static_power_global_callback(custom_msgs::SetStaticPower::Req
     return true;
 }
 
-bool Controls::set_power_scale_factor_callback(custom_msgs::SetPowerScaleFactor::Request &req,
-                                               custom_msgs::SetPowerScaleFactor::Response &res) {
-    power_scale_factor = req.power_scale_factor;
+bool Controls::set_power_scale_factor_callback(
+    const std::shared_ptr<custom_msgs::srv::SetPowerScaleFactor::Request> req,
+    std::shared_ptr<custom_msgs::srv::SetPowerScaleFactor::Response> res)
+{
+    power_scale_factor = req->power_scale_factor;
 
     // Update power scale factor in robot config file
     // Throws an exception if file could not be updated successfully; will shut down the node
-    ControlsUtils::update_robot_config_power_scale_factor(power_scale_factor);
-
-    res.success = true;
-    res.message = "Updated power scale factor successfully.";
-
-    return true;
+    try {
+        ControlsUtils::update_robot_config_power_scale_factor(power_scale_factor);
+        res->success = true;
+        res->message = "Updated power scale factor successfully.";
+        return true;
+    }
+    catch (const std::exception& e) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to update power scale factor: %s", e.what());
+        res->success = false;
+        res->message = "Failed to update power scale factor in config file";
+        return false;
+    }
 }
 
 void Controls::run() {
-    ros::Rate rate(THRUSTER_ALLOCS_RATE);
+    rclcpp::Rate rate(THRUSTER_ALLOCS_RATE);
 
     Eigen::VectorXd base_power(AXES_COUNT);
     Eigen::VectorXd set_power_unscaled(AXES_COUNT);
@@ -401,20 +415,20 @@ void Controls::run() {
 
     custom_msgs::ThrusterAllocs constrained_allocs_msg;
     custom_msgs::ThrusterAllocs unconstrained_allocs_msg;
-    geometry_msgs::Twist base_power_msg;
-    geometry_msgs::Twist set_power_unscaled_msg;
-    geometry_msgs::Twist set_power_msg;
-    geometry_msgs::Twist actual_power_msg;
-    geometry_msgs::Twist power_disparity_msg;
+    geometry_msgs::msg::Twist base_power_msg;
+    geometry_msgs::msg::Twist set_power_unscaled_msg;
+    geometry_msgs::msg::Twist set_power_msg;
+    geometry_msgs::msg::Twist actual_power_msg;
+    geometry_msgs::msg::Twist power_disparity_msg;
     std_msgs::Float64 power_disparity_norm_msg;
     custom_msgs::ControlTypes control_types_msg;
     std_msgs::Bool status_msg;
     custom_msgs::PIDGains pid_gains_msg;
-    geometry_msgs::Vector3 static_power_global_msg;
+    geometry_msgs::msg::Vector3 static_power_global_msg;
     std_msgs::Float64 power_scale_factor_msg;
 
     // Loop while ROS node is running
-    while (ros::ok()) {
+    while (rclcpp::ok()) {
         // Get set power based on control types
         for (int i = 0; i < AXES_COUNT; i++) {
             switch (control_types.at(AXES[i])) {
@@ -507,19 +521,25 @@ void Controls::run() {
 }
 
 int main(int argc, char **argv) {
-    // Initialize ROS node
-    ros::init(argc, argv, "controls");
+    // Initialize ROS2
+    rclcpp::init(argc, argv);
 
-    ros::NodeHandle nh;
+    // Create the controls node
+    // In ROS2, the node creation, tf buffer, and listener are handled in the Controls constructor
+    auto node = std::make_shared<Controls>();
 
-    // Create transform buffer and listener
-    // Listener will listen for transforms and store them in the buffer
-    std::unique_ptr<tf2_ros::Buffer> tf_buffer(new tf2_ros::Buffer());
-    std::unique_ptr<tf2_ros::TransformListener> tf_listener(new tf2_ros::TransformListener(*tf_buffer));
+    // Create the executor
+    // MultiThreadedExecutor is recommended for nodes with multiple callbacks and timers
+    rclcpp::executors::MultiThreadedExecutor executor;
 
-    // Instantiate controls object and run
-    Controls controls = Controls(argc, argv, nh, std::move(tf_buffer));
-    controls.run();
+    // Add the node to the executor
+    executor.add_node(node);
+
+    // Spin the executor - this replaces the controls.run() call
+    executor.spin();
+
+    // Cleanup
+    rclcpp::shutdown();
 
     return 0;
 }
