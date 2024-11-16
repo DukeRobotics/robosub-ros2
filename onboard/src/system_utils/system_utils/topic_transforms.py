@@ -84,6 +84,8 @@ class TopicTransforms(Node):
                                                        data.subscriber_queue_size)
             data.publisher = self.create_publisher(data.output_type, data.output_topic, data.publisher_queue_size)
 
+        self.get_logger().info("Topic transforms node started.")
+
     # Callback function to transform input message and publish output message
     # First, transform input message using input_type_conversion function, input the result to output_type_conversion,
     # and publish the final result

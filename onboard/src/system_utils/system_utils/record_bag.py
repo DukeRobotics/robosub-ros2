@@ -113,8 +113,9 @@ class RecordBag(Node):
         current_time = Clock().now()
         if (current_time - self.last_msg_time) > self.TIMEOUT_DURATION:
             if self.process is not None:
-                self.get_logger().info(f"No voltage messages received for {self.TIMEOUT_DURATION.nanoseconds / 1e9} seconds. "
-                              f"Stopping recording.")
+                self.get_logger().info(f"No voltage messages received for "
+                                       f"{self.TIMEOUT_DURATION.nanoseconds / 1e9} seconds. "
+                                       "Stopping recording.")
                 self.stop_recording()
                 self.shutdown_node()
 
