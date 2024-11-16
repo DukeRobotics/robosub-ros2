@@ -14,11 +14,11 @@ find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 
-add_executable(controls onboard/src/controls/controls/controls.cpp)
-add_executable(pid_manager onboard/src/controls/controls/pid_manager.cpp)
-add_executable(drc_pid onboard/src/controls/controls/drc_pid.cpp)
-add_executable(controls_utils onboard/src/controls/controls/controls_utils.cpp)
-add_executable(thruster_allocator onboard/src/controls/controls/thruster_allocator.cpp)
+add_executable(controls src/controls.cpp)
+add_executable(pid_manager src/pid_manager.cpp)
+add_executable(drc_pid src/drc_pid.cpp)
+add_executable(controls_utils src/controls_utils.cpp)
+add_executable(thruster_allocator src/thruster_allocator.cpp)
 
 ament_target_dependencies(controls
   rclcpp
