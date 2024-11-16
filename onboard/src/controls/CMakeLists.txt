@@ -20,6 +20,13 @@ add_executable(drc_pid src/drc_pid.cpp)
 add_executable(controls_utils src/controls_utils.cpp)
 add_executable(thruster_allocator src/thruster_allocator.cpp)
 
+set(CONTROLS_INCLUDE_DIR ~/dev/robosub-ros2/onboard/src/controls/include)
+target_include_directories(controls PUBLIC ${CONTROLS_INCLUDE_DIR})
+target_include_directories(controls_utils PUBLIC ${CONTROLS_INCLUDE_DIR})
+target_include_directories(drc_pid PUBLIC ${CONTROLS_INCLUDE_DIR})
+target_include_directories(pid_manager PUBLIC ${CONTROLS_INCLUDE_DIR})
+target_include_directories(thruster_allocator PUBLIC ${CONTROLS_INCLUDE_DIR})
+
 ament_target_dependencies(controls
   rclcpp
   custom_msgs

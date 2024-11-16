@@ -1,0 +1,29 @@
+rosbag2_bagfile_information:
+  compression_format: ''
+  compression_mode: ''
+  custom_data: {}
+  duration:
+    nanoseconds: 145600319879
+  files:
+  - duration:
+      nanoseconds: 145600319879
+    message_count: 4369
+    path: ros2_mcap_test.db3
+    starting_time:
+      nanoseconds_since_epoch: 1718324105760446243
+  message_count: 4369
+  relative_file_paths:
+  - ros2_mcap_test.db3
+  ros_distro: rosbags
+  starting_time:
+    nanoseconds_since_epoch: 1718324105760446243
+  storage_identifier: sqlite3
+  topics_with_message_count:
+  - message_count: 4369
+    topic_metadata:
+      name: /camera/usb_camera/compressed
+      offered_qos_profiles: ''
+      serialization_format: cdr
+      type: sensor_msgs/msg/CompressedImage
+      type_description_hash: RIHS01_15640771531571185e2efc8a100baf923961a4d15d5569652e6cb6691e8e371a
+  version: 8

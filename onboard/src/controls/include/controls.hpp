@@ -24,10 +24,10 @@
 #include <string>
 #include <unordered_map>
 
-#include "controls_types.h"
-#include "controls_utils.h"
-#include "pid_manager.h"
-#include "thruster_allocator.h"
+#include "controls_types.hpp"
+#include "controls_utils.hpp"
+#include "pid_manager.hpp"
+#include "thruster_allocator.hpp"
 
 class Controls {
    private:

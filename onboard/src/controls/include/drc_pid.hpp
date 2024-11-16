@@ -9,8 +9,8 @@
 #include <array>
 #include <memory>
 
-#include "controls_types.h"
-#include "controls_utils.h"
+#include "controls_types.hpp"
+#include "controls_utils.hpp"
 
 class PID {
    private:

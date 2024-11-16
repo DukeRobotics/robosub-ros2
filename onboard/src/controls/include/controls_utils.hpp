@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "controls_types.h"
+#include "controls_types.hpp"
 
 namespace ControlsUtils {
 // Mutex for robot config file.
