@@ -19,7 +19,7 @@ class PathMarkerDetector(Node):
     def __init__(self):
         super().__init__('path_marker_detector')
         self.bridge = CvBridge()
-        self.image_sub = self.create_publisher(CompressedImage, "/camera/usb/bottom/compressed", self.image_callback, 10)
+        self.image_sub = self.create_subscription(CompressedImage, "/camera/usb/bottom/compressed", self.image_callback, 10)
 
         # define information published for path marker
         self.path_marker_hsv_filtered_pub = self.create_publisher(Image, "/cv/bottom/path_marker/hsv_filtered", 10)
