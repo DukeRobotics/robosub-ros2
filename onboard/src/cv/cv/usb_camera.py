@@ -8,6 +8,8 @@ from cv.image_tools import ImageTools
 import rclpy
 from rclpy.node import Node
 
+import threading
+
 class USBCamera(Node):
     """
     Object to stream any camera at /dev/video* and publishes the image feed at the device framerate
@@ -25,7 +27,6 @@ class USBCamera(Node):
 
         # Read custom camera configs from launch command
         self.topic = topic if topic else self.declare_parameter("topic","/camera/usb_camera/compressed").value
-        self.topic = f'/camera/usb/{self.topic}/compressed'
 
         self.device_path = device_path if device_path else self.declare_parameter("device_path","/dev/video_front").value
 
@@ -60,14 +61,20 @@ class USBCamera(Node):
             # Try connecting to the camera unless a connection is refused
             try:
                 # Connect to camera at device_path
-                cap = cv2.VideoCapture(self.device_path)
+                self.get_logger().info("connecting to camera at "+ str(self.device_path))
+                cap = cv2.VideoCapture(self.device_path, apiPreference=cv2.CAP_V4L2)
+                self.get_logger().info("autodetected " + str(cap.getBackendName()))
+                
                 # Read first frame
+
                 success, img = cap.read()
+                self.get_logger().info("first frame read " + str(success))
 
                 # Set publisher rate (framerate) to custom framerate if specified, otherwise, set to default
                 loop_rate = None
                 if self.framerate is None:
                     loop_rate = self.create_rate(cap.get(cv2.CAP_PROP_FPS))
+                    self.framerate = cap.get(cv2.CAP_PROP_FPS)
                 else:
                     loop_rate = self.create_rate(self.framerate)
 
@@ -100,7 +107,7 @@ class USBCamera(Node):
                 # Read next image
                 success, img = cap.read()
                 # Sleep loop to maintain frame rate
-                loop_rate.sleep()
+                rclpy.spin_once(self,timeout_sec=self.framerate)
         else:
             self.get_logger().error(f"{total_tries} attempts were made to connect to the USB camera. "
                          f"The camera was not found at device_path {self.device_path}. All attempts failed.")
