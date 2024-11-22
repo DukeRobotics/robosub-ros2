@@ -26,5 +26,11 @@ if [ "$NO_GIT" != "true" ]; then
     GIT_ALLOWED_SIGNERS=$(cat "$GIT_ALLOWED_SIGNERS_PATH")
 fi
 
-# Build the Docker image with the SSH keys passed as build arguments
-docker compose -f docker-compose-with-git.yml up -d --build
+# If $ROBOT_NAME is set, use docker-compose-robot.yml
+if [ -n "$ROBOT_NAME" ]; then
+    # Build the Docker image with the SSH keys passed as build arguments
+    docker compose -f docker-compose-robot.yml up -d --build
+else
+    # Build the Docker image with the SSH keys passed as build arguments
+    docker compose -f docker-compose-with-git.yml up -d --build
+fi
