@@ -45,7 +45,8 @@ elif [ -n "$1" ]; then
 else
     # Build all packages in both core and onboard workspaces
     cd "$CORE_WS"
-    colcon build --symlink-install --executor sequential
+    colcon build --executor sequential
+    source install/setup.bash
     cd "$ONBOARD_WS"
     colcon build --symlink-install --executor sequential
     source install/setup.bash
