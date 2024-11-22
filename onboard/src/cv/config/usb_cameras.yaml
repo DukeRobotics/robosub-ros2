@@ -1,6 +1,6 @@
 front:
   device_path: "/dev/video_front"
-  topic: "front"
+  topic: "/camera/usb/bottom/compressed"
   focal_length: 2.65
   sensor_size:
     width: 3.054
@@ -11,7 +11,7 @@ front:
 
 bottom:
   device_path: "/dev/video_bottom"
-  topic: "bottom"
+  topic: "/camera/usb/front/compressed"
   focal_length: 2.65
   sensor_size:
     width: 3.054
