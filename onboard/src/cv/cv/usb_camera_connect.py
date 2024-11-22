@@ -30,7 +30,7 @@ def connect_all(node):
                 executable='usb_camera',
                 name=camera_name,
                 output='screen',
-                parameters=[{'topic': topic, 'device_path': device_path, 'framerate': 10}],
+                parameters=[{'topic': topic, 'device_path': device_path, 'framerate': -1}],
             )
         )
 
@@ -54,7 +54,8 @@ def main():
 
     launch_service.run()
 
-    rclpy.shutdown()
+    if rclpy.ok():
+        rclpy.shutdown()
 
 if __name__ == "__main__":
     main()
