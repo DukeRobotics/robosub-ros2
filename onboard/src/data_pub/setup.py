@@ -6,7 +6,7 @@ package_name = 'data_pub'
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version='1.0.0',
     packages=find_packages(include=['data_pub', 'data_pub.*']),
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -17,10 +17,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='root',
-    maintainer_email='root@todo.todo',
-    description='TODO: Package description',
-    license='Apache-2.0',
+    maintainer='Duke Robotics',
+    maintainer_email='hello@duke-robotics.com',
+    description='Package that reads and parses through sensor data.',
+    license='MIT',
     entry_points={
         'console_scripts': [
             'dvl_raw = data_pub.dvl_raw:main',

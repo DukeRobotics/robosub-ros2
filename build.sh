@@ -21,13 +21,22 @@ build_workspace() {
     package_name=$2
 
     cd "$workspace_dir" || exit
-    if [ -z "$package_name" ]; then
-        echo "Building workspace: $workspace_dir"
-        colcon build --symlink-install --executor sequential
-    else
-        echo "Building package '$package_name' in workspace: $workspace_dir"
-        colcon build --symlink-install --packages-select "$package_name"
+
+    build_cmd="colcon build"
+
+    if [ "$workspace_dir" != "$CORE_WS" ]; then
+        build_cmd="$build_cmd --symlink-install"
     fi
+
+    if [ -n "$package_name" ]; then
+        build_cmd="$build_cmd --packages-select $package_name"
+        echo "Building package '$package_name' in workspace: $workspace_dir"
+    else
+        echo "Building workspace: $workspace_dir"
+    fi
+
+    $build_cmd --executor sequential
+
     source install/setup.bash
 }
 
