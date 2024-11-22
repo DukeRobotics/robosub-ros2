@@ -13,5 +13,6 @@ services:
       - ./:/root/dev/robosub-ros2
     ports:
       - 2202:2202
+      - 8765:8765
     devices:
       - /dev/bus/usb:/dev/bus/usb
