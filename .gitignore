@@ -5,6 +5,7 @@ __pycache__
 **/install/*
 **/log/*
 **/ros2_mcap_test/*
+**/demo_2024_file/*
 
 # All playback subfolders
 **/bag_files/**

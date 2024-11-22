@@ -10,7 +10,7 @@ from custom_msgs.msg import CVObject
 from geometry_msgs.msg import Point
 from cv_bridge import CvBridge
 
-from utils import compute_center_distance
+from cv.utils import compute_center_distance
 
 
 class PathMarkerDetector(Node):
@@ -19,7 +19,7 @@ class PathMarkerDetector(Node):
     def __init__(self):
         super().__init__('path_marker_detector')
         self.bridge = CvBridge()
-        self.image_sub = self.create_subscription(CompressedImage, "/camera/usb/bottom/compressed", self.image_callback, 10)
+        self.image_sub = self.create_subscription(CompressedImage, "/camera/usb/bottom/compressed" , self.image_callback, 10)
 
         # define information published for path marker
         self.path_marker_hsv_filtered_pub = self.create_publisher(Image, "/cv/bottom/path_marker/hsv_filtered", 10)
@@ -69,7 +69,7 @@ class PathMarkerDetector(Node):
             # create CVObject message and populate relevant attributes
             bounding_box = CVObject()
 
-            bounding_box.header.stamp = self.get_clock().now()
+            bounding_box.header.stamp = self.get_clock().now().to_msg()
 
             orientation_in_radians = math.pi / 2 - orientation_in_radians
 
