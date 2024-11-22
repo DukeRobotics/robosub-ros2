@@ -8,7 +8,7 @@ import numpy as np
 from cv_bridge import CvBridge
 from sensor_msgs.msg import CompressedImage, Image
 from custom_msgs.msg import CVObject
-from utils import compute_yaw, calculate_relative_pose
+from cv.utils import compute_yaw, calculate_relative_pose
 
 
 class BuoyDetectorContourMatching(Node):
@@ -27,13 +27,15 @@ class BuoyDetectorContourMatching(Node):
         path_to_reference_img = rr.get_filename('package://cv/assets/polyform-a0-buoy-contour.png', use_protocol=False)
 
         # Load the reference image in grayscale (assumes the image is already binary: white and black)
-        self.reference_image = cv2.imread(path_to_reference_img, cv2.IMREAD_GRAYSCALE)
+        self.reference_image = cv2.imread("/root/dev/robosub-ros2/onboard/build/cv/assets/polyform-a0-buoy-contour.png", cv2.IMREAD_GRAYSCALE)
+        if self.reference_image is None:
+            print("oops")
 
         # Compute the contours directly on the binary image
         self.ref_contours, _ = cv2.findContours(self.reference_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         self.bridge = CvBridge()
-        self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/front/compressed', self.image_callback, 10)
+        self.image_sub = self.create_subscription(CompressedImage, '/camera/usb_camera/compressed', self.image_callback, 10)  #/camera/usb/front/compressed
         self.bounding_box_pub = self.create_publisher(CVObject,'/cv/front_usb/buoy/bounding_box', 1)
         self.hsv_filtered_pub = self.create_publisher(Image, '/cv/front_usb/buoy/hsv_filtered', 1)
         self.contour_image_pub = self.create_publisher(Image, '/cv/front_usb/buoy/contour_image', 1)
@@ -94,6 +96,7 @@ class BuoyDetectorContourMatching(Node):
 
         # Match contours with the reference image contours
         for cnt in contours:
+            print(self.ref_contours)
             match = cv2.matchShapes(self.ref_contours[0], cnt, cv2.CONTOURS_MATCH_I1, 0.0)
             if match < 0.2:
                 similar_size_contours.append(cnt)
@@ -154,18 +157,18 @@ class BuoyDetectorContourMatching(Node):
 
         bounding_box = CVObject()
 
-        bounding_box.header.stamp.secs, bounding_box.header.stamp.nsecs = self.get_clock().now().seconds_nanoseconds()
+        bounding_box.header.stamp.sec, bounding_box.header.stamp.nanosec = self.get_clock().now().seconds_nanoseconds()
 
-        bounding_box.xmin = x
-        bounding_box.ymin = y
-        bounding_box.xmax = x + w
-        bounding_box.ymax = y + h
+        bounding_box.xmin = float(x)
+        bounding_box.ymin = float(y)
+        bounding_box.xmax = float(x + w)
+        bounding_box.ymax = float(y + h)
 
-        bounding_box.yaw = -compute_yaw(x / self.MONO_CAM_IMG_SHAPE[0], (x + w) / self.MONO_CAM_IMG_SHAPE[0],
-                                        self.MONO_CAM_IMG_SHAPE[0])  # Update 0 with whatever is self.camera_pixel_width
+        bounding_box.yaw = -float(compute_yaw(x / self.MONO_CAM_IMG_SHAPE[0], (x + w) / self.MONO_CAM_IMG_SHAPE[0],
+                                        self.MONO_CAM_IMG_SHAPE[0]))  # Update 0 with whatever is self.camera_pixel_width
 
-        bounding_box.width = w
-        bounding_box.height = h
+        bounding_box.width = int(w)
+        bounding_box.height = int(h)
 
         # bbox_bounds = (x, y, x + w, y + h)
 
