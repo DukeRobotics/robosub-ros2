@@ -11,4 +11,4 @@ services:
     volumes:
       - ./:/root/dev/robosub-ros2
     ports:
-      - 2202:2202
+      - 8765:8765

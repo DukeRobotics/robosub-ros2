@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC1090,SC1091
+# shellcheck disable=SC1090,SC1091,SC2164
 
 export PYTHONWARNINGS="ignore:easy_install command is deprecated"
 
@@ -22,5 +22,7 @@ else
 fi
 
 export _colcon_cd_root=/opt/ros/jazzy
+
+cd /root/dev/robosub-ros2
 
 source /root/dev/robosub-ros2/venv.sh activate

@@ -3,16 +3,15 @@ FROM ros:jazzy
 # Install packages from apt
 # Each package is installed in a separate RUN command so that each package is cached separately in Docker
 RUN apt update
-RUN apt install -y --no-install-recommends tini
-RUN apt install -y --no-install-recommends openssh-server
-RUN apt install -y --no-install-recommends snapd
-RUN apt install -y --no-install-recommends nano
-RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends clang-format
-RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
-RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
+RUN apt install -y --no-install-recommends nano
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-venv
+RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
+RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
+RUN apt install -y --no-install-recommends shellcheck
+RUN apt install -y --no-install-recommends snapd
+RUN apt install -y --no-install-recommends tini
 
 RUN python3 -m venv /root/dev/venv --system-site-packages
 RUN /root/dev/venv/bin/pip install GitPython
@@ -23,21 +22,10 @@ RUN /root/dev/venv/bin/pip install ruff
 RUN passwd -d root
 
 # Modify SSH server configuration to allow SSH into the container without password
-RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
-RUN echo "PermitEmptyPasswords yes" >> /etc/ssh/sshd_config
-RUN echo "PermitUserEnvironment yes" >> /etc/ssh/sshd_config
 RUN mkdir -p /root/.ssh
-RUN touch /root/.ssh/environment
-
-# SSH server at port 2202
-RUN echo "Port 2202" >> /etc/ssh/sshd_config
 
 # Copy SSH config file
 COPY ssh_config /root/.ssh/config
-
-# Create directory for SSH server
-RUN mkdir /var/run/sshd
-RUN chmod 0755 /var/run/sshd
 
 # Define ARGs for SSH keys and Git information
 ARG NO_GIT
@@ -67,9 +55,6 @@ RUN if [ "$NO_GIT" != "true" ]; then \
 
 # Create development directory
 RUN mkdir -p /root/dev/robosub-ros2
-
-# Use SSH entrypoint script as container's .bash_profile
-COPY ssh_entry.sh /root/.bash_profile
 
 # Copy ROS bashrc file into container and source it at end of .bashrc
 COPY ros_bashrc.sh /root/ros_bashrc.sh
