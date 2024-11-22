@@ -1,21 +1,21 @@
 #ifndef CONTROLS_H
 #define CONTROLS_H
 
-#include <custom_msgs/ControlTypes.h>
-#include <custom_msgs/PIDGain.h>
-#include <custom_msgs/PIDGains.h>
-#include <custom_msgs/SetControlTypes.h>
-#include <custom_msgs/SetPIDGains.h>
-#include <custom_msgs/SetPowerScaleFactor.h>
-#include <custom_msgs/SetStaticPower.h>
-#include <custom_msgs/ThrusterAllocs.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/Twist.h>
-#include <nav_msgs/Odometry.h>
+#include <custom_msgs/msg/control_types.h>
+#include <custom_msgs/msg/pid_gain.h>
+#include <custom_msgs/msg/pid_gains.h>
+#include <custom_msgs/srv/set_control_types.h>
+#include <custom_msgs/srv/set_pid_gains.h>
+#include <custom_msgs/srv/set_power_scale_factor.h>
+#include <custom_msgs/srv/set_static_power.h>
+#include <custom_msgs/msg/thruster_allocs.h>
+#include <geometry_msgs/msg/pose.h>
+#include <geometry_msgs/msg/twist.h>
+#include <nav_msgs/msg/odometry.h>
 #include <rclcpp/rclcpp.hpp>
-#include <std_msgs/Bool.h>
-#include <std_srvs/SetBool.h>
-#include <std_srvs/Trigger.h>
+#include <std_msgs/msg/bool.h>
+#include <std_srvs/srv/set_bool.hpp>
+#include <std_srvs/srv/trigger.h>
 #include <tf2_ros/transform_listener.h>
 
 #include <Eigen/Dense>

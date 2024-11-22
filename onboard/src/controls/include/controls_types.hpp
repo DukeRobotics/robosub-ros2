@@ -1,9 +1,9 @@
 #ifndef CONTROLS_TYPES_H
 #define CONTROLS_TYPES_H
 
-#include <custom_msgs/ControlTypes.h>
-#include <custom_msgs/PIDDerivativeType.h>
-#include <custom_msgs/PIDGain.h>
+#include <custom_msgs/msg/control_types.h>
+#include <custom_msgs/msg/pid_derivative_type.h>
+#include <custom_msgs/msg/pid_gain.h>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 
 #include <unordered_map>

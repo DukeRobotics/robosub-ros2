@@ -7,10 +7,14 @@ RUN apt install -y --no-install-recommends openssh-server
 RUN apt install -y --no-install-recommends tini
 RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends nano
+RUN apt install -y --no-install-recommends libeigen3-dev
+RUN apt install -y --no-install-recommends libyaml-cpp-dev
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-serial
-RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
+
+# TODO: resolve issue with not being able to install foxglove
+# RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
 
 # Set no password for root user
 RUN passwd -d root
@@ -31,6 +35,28 @@ COPY ssh_config /root/.ssh/config
 # Create directory for SSH server
 RUN mkdir /var/run/sshd
 RUN chmod 0755 /var/run/sshd
+
+# Build and install OSQP from source
+RUN git clone --branch release-0.6.3 --recursive https://github.com/osqp/osqp.git && \
+    cd osqp && \
+    mkdir build && \
+    cd build && \
+    cmake -G "Unix Makefiles" .. && \
+    cmake --build . --target install && \
+    cd ../.. && \
+    rm -rf osqp
+
+# Build and install osqp-eigen from source
+RUN git clone https://github.com/robotology/osqp-eigen.git && \
+    cd osqp-eigen && \
+    git checkout 85c37623774c682db396505f0d4ea677040c2557 && \
+    mkdir build && \
+    cd build && \
+    cmake ../ && \
+    make && \
+    make install && \
+    cd ../.. && \
+    rm -rf osqp-eigen
 
 # Define ARGs for SSH keys and Git information
 ARG NO_GIT
