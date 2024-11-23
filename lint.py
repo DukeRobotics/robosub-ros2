@@ -6,7 +6,9 @@ It uses flake8 for Python, clang-format for C++, and shellcheck for Bash.
 """
 
 import argparse
+import os
 import subprocess
+from collections.abc import Generator
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -21,7 +23,7 @@ LANGUAGES_TO_FILE_EXTENSIONS = {
 FILE_EXTENSIONS_TO_LANGUAGES = {ext: lang for lang, exts in LANGUAGES_TO_FILE_EXTENSIONS.items() for ext in exts}
 
 LINT_COMMANDS = {
-    'python': ['/root/dev/venv/bin/python3', '-m', 'ruff', 'check'],
+    'python': ['/root/dev/venv/bin/python3', '-m', 'ruff', 'check', '-q'],
     'cpp': ['clang-format', '-style=file', '--dry-run'],
     'bash': ['shellcheck'],
 }
@@ -87,6 +89,55 @@ def print_summary(language_stats: dict[str, LanguageStats]) -> None:
     print()
 
 
+def traverse_directory(target_path: Path, check_if_git_ignored: bool) -> Generator[Path, None, None]:
+    """
+    Traverse files in the specified directory.
+
+    Will not include files that are part of a `.git` directory. Can optionally avoid files ignored by Git.
+
+    Args:
+        target_path (Path): The directory to traverse. Must be within a Git repository.
+        check_if_git_ignored (bool): If True, don't yield files ignored by git. Else, yield all files.
+
+    Yields:
+        Path: The absolute path of each file.
+    """
+    # Initialize the Git repository
+    if check_if_git_ignored:
+        repo = Repo(target_path, search_parent_directories=True)
+
+    # Ensure the target path is absolute
+    abs_target_path = target_path.resolve()
+
+    # Walk through the directory
+    for root, dirs, files in os.walk(abs_target_path):
+        root_path = Path(root).resolve()
+
+        # Skip root if .git folder is in the path
+        if '.git' in root_path.parts:
+            print(f'Skipping {root_path}...')
+            dirs.clear()
+            continue
+
+        # Process files in the current directory
+        for file_name in files:
+            file_path = root_path / file_name
+            if not check_if_git_ignored or not repo.ignored(file_path):
+                yield file_path  # Yield file path
+
+        # Filter directories to exclude git-ignored ones (if enabled) and directories that are within a .git folder
+        filtered_dirs = []
+        for d in dirs:
+            dir_path = root_path / d
+            if check_if_git_ignored and repo.ignored(dir_path):
+                continue
+            if '.git' in dir_path.parts:
+                continue
+            filtered_dirs.append(d)
+
+        # Update dirs in place
+        dirs[:] = filtered_dirs
+
 def lint_files(target_path: Path, language: list[str] | None = None, print_success: bool = False, quiet: bool = False,
                no_git_tree: bool = False) -> bool:
     """
@@ -100,7 +151,6 @@ def lint_files(target_path: Path, language: list[str] | None = None, print_succe
         no_git_tree (bool): If True, do not use the git tree to traverse only files tracked by git. Instead, lint all
             files in the specified directory.
     """
-    repo = Repo(target_path, search_parent_directories=True)
     languages = set(language) if language else LANGUAGES_TO_FILE_EXTENSIONS.keys()
     language_stats = {lang: LanguageStats() for lang in languages}
     all_success = True
@@ -123,15 +173,8 @@ def lint_files(target_path: Path, language: list[str] | None = None, print_succe
             all_success = all_success and success
             prev_success = success
 
-    if no_git_tree:
-        for file_path in target_path.rglob('*'):
-            if file_path.is_file() and target_path in file_path.parents:
-                process_file(file_path)
-    else:
-        for item in repo.tree().traverse():
-            file_path = Path(item.path).resolve()
-            if item.type == 'blob' and file_path.is_file() and target_path in file_path.parents:
-                process_file(file_path)
+    for file_path in traverse_directory(target_path, not no_git_tree):
+        process_file(file_path)
 
     return all_success, language_stats
 
@@ -156,8 +199,8 @@ def main() -> None:
     parser.add_argument('--github-action', action='store_true',
                         help='If specified, use GitHub Actions workflow commands in the output.')
     parser.add_argument('--no-git-tree', action='store_true',
-                        help='If specified, do not use the git tree to traverse only files tracked by git. Instead, '
-                             'lint all files in the specified directory, including git-ignored and untracked files.')
+                        help='If specified, do not check if files are ignored by git. Instead, lint all files in the '
+                             'specified directory, including git-ignored files.')
     args = parser.parse_args()
 
     target_path = Path(args.path).resolve()
