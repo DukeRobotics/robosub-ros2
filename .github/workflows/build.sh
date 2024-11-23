@@ -3,20 +3,24 @@
 
 set -e
 
-source /opt/ros/jazzy/setup.bash
-export PYTHONWARNINGS="ignore:easy_install command is deprecated"
+source /root/ros_bashrc.sh
+
+source /root/dev/robosub-ros2/build.sh clean
+source /root/dev/robosub-ros2/build.sh
+exit 0
 
 # Directories for the core and onboard workspaces
 CORE_WS="/root/dev/robosub-ros2/core"
 ONBOARD_WS="/root/dev/robosub-ros2/onboard"
 
-# Function to clean workspace (build, install, log)
+# Delete the build, install, and log directories in the workspace
 clean_workspace() {
     workspace_dir=$1
     echo "Cleaning workspace: $workspace_dir"
     rm -rf "$workspace_dir/build" "$workspace_dir/install" "$workspace_dir/log"
 }
 
+# Build the workspace
 build_workspace() {
     workspace_dir=$1
     echo "Building workspace: $workspace_dir"
