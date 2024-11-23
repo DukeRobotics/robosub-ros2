@@ -2,7 +2,7 @@
 """
 This script lints Python, C++, and Bash files in a specified directory or file.
 
-It uses flake8 for Python, clang-format for C++, and shellcheck for Bash.
+It uses ruff for Python, clang-format for C++, and shellcheck for Bash.
 """
 
 import argparse
