@@ -1,6 +1,6 @@
 {
-  "output": "types/ros1Msgs.ts",
-  "rosVersion": 1,
+  "output": "types/ros2Msgs.ts",
+  "rosVersion": 2,
   "input": [
     {
       "namespace": "rosmaster",
