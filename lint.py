@@ -18,7 +18,18 @@ from git import Repo
 
 @dataclass
 class LintLanguageProperties:
-    """Dataclass to store properties of a programming language."""
+    """
+    Dataclass to store properties of a programming language.
+
+    Attributes:
+        name (str): The name of the programming language.
+        file_extensions (list[str]): A list of file extensions associated with the programming language.
+        lint_command (list[str]): The command to run to lint files of the programming language. The path to the file
+            to lint will be appended to the end of this command.
+        autofix_command (list[str] | None): The command to run to autofix linting errors in files of the programming
+            language. The path to the file to lint will be appended to the end of this command. If None, autofixing is
+            not supported for this language.
+    """
     name: str
     file_extensions: list[str]
     lint_command: list[str]
@@ -45,40 +56,61 @@ class LintLanguage(Enum):
         autofix_command=None,
     )
 
+# Map from LintLanguage name to LintLanguage
 STR_TO_LINT_LANGUAGE = {lang.value.name: lang for lang in LintLanguage}
 
+# Map from file extension to LintLanguage
 FILE_EXTENSIONS_TO_LINT_LANGUAGES = {ext: lang for lang in LintLanguage for ext in lang.value.file_extensions}
 
+# Maximum length of a language name
 MAX_LANGUAGE_LENGTH = max(len(lang.value.name) for lang in LintLanguage)
 
+# Set of languages with autofix commands
 LINT_LANGUAGES_WITH_AUTOFIX = {lang for lang in LintLanguage if lang.value.autofix_command is not None}
 
+# Map from lint status to emoji
 STATUS_EMOJI = {
     True: '✅',
     False: '❌',
 }
 
+# Path to the repository and default path to lint
 REPO_PATH = Path('/root/dev/robosub-ros2')
 
 @dataclass
 class LintLanguageStats:
-    """Dataclass to store linting statistics for a specific language."""
+    """
+    Dataclass to store linting statistics for a specific language.
+
+    Attributes:
+        total (int): The total number of files linted for the language.
+        success (int): The number of files successfully linted for the language
+    """
     total: int = 0
     success: int = 0
 
 class LintOutputType(Enum):
-    """Enum to specify the output type of the linting command."""
+    """
+    Enum to specify the output type of the linting command.
+
+    Attributes:
+        CAPTURE (int): Capture the output of the linting command and print it through this script.
+        TERMINAL (int): Print the output of the linting command directly to the terminal.
+        QUIET (int): Suppress the output of the linting command.
+    """
     CAPTURE = 0
     TERMINAL = 1
     QUIET = 2
 
-LINT_OUTPUT_TYPE_STR_TO_ENUM = {
+# Map from terminal to LintOutputType
+STR_TO_LINT_OUTPUT_TYPE = {
     'capture': LintOutputType.CAPTURE,
     'terminal': LintOutputType.TERMINAL,
     'quiet': LintOutputType.QUIET,
 }
 
-LINT_OUTPUT_TYPE_ENUM_TO_SUBPROCESS = {
+# Map from LintOutputType to subprocess.PIPE, None, or subprocess.DEVNULL
+LINT_OUTPUT_TYPE_TO_SUBPROCESS = {
     LintOutputType.CAPTURE: subprocess.PIPE,
     LintOutputType.TERMINAL: None,
     LintOutputType.QUIET: subprocess.DEVNULL,
@@ -100,17 +132,22 @@ def lint_file(file_path: Path, language: LintLanguage, autofix: bool, print_succ
     base_command = language.value.autofix_command if autofix and (language in LINT_LANGUAGES_WITH_AUTOFIX) else \
         language.value.lint_command
     command = [*base_command, str(file_path)]
+
+    # Pad the language name to align the output for all languages
     padded_language = f'{language.value.name}:'.ljust(MAX_LANGUAGE_LENGTH + 1)
-    subprocess_output_type = LINT_OUTPUT_TYPE_ENUM_TO_SUBPROCESS[output_type]
+    subprocess_output_type = LINT_OUTPUT_TYPE_TO_SUBPROCESS[output_type]
 
     process = subprocess.Popen(command, stdout=subprocess_output_type, stderr=subprocess_output_type)  # noqa: S603
     stdout, _ = process.communicate()
 
+    # If the process returns 0, the linting was successful
     if process.returncode == 0:
         if print_success:
             print(f'{STATUS_EMOJI[True]} {padded_language} {file_path}')
         return True
-    if output_type != LintOutputType.QUIET and stdout:
+
+    # The linting failed. Print the output if it was captured.
+    if output_type == LintOutputType.CAPTURE and stdout:
         indented_output = '\n'.join('    ' + line for line in stdout.decode().splitlines())
         print(indented_output)
     print(f'{STATUS_EMOJI[False]} {padded_language} {file_path.relative_to(REPO_PATH)}')
@@ -141,17 +178,17 @@ def traverse_directory(target_path: Path, check_if_git_ignored: bool) -> Generat
     for root, dirs, files in os.walk(abs_target_path):
         root_path = Path(root).resolve()
 
-        # Skip root if .git folder is in the path
+        # Skip this directory and its children if .git folder is in the path
         if '.git' in root_path.parts:
             print(f'Skipping {root_path}...')
             dirs.clear()
             continue
 
-        # Process files in the current directory
+        # Yield files in the current directory that are not git-ignored (if enabled)
         for file_name in files:
             file_path = root_path / file_name
             if not check_if_git_ignored or not repo.ignored(file_path):
-                yield file_path  # Yield file path
+                yield file_path
 
         # Filter directories to exclude git-ignored ones (if enabled) and directories that are within a .git folder
         filtered_dirs = []
@@ -163,7 +200,7 @@ def traverse_directory(target_path: Path, check_if_git_ignored: bool) -> Generat
                 continue
             filtered_dirs.append(d)
 
-        # Update dirs in place
+        # Update directories that will be traversed
         dirs[:] = filtered_dirs
 
 
@@ -191,11 +228,15 @@ def lint_files(target_path: Path, languages: list[LintLanguage], autofix: bool, 
     all_success = True
     prev_success = True
 
+    # Traverse the directory and lint each file
     for file_path in traverse_directory(target_path, not no_git_tree):
+
+        # If the file extension is associated with a language to lint, lint the file
         detected_language = FILE_EXTENSIONS_TO_LINT_LANGUAGES.get(file_path.suffix)
         if detected_language in languages:
             language_stats[detected_language].total += 1
 
+            # Print a newline between files if the previous file failed for readability
             if not prev_success and output_type != LintOutputType.QUIET:
                 print()
 
@@ -219,14 +260,12 @@ def print_summary(language_stats: dict[LintLanguage, LintLanguageStats]) -> None
     Args:
         language_stats (dict[LintLanguage, LintLanguageStats]): Linting statistics for each language.
     """
-    overall_success_count = sum(stats.success for stats in language_stats.values())
-    overall_total_count = sum(stats.total for stats in language_stats.values())
+    cumulative_success_count = sum(stats.success for stats in language_stats.values())
+    cumulative_total_count = sum(stats.total for stats in language_stats.values())
+    cumulative_emoji = STATUS_EMOJI[cumulative_success_count == cumulative_total_count]
 
-    overall_success = overall_success_count == overall_total_count
-    overall_emoji = STATUS_EMOJI[overall_success]
     print()
-
-    print(f'{overall_emoji} Linting Summary: {overall_success_count}/{overall_total_count}')
+    print(f'{cumulative_emoji} Linting Summary: {cumulative_success_count}/{cumulative_total_count}')
     for lang, stats in language_stats.items():
         lang_emoji = STATUS_EMOJI[stats.success == stats.total]
         print(f'  {lang_emoji} {lang.value.name.capitalize()}: {stats.success}/{stats.total}')
@@ -249,7 +288,7 @@ def main() -> None:
     parser.add_argument('--print-success', action='store_true',
                         help='If specified, print the names of files that were successfully linted. This is '
                              'automatically enabled if --path is a file.')
-    parser.add_argument('-o', '--output-type', choices=LINT_OUTPUT_TYPE_STR_TO_ENUM.keys(), default='terminal',
+    parser.add_argument('-o', '--output-type', choices=STR_TO_LINT_OUTPUT_TYPE.keys(), default='terminal',
                         help=('Specify how to handle the outputs of the linting commands. '
                               '"capture" captures and prints the output through this script (useful for CI/CD). '
                               '"terminal" prints the output directly to the terminal. '
@@ -270,18 +309,20 @@ def main() -> None:
         error_msg = f'The specified path "{target_path}" does not exist.'
         raise FileNotFoundError(error_msg)
 
-    # Ensure target_path is the repository or a subpath of it
+    # Ensure target_path is in the repository
     if not target_path.is_relative_to(REPO_PATH):
-        error_msg = f'The specified path "{target_path}" must be within the default script directory "{REPO_PATH}".'
+        error_msg = f'The specified path "{target_path}" must be within the repository located at "{REPO_PATH}".'
         raise ValueError(error_msg)
 
-    output_type = LINT_OUTPUT_TYPE_STR_TO_ENUM[args.output_type]
+    # Convert string arguments to their respective enum types
+    output_type = STR_TO_LINT_OUTPUT_TYPE[args.output_type]
     languages = [STR_TO_LINT_LANGUAGE[lang] for lang in args.languages]
 
+    # Whether all files were successfully linted
     all_success = True
 
     if target_path.is_file():
-        # If a specific file is provided, ensure it matches the language if specified
+        # If a specific file is provided, ensure it is part of the specified language(s)
         file_language = FILE_EXTENSIONS_TO_LINT_LANGUAGES.get(target_path.suffix)
         if file_language not in languages:
             error_msg = (f'Specified file\'s extension "{target_path.suffix}" does not match the specified language(s):'
@@ -294,6 +335,8 @@ def main() -> None:
         # Lint one language at a time to group the output by language
         aggregate_language_stats = {}
         for language in languages:
+
+            # Use GitHub Actions workflow commands to group the output by language
             if args.github_action:
                 print(f'::group::Lint {language.value.name.capitalize()}')
             else:
