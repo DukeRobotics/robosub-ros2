@@ -9,7 +9,7 @@ from sklearn.cluster import DBSCAN
 from sensor_msgs.msg import CompressedImage, Image
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
-from utils import compute_yaw
+from cv.utils import compute_yaw
 
 
 class PinkBinsDetector(Node):
@@ -119,9 +119,9 @@ class PinkBinsDetector(Node):
         # Publish the bounding box of the bin
         final_x_normalized = final_x / self.MONO_CAM_IMG_SHAPE[0]
         cv_object = CVObject()
-        cv_object.header.stamp = self.get_clock().now()
+        cv_object.header.stamp.sec, cv_object.header.stamp.nanosec  = self.get_clock().now().seconds_nanoseconds()
         cv_object.yaw = -compute_yaw(final_x_normalized, final_x_normalized, self.MONO_CAM_IMG_SHAPE[0])
-        cv_object.score = chosen_label_score
+        cv_object.score = float(chosen_label_score)
         self.pink_bins_bounding_box_pub.publish(cv_object)
 
     # called if no detections are made

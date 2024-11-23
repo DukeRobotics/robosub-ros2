@@ -35,7 +35,7 @@ class BuoyDetectorContourMatching(Node):
         self.ref_contours, _ = cv2.findContours(self.reference_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         self.bridge = CvBridge()
-        self.image_sub = self.create_subscription(CompressedImage, '/camera/usb_camera/compressed', self.image_callback, 10)  #/camera/usb/front/compressed
+        self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/front/compressed', self.image_callback, 10)  #/camera/usb/front/compressed
         self.bounding_box_pub = self.create_publisher(CVObject,'/cv/front_usb/buoy/bounding_box', 1)
         self.hsv_filtered_pub = self.create_publisher(Image, '/cv/front_usb/buoy/hsv_filtered', 1)
         self.contour_image_pub = self.create_publisher(Image, '/cv/front_usb/buoy/contour_image', 1)
