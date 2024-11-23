@@ -1,18 +1,18 @@
 #ifndef CONTROLS_TYPES_H
 #define CONTROLS_TYPES_H
 
-#include <custom_msgs/msg/control_types.h>
-#include <custom_msgs/msg/pid_derivative_type.h>
-#include <custom_msgs/msg/pid_gain.h>
+#include <custom_msgs/msg/control_types.hpp>
+#include <custom_msgs/msg/pid_derivative_type.hpp>
+#include <custom_msgs/msg/pid_gain.hpp>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 
 #include <unordered_map>
 
 // Control types: DESIRED_POSITION, DESIRED_VELOCITY, DESIRED_POWER
 enum ControlTypesEnum : uint8_t {
-    DESIRED_POSITION = custom_msgs::ControlTypes::DESIRED_POSITION,
-    DESIRED_VELOCITY = custom_msgs::ControlTypes::DESIRED_VELOCITY,
-    DESIRED_POWER = custom_msgs::ControlTypes::DESIRED_POWER
+    DESIRED_POSITION = custom_msgs::msg::ControlTypes::DESIRED_POSITION,
+    DESIRED_VELOCITY = custom_msgs::msg::ControlTypes::DESIRED_VELOCITY,
+    DESIRED_POWER = custom_msgs::msg::ControlTypes::DESIRED_POWER
 };
 
 // Number of control types
@@ -24,12 +24,12 @@ const ControlTypesEnum CONTROL_TYPES[CONTROL_TYPES_COUNT] = {
 
 // Axes: X, Y, Z, ROLL, PITCH, YAW
 enum AxesEnum : uint8_t {
-    X = custom_msgs::PIDGain::AXIS_X,
-    Y = custom_msgs::PIDGain::AXIS_Y,
-    Z = custom_msgs::PIDGain::AXIS_Z,
-    ROLL = custom_msgs::PIDGain::AXIS_ROLL,
-    PITCH = custom_msgs::PIDGain::AXIS_PITCH,
-    YAW = custom_msgs::PIDGain::AXIS_YAW
+    X = custom_msgs::msg::PIDGain::AXIS_X,
+    Y = custom_msgs::msg::PIDGain::AXIS_Y,
+    Z = custom_msgs::msg::PIDGain::AXIS_Z,
+    ROLL = custom_msgs::msg::PIDGain::AXIS_ROLL,
+    PITCH = custom_msgs::msg::PIDGain::AXIS_PITCH,
+    YAW = custom_msgs::msg::PIDGain::AXIS_YAW
 };
 
 // Number of axes
@@ -46,8 +46,8 @@ const std::unordered_map<AxesEnum, std::string> AXES_NAMES = {{AxesEnum::X, "x"}
 
 // PID loop types: POSITION, VELOCITY
 enum PIDLoopTypesEnum : uint8_t {
-    POSITION = custom_msgs::PIDGain::LOOP_POSITION,
-    VELOCITY = custom_msgs::PIDGain::LOOP_VELOCITY
+    POSITION = custom_msgs::msg::PIDGain::LOOP_POSITION,
+    VELOCITY = custom_msgs::msg::PIDGain::LOOP_VELOCITY
 };
 
 // Number of PID loop types
@@ -65,10 +65,10 @@ const std::string CASCADED_POSITION_PID_NAME = "position_cascaded";
 
 // PID gain types: KP, KI, KD, FF
 enum PIDGainTypesEnum : uint8_t {
-    KP = custom_msgs::PIDGain::GAIN_KP,
-    KI = custom_msgs::PIDGain::GAIN_KI,
-    KD = custom_msgs::PIDGain::GAIN_KD,
-    FF = custom_msgs::PIDGain::GAIN_FF
+    KP = custom_msgs::msg::PIDGain::GAIN_KP,
+    KI = custom_msgs::msg::PIDGain::GAIN_KI,
+    KD = custom_msgs::msg::PIDGain::GAIN_KD,
+    FF = custom_msgs::msg::PIDGain::GAIN_FF
 };
 
 // Number of PID gain types
@@ -105,8 +105,8 @@ using LoopsMap = std::unordered_map<PIDLoopTypesEnum, T>;
 
 // PID Derivative Types: CALCULATED, PROVIDED
 enum PIDDerivativeTypesEnum : uint8_t {
-    CALCULATED = custom_msgs::PIDDerivativeType::CALCULATED,
-    PROVIDED = custom_msgs::PIDDerivativeType::PROVIDED
+    CALCULATED = custom_msgs::msg::PIDDerivativeType::CALCULATED,
+    PROVIDED = custom_msgs::msg::PIDDerivativeType::PROVIDED
 };
 
 // Number of PID derivative types

@@ -59,12 +59,12 @@ bool ControlsUtils::quaternion_valid(const tf2::LinearMath::Quaternion &quaterni
     return std::abs(q.length() - 1.0) < 1e-6;
 }
 
-bool ControlsUtils::pid_gain_valid(const custom_msgs::PIDGain &pid_gain) {
+bool ControlsUtils::pid_gain_valid(const custom_msgs::msg::PIDGain &pid_gain) {
     return value_in_pid_loop_types_enum(pid_gain.loop) && value_in_axes_enum(pid_gain.axis) &&
            value_in_pid_gain_types_enum(pid_gain.gain);
 }
 
-bool ControlsUtils::pid_gains_valid(const std::vector<custom_msgs::PIDGain> &pid_gains) {
+bool ControlsUtils::pid_gains_valid(const std::vector<custom_msgs::msg::PIDGain> &pid_gains) {
     return std::all_of(pid_gains.begin(), pid_gains.end(), pid_gain_valid);
 }
 
@@ -110,7 +110,7 @@ void ControlsUtils::map_to_twist(const AxesMap<double> &map, geometry_msgs::msg:
 }
 
 void ControlsUtils::eigen_vector_to_thruster_allocs_msg(const Eigen::VectorXd &vector,
-                                                        custom_msgs::ThrusterAllocs &thruster_allocs) {
+                                                        custom_msgs::msg::ThrusterAllocs &thruster_allocs) {
     thruster_allocs.allocs.clear();
     for (int i = 0; i < vector.rows(); ++i) thruster_allocs.allocs.push_back(vector(i));
 }
@@ -133,7 +133,7 @@ void ControlsUtils::eigen_vector_to_map(const Eigen::VectorXd &vector, AxesMap<d
     map[AxesEnum::YAW] = vector(5);
 }
 
-bool ControlsUtils::control_types_to_map(const custom_msgs::ControlTypes &control_types,
+bool ControlsUtils::control_types_to_map(const custom_msgs::msg::ControlTypes &control_types,
                                          AxesMap<ControlTypesEnum> &map) {
     AxesMap<uint8_t> new_control_types;
     new_control_types[AxesEnum::X] = control_types.x;
@@ -152,7 +152,7 @@ bool ControlsUtils::control_types_to_map(const custom_msgs::ControlTypes &contro
 }
 
 void ControlsUtils::map_to_control_types(const AxesMap<ControlTypesEnum> &map,
-                                         custom_msgs::ControlTypes &control_types) {
+                                         custom_msgs::msg::ControlTypes &control_types) {
     control_types.x = map.at(AxesEnum::X);
     control_types.y = map.at(AxesEnum::Y);
     control_types.z = map.at(AxesEnum::Z);
@@ -171,13 +171,13 @@ void ControlsUtils::tf_linear_vector_to_map(const tf2::LinearMath::Vector3 &vect
 }
 
 void ControlsUtils::pid_loops_axes_gains_map_to_msg(const LoopsMap<AxesMap<PIDGainsMap>> &loops_axes_pid_gains,
-                                                    custom_msgs::PIDGains &pid_gains_msg) {
+                                                    custom_msgs::msg::PIDGains &pid_gains_msg) {
     pid_gains_msg.pid_gains.clear();
 
     for (const PIDLoopTypesEnum &loop : PID_LOOP_TYPES)
         for (const AxesEnum &axis : AXES)
             for (const PIDGainTypesEnum &gain : PID_GAIN_TYPES) {
-                custom_msgs::PIDGain pid_gain;
+                custom_msgs::msg::PIDGain pid_gain;
                 pid_gain.loop = loop;
                 pid_gain.axis = axis;
                 pid_gain.gain = gain;
@@ -186,14 +186,14 @@ void ControlsUtils::pid_loops_axes_gains_map_to_msg(const LoopsMap<AxesMap<PIDGa
             }
 }
 
-void ControlsUtils::pid_terms_struct_to_msg(const PIDTerms &terms, custom_msgs::PIDTerms &terms_msg) {
+void ControlsUtils::pid_terms_struct_to_msg(const PIDTerms &terms, custom_msgs::msg::PIDTerms &terms_msg) {
     terms_msg.proportional = terms.proportional;
     terms_msg.integral = terms.integral;
     terms_msg.derivative = terms.derivative;
     terms_msg.feedforward = terms.feedforward;
 }
 
-void ControlsUtils::pid_info_struct_to_msg(const PIDInfo &pid_info, custom_msgs::PIDInfo &pid_info_msg) {
+void ControlsUtils::pid_info_struct_to_msg(const PIDInfo &pid_info, custom_msgs::msg::PIDInfo &pid_info_msg) {
     pid_info_msg.terms = custom_msgs::msg::PIDTerms();
 
     // pid_info_msg.terms = custom_msgs::PIDTerms();
@@ -209,7 +209,7 @@ void ControlsUtils::pid_info_struct_to_msg(const PIDInfo &pid_info, custom_msgs:
 }
 
 void ControlsUtils::pid_axes_map_info_struct_to_msg(const AxesMap<PIDInfo> &pid_axes_map_info_struct,
-                                                    custom_msgs::PIDAxesInfo &pid_axes_info_msg) {
+                                                    custom_msgs::msg::PIDAxesInfo &pid_axes_info_msg) {
     pid_info_struct_to_msg(pid_axes_map_info_struct.at(AxesEnum::X), pid_axes_info_msg.x);
     pid_info_struct_to_msg(pid_axes_map_info_struct.at(AxesEnum::Y), pid_axes_info_msg.y);
     pid_info_struct_to_msg(pid_axes_map_info_struct.at(AxesEnum::Z), pid_axes_info_msg.z);
@@ -379,9 +379,11 @@ void ControlsUtils::read_robot_config(const bool &cascaded_pid,
         wrench_matrix_file_path = CONTROLS_PACKAGE_PATH + "/" + wrench_matrix_file_path;
         wrench_matrix_pinv_file_path = CONTROLS_PACKAGE_PATH + "/" + wrench_matrix_pinv_file_path;
     } catch (const std::exception &e) {
-        RCLCPP_ERROR(rclcpp::get_logger("contols_utils"), "Exception: %s", e.what());
-        rcpputils::assert_true(false, "Could not read robot config file. Make sure it is in the correct format. '%s'",
-                       ROBOT_CONFIG_FILE_PATH.c_str());
+        RCLCPP_ERROR(rclcpp::get_logger("controls_utils"), "Exception: %s", e.what());
+        char error_message[256]
+        sprintf(error_message, "Could not read robot config file. Make sure it is in the correct format. '%s'",
+                       ROBOT_CONFIG_FILE_PATH.c_str())
+        rcpputils::assert_true(false, error_message);
     }
 }
 
@@ -407,9 +409,12 @@ void ControlsUtils::update_robot_config(std::function<void(YAML::Node &)> update
 
         fout.close();
     } catch (const std::exception &e) {
-        RCLCPP_ERROR(rclcpp::get_logger("contols_utils"), "Exception: %s", e.what());
-        rcpputils::assert_true(false, "Could not update %s in robot config file. Make sure it is in the correct format. '%s'",
+        RCLCPP_ERROR(rclcpp::get_logger("controls_utils"), "Exception: %s", e.what());
+        char error_message[256];
+        sprintf(error_message, "Could not update %s in robot config file. Make sure it is in the correct format. '%s'",
                        update_name.c_str(), ROBOT_CONFIG_FILE_PATH.c_str());
+
+        rcpputils::assert_true(false, error_message);
     }
 }
 

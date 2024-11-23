@@ -21,6 +21,7 @@ find_package(yaml_cpp_vendor REQUIRED)
 find_package(OsqpEigen REQUIRED)
 
 include_directories(/usr/local/include/osqp)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${custom_msgs_INCLUDE_DIRS})
 
 add_executable(controls src/controls.cpp)
 add_executable(pid_manager src/pid_manager.cpp)

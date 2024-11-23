@@ -4,11 +4,11 @@
 #include <custom_msgs/msg/control_types.h>
 #include <custom_msgs/msg/pid_gain.h>
 #include <custom_msgs/msg/pid_gains.h>
+#include <custom_msgs/msg/thruster_allocs.h>
 #include <custom_msgs/srv/set_control_types.h>
 #include <custom_msgs/srv/set_pid_gains.h>
 #include <custom_msgs/srv/set_power_scale_factor.h>
 #include <custom_msgs/srv/set_static_power.h>
-#include <custom_msgs/msg/thruster_allocs.h>
 #include <geometry_msgs/msg/pose.h>
 #include <geometry_msgs/msg/twist.h>
 #include <nav_msgs/msg/odometry.h>
@@ -181,8 +181,8 @@ class Controls {
      * @param res Response indicating whether control types were set.
      * @return True if the service response was successfully filled, false otherwise.
      */
-    bool set_control_types_callback(custom_msgs::SetControlTypes::Request &req,
-                                    custom_msgs::SetControlTypes::Response &res);
+    bool set_control_types_callback(custom_msgs::srv::SetControlTypes::Request &req,
+                                    custom_msgs::srv::SetControlTypes::Response &res);
 
     /**
      * @brief Callback for updating PID gains.
@@ -193,7 +193,7 @@ class Controls {
      *
      * @throws ros::Exception Robot config file could not be updated with the new PID gains.
      */
-    bool set_pid_gains_callback(custom_msgs::SetPIDGains::Request &req, custom_msgs::SetPIDGains::Response &res);
+    bool set_pid_gains_callback(custom_msgs::srv::SetPIDGains::Request &req, custom_msgs::srv::SetPIDGains::Response &res);
 
     /**
      * @brief Callback for resetting PID loops.
@@ -213,8 +213,8 @@ class Controls {
      *
      * @throws ros::Exception Robot config file could not be updated with the new static power global.
      */
-    bool set_static_power_global_callback(custom_msgs::SetStaticPower::Request &req,
-                                          custom_msgs::SetStaticPower::Response &res);
+    bool set_static_power_global_callback(custom_msgs::srv::SetStaticPower::Request &req,
+                                          custom_msgs::srv::SetStaticPower::Response &res);
 
     /**
      * @brief Callback for updating power scale factor.
@@ -225,8 +225,8 @@ class Controls {
      *
      * @throws ros::Exception Robot config file could not be updated with the new power scale factor.
      */
-    bool set_power_scale_factor_callback(custom_msgs::SetPowerScaleFactor::Request &req,
-                                         custom_msgs::SetPowerScaleFactor::Response &res);
+    bool set_power_scale_factor_callback(custom_msgs::srv::SetPowerScaleFactor::Request &req,
+                                         custom_msgs::srv::SetPowerScaleFactor::Response &res);
 
    public:
     /**

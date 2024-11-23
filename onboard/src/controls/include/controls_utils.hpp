@@ -3,8 +3,8 @@
 
 #include <custom_msgs/msg/pid_axes_info.h>
 #include <custom_msgs/msg/pid_derivative_type.h>
-#include <custom_msgs/msg/pid_gain.h>
-#include <custom_msgs/msg/pid_gains.h>
+#include <custom_msgs/msg/pid_gain.hpp>
+#include <custom_msgs/msg/pid_gains.hpp>
 #include <custom_msgs/msg/pid_info.h>
 #include <custom_msgs/msg/pid_terms.h>
 #include <custom_msgs/msg/thruster_allocs.h>
@@ -92,7 +92,7 @@ bool value_in_pid_derivative_types_enum(uint8_t value);
  * @param quaternion Quaternion to check.
  * @return True if quaternion has length 1, false otherwise.
  */
-bool quaternion_valid(const geometry_msgs::Quaternion &quaternion);
+bool quaternion_valid(const geometry_msgs::msg::Quaternion &quaternion);
 
 /**
  * @brief Check if pid gain message has valid loop, axis, and gain types.
@@ -100,7 +100,7 @@ bool quaternion_valid(const geometry_msgs::Quaternion &quaternion);
  * @param pid_gain PID gain message to check.
  * @return True if pid gain message has valid loop, axis, and gain types, false otherwise.
  */
-bool pid_gain_valid(const custom_msgs::PIDGain &pid_gain);
+bool pid_gain_valid(const custom_msgs::msg::PIDGain &pid_gain);
 
 /**
  * @brief Check if all pid gains in given pid gains message have valid loop, axis, and gain types.
@@ -108,7 +108,7 @@ bool pid_gain_valid(const custom_msgs::PIDGain &pid_gain);
  * @param pid_gains PID gains message to check.
  * @return True if all pid gains messages in `pid_gains` have valid loop, axis, and gain types, false otherwise.
  */
-bool pid_gains_valid(const std::vector<custom_msgs::PIDGain> &pid_gains);
+bool pid_gains_valid(const std::vector<custom_msgs::msg::PIDGain> &pid_gains);
 
 /**
  * @brief Check if pid gains map has values for all four gain types.
@@ -129,7 +129,7 @@ bool pid_gains_map_valid(const PIDGainsMap &pid_gains_map);
  * @param pitch Pitch to populate.
  * @param yaw Yaw to populate.
  */
-void quaternion_msg_to_euler(const geometry_msgs::Quaternion &quaternion, double &roll, double &pitch, double &yaw);
+void quaternion_msg_to_euler(const geometry_msgs::msg::Quaternion &quaternion, double &roll, double &pitch, double &yaw);
 
 /**
  * @brief Convert pose to twist. Linear vector is identical to position. Angular vector is orientation converted to
@@ -138,7 +138,7 @@ void quaternion_msg_to_euler(const geometry_msgs::Quaternion &quaternion, double
  * @param pose Pose to convert.
  * @param twist Twist to populate.
  */
-void pose_to_twist(const geometry_msgs::Pose &pose, geometry_msgs::Twist &twist);
+void pose_to_twist(const geometry_msgs::msg::Pose &pose, geometry_msgs::msg::Twist &twist);
 
 /**
  * @brief Convert twist to axes map.
@@ -146,7 +146,7 @@ void pose_to_twist(const geometry_msgs::Pose &pose, geometry_msgs::Twist &twist)
  * @param twist Twist to convert.
  * @param map Map to populate.
  */
-void twist_to_map(const geometry_msgs::Twist &twist, AxesMap<double> &map);
+void twist_to_map(const geometry_msgs::msg::Twist &twist, AxesMap<double> &map);
 
 /**
  * @brief Convert axes map to twist.
@@ -154,7 +154,7 @@ void twist_to_map(const geometry_msgs::Twist &twist, AxesMap<double> &map);
  * @param map Map to convert.
  * @param twist Twist to populate.
  */
-void map_to_twist(const AxesMap<double> &map, geometry_msgs::Twist &twist);
+void map_to_twist(const AxesMap<double> &map, geometry_msgs::msg::Twist &twist);
 
 /**
  * @brief Convert Eigen vector to thruster allocs message. `thruster_allocs.allocs` is first cleared. Then,
@@ -165,7 +165,7 @@ void map_to_twist(const AxesMap<double> &map, geometry_msgs::Twist &twist);
  * @param vector Eigen vector to convert.
  * @param thruster_allocs Thruster allocs message to populate.
  */
-void eigen_vector_to_thruster_allocs_msg(const Eigen::VectorXd &vector, custom_msgs::ThrusterAllocs &thruster_allocs);
+void eigen_vector_to_thruster_allocs_msg(const Eigen::VectorXd &vector, custom_msgs::msg::ThrusterAllocs &thruster_allocs);
 
 /**
  * @brief Convert Eigen vector to twist. `vector`'s entries are mapped from top to bottom to `twist` in the
@@ -174,7 +174,7 @@ void eigen_vector_to_thruster_allocs_msg(const Eigen::VectorXd &vector, custom_m
  * @param vector Eigen vector to convert.
  * @param twist Twist to populate.
  */
-void eigen_vector_to_twist(const Eigen::VectorXd &vector, geometry_msgs::Twist &twist);
+void eigen_vector_to_twist(const Eigen::VectorXd &vector, geometry_msgs::msg::Twist &twist);
 
 /**
  * @brief Convert Eigen vector to axes map. `vector`'s entries are mapped from top to bottom to `map` in the
@@ -192,7 +192,7 @@ void eigen_vector_to_map(const Eigen::VectorXd &vector, AxesMap<double> &map);
  * @param map Axes map to populate.
  * @return True if message is valid and conversion was performed, false otherwise.
  */
-bool control_types_to_map(const custom_msgs::ControlTypes &control_types, AxesMap<ControlTypesEnum> &map);
+bool control_types_to_map(const custom_msgs::msg::ControlTypes &control_types, AxesMap<ControlTypesEnum> &map);
 
 /**
  * @brief Convert axes map to control types message.
@@ -200,7 +200,7 @@ bool control_types_to_map(const custom_msgs::ControlTypes &control_types, AxesMa
  * @param map Axes map to convert.
  * @param control_types Control types message to populate.
  */
-void map_to_control_types(const AxesMap<ControlTypesEnum> &map, custom_msgs::ControlTypes &control_types);
+void map_to_control_types(const AxesMap<ControlTypesEnum> &map, custom_msgs::msg::ControlTypes &control_types);
 
 /**
  * @brief Convert tf Vector3 to axes map.
@@ -220,7 +220,7 @@ void tf_linear_vector_to_map(const tf2::Vector3 &vector, AxesMap<double> &map);
  * @param pid_gains_msg PID gains message to populate.
  */
 void pid_loops_axes_gains_map_to_msg(const LoopsMap<AxesMap<PIDGainsMap>> &loops_axes_pid_gains,
-                                     custom_msgs::PIDGains &pid_gains_msg);
+                                     custom_msgs::msg::PIDGains &pid_gains_msg);
 
 /**
  * @brief Convert pid terms struct to pid terms message.
@@ -228,7 +228,7 @@ void pid_loops_axes_gains_map_to_msg(const LoopsMap<AxesMap<PIDGainsMap>> &loops
  * @param terms PID terms struct to convert.
  * @param terms_msg PID terms message to populate.
  */
-void pid_terms_struct_to_msg(const PIDTerms &terms, custom_msgs::PIDTerms &terms_msg);
+void pid_terms_struct_to_msg(const PIDTerms &terms, custom_msgs::msg::PIDTerms &terms_msg);
 
 /**
  * @brief Convert pid info struct to pid info message.
@@ -236,7 +236,7 @@ void pid_terms_struct_to_msg(const PIDTerms &terms, custom_msgs::PIDTerms &terms
  * @param pid_info PID info struct to convert.
  * @param pid_info_msg PID info message to populate.
  */
-void pid_info_struct_to_msg(const PIDInfo &pid_info, custom_msgs::PIDInfo &pid_info_msg);
+void pid_info_struct_to_msg(const PIDInfo &pid_info, custom_msgs::msg::PIDInfo &pid_info_msg);
 
 /**
  * @brief Convert axes map with pid info structs to pid axes info message.
@@ -245,7 +245,7 @@ void pid_info_struct_to_msg(const PIDInfo &pid_info, custom_msgs::PIDInfo &pid_i
  * @param pid_axes_info_msg PID info message to populate.
  */
 void pid_axes_map_info_struct_to_msg(const AxesMap<PIDInfo> &pid_axes_map_info_struct,
-                                     custom_msgs::PIDAxesInfo &pid_axes_info_msg);
+                                     custom_msgs::msg::PIDAxesInfo &pid_axes_info_msg);
 
 // *****************************************************************************************************************
 // Functions to update maps.
