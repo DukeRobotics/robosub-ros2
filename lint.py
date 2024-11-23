@@ -10,6 +10,7 @@ import os
 import subprocess
 from collections.abc import Generator
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 
 from git import Repo
@@ -43,8 +44,25 @@ class LanguageStats:
     total: int = 0
     success: int = 0
 
+class LintOutputType(Enum):
+    """Enum to specify the output type of the linting command."""
+    CAPTURE = 0
+    TERMINAL = 1
+    QUIET = 2
 
-def lint_file(file_path: Path, language: str, print_success: bool, quiet: bool) -> bool:
+LINT_OUTPUT_TYPE_STR_TO_ENUM = {
+    'capture': LintOutputType.CAPTURE,
+    'terminal': LintOutputType.TERMINAL,
+    'quiet': LintOutputType.QUIET,
+}
+
+LINT_OUTPUT_TYPE_ENUM_TO_SUBPROCESS = {
+    LintOutputType.CAPTURE: subprocess.PIPE,
+    LintOutputType.TERMINAL: None,
+    LintOutputType.QUIET: subprocess.DEVNULL,
+}
+
+def lint_file(file_path: Path, language: str, print_success: bool, output_type: LintOutputType) -> bool:
     """
     Lint a single file using the appropriate linter for the specified language.
 
@@ -52,20 +70,20 @@ def lint_file(file_path: Path, language: str, print_success: bool, quiet: bool) 
         file_path (Path): The path of the file to lint.
         language (str): The programming language of the file.
         print_success (bool): If True, print a success message when linting is successful.
-        quiet (bool): If True, suppress output from the linting commands except for success or issue messages.
+        output_type (LintOutputType): How to handle the output of the linting command.
     """
     command = LINT_COMMANDS[language] + [str(file_path)]
-    out = subprocess.DEVNULL if quiet else None
     padded_language = f'{language}:'.ljust(MAX_LANGUAGE_LENGTH + 1)
+    subprocess_output_type = LINT_OUTPUT_TYPE_ENUM_TO_SUBPROCESS[output_type]
 
-    process = subprocess.Popen(command, stdout=out, stderr=out)  # noqa: S603
-    stdout, stderr = process.communicate()
+    process = subprocess.Popen(command, stdout=subprocess_output_type, stderr=subprocess_output_type)  # noqa: S603
+    stdout, _ = process.communicate()
 
     if process.returncode == 0:
         if print_success:
             print(f'{STATUS_EMOJI[True]} {padded_language} {file_path}')
         return True
-    if not quiet and stdout:
+    if output_type != LintOutputType.QUIET and stdout:
         indented_output = '\n'.join('    ' + line for line in stdout.decode().splitlines())
         print(indented_output)
     print(f'{STATUS_EMOJI[False]} {padded_language} {file_path}')
@@ -138,18 +156,19 @@ def traverse_directory(target_path: Path, check_if_git_ignored: bool) -> Generat
         # Update dirs in place
         dirs[:] = filtered_dirs
 
-def lint_files(target_path: Path, language: list[str] | None = None, print_success: bool = False, quiet: bool = False,
-               no_git_tree: bool = False) -> bool:
+def lint_files(target_path: Path, language: list[str] | None, print_success: bool, output_type: LintOutputType,
+               no_git_tree: bool) -> bool:
     """
     Lint files in the specified directory or file.
 
     Args:
         target_path (Path): The directory or file to lint.
-        language (str, optional): The programming language to lint. If not specified, lint all supported languages.
-        print_success (bool): If True, print a success message when linting is successful.
-        quiet (bool): If True, suppress output from the linting commands except for success or issue messages.
-        no_git_tree (bool): If True, do not use the git tree to traverse only files tracked by git. Instead, lint all
-            files in the specified directory.
+        language (list[str], optional): The programming language to lint. If None, lint all supported languages.
+        print_success (bool): If True, print a success message when linting is successful. If False, only print failed
+            linting messages.
+        output_type (LintOutputType): How to handle the output of the linting commands.
+        no_git_tree (bool): If True, do not check if files are ignored by git and lint all files in the specified
+            directory. Otherwise, only lint files that are not ignored by git.
     """
     languages = set(language) if language else LANGUAGES_TO_FILE_EXTENSIONS.keys()
     language_stats = {lang: LanguageStats() for lang in languages}
@@ -163,10 +182,10 @@ def lint_files(target_path: Path, language: list[str] | None = None, print_succe
         if detected_language in languages:
             language_stats[detected_language].total += 1
 
-            if not prev_success and not quiet:
+            if not prev_success and output_type != LintOutputType.QUIET:
                 print()
 
-            success = lint_file(file_path, detected_language, print_success, quiet)
+            success = lint_file(file_path, detected_language, print_success, output_type)
             if success:
                 language_stats[detected_language].success += 1
 
@@ -191,9 +210,12 @@ def main() -> None:
                              'If not specified, lint all.')
     parser.add_argument('--print-success', action='store_true',
                         help='If specified, print the names of files that were successfully linted.')
-    parser.add_argument('-q', '--quiet', action='store_true',
-                        help=('If specified, suppress output from the linting commands except for success or issue '
-                              'messages.'))
+    parser.add_argument('-o', '--output-type', choices=LINT_OUTPUT_TYPE_STR_TO_ENUM.keys(), default='terminal',
+                        help=('Specify how to handle the outputs of the linting commands. '
+                              '"capture" captures and prints the output through this script (useful for CI/CD). '
+                              '"terminal" prints the output directly to the terminal. '
+                              '"quiet" suppresses the output. '
+                              'Default is "terminal".'))
     parser.add_argument('-s', '--sorted', action='store_true',
                         help='If specified, sort the output by language.')
     parser.add_argument('--github-action', action='store_true',
@@ -214,6 +236,8 @@ def main() -> None:
         error_msg = f'The specified path "{target_path}" must be within the default script directory "{default_path}".'
         raise ValueError(error_msg)
 
+    output_type = LINT_OUTPUT_TYPE_STR_TO_ENUM[args.output_type]
+
     all_success = True
 
     if target_path.is_file():
@@ -227,7 +251,7 @@ def main() -> None:
             error_msg = 'Unsupported file type.'
             raise ValueError(error_msg)
 
-        all_success = lint_file(target_path, language, args.print_success, args.quiet)
+        all_success = lint_file(target_path, language, args.print_success, output_type)
     elif args.sorted:
         # Lint one language at a time to group the output by language
         aggregate_language_stats = {}
@@ -236,7 +260,7 @@ def main() -> None:
                 print(f'::group::Lint {language.capitalize()} ')
             else:
                 print(f'\nLinting {language.capitalize()} files...')
-            lang_success, language_stats = lint_files(target_path, [language], args.print_success, args.quiet,
+            lang_success, language_stats = lint_files(target_path, [language], args.print_success, output_type,
                                                       args.no_git_tree)
             if args.github_action:
                 print('::endgroup::')
@@ -246,7 +270,7 @@ def main() -> None:
 
         print_summary(aggregate_language_stats)
     else:
-        all_success, language_stats = lint_files(target_path, args.language, args.print_success, args.quiet,
+        all_success, language_stats = lint_files(target_path, args.language, args.print_success, output_type,
                                                  args.no_git_tree)
         print_summary(language_stats)
 
