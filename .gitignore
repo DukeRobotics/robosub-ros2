@@ -17,3 +17,9 @@ __pycache__
 .config
 .env
 .vscode
+
+# Foxglove
+node_modules
+dist
+build
+*.foxe
