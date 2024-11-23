@@ -90,23 +90,6 @@ def lint_file(file_path: Path, language: str, print_success: bool, output_type: 
     return False
 
 
-def print_summary(language_stats: dict[str, LanguageStats]) -> None:
-    """
-    Print a summary of the linting results.
-
-    Args:
-        language_stats (dict[str, LanguageStats]): A dictionary containing the linting statistics for each language.
-    """
-    overall_success = all(stats.success == stats.total for stats in language_stats.values())
-    overall_emoji = STATUS_EMOJI[overall_success]
-    print()
-    print(f'{overall_emoji} Linting Summary (success/total):')
-    for lang, stats in language_stats.items():
-        lang_emoji = STATUS_EMOJI[stats.success == stats.total]
-        print(f'  {lang_emoji} {lang.capitalize()}: {stats.success}/{stats.total}')
-    print()
-
-
 def traverse_directory(target_path: Path, check_if_git_ignored: bool) -> Generator[Path, None, None]:
     """
     Traverse files in the specified directory.
@@ -156,21 +139,21 @@ def traverse_directory(target_path: Path, check_if_git_ignored: bool) -> Generat
         # Update dirs in place
         dirs[:] = filtered_dirs
 
-def lint_files(target_path: Path, language: list[str] | None, print_success: bool, output_type: LintOutputType,
+
+def lint_files(target_path: Path, languages: list[str], print_success: bool, output_type: LintOutputType,
                no_git_tree: bool) -> bool:
     """
     Lint files in the specified directory or file.
 
     Args:
         target_path (Path): The directory or file to lint.
-        language (list[str], optional): The programming language to lint. If None, lint all supported languages.
+        languages (list[str], optional): The programming languages to lint.
         print_success (bool): If True, print a success message when linting is successful. If False, only print failed
             linting messages.
         output_type (LintOutputType): How to handle the output of the linting commands.
         no_git_tree (bool): If True, do not check if files are ignored by git and lint all files in the specified
             directory. Otherwise, only lint files that are not ignored by git.
     """
-    languages = set(language) if language else LANGUAGES_TO_FILE_EXTENSIONS.keys()
     language_stats = {lang: LanguageStats() for lang in languages}
     all_success = True
     prev_success = True
@@ -198,16 +181,38 @@ def lint_files(target_path: Path, language: list[str] | None, print_success: boo
     return all_success, language_stats
 
 
+def print_summary(language_stats: dict[str, LanguageStats]) -> None:
+    """
+    Print a summary of the linting results.
+
+    Args:
+        language_stats (dict[str, LanguageStats]): A dictionary containing the linting statistics for each language.
+    """
+    overall_success_count = sum(stats.success for stats in language_stats.values())
+    overall_total_count = sum(stats.total for stats in language_stats.values())
+
+    overall_success = overall_success_count == overall_total_count
+    overall_emoji = STATUS_EMOJI[overall_success]
+    print()
+
+    print(f'{overall_emoji} Linting Summary: {overall_success_count}/{overall_total_count}')
+    for lang, stats in language_stats.items():
+        lang_emoji = STATUS_EMOJI[stats.success == stats.total]
+        print(f'  {lang_emoji} {lang.capitalize()}: {stats.success}/{stats.total}')
+    print()
+
+
 def main() -> None:
     """Parse command-line arguments and initiate the linting process."""
     default_path = Path('/root/dev/robosub-ros2')
 
     parser = argparse.ArgumentParser(description='Lint files.')
-    parser.add_argument('path', nargs='?', default=default_path,
+    parser.add_argument('-p', '--path', nargs='?', default=default_path,
                         help='Specify the directory or file to lint. Defaults to the robosub-ros2 directory.')
     parser.add_argument('-l', '--language', choices=LANGUAGES_TO_FILE_EXTENSIONS.keys(), nargs='+',
+                        default=list(LANGUAGES_TO_FILE_EXTENSIONS.keys()),
                         help=f'Specify the language(s) to lint ({", ".join(LANGUAGES_TO_FILE_EXTENSIONS.keys())}). '
-                             'If not specified, lint all.')
+                              'If not specified, lint all.')
     parser.add_argument('--print-success', action='store_true',
                         help='If specified, print the names of files that were successfully linted.')
     parser.add_argument('-o', '--output-type', choices=LINT_OUTPUT_TYPE_STR_TO_ENUM.keys(), default='terminal',
@@ -255,7 +260,7 @@ def main() -> None:
     elif args.sorted:
         # Lint one language at a time to group the output by language
         aggregate_language_stats = {}
-        for language in LANGUAGES_TO_FILE_EXTENSIONS:
+        for language in args.language:
             if args.github_action:
                 print(f'::group::Lint {language.capitalize()} ')
             else:
