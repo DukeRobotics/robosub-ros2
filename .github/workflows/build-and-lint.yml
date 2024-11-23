@@ -30,8 +30,8 @@ jobs:
           cache-to: type=gha,mode=max
           load: true
 
-      - name: Start Docker Compose
-        id: docker-compose
+      - name: Run Docker container
+        id: run-docker
         run: docker compose up -d
 
       - name: Lint Files
@@ -39,6 +39,6 @@ jobs:
           docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --output-type capture --sort --github-action --no-git-tree
 
       - name: Build ROS2
-        if: always() && steps.docker-compose.outcome == 'success'
+        if: always() && steps.run-docker.outcome == 'success'
         run: |
           docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build.sh
