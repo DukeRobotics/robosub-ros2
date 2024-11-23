@@ -239,7 +239,7 @@ def main() -> None:
                               '"terminal" prints the output directly to the terminal. '
                               '"quiet" suppresses the output. '
                               'Default is "terminal".'))
-    parser.add_argument('-s', '--sorted', action='store_true',
+    parser.add_argument('-s', '--sort', action='store_true',
                         help='If specified, sort the output by language.')
     parser.add_argument('--github-action', action='store_true',
                         help='If specified, use GitHub Actions workflow commands in the output.')
@@ -274,14 +274,14 @@ def main() -> None:
 
         all_success = lint_file(target_path, file_language, True, output_type)
 
-    elif args.sorted:
+    elif args.sort:
         # Lint one language at a time to group the output by language
         aggregate_language_stats = {}
         for language in languages:
             if args.github_action:
-                print(f'::group::Lint {language.capitalize()}')
+                print(f'::group::Lint {language.value.name.capitalize()}')
             else:
-                print(f'\nLinting {language.capitalize()} files...')
+                print(f'\nLinting {language.value.name.capitalize()} files...')
             lang_success, language_stats = lint_files(target_path, [language], args.print_success, output_type,
                                                       args.no_git_tree)
             if args.github_action:
