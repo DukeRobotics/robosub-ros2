@@ -4,11 +4,11 @@ import rclpy
 import resource_retriever as rr
 import yaml
 import math
-import depthai_camera_connect
+import cv.depthai_camera_connect as depthai_camera_connect
 import depthai as dai
 import numpy as np
-from utils import DetectionVisualizer, calculate_relative_pose
-from image_tools import ImageTools
+from cv.utils import DetectionVisualizer, calculate_relative_pose
+from cv.image_tools import ImageTools
 import cv2
 
 from custom_msgs.msg import CVObject, SonarSweepRequest, SonarSweepResponse
@@ -18,7 +18,7 @@ from std_msgs.msg import String
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
-CAMERA_CONFIG_PATH = 'package://cv/configs/usb_cameras.yaml'
+CAMERA_CONFIG_PATH = 'package://cv/config/usb_cameras.yaml'
 with open(rr.get_filename(CAMERA_CONFIG_PATH, use_protocol=False)) as f:
     cameras = yaml.safe_load(f)
 CAMERA = cameras['front']  # TODO: use ROS params to select camera
@@ -65,7 +65,7 @@ class DepthAISpatialDetector(Node):
 
         self.camera = 'front'
         self.pipeline = None
-        self.publishers = {}  # Keys are the class names of a given model
+        self.publishers_dict = {}  # Keys are the class names of a given model
         self.output_queues = {}  # Keys are "rgb", "depth", and "detections"
         self.connected = False
         self.current_model_name = None
@@ -99,6 +99,8 @@ class DepthAISpatialDetector(Node):
             String, TASK_PLANNING_REQUESTS_PATH, self.update_priority, qos_profile)
 
         self.create_subscription(CompressedImage, self.feed_path, self._update_latest_img, 1)
+
+        self.run()
 
     def _update_latest_img(self, img_msg):
         """ Send an image to the device for detection
@@ -242,7 +244,7 @@ class DepthAISpatialDetector(Node):
             publisher_dict[model_class] = self.create_publisher(CVObject,
                                                           publisher_name,
                                                           10)
-        self.publishers = publisher_dict
+        self.publishers_dict = publisher_dict
 
         if self.rgb_detections:
             self.detection_feed_publisher = self.create_publisher(CompressedImage, "cv/front/detections/compressed",
@@ -258,8 +260,8 @@ class DepthAISpatialDetector(Node):
         if self.connected:
             return
 
-        self.output_queues["detections"] = device.getOutputQueue(name="detections", maxSize=1, blocking=False)
-        self.output_queues["passthrough"] = device.getOutputQueue(
+        self.output_queues["detections"] = self.device.getOutputQueue(name="detections", maxSize=1, blocking=False)
+        self.output_queues["passthrough"] = self.device.getOutputQueue(
             name="feed", maxSize=1, blocking=False)
 
         self.input_queue = device.getInputQueue(name="nn_input", maxSize=1, blocking=False)
@@ -279,7 +281,7 @@ class DepthAISpatialDetector(Node):
             return
 
         # Get detections from output queues
-        inDet = self.output_queues["detections"].tryGet()
+        inDet = self.output_queues["detections"].get()
         if not inDet:
             return
         detections = inDet.detections
@@ -345,8 +347,8 @@ class DepthAISpatialDetector(Node):
         """
         object_msg = CVObject()
 
-        object_msg.header.stamp.secs = self.get_clock().now().seconds_nanoseconds()[0]
-        object_msg.header.stamp.nsecs = self.get_clock().now().seconds_nanoseconds()[1]
+        object_msg.header.stamp.sec = self.get_clock().now().seconds_nanoseconds()[0]
+        object_msg.header.stamp.nanosec = self.get_clock().now().seconds_nanoseconds()[1]
 
         object_msg.label = label
         object_msg.score = confidence
@@ -367,10 +369,10 @@ class DepthAISpatialDetector(Node):
 
         object_msg.sonar = using_sonar
 
-        if self.publishers:
+        if self.publishers_dict:
             # Flush out 0, 0, 0 values
             # if object_msg.coords.x != 0 and object_msg.coords.y != 0 and object_msg.coords.z != 0:
-            self.publishers[label].publish(object_msg)
+            self.publishers_dict[label].publish(object_msg)
 
     def update_sonar(self, sonar_results):
         """
@@ -427,5 +429,20 @@ class DepthAISpatialDetector(Node):
         return math.degrees(math.atan(((x_offset - image_center_x) * 0.005246675486)))
 
 
+def main(args=None):
+    rclpy.init(args=args)
+    depthai_spatial_detector = DepthAISpatialDetector()
+
+    try:
+        rclpy.spin(depthai_spatial_detector)
+    except KeyboardInterrupt:
+        depthai_spatial_detector.device.close()
+    finally:
+        depthai_spatial_detector.device.close()
+        depthai_spatial_detector.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
 if __name__ == '__main__':
-    DepthAISpatialDetector().run()
+    main()

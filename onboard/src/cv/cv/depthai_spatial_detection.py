@@ -44,7 +44,7 @@ class DepthAISpatialDetector(Node):
         Initializes the ROS node. Loads the yaml file at cv/models/depthai_models.yaml
         """
         super().__init__('depthai_spatial_detection')
-        self.running_model = self.declare_parameter('running_model', '2024_gate_glyphs').value
+        self.running_model = self.declare_parameter('running_model', 'yolov7_tiny_2023_main').value
         self.rgb_raw = self.declare_parameter('rgb_raw', True).value
         self.rgb_detections = self.declare_parameter('rgb_detections', True).value
         self.queue_depth = self.declare_parameter('queue_depth', False).value  # Whether to output depth map
@@ -52,7 +52,7 @@ class DepthAISpatialDetector(Node):
         self.using_sonar = self.declare_parameter('using_sonar', False).value
         self.show_class_name = self.declare_parameter('show_class_name', True).value
         self.show_confidence = self.declare_parameter('show_confidence', True).value
-        self.correct_color = self.declare_parameter('correct_color', True).value
+        self.correct_color = self.declare_parameter('correct_color', False).value
 
         with open(rr.get_filename(DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH,
                                   use_protocol=False)) as f:
@@ -378,8 +378,8 @@ class DepthAISpatialDetector(Node):
         """
         object_msg = CVObject()
 
-        object_msg.header.stamp.secs = self.get_clock().now().seconds_nanoseconds()[0]
-        object_msg.header.stamp.nsecs = self.get_clock().now().seconds_nanoseconds()[1]
+        object_msg.header.stamp.sec = self.get_clock().now().seconds_nanoseconds()[0]
+        object_msg.header.stamp.nanosec = self.get_clock().now().seconds_nanoseconds()[1]
 
         object_msg.label = label
         object_msg.score = confidence
@@ -440,7 +440,6 @@ class DepthAISpatialDetector(Node):
         # Setup pipeline and publishers
         self.init_model(self.running_model)
         self.init_publishers(self.running_model)
-
 
         self.device = depthai_camera_connect.connect(self.pipeline)
         self.init_queues(self.device)
