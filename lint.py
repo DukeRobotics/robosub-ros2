@@ -45,9 +45,9 @@ class LintLanguage(Enum):
         autofix_command=None,
     )
 
-LANGUAGES_STR_TO_ENUM = {lang.value.name: lang for lang in LintLanguage}
+STR_TO_LINT_LANGUAGE = {lang.value.name: lang for lang in LintLanguage}
 
-FILE_EXTENSIONS_TO_LANGUAGES = {ext: lang for lang in LintLanguage for ext in lang.value.file_extensions}
+FILE_EXTENSIONS_TO_LINT_LANGUAGES = {ext: lang for lang in LintLanguage for ext in lang.value.file_extensions}
 
 MAX_LANGUAGE_LENGTH = max(len(lang.value.name) for lang in LintLanguage)
 
@@ -183,7 +183,7 @@ def lint_files(target_path: Path, languages: list[LintLanguage], print_success: 
     prev_success = True
 
     for file_path in traverse_directory(target_path, not no_git_tree):
-        detected_language = FILE_EXTENSIONS_TO_LANGUAGES.get(file_path.suffix)
+        detected_language = FILE_EXTENSIONS_TO_LINT_LANGUAGES.get(file_path.suffix)
         if detected_language in languages:
             language_stats[detected_language].total += 1
 
@@ -226,10 +226,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description='Lint files.')
     parser.add_argument('-p', '--path', nargs='?', default=REPO_PATH,
                         help='Specify the directory or file to lint. Defaults to the robosub-ros2 directory.')
-    parser.add_argument('-l', '--languages', choices=LANGUAGES_STR_TO_ENUM.keys(), nargs='+',
-                        default=list(LANGUAGES_STR_TO_ENUM.keys()),
-                        help=f'Specify the language(s) to lint ({", ".join(LANGUAGES_STR_TO_ENUM.keys())}). '
+    parser.add_argument('-l', '--languages', choices=STR_TO_LINT_LANGUAGE.keys(), nargs='+',
+                        default=list(STR_TO_LINT_LANGUAGE.keys()),
+                        help=f'Specify the language(s) to lint ({", ".join(STR_TO_LINT_LANGUAGE.keys())}). '
                               'If not specified, lint all.')
+    parser.add_argument('-f', '--fix', action='store_true', help='If specified, attempt to autofix linting errors.')
     parser.add_argument('--print-success', action='store_true',
                         help='If specified, print the names of files that were successfully linted. This is '
                              'automatically enabled if --path is a file.')
@@ -260,13 +261,13 @@ def main() -> None:
         raise ValueError(error_msg)
 
     output_type = LINT_OUTPUT_TYPE_STR_TO_ENUM[args.output_type]
-    languages = [LANGUAGES_STR_TO_ENUM[lang] for lang in args.languages]
+    languages = [STR_TO_LINT_LANGUAGE[lang] for lang in args.languages]
 
     all_success = True
 
     if target_path.is_file():
         # If a specific file is provided, ensure it matches the language if specified
-        file_language = FILE_EXTENSIONS_TO_LANGUAGES.get(target_path.suffix)
+        file_language = FILE_EXTENSIONS_TO_LINT_LANGUAGES.get(target_path.suffix)
         if file_language not in languages:
             error_msg = (f'Specified file\'s extension "{target_path.suffix}" does not match the specified language(s):'
                          f' {", ".join(args.languages)}.')
