@@ -24,7 +24,7 @@ fi
 export _colcon_cd_root=/opt/ros/jazzy
 
 # Alias to start foxglove bridge
-alias fg-ws="ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765"
+alias fg-ws="ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=28765"
 
 cd /root/dev/robosub-ros2
 
