@@ -24,6 +24,7 @@ build_workspace() {
 
     build_cmd="colcon build"
 
+    # Don't use symlink install for core workspace
     if [ "$workspace_dir" != "$CORE_WS" ]; then
         build_cmd="$build_cmd --symlink-install"
     fi
