@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import rospy
+import rclpy
 import resource_retriever as rr
 import yaml
 import math
@@ -15,6 +15,9 @@ from custom_msgs.msg import CVObject, SonarSweepRequest, SonarSweepResponse
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String
 
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
+
 CAMERA_CONFIG_PATH = 'package://cv/configs/usb_cameras.yaml'
 with open(rr.get_filename(CAMERA_CONFIG_PATH, use_protocol=False)) as f:
     cameras = yaml.safe_load(f)
@@ -28,6 +31,7 @@ SONAR_RANGE = 1.75
 SONAR_REQUESTS_PATH = 'sonar/request'
 SONAR_RESPONSES_PATH = 'sonar/cv/response'
 TASK_PLANNING_REQUESTS_PATH = "controls/desired_feature"
+LOOP_RATE = 10
 
 GATE_IMAGE_WIDTH = 0.2452  # Width of gate images in meters
 GATE_IMAGE_HEIGHT = 0.2921  # Height of gate images in meters
@@ -38,21 +42,21 @@ SENSOR_SIZE = (CAMERA['sensor_size']['width'], CAMERA['sensor_size']['height']) 
 
 
 # Compute detections on live camera feed and publish spatial coordinates for detected objects
-class DepthAISpatialDetector:
+class DepthAISpatialDetector(Node):
     def __init__(self):
         """
         Initializes the ROS node. Loads the yaml file at cv/models/depthai_models.yaml
         """
-        rospy.init_node('depthai_spatial_detection', anonymous=True)
-        self.feed_path = rospy.get_param("~feed_path")
-        self.running_model = rospy.get_param("~model")
-        self.rgb_raw = rospy.get_param("~rgb_raw")
-        self.rgb_detections = rospy.get_param("~rgb_detections")
-        self.queue_depth = rospy.get_param("~depth")  # Whether to output depth map
-        self.sync_nn = rospy.get_param("~sync_nn")
-        self.using_sonar = rospy.get_param("~using_sonar")
-        self.show_class_name = rospy.get_param("~show_class_name")
-        self.show_confidence = rospy.get_param("~show_confidence")
+        super().__init__("depthai_spatial_detection")
+        self.feed_path = self.declare_parameter("feed_path", "/camera/usb/front/compressed").value
+        self.running_model = self.declare_parameter("model", "2024_gate_glyphs").value
+        self.rgb_raw = self.declare_parameter("rgb_raw", True).value
+        self.rgb_detections = self.declare_parameter("rgb_detections", True).value
+        self.queue_depth = self.declare_parameter("depth", False).value  # Whether to output depth map
+        self.sync_nn = self.declare_parameter("sync_nn", True).value
+        self.using_sonar = self.declare_parameter("using_sonar", False).value
+        self.show_class_name = self.declare_parameter("show_class_name", True).value
+        self.show_confidence = self.declare_parameter("show_confidence", True).value
         self.device = None
 
         with open(rr.get_filename(DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH,
@@ -80,15 +84,21 @@ class DepthAISpatialDetector:
         # By default the first task is going through the gate
         self.current_priority = "buoy_abydos_serpenscaput"
 
-        # Initialize publishers and subscribers for sonar/task planning
-        self.sonar_requests_publisher = rospy.Publisher(
-            SONAR_REQUESTS_PATH, SonarSweepRequest, queue_size=10)
-        self.sonar_response_subscriber = rospy.Subscriber(
-            SONAR_RESPONSES_PATH, SonarSweepResponse, self.update_sonar)
-        self.desired_detection_feature = rospy.Subscriber(
-            TASK_PLANNING_REQUESTS_PATH, String, self.update_priority)
+        qos_profile = QoSProfile(
+            reliability=QoSReliabilityPolicy.RELIABLE,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=10 # queue_size in ros 1
+        )
 
-        rospy.Subscriber(self.feed_path, CompressedImage, self._update_latest_img, queue_size=1)
+        # Initialize publishers and subscribers for sonar/task planning
+        self.sonar_requests_publisher = self.create_publisher(
+            SonarSweepRequest, SONAR_REQUESTS_PATH, 10)
+        self.sonar_response_subscriber = self.create_subscription(
+            SonarSweepResponse, SONAR_RESPONSES_PATH, self.update_sonar, qos_profile)
+        self.desired_detection_feature = self.create_subscription(
+            String, TASK_PLANNING_REQUESTS_PATH, self.update_priority, qos_profile)
+
+        self.create_subscription(CompressedImage, self.feed_path, self._update_latest_img, 1)
 
     def _update_latest_img(self, img_msg):
         """ Send an image to the device for detection
@@ -229,14 +239,14 @@ class DepthAISpatialDetector:
         publisher_dict = {}
         for model_class in model['classes']:
             publisher_name = f"cv/{self.camera}/{model_class}"
-            publisher_dict[model_class] = rospy.Publisher(publisher_name,
-                                                          CVObject,
-                                                          queue_size=10)
+            publisher_dict[model_class] = self.create_publisher(CVObject,
+                                                          publisher_name,
+                                                          10)
         self.publishers = publisher_dict
 
         if self.rgb_detections:
-            self.detection_feed_publisher = rospy.Publisher("cv/front/detections/compressed", CompressedImage,
-                                                            queue_size=10)
+            self.detection_feed_publisher = self.create_publisher(CompressedImage, "cv/front/detections/compressed",
+                                                            10)
 
     def init_queues(self, device):
         """
@@ -265,7 +275,7 @@ class DepthAISpatialDetector:
         """
         # init_output_queues must be called before detect
         if not self.connected:
-            rospy.logwarn("Output queues are not initialized so cannot detect. Call init_output_queues first.")
+            self.get_logger().warn("Output queues are not initialized so cannot detect. Call init_output_queues first.")
             return
 
         # Get detections from output queues
@@ -335,8 +345,8 @@ class DepthAISpatialDetector:
         """
         object_msg = CVObject()
 
-        object_msg.header.stamp.secs = rospy.Time.now().secs
-        object_msg.header.stamp.nsecs = rospy.Time.now().nsecs
+        object_msg.header.stamp.secs = self.get_clock().now().seconds_nanoseconds()[0]
+        object_msg.header.stamp.nsecs = self.get_clock().now().seconds_nanoseconds()[1]
 
         object_msg.label = label
         object_msg.score = confidence
@@ -397,13 +407,10 @@ class DepthAISpatialDetector:
         self.init_model(self.running_model)
         self.init_publishers(self.running_model)
 
-        with depthai_camera_connect.connect(self.pipeline) as device:
-            rospy.loginfo("Connected to DepthAI device")
-            self.device = device
-            self.init_queues(device)
+        self.device = depthai_camera_connect.connect(self.pipeline)
+        self.init_queues(self.device)
 
-            while not rospy.is_shutdown():
-                self.detect()
+        self.detect_timer = self.create_timer(1 / LOOP_RATE, self.detect)
 
         return True
 
