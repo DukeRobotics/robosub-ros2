@@ -18,6 +18,9 @@ find_package(std_srvs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
+find_package(OsqpEigen REQUIRED)
+
+include_directories(/usr/local/include/osqp)
 
 add_executable(controls src/controls.cpp)
 add_executable(pid_manager src/pid_manager.cpp)
@@ -81,6 +84,7 @@ ament_target_dependencies(
   rclcpp
   custom_msgs
   Eigen3
+  OsqpEigen
 )
 
 ament_package()

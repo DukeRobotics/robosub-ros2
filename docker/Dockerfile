@@ -12,9 +12,7 @@ RUN apt install -y --no-install-recommends libyaml-cpp-dev
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-serial
-
-# TODO: resolve issue with not being able to install foxglove
-# RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
+RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
 
 # Set no password for root user
 RUN passwd -d root

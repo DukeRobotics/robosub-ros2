@@ -1,6 +1,6 @@
 #include "thruster_allocator.hpp"
 
-#include <OsqpEigen/OsqpEigen.hpp>
+#include <OsqpEigen/OsqpEigen.h>
 #include <rclcpp/rclcpp.hpp>
 #include <rcpputils/asserts.hpp>
 
