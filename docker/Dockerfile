@@ -57,7 +57,8 @@ RUN --mount=type=secret,id=github_auth_ssh_key,required=false \
         git config --global user.signingkey "/root/.ssh/github_signing_key" && \
         git config --global gpg.ssh.allowedSignersFile "/root/.ssh/allowed_signers" && \
         git config --global user.name "$GIT_USER_NAME" && \
-        git config --global user.email "$GIT_USER_EMAIL"; \
+        git config --global user.email "$GIT_USER_EMAIL" && \
+        git config --global --add safe.directory /root/dev/robosub-ros2; \
     fi
 
 # Create development directory
