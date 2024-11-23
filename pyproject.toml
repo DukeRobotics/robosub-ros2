@@ -5,7 +5,11 @@ lint.flake8-quotes.inline-quotes = "single"
 lint.pydocstyle.convention = "google"
 lint.isort.relative-imports-order = "closest-to-furthest"
 lint.select = [
-    "ALL", # include all the rules, including new ones
+    # Include all the rules, including new ones
+    "ALL",
+
+    # Include these rules, even though they are not enabled by default when
+    # using the google convention with pydocstyle
     "D213",
     "D400",
     "D401"
