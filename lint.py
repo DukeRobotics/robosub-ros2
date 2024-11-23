@@ -276,31 +276,32 @@ def main() -> None:
     """Parse command-line arguments and initiate the linting process."""
     parser = argparse.ArgumentParser(description='Lint files.')
     parser.add_argument('-p', '--path', nargs='?', default=REPO_PATH,
-                        help='Specify the directory or file to lint. Defaults to the robosub-ros2 directory.')
+                        help='Path to the directory or file to lint. Defaults to the entire repository.')
     parser.add_argument('-l', '--languages', choices=STR_TO_LINT_LANGUAGE.keys(), nargs='+',
                         default=list(STR_TO_LINT_LANGUAGE.keys()),
-                        help=f'Specify the language(s) to lint ({", ".join(STR_TO_LINT_LANGUAGE.keys())}). '
-                              'If not specified, lint all.')
+                        help=f'Language(s) to lint ({", ".join(STR_TO_LINT_LANGUAGE.keys())}). '
+                              'Defaults to linting all supported languages.')
     parser.add_argument('-f', '--fix', action='store_true',
-                        help='If specified, attempt to autofix linting errors by modifying files in place. '
+                        help='Attempt to autofix linting errors by modifying files in place. '
                              'Autofix is available for these languages: '
                              f'{", ".join(lang.value.name for lang in LINT_LANGUAGES_WITH_AUTOFIX)}.')
     parser.add_argument('--print-success', action='store_true',
-                        help='If specified, print the names of files that were successfully linted. This is '
-                             'automatically enabled if --path is a file.')
+                        help='Print the names of files that were successfully linted. This is automatically enabled if '
+                             '--path is a file.')
     parser.add_argument('-o', '--output-type', choices=STR_TO_LINT_OUTPUT_TYPE.keys(), default='terminal',
-                        help=('Specify how to handle the outputs of the linting commands. '
+                        help=('How to handle the outputs of the linting commands. '
                               '"capture" captures and prints the output through this script (useful for CI/CD). '
                               '"terminal" prints the output directly to the terminal. '
                               '"quiet" suppresses the output. '
                               'Default is "terminal".'))
     parser.add_argument('-s', '--sort', action='store_true',
-                        help='If specified, sort the output by language.')
+                        help='Sort the output by language.')
     parser.add_argument('--github-action', action='store_true',
-                        help='If specified, use GitHub Actions workflow commands in the output.')
+                        help='Use GitHub Actions workflow commands in the output.')
     parser.add_argument('--no-git-tree', action='store_true',
-                        help='If specified, do not check if files are ignored by git. Instead, lint all files in the '
-                             'specified directory, including git-ignored files.')
+                        help='Do not check if files are ignored by git. Instead, lint all files in the '
+                             'specified directory, including git-ignored files. This is useful when this script is run '
+                             'in a CI/CD environment that does not have the git tree available.')
     args = parser.parse_args()
 
     target_path = Path(args.path).resolve()
@@ -325,8 +326,8 @@ def main() -> None:
         # If a specific file is provided, ensure it is part of the specified language(s)
         file_language = FILE_EXTENSIONS_TO_LINT_LANGUAGES.get(target_path.suffix)
         if file_language not in languages:
-            error_msg = (f'Specified file\'s extension "{target_path.suffix}" does not match the specified language(s):'
-                         f' {", ".join(args.languages)}.')
+            error_msg = (f'The specified file\'s extension "{target_path.suffix}" does not match the specified '
+                         f'language(s): {", ".join(args.languages)}.')
             raise ValueError(error_msg)
 
         all_success = lint_file(target_path, file_language, args.fix, True, output_type)
