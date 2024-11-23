@@ -148,23 +148,4 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
     - See the [Build Script Options](#build-script-options) section for more options.
 4. You are now ready to run the code!
 
-### Build Script Options
-The `build.sh` script has several options to build and clean packages.
-- By default, the script builds all packages in the `core` and `onboard` workspaces.
-    ```bash
-    source build.sh
-    ```
-- The script accepts an optional first argument that can be `core`, `onboard`, or the name of a specific package in the `onboard` workspace.
-    ```bash
-    source build.sh [core|onboard|PACKAGE_NAME]
-    ```
-    - If the first argument is `core`, the script builds all packages in the `core` workspace.
-    - If the first argument is `onboard`, the script builds all packages in the `onboard` workspace.
-    - If the first argument is the name of a specific package in `onboard`, the script builds only that package.
-- The first argument can also be `clean` to remove the `build`, `install`, and `log` directories from the `core` and `onboard` workspaces.
-    ```bash
-    source build.sh clean [core|onboard]
-    ```
-    - The optional second argument can be `core` or `onboard`.
-    - If the second argument is `core`, the script cleans only the `core` workspace.
-    - If the second argument is `onboard`, the script cleans only the `onboard` workspace.
+See [SCRIPTS.md](SCRIPTS.md) for more information about how to `build.sh` and other scripts at the root of the repository.
