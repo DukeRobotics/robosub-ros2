@@ -20,28 +20,28 @@ from git import Repo
 class LintLanguageProperties:
     """Dataclass to store properties of a programming language."""
     name: str
-    lint_command: list[str]
     file_extensions: list[str]
+    lint_command: list[str]
     autofix_command: list[str] | None
 
 class LintLanguage(Enum):
     """Enum to specify the programming language for linting."""
     PYTHON = LintLanguageProperties(
         name='python',
-        lint_command=['/root/dev/venv/bin/python3', '-m', 'ruff', 'check', '-q'],
         file_extensions=['.py'],
+        lint_command=['/root/dev/venv/bin/python3', '-m', 'ruff', 'check', '-q'],
         autofix_command=['/root/dev/venv/bin/python3', '-m', 'ruff', 'check', '--fix', '-q'],
     )
     CPP = LintLanguageProperties(
         name='cpp',
-        lint_command=['clang-format', '-style=file', '--dry-run'],
         file_extensions=['.cpp', '.h', '.c', '.hpp'],
+        lint_command=['clang-format', '-style=file', '--Werror', '--dry-run'],
         autofix_command=['clang-format', '-style=file', '-i'],
     )
     BASH = LintLanguageProperties(
         name='bash',
-        lint_command=['shellcheck'],
         file_extensions=['.sh'],
+        lint_command=['shellcheck'],
         autofix_command=None,
     )
 
@@ -51,6 +51,8 @@ FILE_EXTENSIONS_TO_LINT_LANGUAGES = {ext: lang for lang in LintLanguage for ext 
 
 MAX_LANGUAGE_LENGTH = max(len(lang.value.name) for lang in LintLanguage)
 
+LINT_LANGUAGES_WITH_AUTOFIX = {lang for lang in LintLanguage if lang.value.autofix_command is not None}
+
 STATUS_EMOJI = {
     True: '✅',
     False: '❌',
@@ -59,7 +61,7 @@ STATUS_EMOJI = {
 REPO_PATH = Path('/root/dev/robosub-ros2')
 
 @dataclass
-class LanguageStats:
+class LintLanguageStats:
     """Dataclass to store linting statistics for a specific language."""
     total: int = 0
     success: int = 0
@@ -82,17 +84,22 @@ LINT_OUTPUT_TYPE_ENUM_TO_SUBPROCESS = {
     LintOutputType.QUIET: subprocess.DEVNULL,
 }
 
-def lint_file(file_path: Path, language: LintLanguage, print_success: bool, output_type: LintOutputType) -> bool:
+def lint_file(file_path: Path, language: LintLanguage, autofix: bool, print_success: bool,
+              output_type: LintOutputType) -> bool:
     """
     Lint a single file using the appropriate linter for the specified language.
 
     Args:
         file_path (Path): The path of the file to lint.
         language (LintLanguage): The programming language of the file.
+        autofix (bool): If True, attempt to autofix linting errors. This modifies the file in place. This is only
+            supported for languages with autofix commands.
         print_success (bool): If True, print a success message when linting is successful.
         output_type (LintOutputType): How to handle the output of the linting command.
     """
-    command = [*language.value.lint_command, str(file_path)]
+    base_command = language.value.autofix_command if autofix and (language in LINT_LANGUAGES_WITH_AUTOFIX) else \
+        language.value.lint_command
+    command = [*base_command, str(file_path)]
     padded_language = f'{language.value.name}:'.ljust(MAX_LANGUAGE_LENGTH + 1)
     subprocess_output_type = LINT_OUTPUT_TYPE_ENUM_TO_SUBPROCESS[output_type]
 
@@ -160,14 +167,16 @@ def traverse_directory(target_path: Path, check_if_git_ignored: bool) -> Generat
         dirs[:] = filtered_dirs
 
 
-def lint_files(target_path: Path, languages: list[LintLanguage], print_success: bool, output_type: LintOutputType,
-               no_git_tree: bool) -> tuple[bool, dict[LintLanguage, LanguageStats]]:
+def lint_files(target_path: Path, languages: list[LintLanguage], autofix: bool, print_success: bool,
+               output_type: LintOutputType, no_git_tree: bool) -> tuple[bool, dict[LintLanguage, LintLanguageStats]]:
     """
     Lint files in the specified directory or file.
 
     Args:
         target_path (Path): The directory or file to lint.
         languages (list[LintLanguage]): The programming languages to lint.
+        autofix (bool): If True, attempt to autofix linting errors. This modifies the files in place. This is only
+            supported for languages with autofix commands.
         print_success (bool): If True, print a success message when linting is successful. If False, only print failed
             linting messages.
         output_type (LintOutputType): How to handle the output of the linting commands.
@@ -175,10 +184,10 @@ def lint_files(target_path: Path, languages: list[LintLanguage], print_success: 
             directory. Otherwise, only lint files that are not ignored by git.
 
     Returns:
-        tuple[bool, dict[LintLanguage, LanguageStats]]: A tuple containing a boolean indicating if all files were
+        tuple[bool, dict[LintLanguage, LintLanguageStats]]: A tuple containing a boolean indicating if all files were
             successfully linted and a dictionary of the linting statistics for each language.
     """
-    language_stats = {lang: LanguageStats() for lang in languages}
+    language_stats = {lang: LintLanguageStats() for lang in languages}
     all_success = True
     prev_success = True
 
@@ -190,7 +199,7 @@ def lint_files(target_path: Path, languages: list[LintLanguage], print_success: 
             if not prev_success and output_type != LintOutputType.QUIET:
                 print()
 
-            success = lint_file(file_path, detected_language, print_success, output_type)
+            success = lint_file(file_path, detected_language, autofix, print_success, output_type)
             if success:
                 language_stats[detected_language].success += 1
 
@@ -200,12 +209,15 @@ def lint_files(target_path: Path, languages: list[LintLanguage], print_success: 
     return all_success, language_stats
 
 
-def print_summary(language_stats: dict[LintLanguage, LanguageStats]) -> None:
+def print_summary(language_stats: dict[LintLanguage, LintLanguageStats]) -> None:
     """
     Print a summary of the linting results.
 
+    Prints the number of files successfully linted and the total number of files for each language that was linted and
+        for all languages combined.
+
     Args:
-        language_stats (dict[LintLanguage, LanguageStats]): A dictionary of the linting statistics for each language.
+        language_stats (dict[LintLanguage, LintLanguageStats]): Linting statistics for each language.
     """
     overall_success_count = sum(stats.success for stats in language_stats.values())
     overall_total_count = sum(stats.total for stats in language_stats.values())
@@ -230,7 +242,10 @@ def main() -> None:
                         default=list(STR_TO_LINT_LANGUAGE.keys()),
                         help=f'Specify the language(s) to lint ({", ".join(STR_TO_LINT_LANGUAGE.keys())}). '
                               'If not specified, lint all.')
-    parser.add_argument('-f', '--fix', action='store_true', help='If specified, attempt to autofix linting errors.')
+    parser.add_argument('-f', '--fix', action='store_true',
+                        help='If specified, attempt to autofix linting errors by modifying files in place. '
+                             'Autofix is available for these languages: '
+                             f'{", ".join(lang.value.name for lang in LINT_LANGUAGES_WITH_AUTOFIX)}.')
     parser.add_argument('--print-success', action='store_true',
                         help='If specified, print the names of files that were successfully linted. This is '
                              'automatically enabled if --path is a file.')
@@ -273,7 +288,7 @@ def main() -> None:
                          f' {", ".join(args.languages)}.')
             raise ValueError(error_msg)
 
-        all_success = lint_file(target_path, file_language, True, output_type)
+        all_success = lint_file(target_path, file_language, args.fix, True, output_type)
 
     elif args.sort:
         # Lint one language at a time to group the output by language
@@ -283,8 +298,8 @@ def main() -> None:
                 print(f'::group::Lint {language.value.name.capitalize()}')
             else:
                 print(f'\nLinting {language.value.name.capitalize()} files...')
-            lang_success, language_stats = lint_files(target_path, [language], args.print_success, output_type,
-                                                      args.no_git_tree)
+            lang_success, language_stats = lint_files(target_path, [language], args.fix, args.print_success,
+                                                      output_type, args.no_git_tree)
             if args.github_action:
                 print('::endgroup::')
 
@@ -294,7 +309,7 @@ def main() -> None:
         print_summary(aggregate_language_stats)
 
     else:
-        all_success, language_stats = lint_files(target_path, languages, args.print_success, output_type,
+        all_success, language_stats = lint_files(target_path, languages, args.fix, args.print_success, output_type,
                                                  args.no_git_tree)
         print_summary(language_stats)
 
