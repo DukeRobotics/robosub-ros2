@@ -3,7 +3,6 @@
 
 export PYTHONWARNINGS="ignore:easy_install command is deprecated"
 
-# To be appended to /root/.bashrc
 source /opt/ros/jazzy/setup.bash
 source /usr/share/colcon_cd/function/colcon_cd.sh
 
