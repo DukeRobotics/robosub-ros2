@@ -1,10 +1,10 @@
 {
   "output": "../types/dist/customMsgs.ts",
-  "rosVersion": 1,
+  "rosVersion": 2,
   "input": [
     {
       "namespace": "custom_msgs",
-      "path": "../../../../core/catkin_ws/src/custom_msgs"
+      "path": "../../../../core/src/custom_msgs"
     }
   ]
 }

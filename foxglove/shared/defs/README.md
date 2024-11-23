@@ -54,26 +54,26 @@ The interface is prefixed by its package name. For example, `GeometryMsgsTwist` 
 ##### Constants
 Constants are translated into an enum with the suffix `Const`.
 
-## Generating ROS 1 Types
-The `types/ros1Msgs.ts` file exports the types of all ROS 1 messages, services, and actions. In the rare case that this file needs to be regenerated (e.g., ROS message definitions change, TypeScript type generation algorithm changes), follow the following steps:
+## Generating ROS 2 Types
+The `types/ros2Msgs.ts` file exports the types of all ROS 2 messages, services, and actions. In the rare case that this file needs to be regenerated (e.g., ROS message definitions change, TypeScript type generation algorithm changes), follow the following steps:
 
-**NOTE:** There are some duplicates in the `ros1Msgs.ts` file! (e.g., `ActionlibTestRequestActionGoal`.)
+**NOTE:** There are some duplicates in the `ros2Msgs.ts` file! (e.g., `ActionlibTestRequestActionGoal`.)
 However, all duplicates come from ROS actions and Foxglove does not currently support ROS actions.
 Therefore, this conflict can be ignored for now.
 
 1. Build necessary dependencies
 ```bash
 cd foxglove
-python foxglove build
+python foxglove.py build
 ```
 2. Start the onboard docker container
-3. Copy over the ROS 1 `share` directory using `scp`
+3. Copy over the ROS 2 `share` directory using `scp`
 ```bash
 cd foxglove/shared/defs/
-scp -P 2200 -r root@localhost:/opt/ros/noetic/share/ share
+scp -P 2202 -r root@localhost:/opt/ros/jazzy/share/ share
 ```
 4. Generate the types
 ```bash
-npx ros-typescript-generator --config ros_ts_generator_configs/ros1.json
+npx ros-typescript-generator --config ros_ts_generator_configs/ros2.json
 ```
 The `share` folder can now be safely deleted.

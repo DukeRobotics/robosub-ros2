@@ -5,7 +5,7 @@ import { writeMessageDefinitions } from "./messageDefinitions";
 
 // The following paths are relative to the src directory containing this script
 // For this script to work correctly, this script must be run from the src directory
-const CUSTOM_MSGS_DEFS_PATH = "../../../core/catkin_ws/src/custom_msgs/msg";
+const CUSTOM_MSGS_DEFS_PATH = "../../../core/src/custom_msgs/msg";
 const CUSTOM_MSGS_SAVE_DIR = "custom_msg_defs/dist";
 
 const DATATYPE_MAPS_SAVE_DIR = "datatype_maps/dist";
