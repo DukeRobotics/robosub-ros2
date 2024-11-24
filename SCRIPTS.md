@@ -51,8 +51,8 @@ The `lint.py` script lint checks files of supported programming languages. It ca
 ```
 - `-h, --help`: Show the help message and exit.
 - `-p, --path [PATH]`: Path to the directory or file to lint. Defaults to linting the entire repository.
-- `-l, --languages {python,cpp,bash}`: Language(s) to lint. Defaults to linting all supported languages.
-- `-f, --fix`: Automatically fix linting errors where possible. Autofix is supported only for `cpp` and `python`.
+- `-l, --languages {bash,cpp,python}`: Language(s) to lint. Defaults to linting all supported languages.
+- `-f, --fix`: Automatically fix linting errors where possible. Autofix is supported for Bash, C++, and Python.
 - `--print-success`: Print the paths to the files that were successfully linted. This is automatically enabled if `--path` is a file.
 - `-o, --output-type {capture,terminal,quiet}`: How to handle the outputs of the linting commands. Default is `terminal`.
     - `capture` captures the output and prints it through this script (useful for CI/CD).

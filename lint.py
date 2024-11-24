@@ -59,6 +59,9 @@ class LintLanguage(Enum):
 # Map from LintLanguage name to LintLanguage
 STR_TO_LINT_LANGUAGE = {lang.value.name: lang for lang in LintLanguage}
 
+# List of lint language names
+LINT_LANGUAGE_NAMES = sorted([lang.value.name for lang in LintLanguage])
+
 # Map from file extension to LintLanguage
 FILE_EXTENSIONS_TO_LINT_LANGUAGES = {ext: lang for lang in LintLanguage for ext in lang.value.file_extensions}
 
@@ -66,7 +69,8 @@ FILE_EXTENSIONS_TO_LINT_LANGUAGES = {ext: lang for lang in LintLanguage for ext 
 MAX_LANGUAGE_LENGTH = max(len(lang.value.name) for lang in LintLanguage)
 
 # Set of languages with autofix commands
-LINT_LANGUAGES_WITH_AUTOFIX = {lang for lang in LintLanguage if lang.value.autofix_command is not None}
+LINT_LANGUAGE_WITH_AUTOFIX_NAMES = sorted([lang.value.name for lang in LintLanguage \
+                                           if lang.value.autofix_command is not None])
 
 # Map from lint status to emoji
 STATUS_EMOJI = {
@@ -279,14 +283,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description='Lint files.')
     parser.add_argument('-p', '--path', nargs='?', default=REPO_PATH,
                         help='Path to the directory or file to lint. Defaults to the entire repository.')
-    parser.add_argument('-l', '--languages', choices=STR_TO_LINT_LANGUAGE.keys(), nargs='+',
-                        default=list(STR_TO_LINT_LANGUAGE.keys()),
-                        help=f'Language(s) to lint ({", ".join(STR_TO_LINT_LANGUAGE.keys())}). '
+    parser.add_argument('-l', '--languages', choices=LINT_LANGUAGE_NAMES, nargs='+',
+                        default=LINT_LANGUAGE_NAMES,
+                        help=f'Language(s) to lint ({", ".join(LINT_LANGUAGE_NAMES)}). '
                               'Defaults to linting all supported languages.')
     parser.add_argument('-f', '--fix', action='store_true',
                         help='Attempt to autofix linting errors by modifying files in place. '
                              'Autofix is available for these languages: '
-                             f'{", ".join(lang.value.name for lang in LINT_LANGUAGES_WITH_AUTOFIX)}.')
+                             f'{", ".join(LINT_LANGUAGE_WITH_AUTOFIX_NAMES)}.')
     parser.add_argument('--print-success', action='store_true',
                         help='Print the names of files that were successfully linted. This is automatically enabled if '
                              '--path is a file.')
