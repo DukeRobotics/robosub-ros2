@@ -2,6 +2,7 @@
 FROM ros:jazzy
 
 # Dummy argument to force Docker to rebuild the image by invalidating the cache when the argument value changes
+# Cache invalidation forces Docker to rerun the `apt update` command, ensuring that the latest `apt` package index is used when building the image
 ARG CACHE_BUSTER
 
 # Install packages from apt
