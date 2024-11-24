@@ -133,7 +133,7 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
     - If you set `NO_GIT=true` in the `.env` file, then run the following command instead: `docker compose up -d --build`.
 3. Once the container is running, access its shell by running:
     ```bash
-    docker exec -ti onboard2 bash
+    docker exec -ti -w /root/dev/robosub-ros2 onboard2 bash
     ```
 4. Now, you're ready to start developing!
     - Any changes you make in the repository on your host machine are reflected in the `/root/dev/robosub-ros2` directory in the Docker container.
