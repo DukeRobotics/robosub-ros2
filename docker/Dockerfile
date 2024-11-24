@@ -12,6 +12,17 @@ RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-serial
 RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
 
+# Install Node.js (Jod)
+ENV NVM_DIR=/root/.nvm
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash \
+    && . $NVM_DIR/nvm.sh \
+    && nvm install --lts=Jod
+
+# Install Foxglove CLI
+# See https://docs.foxglove.dev/docs/cli/
+RUN curl -L https://github.com/foxglove/foxglove-cli/releases/latest/download/foxglove-linux-arm64 -o /usr/local/bin/foxglove \
+    && chmod +x /usr/local/bin/foxglove
+
 # Set no password for root user
 RUN passwd -d root
 
