@@ -1,7 +1,11 @@
 
 # Set Up the Repository and Development Environment
 
-## Contents
+Setting up the repository and development environment is an involved process. This document outlines the steps required to set up the repository and development environment on your local machine.
+
+Steps 1-3 need to be completed once to set up the repository and required software. Step 4 needs to be completed each time you want to start developing.
+
+## Steps
 1. [Prerequisites](#prerequisites)
 2. [Git Configuration](#git-configuration)
 3. [Set Up the Dotenv File](#set-up-the-dotenv-file)
@@ -76,6 +80,8 @@ NO_GIT=false
 > This disables git authentication and signing inside the Docker container. This is useful for CI/CD pipelines or if you have your SSH keys stored in encrypted files.
 
 ## Set Up the Docker Container
+The Docker container is used to develop and run the code in a consistent environment. It is configured with all the necessary dependencies and tools to develop the code.
+
 Make sure you have Docker running on your machine. Then, follow the instructions below to set up the Docker container.
 
 ### Using VS Code Dev Containers
@@ -127,14 +133,14 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
     - If you set `NO_GIT=true` in the `.env` file, then run the following command instead: `docker compose up -d --build`.
 3. Once the container is running, access its shell by running:
     ```bash
-    ssh -p 2202 root@localhost
+    docker exec -ti onboard2 bash
     ```
 4. Now, you're ready to start developing!
     - Any changes you make in the repository on your host machine are reflected in the `/root/dev/robosub-ros2` directory in the Docker container.
     - If you set `NO_GIT=false` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
-    - You must build the packages in the container before running the code. See the [Build Packages](#build-packages) section for more information.
-    - To open additional terminals in the container, open a new terminal and run the `ssh` command above.
-5. When you're done, open a new terminal, navigate to the root of the repository, and run:
+    - You must build the packages in the container before running the code. See the [Build Packages in README.md](README.md#build-packages) section for more information.
+    - To open additional terminals in the container, open a new terminal and run the `docker exec` command above.
+5. When you're done, open a new terminal _on the host machine_, navigate to the root of the repository, and run:
     ```bash
     docker compose down
     ```
