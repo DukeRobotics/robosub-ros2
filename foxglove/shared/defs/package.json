@@ -2,11 +2,10 @@
   "name": "@duke-robotics/defs",
   "version": "0.0.0",
   "scripts": {
-    "clean": "rimraf --glob custom_msg_defs/dist datatype_maps/dist types/dist/* && mkdirp types/dist",
+    "clean": "rimraf --glob custom_msg_defs/dist datatype_maps/dist types/dist ros_ts_generator_configs/dist && mkdirp types/dist ros_ts_generator_configs/dist",
     "build-ts": "npx ts-node src/index.ts",
-    "generate-types": "cd ros_ts_generator_configs && ros-typescript-generator",
-    "concatenate-types": "concat-cli -f types/dist/customMsgs.ts types/ros1Msgs.ts -o types/dist/types.ts",
-    "build": "npm run clean && npm run build-ts && npm run generate-types && npm run concatenate-types"
+    "generate-types": "cd ros_ts_generator_configs/dist && ros-typescript-generator",
+    "build": "npm run clean && npm run build-ts && npm run generate-types"
   },
   "exports": {
     "./datatype_maps": {
@@ -22,7 +21,6 @@
     }
   },
   "devDependencies": {
-    "concat-cli": "^4.0.0",
     "mkdirp": "^3.0.1"
   }
 }
