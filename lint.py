@@ -5,8 +5,8 @@ This script lints Python, C++, and Bash files in a specified directory or file.
 It uses ruff for Python, clang-format for C++, and shellcheck for Bash.
 """
 
-import argparse
 import os
+import argparse
 import subprocess
 from collections.abc import Generator
 from dataclasses import dataclass
