@@ -51,8 +51,20 @@
                     "--max-line-length=120"
                 ],
 
-                // TypeScript-related settings
+                // TypeScript/JavaScript-related settings
                 "[typescript]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode",
+                    "editor.formatOnSave": true
+                },
+                "[typescriptreact]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode",
+                    "editor.formatOnSave": true
+                },
+                "[javascript]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode",
+                    "editor.formatOnSave": true
+                },
+                "[javascriptreact]": {
                     "editor.defaultFormatter": "esbenp.prettier-vscode",
                     "editor.formatOnSave": true
                 },
