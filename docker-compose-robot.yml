@@ -1,9 +1,9 @@
 services:
   robosub-ros2:
     extends:
-      file: docker-compose-with-git.yml
+      file: docker-compose.yml
       service: robosub-ros2
-    image: robosub-ros2
+    image: robosub-ros2:latest
     tty: true
     privileged: true
     volumes:

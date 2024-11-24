@@ -1,9 +1,0 @@
-services:
-  robosub-ros2:
-    extends:
-      file: docker-compose.yml
-      service: robosub-ros2
-    build:
-      args:
-        GIT_USER_NAME: ${GIT_USER_NAME}
-        GIT_USER_EMAIL: ${GIT_USER_EMAIL}

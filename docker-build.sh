@@ -49,7 +49,7 @@ eval "$docker_build_cmd"
 if [ -n "$ROBOT_NAME" ]; then
     compose_file="docker-compose-robot.yml"
 else
-    compose_file="docker-compose-with-git.yml"
+    compose_file="docker-compose.yml"
 fi
 
 # Use the selected compose file

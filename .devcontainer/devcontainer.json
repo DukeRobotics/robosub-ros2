@@ -1,6 +1,6 @@
 {
     "name": "RoboSub ROS2",
-    "dockerComposeFile": "../docker-compose-with-git.yml",
+    "dockerComposeFile": "../docker-compose.yml",
     "service": "robosub-ros2",
     "workspaceFolder": "/root/dev/robosub-ros2",
     "initializeCommand": "bash ./docker-build.sh skip-wsl",
