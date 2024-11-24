@@ -67,7 +67,10 @@
                     "debug": {
                         "statusBarVisibility": "inherit"
                     }
-                }
+                },
+
+                // C++-related settings
+                "C_Cpp.clang_format_path": "/usr/bin/clang-format"
             }
         }
     }
