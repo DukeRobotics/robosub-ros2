@@ -1,9 +1,10 @@
-import { readdir, readFile, writeFile } from 'fs/promises';
-import { join, basename } from 'path';
+import { Dirent } from 'fs';
+import { readdir, readFile, realpath, stat, writeFile } from 'fs/promises';
+import { basename, join } from 'path';
 
 export const generateMsgsFromSrvFiles = async (
   inputFilePath: string,
-  tmpDir: string,
+  tmpDir: string
 ): Promise<string[]> => {
   try {
     const srvName = basename(inputFilePath, '.srv');
@@ -17,13 +18,15 @@ export const generateMsgsFromSrvFiles = async (
 
     // Check if a part is empty or consists only of lines starting with #
     const isRequestValid =
-      !request?.trim() ||
+      !request ||
+      !request.trim() ||
       request
         .trim()
         .split('\n')
         .every((line) => line.trim().startsWith('#'));
     const isResponseValid =
-      !response?.trim() ||
+      !response ||
+      !response.trim() ||
       response
         .trim()
         .split('\n')
@@ -51,7 +54,7 @@ export const generateMsgsFromSrvFiles = async (
 
 export const generateMsgsFromActionsFiles = async (
   inputFilePath: string,
-  tmpDir: string,
+  tmpDir: string
 ): Promise<string[]> => {
   try {
     const srvName = basename(inputFilePath, '.action');
@@ -108,47 +111,79 @@ export const generateMsgsFromActionsFiles = async (
   }
 };
 
+async function processEntries(
+  entries: Dirent[],
+  dir: string
+): Promise<Dirent[]> {
+  const processedEntries = await Promise.all(
+    entries.map(async (entry): Promise<Dirent> => {
+      if (entry.isSymbolicLink()) {
+        const fullPath = join(dir, entry.name);
+
+        const resolvedPath = await realpath(fullPath);
+        const stats = await stat(resolvedPath);
+
+        return {
+          name: entry.name,
+          isDirectory: () => stats.isDirectory(),
+          isFile: () => stats.isFile(),
+          isBlockDevice: () => entry.isBlockDevice(),
+          isCharacterDevice: () => entry.isCharacterDevice(),
+          isSymbolicLink: () => entry.isSymbolicLink(),
+          isFIFO: () => entry.isFIFO(),
+          isSocket: () => entry.isSocket(),
+        };
+      } else {
+        return entry;
+      }
+    })
+  );
+
+  return processedEntries;
+}
+
 export const getMsgFiles = async (
   dir: string,
-  tmpDir: string,
+  tmpDir: string
 ): Promise<string[]> => {
   let output: string[] = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
+
+  const entries = await readdir(dir, { withFileTypes: true });
+  const processedEntries = await processEntries(entries, dir);
+
+  for (const entry of processedEntries) {
+    const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
-      output = output.concat(await getMsgFiles(join(dir, entry.name), tmpDir));
-    } else if (entry.isFile() && entry.name.endsWith('.msg')) {
-      output.push(join(dir, entry.name));
-    } else if (entry.isFile() && entry.name.endsWith('.srv')) {
-      const srvFiles = await generateMsgsFromSrvFiles(
-        dir + '/' + entry.name,
-        tmpDir,
-      );
-      output.push(...srvFiles);
-    } else if (entry.isFile() && entry.name.endsWith('.action')) {
-      const actionFiles = await generateMsgsFromActionsFiles(
-        dir + '/' + entry.name,
-        tmpDir,
-      );
-      output.push(...actionFiles);
+      output = output.concat(await getMsgFiles(fullPath, tmpDir));
+    } else if (entry.isFile()) {
+      if (entry.name.endsWith('.msg')) {
+        output.push(fullPath);
+      } else if (entry.name.endsWith('.srv')) {
+        const srvFiles = await generateMsgsFromSrvFiles(fullPath, tmpDir);
+        output.push(...srvFiles);
+      } else if (entry.name.endsWith('.action')) {
+        const actionFiles = await generateMsgsFromActionsFiles(
+          fullPath,
+          tmpDir
+        );
+        output.push(...actionFiles);
+      }
     }
   }
   return output;
 };
-
 export const getMsgFilesData = async (
   dir: string,
   namespace: string,
-  tmpDir: string,
-): Promise<
-  Array<{ path: string; data: string; namespace: string; name: string }>
-> => {
+  tmpDir: string
+) => {
   const filePaths = await getMsgFiles(dir, tmpDir);
-  return await Promise.all(
+  return Promise.all(
     filePaths.map(async (filePath) => ({
       path: filePath,
       data: await readFile(filePath, { encoding: 'utf-8' }),
       namespace,
       name: basename(filePath, '.msg'),
-    })),
+    }))
   );
 };

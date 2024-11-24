@@ -1,30 +1,26 @@
-#!/usr/bin/env node
+import { readFile } from 'fs/promises';
 
 import chalk from 'chalk';
 import { Command } from 'commander';
-import { PathLike } from 'fs';
-import { readFile } from 'fs/promises';
 import ora from 'ora';
 
 import { rosTypescriptGenerator } from '../lib/rosTypescriptGenerator';
 import { IConfig } from '../types/config';
 
-void (async () => {
+(async () => {
   const program = new Command();
 
   program.option(
     '-c, --config <type>',
     'path to the config file',
-    'ros-ts-generator-config.json',
+    'ros-ts-generator-config.json'
   );
 
   program.parse(process.argv);
 
   const options = program.opts();
 
-  const configRaw = await readFile(options.config as PathLike, {
-    encoding: 'utf-8',
-  });
+  const configRaw = await readFile(options.config, { encoding: 'utf-8' });
   const config = JSON.parse(configRaw) as IConfig;
 
   const spinner = ora('Generating typescript interfaces').start();
