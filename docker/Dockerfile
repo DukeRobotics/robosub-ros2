@@ -35,6 +35,17 @@ RUN mkdir -p /root/.ssh
 # Copy SSH config file
 COPY ssh_config /root/.ssh/config
 
+# Create development directory
+RUN mkdir -p /root/dev/robosub-ros2
+
+# Copy ROS bashrc file into container and source it at end of .bashrc
+COPY ros_bashrc.sh /root/ros_bashrc.sh
+RUN echo "source /root/ros_bashrc.sh" >> /root/.bashrc
+
+# Copy entrypoint script into container and make it executable
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Define ARGs for Git information
 ARG NO_GIT
 ARG GIT_USER_NAME
@@ -60,17 +71,6 @@ RUN --mount=type=secret,id=github_auth_ssh_key,required=false \
         git config --global user.email "$GIT_USER_EMAIL" && \
         git config --global --add safe.directory /root/dev/robosub-ros2; \
     fi
-
-# Create development directory
-RUN mkdir -p /root/dev/robosub-ros2
-
-# Copy ROS bashrc file into container and source it at end of .bashrc
-COPY ros_bashrc.sh /root/ros_bashrc.sh
-RUN echo "source /root/ros_bashrc.sh" >> /root/.bashrc
-
-# Copy entrypoint script into container and make it executable
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Run entrypoint script via tini to ensure proper SIGTERM handling
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
