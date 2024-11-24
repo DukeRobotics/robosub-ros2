@@ -1,5 +1,7 @@
 import {
-  CustomMsgsPidGainConst,
+  CustomMsgsPidGainGain,
+  CustomMsgsPidGainAxis,
+  CustomMsgsPidGainLoop,
   CustomMsgsPidGains,
   CustomMsgsSetPidGainsRequest,
   CustomMsgsSetPidGainsResponse,
@@ -31,7 +33,7 @@ const PID_SERVICE = "/controls/set_pid_gains";
 
 type PIDPanelState = {
   error?: Error;
-  loop: CustomMsgsPidGainConst.LOOP_POSITION | CustomMsgsPidGainConst.LOOP_VELOCITY;
+  loop: CustomMsgsPidGainLoop;
   editedGains: Record<number, Record<number, number>>; // Indexed by axis and gain type
   pid: Record<number, Record<number, Record<number, number>>>; // Indexed by loop, axis, and gain type
 };
@@ -40,22 +42,22 @@ type PIDPanelState = {
 const initPid = () => {
   // Initialize gains to -1 to signify that the true values have not been received yet
   const gains: Record<number, number> = {
-    [CustomMsgsPidGainConst.GAIN_KP]: -1,
-    [CustomMsgsPidGainConst.GAIN_KI]: -1,
-    [CustomMsgsPidGainConst.GAIN_KD]: -1,
-    [CustomMsgsPidGainConst.GAIN_FF]: -1,
+    [CustomMsgsPidGainGain.KP]: -1,
+    [CustomMsgsPidGainGain.KI]: -1,
+    [CustomMsgsPidGainGain.KD]: -1,
+    [CustomMsgsPidGainGain.FF]: -1,
   };
   const axes: Record<number, Record<number, number>> = {
-    [CustomMsgsPidGainConst.AXIS_X]: { ...gains },
-    [CustomMsgsPidGainConst.AXIS_Y]: { ...gains },
-    [CustomMsgsPidGainConst.AXIS_Z]: { ...gains },
-    [CustomMsgsPidGainConst.AXIS_ROLL]: { ...gains },
-    [CustomMsgsPidGainConst.AXIS_PITCH]: { ...gains },
-    [CustomMsgsPidGainConst.AXIS_YAW]: { ...gains },
+    [CustomMsgsPidGainAxis.X]: { ...gains },
+    [CustomMsgsPidGainAxis.Y]: { ...gains },
+    [CustomMsgsPidGainAxis.Z]: { ...gains },
+    [CustomMsgsPidGainAxis.ROLL]: { ...gains },
+    [CustomMsgsPidGainAxis.PITCH]: { ...gains },
+    [CustomMsgsPidGainAxis.YAW]: { ...gains },
   };
   const loops: Record<number, Record<number, Record<number, number>>> = {
-    [CustomMsgsPidGainConst.LOOP_POSITION]: { ...axes },
-    [CustomMsgsPidGainConst.LOOP_VELOCITY]: { ...axes },
+    [CustomMsgsPidGainLoop.POSITION]: { ...axes },
+    [CustomMsgsPidGainLoop.VELOCITY]: { ...axes },
   };
 
   return loops;
@@ -69,7 +71,7 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
     const initialState = context.initialState as PIDPanelState | undefined;
 
     return {
-      loop: initialState?.loop ?? CustomMsgsPidGainConst.LOOP_POSITION,
+      loop: initialState?.loop ?? CustomMsgsPidGainLoop.POSITION,
       editedGains: {},
       error: undefined,
       pid: initPid(),
@@ -144,12 +146,9 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
 
   /**
    * Switch between position and velocity PID loops.
-   * @param {CustomMsgsPidGainConst.LOOP_POSITION | CustomMsgsPidGainConst.LOOP_VELOCITY} desiredLoop
+   * @param {CustomMsgsPidGainLoop} desiredLoop
    */
-  const handleLoopChange = (
-    _: React.ChangeEvent<unknown>,
-    desiredLoop: CustomMsgsPidGainConst.LOOP_POSITION | CustomMsgsPidGainConst.LOOP_VELOCITY,
-  ) => {
+  const handleLoopChange = (_: React.ChangeEvent<unknown>, desiredLoop: CustomMsgsPidGainLoop) => {
     setState((prevState) => ({ ...prevState, loop: desiredLoop }));
     handleReset(); // Reset the edited gains when switching loops
   };
@@ -161,13 +160,12 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
    */
   function getAxisEnumName(enumValue: number): string {
     // Get enum entries that start with "AXIS" and have the given value
-    const filteredEnumEntries = Object.entries(CustomMsgsPidGainConst).filter(([key, value]) => {
-      return key.startsWith("AXIS") && Number(value) === enumValue;
+    const filteredEnumEntries = Object.entries(CustomMsgsPidGainAxis).filter(([_, value]) => {
+      return Number(value) === enumValue;
     });
 
     if (filteredEnumEntries.length === 1 && filteredEnumEntries[0] != null) {
-      const enumName = filteredEnumEntries[0][0];
-      return enumName.split("_").pop()!; // Return the last part of the enum name (e.g., "X" for "AXIS_X")
+      return filteredEnumEntries[0][0];
     } else if (filteredEnumEntries.length > 1) {
       console.error(`Multiple axis enum names map to value ${enumValue}`);
       return "Unknown";
@@ -251,8 +249,8 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
 
         {/* PID Loop Tabs */}
         <Tabs value={state.loop} onChange={handleLoopChange} variant="fullWidth">
-          <Tab label="Position" value={CustomMsgsPidGainConst.LOOP_POSITION} />
-          <Tab label="Velocity" value={CustomMsgsPidGainConst.LOOP_VELOCITY} />
+          <Tab label="Position" value={CustomMsgsPidGainLoop.POSITION} />
+          <Tab label="Velocity" value={CustomMsgsPidGainLoop.VELOCITY} />
         </Tabs>
 
         {/* PID Gains Table */}

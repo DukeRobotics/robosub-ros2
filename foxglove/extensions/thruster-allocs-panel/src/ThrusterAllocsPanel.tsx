@@ -163,16 +163,17 @@ function ThrusterAllocsPanel({ context }: { context: PanelExtensionContext }): J
   // Callback function to publish thruster allocs
   const publishAllocs = useCallback(() => {
     // Message creation
-    const message = {
+    const message: CustomMsgsThrusterAllocs = {
       header: {
-        seq: 0,
         stamp: {
-          secs: 0,
-          nsecs: 0,
+          sec: 0,
+          nanosec: 0,
         },
         frame_id: "",
       },
-      allocs: thrustersInOrder.map((thruster: keyof ThrusterAllocs) => state.publisherThrusterAllocs[thruster]),
+      allocs: thrustersInOrder
+        .map((thruster: keyof ThrusterAllocs) => state.publisherThrusterAllocs[thruster])
+        .map((alloc) => (alloc === "" ? 0 : alloc)),
     };
 
     if (!context.advertise) {
