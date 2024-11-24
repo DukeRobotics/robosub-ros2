@@ -24,36 +24,36 @@ class LintLanguageProperties:
     Attributes:
         name (str): The name of the programming language.
         file_extensions (list[str]): A list of file extensions associated with the programming language.
-        lint_command (list[str]): The command to run to lint files of the programming language. The path to the file
-            to lint will be appended to the end of this command.
-        autofix_command (list[str] | None): The command to run to autofix linting errors in files of the programming
-            language. The path to the file to lint will be appended to the end of this command. If None, autofixing is
-            not supported for this language.
+        lint_command (str): The command to run to lint files of the programming language. The command should contain a
+            placeholder `{path}` for the file path to lint.
+        autofix_command (str | None): The command to run to autofix linting errors in files of the programming
+            language. The command should contain a placeholder `{path}` for the file path to lint. If None, autofixing
+            is not supported for this language.
     """
     name: str
     file_extensions: list[str]
-    lint_command: list[str]
-    autofix_command: list[str] | None
+    lint_command: str
+    autofix_command: str | None
 
 class LintLanguage(Enum):
     """Enum to specify the programming language for linting."""
     PYTHON = LintLanguageProperties(
         name='python',
         file_extensions=['.py'],
-        lint_command=['/root/dev/venv/bin/python3', '-m', 'ruff', 'check', '-q'],
-        autofix_command=['/root/dev/venv/bin/python3', '-m', 'ruff', 'check', '--fix', '-q'],
+        lint_command='/root/dev/venv/bin/python3 -m ruff check -q {path}',
+        autofix_command='/root/dev/venv/bin/python3 -m ruff check --fix -q {path}',
     )
     CPP = LintLanguageProperties(
         name='cpp',
         file_extensions=['.cpp', '.h', '.c', '.hpp'],
-        lint_command=['clang-format', '-style=file', '--Werror', '--dry-run'],
-        autofix_command=['clang-format', '-style=file', '-i'],
+        lint_command='clang-format -style=file --Werror --dry-run {path}',
+        autofix_command='clang-format -style=file -i {path}',
     )
     BASH = LintLanguageProperties(
         name='bash',
         file_extensions=['.sh'],
-        lint_command=['shellcheck'],
-        autofix_command=None,
+        lint_command='shellcheck {path}',
+        autofix_command='shellcheck -f diff {path} | git apply --allow-empty && shellcheck {path}',
     )
 
 # Map from LintLanguage name to LintLanguage
@@ -129,15 +129,17 @@ def lint_file(file_path: Path, language: LintLanguage, autofix: bool, print_succ
         print_success (bool): If True, print a success message when linting is successful.
         output_type (LintOutputType): How to handle the output of the linting command.
     """
-    base_command = language.value.autofix_command if autofix and (language in LINT_LANGUAGES_WITH_AUTOFIX) else \
+    base_command = language.value.autofix_command if autofix and language.value.autofix_command else \
         language.value.lint_command
-    command = [*base_command, str(file_path)]
+    file_path = file_path.relative_to(REPO_PATH)
+    command = base_command.format(path=file_path)
 
     # Pad the language name to align the output for all languages
     padded_language = f'{language.value.name}:'.ljust(MAX_LANGUAGE_LENGTH + 1)
     subprocess_output_type = LINT_OUTPUT_TYPE_TO_SUBPROCESS[output_type]
 
-    process = subprocess.Popen(command, stdout=subprocess_output_type, stderr=subprocess_output_type)  # noqa: S603
+    process = subprocess.Popen(command, stdout=subprocess_output_type, stderr=subprocess_output_type, shell=True, \
+                               cwd=REPO_PATH) # noqa: S602
     stdout, _ = process.communicate()
 
     # If the process returns 0, the linting was successful
@@ -150,7 +152,7 @@ def lint_file(file_path: Path, language: LintLanguage, autofix: bool, print_succ
     if output_type == LintOutputType.CAPTURE and stdout:
         indented_output = '\n'.join('    ' + line for line in stdout.decode().splitlines())
         print(indented_output)
-    print(f'{STATUS_EMOJI[False]} {padded_language} {file_path.relative_to(REPO_PATH)}')
+    print(f'{STATUS_EMOJI[False]} {padded_language} {file_path}')
     return False
 
 
