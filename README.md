@@ -33,3 +33,22 @@ To use Foxglove Studio:
     - The bridge opens a WebSocket on port `28765`. This port is mapped to port `28765` on the host machine, so you can connect to the WebSocket from your host machine.
 3. Open Foxglove Studio and connect to the WebSocket at `ws://IP_ADDRESS:28765`.
     - Replace `IP_ADDRESS` with the IP address of the host machine. If you are running the Docker container locally, you can use `localhost` as the IP address.
+
+## Linting
+To ensure code quality and consistent formatting, we use the following linters:
+- Python: [Ruff](https://docs.astral.sh/ruff)
+- C++: [ClangFormat](https://clang.llvm.org/docs/ClangFormat.html)
+- Bash: [ShellCheck](https://www.shellcheck.net)
+
+The linters can be accessed via the CLI provided by `lint.py`. This CLI is also used by the GitHub Actions `build-and-lint` workflow.
+
+To lint all code in the repository:
+1. Open a terminal in the Docker container.
+2. Navigate to the root of the repository `/root/dev/robosub-ros2`.
+3. Run the following command:
+    ```bash
+    ./lint.py
+    ```
+    - This command lints all Python, C++, and Bash code in the repository.
+    - Any linting errors or warnings will be displayed in the terminal.
+See [`lint.py` in SCRIPTS.md](SCRIPTS.md#lintpy) for more information about the CLI provided by `lint.py`.
