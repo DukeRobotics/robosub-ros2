@@ -26,7 +26,8 @@
                 "ms-vscode.cpptools-extension-pack",
                 "ms-vsliveshare.vsliveshare",
                 "redhat.vscode-yaml",
-                "yahyabatulu.vscode-markdown-alert"
+                "yahyabatulu.vscode-markdown-alert",
+                "esbenp.prettier-vscode"
             ],
             "settings": {
                 // File and editor-related settings
@@ -49,6 +50,12 @@
                 "flake8.args": [
                     "--max-line-length=120"
                 ],
+
+                // TypeScript-related settings
+                "[typescript]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode",
+                    "editor.formatOnSave": true
+                },
 
                 // Doxygen doc generator settings
                 "doxdocgen.generic.returnTemplate": "@return ",
