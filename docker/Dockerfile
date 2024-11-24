@@ -11,9 +11,12 @@ RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-serial
 RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
-RUN apt install -y --no-install-recommends nmap
-RUN apt install -y --no-install-recommends ros-jazzy-depthai
+RUN apt install -y --no-install-recommends python3-nmap
+RUN apt install -y --no-install-recommends iputils-ping
+RUN apt install -y --no-install-recommends python3-sklearn
 
+# Install packages from pip
+# This is not the best option but oh well
 RUN pip install depthai --break-system-packages
 
 # Set no password for root user
