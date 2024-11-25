@@ -29,7 +29,7 @@ To use Foxglove Studio:
     ```bash
     fg-ws
     ```
-    - This is an alias for the command starts the Foxglove bridge, which enables Foxglove Studio to connect to the ROS 2 network.
+    - This is an alias that starts the Foxglove bridge, which enables Foxglove Studio to connect to the ROS 2 network.
     - The bridge opens a WebSocket on port `28765`. This port is mapped to port `28765` on the host machine, so you can connect to the WebSocket from your host machine.
 3. Open Foxglove Studio and connect to the WebSocket at `ws://IP_ADDRESS:28765`.
     - Replace `IP_ADDRESS` with the IP address of the host machine. If you are running the Docker container locally, you can use `localhost` as the IP address.
