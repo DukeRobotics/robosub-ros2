@@ -1,9 +1,8 @@
 #!/bin/bash
-# shellcheck disable=SC1090,SC1091
+# shellcheck disable=SC1090,SC1091,SC2164
 
 export PYTHONWARNINGS="ignore:easy_install command is deprecated"
 
-# To be appended to /root/.bashrc
 source /opt/ros/jazzy/setup.bash
 source /usr/share/colcon_cd/function/colcon_cd.sh
 
@@ -22,3 +21,8 @@ else
 fi
 
 export _colcon_cd_root=/opt/ros/jazzy
+
+# Alias to start foxglove bridge
+alias fg-ws="ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=28765"
+
+source /root/dev/robosub-ros2/venv.sh activate
