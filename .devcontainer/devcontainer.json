@@ -1,6 +1,6 @@
 {
     "name": "RoboSub ROS2",
-    "dockerComposeFile": "../docker-compose-with-git.yml",
+    "dockerComposeFile": "../docker-compose.yml",
     "service": "robosub-ros2",
     "workspaceFolder": "/root/dev/robosub-ros2",
     "initializeCommand": "bash ./docker-build.sh skip-wsl",
@@ -8,26 +8,29 @@
         "vscode": {
             "extensions": [
                 "bierner.github-markdown-preview",
+                "charliermarsh.ruff",
                 "cschlosser.doxdocgen",
                 "dbaeumer.vscode-eslint",
                 "eamodio.gitlens",
-                "GitHub.copilot",
-                "GitHub.copilot-chat",
-                "GitHub.vscode-pull-request-github",
+                "esbenp.prettier-vscode",
+                "github.copilot",
+                "github.copilot-chat",
+                "github.vscode-github-actions",
+                "github.vscode-pull-request-github",
                 "jeff-hykin.better-cpp-syntax",
                 "mechatroner.rainbow-csv",
                 "ms-azuretools.vscode-docker",
                 "ms-iot.vscode-ros",
                 "ms-python.debugpy",
-                "ms-python.flake8",
                 "ms-python.python",
                 "ms-python.vscode-pylance",
                 "ms-vscode-remote.vscode-remote-extensionpack",
                 "ms-vscode.cpptools-extension-pack",
                 "ms-vsliveshare.vsliveshare",
                 "redhat.vscode-yaml",
-                "yahyabatulu.vscode-markdown-alert",
-                "esbenp.prettier-vscode"
+                "tamasfe.even-better-toml",
+                "timonwong.shellcheck",
+                "yahyabatulu.vscode-markdown-alert"
             ],
             "settings": {
                 // File and editor-related settings
@@ -41,15 +44,13 @@
                 "[ui]": {
                     "editor.tabSize": 2
                 },
+                "editor.insertSpaces": true,
 
                 // Git-related settings
                 "git.enableCommitSigning": true,
 
                 // Python-related settings
-                "python.defaultInterpreterPath": "/usr/bin/python3",
-                "flake8.args": [
-                    "--max-line-length=120"
-                ],
+                "python.defaultInterpreterPath": "/root/dev/venv/bin/python3",
 
                 // TypeScript/JavaScript-related settings
                 "[typescript]": {
@@ -85,7 +86,10 @@
                     "debug": {
                         "statusBarVisibility": "inherit"
                     }
-                }
+                },
+
+                // C++-related settings
+                "C_Cpp.clang_format_path": "/usr/bin/clang-format"
             }
         }
     }

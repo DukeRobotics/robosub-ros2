@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa
 
 import math
 import numpy as np
