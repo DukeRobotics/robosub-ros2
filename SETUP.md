@@ -59,7 +59,7 @@ Steps 1-3 need to be completed once to set up the repository and required softwa
     ```
 
 ## Set Up the Dotenv File
-Create a file in the root of the repository called `.env` with the following contents. Populate the variables with the appropriate values after the `=` sign.:
+Create a file in the root of the repository called `.env` with the following contents. Populate the variables with the appropriate values after the `=` sign.
 ```
 GITHUB_AUTH_SSH_KEY_PRIV_PATH=
 GITHUB_AUTH_SSH_KEY_PUB_PATH=
@@ -130,7 +130,6 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
     ```bash
     ./docker-build.sh
     ```
-    - If you set `NO_GIT=true` in the `.env` file, then run the following command instead: `docker compose up -d --build`.
 3. Once the container is running, access its shell by running:
     ```bash
     docker exec -ti -w /root/dev/robosub-ros2 onboard2 bash

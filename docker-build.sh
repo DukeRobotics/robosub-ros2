@@ -17,7 +17,7 @@ set -o allexport
 GIT_USER_NAME=$(git config --global user.name)
 GIT_USER_EMAIL=$(git config --global user.email)
 
-# Year annd week number in the format YYYY-WW
+# Year and week number in the format YYYY-WW
 # Invalidate the Docker build cache weekly to ensure consistent images across contributors
 year_week=$(date +%Y-%U)
 

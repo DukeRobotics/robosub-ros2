@@ -249,8 +249,9 @@ def lint_files(target_path: Path, languages: list[LintLanguage], autofix: bool, 
             success = lint_file(file_path, detected_language, autofix, print_success, output_type)
             if success:
                 language_stats[detected_language].success += 1
+            else:
+                all_success = False
 
-            all_success = all_success and success
             prev_success = success
 
     return all_success, language_stats
@@ -353,7 +354,9 @@ def main() -> None:
             if args.github_action:
                 print('::endgroup::')
 
-            all_success = lang_success and all_success
+            if not lang_success:
+                all_success = False
+
             aggregate_language_stats.update(language_stats)
 
         print_summary(aggregate_language_stats)

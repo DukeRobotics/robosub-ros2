@@ -73,5 +73,5 @@ RUN --mount=type=secret,id=github_auth_ssh_key,required=false \
         git config --global --add safe.directory /root/dev/robosub-ros2; \
     fi
 
-# Run entrypoint script via tini to ensure proper SIGTERM handling
+# Run entrypoint script via tini to ensure SIGTERM is properly handled and zombie processes are reaped
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
