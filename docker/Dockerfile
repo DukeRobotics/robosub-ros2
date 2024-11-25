@@ -1,75 +1,43 @@
-FROM osrf/ros:jazzy-desktop-full
+# Base Docker image for ROS2 Jazzy that supports linux/amd64 and linux/arm64
+FROM ros:jazzy
+
+# Dummy argument to force Docker to rebuild the image by invalidating the cache when the argument value changes
+# Cache invalidation forces Docker to rerun the `apt update` command, ensuring that the latest `apt` package index is used when building the image
+ARG CACHE_BUSTER
 
 # Install packages from apt
 # Each package is installed in a separate RUN command so that each package is cached separately in Docker
+# The commands are ordered alphabetically
 RUN apt update
-RUN apt install -y --no-install-recommends openssh-server
-RUN apt install -y --no-install-recommends tini
-RUN apt install -y --no-install-recommends snapd
+RUN apt install -y --no-install-recommends clang-format
 RUN apt install -y --no-install-recommends nano
-RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-pip
-RUN apt install -y --no-install-recommends python3-serial
+RUN apt install -y --no-install-recommends python3-venv
 RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
-RUN apt install -y --no-install-recommends python3-nmap
-RUN apt install -y --no-install-recommends iputils-ping
-RUN apt install -y --no-install-recommends python3-sklearn
+RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
+RUN apt install -y --no-install-recommends shellcheck
+RUN apt install -y --no-install-recommends snapd
+RUN apt install -y --no-install-recommends tini
 
-# Install packages from pip
-# This is not the best option but oh well
-RUN pip install depthai --break-system-packages
+# Set up Python virtual environment and install packages
+# Virtual enviornment inherits system packages to ensure compatibility with ROS
+# The commands are ordered alphabetically
+RUN python3 -m venv /root/dev/venv --system-site-packages
+RUN /root/dev/venv/bin/pip install GitPython
+RUN /root/dev/venv/bin/pip install pyserial
+RUN /root/dev/venv/bin/pip install ruff
 
 # Set no password for root user
 RUN passwd -d root
 
-# Modify SSH server configuration to allow SSH into the container without password
-RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
-RUN echo "PermitEmptyPasswords yes" >> /etc/ssh/sshd_config
-RUN echo "PermitUserEnvironment yes" >> /etc/ssh/sshd_config
+# Create SSH directory
 RUN mkdir -p /root/.ssh
-RUN touch /root/.ssh/environment
-
-# SSH server at port 2202
-RUN echo "Port 2202" >> /etc/ssh/sshd_config
 
 # Copy SSH config file
 COPY ssh_config /root/.ssh/config
 
-# Create directory for SSH server
-RUN mkdir /var/run/sshd
-RUN chmod 0755 /var/run/sshd
-
-# Define ARGs for SSH keys and Git information
-ARG NO_GIT
-ARG GITHUB_AUTH_SSH_KEY
-ARG GITHUB_AUTH_SSH_KEY_PUB
-ARG GITHUB_SIGNING_SSH_KEY
-ARG GIT_ALLOWED_SIGNERS
-ARG GIT_USER_NAME
-ARG GIT_USER_EMAIL
-
-# Configure Git and SSH keys
-RUN if [ "$NO_GIT" != "true" ]; then \
-    echo "$GITHUB_AUTH_SSH_KEY" > /root/.ssh/github_auth_key && \
-    echo "$GITHUB_AUTH_SSH_KEY_PUB" > /root/.ssh/github_auth_key.pub && \
-    echo "$GITHUB_SIGNING_SSH_KEY" > /root/.ssh/github_signing_key && \
-    echo "$GIT_ALLOWED_SIGNERS" > /root/.ssh/allowed_signers && \
-    chmod 600 /root/.ssh/github_auth_key /root/.ssh/github_signing_key && \
-    chmod 644 /root/.ssh/github_auth_key.pub /root/.ssh/allowed_signers && \
-    chown root:root /root/.ssh/* && \
-    git config --global commit.gpgSign true && \
-    git config --global gpg.format ssh && \
-    git config --global user.signingkey "/root/.ssh/github_signing_key" && \
-    git config --global gpg.ssh.allowedSignersFile "/root/.ssh/allowed_signers" && \
-    git config --global user.name "$GIT_USER_NAME" && \
-    git config --global user.email "$GIT_USER_EMAIL"; \
-    fi
-
 # Create development directory
 RUN mkdir -p /root/dev/robosub-ros2
-
-# Use SSH entrypoint script as container's .bash_profile
-COPY ssh_entry.sh /root/.bash_profile
 
 # Copy ROS bashrc file into container and source it at end of .bashrc
 COPY ros_bashrc.sh /root/ros_bashrc.sh
@@ -79,5 +47,32 @@ RUN echo "source /root/ros_bashrc.sh" >> /root/.bashrc
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Run entrypoint script via tini to ensure proper SIGTERM handling
+# Define ARGs for Git information
+ARG NO_GIT
+ARG GIT_USER_NAME
+ARG GIT_USER_EMAIL
+
+# Configure Git and SSH keys
+RUN --mount=type=secret,id=github_auth_ssh_key,required=false \
+    --mount=type=secret,id=github_auth_ssh_key_pub,required=false \
+    --mount=type=secret,id=github_signing_ssh_key,required=false \
+    --mount=type=secret,id=git_allowed_signers,required=false \
+    if [ "$NO_GIT" != "true" ]; then \
+        cat /run/secrets/github_auth_ssh_key > /root/.ssh/github_auth_key && \
+        cat /run/secrets/github_auth_ssh_key_pub > /root/.ssh/github_auth_key.pub && \
+        cat /run/secrets/github_signing_ssh_key > /root/.ssh/github_signing_key && \
+        cat /run/secrets/git_allowed_signers > /root/.ssh/allowed_signers && \
+        chmod 600 /root/.ssh/github_auth_key /root/.ssh/github_signing_key && \
+        chmod 644 /root/.ssh/github_auth_key.pub /root/.ssh/allowed_signers; \
+        git config --global commit.gpgSign true && \
+        git config --global gpg.format ssh && \
+        git config --global user.signingkey "/root/.ssh/github_signing_key" && \
+        git config --global gpg.ssh.allowedSignersFile "/root/.ssh/allowed_signers" && \
+        git config --global user.name "$GIT_USER_NAME" && \
+        git config --global user.email "$GIT_USER_EMAIL" && \
+        git config --global --add safe.directory /root/dev/robosub-ros2 && \
+        git config --global pull.rebase false; \
+    fi
+
+# Run entrypoint script via tini to ensure SIGTERM is properly handled and zombie processes are reaped
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
