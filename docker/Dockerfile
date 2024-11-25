@@ -70,7 +70,8 @@ RUN --mount=type=secret,id=github_auth_ssh_key,required=false \
         git config --global gpg.ssh.allowedSignersFile "/root/.ssh/allowed_signers" && \
         git config --global user.name "$GIT_USER_NAME" && \
         git config --global user.email "$GIT_USER_EMAIL" && \
-        git config --global --add safe.directory /root/dev/robosub-ros2; \
+        git config --global --add safe.directory /root/dev/robosub-ros2 && \
+        git config --global pull.rebase false; \
     fi
 
 # Run entrypoint script via tini to ensure SIGTERM is properly handled and zombie processes are reaped
