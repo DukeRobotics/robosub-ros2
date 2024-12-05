@@ -1,41 +1,34 @@
 # System Utils
 
-This package provides various ROS interfaces to assist with evaluating system performance and also provides various system utilities.
+This package provides various ROS interfaces to assist with evaluating system performance and also provides various system utilities. To launch all the nodes in this package, use the command
+```bash
+ros2 launch system_utils system_utils.xml
+```
 
-## System Publisher
+## Record Bag
+The `RecordBag` node automates the recording of all current topics into bag files if `enable_recording` is set to `True`. It monitors the `sensors/voltage` topic and begins recording all topics when the voltage exceeds 5V, automatically creating timestamped bag files in the `bag_files` directory. Recording stops if the voltage drops below 5V or if no voltage messages are received for 5 seconds. An optional `bypass` mode allows recording to start immediately and continue independent of the voltage topic.
+
+To launch the node, use the command
+```bash
+ros2 launch system_utils record_bag.xml [bypass:=True] [enable_recording:=True]
+```
+This takes the following parameters:
+- `bypass` (default: `False`): If set to `True`, recording takes place independent of the voltage topic.
+- `enable_recording` (default: `True`): Whether recording is enabled.
+
+## System Info Publisher
 The system publisher publishes a message of type `custom_msgs/SystemUsage.msg`. It contains data corresponding to the CPU usage (percentage and speed), the GPU usage (percentage, speed, usage, and memory), RAM usage (percentage, total used, total available), and disk usage (percentage, total used, total available). All memory items and speeds and in GB and GHz respectively. See the message declaration in the custom_msgs package for more information.
 
-To launch the system publisher, use the command
+To launch the system info publisher, use the command
 ```bash
-roslaunch system_utils system_pub.launch
+ros2 launch system_utils system_info_pub.xml
 ```
-
-## Remote Launch
-The remote launch node allows for nodes to launch other nodes in this workspace. It has two service servers, `/start_node` and `/stop_node` of type `custom_msgs/StartLaunch.srv` and `custom_msgs/StopLaunch.srv` respectively. To start the servers, run
-```bash
-roslaunch system_utils remote_launch.launch
-```
-
-## Sensor Check
-The sensor check script will enable the user to automatically check if the robot's most significant sensors are publishing. The topics which `sensor_check.py` will check are
-- DVL - `/sensors/dvl/odom`
-- IMU - `/vectornav/IMU`
-- Depth sensor - `/sensors/depth`
-- State - `/state`
-- Stereo camera - `/camera/front/rgb/preview/compressed`
-- Sonar - `/sonar/status`
-To add more sensors to check, simpply include the name of the rostopic and the message type under `SENSOR_SUBSCRIBE_TOPICS`. To run the script, use the command
-```bash
-roslaunch system_utils sensor_check.launch
-```
-
-To start a node with the `/start_node` service, provide the package, file, any args (leave empty if none), and if it is a launch file or not (are we running roslaunch or rosrun). It will return a pid in the response. To stop a node, simply provide this pid to the `/stop_node` process, and the node will then be terminated.
 
 ## Topic Transforms
 
 The topic transforms node will allow for the user to transform a topic from one message type to another. This is useful primarily for debugging purposes, or to make certain topics more human-readable. To run the node, use the command
 ```bash
-roslaunch system_utils topic_transforms.launch
+ros2 launch system_utils topic_transforms.xml
 ```
 
 To transform a topic, add a `TopicTransformData` object to the `TOPIC_TRANSFORM_DATA` in the `TopicTransforms` class. 

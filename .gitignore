@@ -17,3 +17,5 @@ __pycache__
 .config
 .env
 .vscode
+
+bag_files
