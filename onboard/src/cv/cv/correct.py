@@ -3,9 +3,10 @@ Adapted from dive-color-corrector by bornfree
 https://github.com/bornfree/dive-color-corrector/blob/81f2664f4da4c025454dcff38b957fb43ca41b86/correct.py
 """
 
-import numpy as np
-import cv2
 import math
+
+import cv2
+import numpy as np
 
 THRESHOLD_RATIO = 2000
 MIN_AVG_RED = 60
@@ -145,7 +146,7 @@ def get_filter_matrix(mat):
             0,
             1,
             0,
-        ]
+        ],
     )
 
 
@@ -174,7 +175,7 @@ def correct_image(input_path, output_path):
 
     preview = cv2.resize(preview, (960, 540))
 
-    return cv2.imencode(".png", preview)[1].tobytes()
+    return cv2.imencode('.png', preview)[1].tobytes()
 
 
 def analyze_video(input_video_path, output_video_path):
@@ -189,11 +190,11 @@ def analyze_video(input_video_path, output_video_path):
     filter_matrices = []
     count = 0
 
-    print("Analyzing...")
+    print('Analyzing...')
     while cap.isOpened():
 
         count += 1
-        print(f"{count} frames", end="\r")
+        print(f'{count} frames', end='\r')
         ret, frame = cap.read()
         if not ret:
             # End video read if we have gone beyond reported frame count
@@ -221,32 +222,32 @@ def analyze_video(input_video_path, output_video_path):
     filter_matrices = np.array(filter_matrices)
 
     yield {
-        "input_video_path": input_video_path,
-        "output_video_path": output_video_path,
-        "fps": fps,
-        "frame_count": count,
-        "filters": filter_matrices,
-        "filter_indices": filter_matrix_indexes,
+        'input_video_path': input_video_path,
+        'output_video_path': output_video_path,
+        'fps': fps,
+        'frame_count': count,
+        'filters': filter_matrices,
+        'filter_indices': filter_matrix_indexes,
     }
 
 
 def process_video(video_data, yield_preview=False):
 
-    cap = cv2.VideoCapture(video_data["input_video_path"])
+    cap = cv2.VideoCapture(video_data['input_video_path'])
 
     frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     new_video = cv2.VideoWriter(
-        video_data["output_video_path"],
+        video_data['output_video_path'],
         fourcc,
-        video_data["fps"],
+        video_data['fps'],
         (int(frame_width), int(frame_height)),
     )
 
-    filter_matrices = video_data["filters"]
-    filter_indices = video_data["filter_indices"]
+    filter_matrices = video_data['filters']
+    filter_indices = video_data['filter_indices']
 
     filter_matrix_size = len(filter_matrices[0])
 
@@ -257,17 +258,17 @@ def process_video(video_data, yield_preview=False):
             for x in range(filter_matrix_size)
         ]
 
-    print("Processing...")
+    print('Processing...')
 
-    frame_count = video_data["frame_count"]
+    frame_count = video_data['frame_count']
 
     count = 0
-    cap = cv2.VideoCapture(video_data["input_video_path"])
+    cap = cv2.VideoCapture(video_data['input_video_path'])
     while cap.isOpened():
 
         count += 1
         percent = 100 * count / frame_count
-        print("{:.2f}".format(percent), end=" % \r")
+        print(f'{percent:.2f}', end=' % \r')
         ret, frame = cap.read()
 
         if not ret:
@@ -298,7 +299,7 @@ def process_video(video_data, yield_preview=False):
 
             preview = cv2.resize(preview, (width, height))
 
-            yield percent, cv2.imencode(".png", preview)[1].tobytes()
+            yield percent, cv2.imencode('.png', preview)[1].tobytes()
         else:
             yield None
 

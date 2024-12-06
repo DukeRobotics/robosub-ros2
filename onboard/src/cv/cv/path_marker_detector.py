@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
-import rclpy
-from rclpy.node import Node
+import math
+
 import cv2
 import numpy as np
-import math
-from sensor_msgs.msg import CompressedImage, Image
+import rclpy
 from custom_msgs.msg import CVObject
-from geometry_msgs.msg import Point
 from cv_bridge import CvBridge
+from geometry_msgs.msg import Point
+from rclpy.node import Node
+from sensor_msgs.msg import CompressedImage, Image
 
 from cv.utils import compute_center_distance
 
@@ -19,13 +20,13 @@ class PathMarkerDetector(Node):
     def __init__(self):
         super().__init__('path_marker_detector')
         self.bridge = CvBridge()
-        self.image_sub = self.create_subscription(CompressedImage, "/camera/usb/bottom/compressed" , self.image_callback, 10)
+        self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/bottom/compressed' , self.image_callback, 10)
 
         # define information published for path marker
-        self.path_marker_hsv_filtered_pub = self.create_publisher(Image, "/cv/bottom/path_marker/hsv_filtered", 10)
-        self.path_marker_contour_image_pub = self.create_publisher(Image, "/cv/bottom/path_marker/contour_image", 10)
-        self.path_marker_bounding_box_pub = self.create_publisher(CVObject, "/cv/bottom/path_marker/bounding_box", 10)
-        self.path_marker_distance_pub = self.create_publisher(Point, "/cv/bottom/path_marker/distance", 10)
+        self.path_marker_hsv_filtered_pub = self.create_publisher(Image, '/cv/bottom/path_marker/hsv_filtered', 10)
+        self.path_marker_contour_image_pub = self.create_publisher(Image, '/cv/bottom/path_marker/contour_image', 10)
+        self.path_marker_bounding_box_pub = self.create_publisher(CVObject, '/cv/bottom/path_marker/bounding_box', 10)
+        self.path_marker_distance_pub = self.create_publisher(Point, '/cv/bottom/path_marker/distance', 10)
 
     def image_callback(self, data):
         # Convert the compressed ROS image to OpenCV format
@@ -47,7 +48,7 @@ class PathMarkerDetector(Node):
         # upper_orange = np.array([33, 255, 255])
         mask = cv2.inRange(hsv, lower_orange, upper_orange)
 
-        hsv_filtered_msg = self.bridge.cv2_to_imgmsg(mask, "mono8")
+        hsv_filtered_msg = self.bridge.cv2_to_imgmsg(mask, 'mono8')
         self.path_marker_hsv_filtered_pub.publish(hsv_filtered_msg)
 
         # Apply morphological operations to clean up the binary image
@@ -142,5 +143,5 @@ def main(args=None):
         if rclpy.ok():
             rclpy.shutdown()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

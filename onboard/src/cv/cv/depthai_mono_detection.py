@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 
+import math
+
+import cv2
+import depthai as dai
+import numpy as np
 import rclpy
 import resource_retriever as rr
 import yaml
-import math
-import cv.depthai_camera_connect as depthai_camera_connect
-import depthai as dai
-import numpy as np
-from cv.utils import DetectionVisualizer, calculate_relative_pose
-from cv.image_tools import ImageTools
-import cv2
-
 from custom_msgs.msg import CVObject, SonarSweepRequest, SonarSweepResponse
+from rclpy.node import Node
+from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String
 
-from rclpy.node import Node
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
+from cv import depthai_camera_connect
+from cv.image_tools import ImageTools
+from cv.utils import DetectionVisualizer, calculate_relative_pose
 
 CAMERA_CONFIG_PATH = 'package://cv/config/usb_cameras.yaml'
 with open(rr.get_filename(CAMERA_CONFIG_PATH, use_protocol=False)) as f:
@@ -30,7 +30,7 @@ SONAR_DEPTH = 10
 SONAR_RANGE = 1.75
 SONAR_REQUESTS_PATH = 'sonar/request'
 SONAR_RESPONSES_PATH = 'sonar/cv/response'
-TASK_PLANNING_REQUESTS_PATH = "controls/desired_feature"
+TASK_PLANNING_REQUESTS_PATH = 'controls/desired_feature'
 LOOP_RATE = 10
 
 GATE_IMAGE_WIDTH = 0.2452  # Width of gate images in meters
@@ -47,16 +47,16 @@ class DepthAISpatialDetector(Node):
         """
         Initializes the ROS node. Loads the yaml file at cv/models/depthai_models.yaml
         """
-        super().__init__("depthai_spatial_detection")
-        self.feed_path = self.declare_parameter("feed_path", "/camera/usb/front/compressed").value
-        self.running_model = self.declare_parameter("model", "2024_gate_glyphs").value
-        self.rgb_raw = self.declare_parameter("rgb_raw", True).value
-        self.rgb_detections = self.declare_parameter("rgb_detections", True).value
-        self.queue_depth = self.declare_parameter("depth", False).value  # Whether to output depth map
-        self.sync_nn = self.declare_parameter("sync_nn", True).value
-        self.using_sonar = self.declare_parameter("using_sonar", False).value
-        self.show_class_name = self.declare_parameter("show_class_name", True).value
-        self.show_confidence = self.declare_parameter("show_confidence", True).value
+        super().__init__('depthai_spatial_detection')
+        self.feed_path = self.declare_parameter('feed_path', '/camera/usb/front/compressed').value
+        self.running_model = self.declare_parameter('model', '2024_gate_glyphs').value
+        self.rgb_raw = self.declare_parameter('rgb_raw', True).value
+        self.rgb_detections = self.declare_parameter('rgb_detections', True).value
+        self.queue_depth = self.declare_parameter('depth', False).value  # Whether to output depth map
+        self.sync_nn = self.declare_parameter('sync_nn', True).value
+        self.using_sonar = self.declare_parameter('using_sonar', False).value
+        self.show_class_name = self.declare_parameter('show_class_name', True).value
+        self.show_confidence = self.declare_parameter('show_confidence', True).value
         self.device = None
 
         with open(rr.get_filename(DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH,
@@ -82,12 +82,12 @@ class DepthAISpatialDetector(Node):
         self.in_sonar_range = True
 
         # By default the first task is going through the gate
-        self.current_priority = "buoy_abydos_serpenscaput"
+        self.current_priority = 'buoy_abydos_serpenscaput'
 
         qos_profile = QoSProfile(
             reliability=QoSReliabilityPolicy.RELIABLE,
             history=QoSHistoryPolicy.KEEP_LAST,
-            depth=10 # queue_size in ros 1
+            depth=10, # queue_size in ros 1
         )
 
         # Initialize publishers and subscribers for sonar/task planning
@@ -103,7 +103,8 @@ class DepthAISpatialDetector(Node):
         self.run()
 
     def _update_latest_img(self, img_msg):
-        """ Send an image to the device for detection
+        """
+        Send an image to the device for detection
 
         Args:
             img_msg (sensor_msgs.msg.CompressedImage): Image to send to the device
@@ -118,7 +119,7 @@ class DepthAISpatialDetector(Node):
 
         # Input queue will be used to send video frames to the device.
         if self.device:
-            input_queue = self.device.getInputQueue("nn_input")
+            input_queue = self.device.getInputQueue('nn_input')
 
             # Send a message to the ColorCamera to capture a still image
             img = dai.ImgFrame()
@@ -163,10 +164,10 @@ class DepthAISpatialDetector(Node):
         feed_out = pipeline.create(dai.node.XLinkOut)
 
         xout_nn = pipeline.create(dai.node.XLinkOut)
-        xout_nn.setStreamName("detections")
+        xout_nn.setStreamName('detections')
 
         xin_nn_input = pipeline.create(dai.node.XLinkIn)
-        xin_nn_input.setStreamName("nn_input")
+        xin_nn_input.setStreamName('nn_input')
         xin_nn_input.setNumFrames(2)
         xin_nn_input.setMaxDataSize(416*416*3)
 
@@ -188,7 +189,7 @@ class DepthAISpatialDetector(Node):
         spatial_detection_network.out.link(xout_nn.input)
 
         # Feed the image stream to the neural net input node
-        feed_out.setStreamName("feed")
+        feed_out.setStreamName('feed')
         spatial_detection_network.passthrough.link(feed_out.input)
 
         return pipeline
@@ -240,14 +241,14 @@ class DepthAISpatialDetector(Node):
         # Create a CVObject publisher for each class
         publisher_dict = {}
         for model_class in model['classes']:
-            publisher_name = f"cv/{self.camera}/{model_class}"
+            publisher_name = f'cv/{self.camera}/{model_class}'
             publisher_dict[model_class] = self.create_publisher(CVObject,
                                                           publisher_name,
                                                           10)
         self.publishers_dict = publisher_dict
 
         if self.rgb_detections:
-            self.detection_feed_publisher = self.create_publisher(CompressedImage, "cv/front/detections/compressed",
+            self.detection_feed_publisher = self.create_publisher(CompressedImage, 'cv/front/detections/compressed',
                                                             10)
 
     def init_queues(self, device):
@@ -260,11 +261,11 @@ class DepthAISpatialDetector(Node):
         if self.connected:
             return
 
-        self.output_queues["detections"] = self.device.getOutputQueue(name="detections", maxSize=1, blocking=False)
-        self.output_queues["passthrough"] = self.device.getOutputQueue(
-            name="feed", maxSize=1, blocking=False)
+        self.output_queues['detections'] = self.device.getOutputQueue(name='detections', maxSize=1, blocking=False)
+        self.output_queues['passthrough'] = self.device.getOutputQueue(
+            name='feed', maxSize=1, blocking=False)
 
-        self.input_queue = device.getInputQueue(name="nn_input", maxSize=1, blocking=False)
+        self.input_queue = device.getInputQueue(name='nn_input', maxSize=1, blocking=False)
 
         self.connected = True  # Flag that the output queues have been initialized
 
@@ -277,11 +278,11 @@ class DepthAISpatialDetector(Node):
         """
         # init_output_queues must be called before detect
         if not self.connected:
-            self.get_logger().warn("Output queues are not initialized so cannot detect. Call init_output_queues first.")
+            self.get_logger().warn('Output queues are not initialized so cannot detect. Call init_output_queues first.')
             return
 
         # Get detections from output queues
-        inDet = self.output_queues["detections"].get()
+        inDet = self.output_queues['detections'].get()
         if not inDet:
             return
         detections = inDet.detections
@@ -296,7 +297,7 @@ class DepthAISpatialDetector(Node):
         model = self.models[self.current_model_name]
 
         # Publish detections feed
-        passthrough_feed = self.output_queues["passthrough"].tryGet()
+        passthrough_feed = self.output_queues['passthrough'].tryGet()
         if not passthrough_feed:
             return
         frame = passthrough_feed.getCvFrame()
@@ -426,7 +427,7 @@ class DepthAISpatialDetector(Node):
         :return: angle in degrees
         """
         image_center_x = self.camera_pixel_width / 2.0
-        return math.degrees(math.atan(((x_offset - image_center_x) * 0.005246675486)))
+        return math.degrees(math.atan((x_offset - image_center_x) * 0.005246675486))
 
 
 def main(args=None):

@@ -1,24 +1,24 @@
 #!/usr/bin/env python
 
-import rclpy
-from rclpy.node import Node
 import cv2
 import numpy as np
+import rclpy
+from custom_msgs.msg import RectInfo
+from cv_bridge import CvBridge, CvBridgeError
+from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float64
-from cv_bridge import CvBridge, CvBridgeError
-from custom_msgs.msg import RectInfo
 
 
 class BlueRectangleDetector(Node):
     def __init__(self):
-        super().__init__("blue_rectangle_detector")
+        super().__init__('blue_rectangle_detector')
         self.bridge = CvBridge()
-        self.image_sub = self.create_subscription(CompressedImage, "/camera/usb/bottom/compressed", self.image_callback, 10)
-        self.angle_pub = self.create_publisher(Float64, "/cv/bottom/lane_marker_angle", 10)
-        self.distance_pub = self.create_publisher(Float64, "/cv/bottom/lane_marker_dist", 10)
-        self.detections_pub = self.create_publisher(CompressedImage, "/cv/bottom/detections/compressed", 10)
-        self.rect_info_pub = self.create_publisher(RectInfo, "/cv/bottom/lane_marker", 10)
+        self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/bottom/compressed', self.image_callback, 10)
+        self.angle_pub = self.create_publisher(Float64, '/cv/bottom/lane_marker_angle', 10)
+        self.distance_pub = self.create_publisher(Float64, '/cv/bottom/lane_marker_dist', 10)
+        self.detections_pub = self.create_publisher(CompressedImage, '/cv/bottom/detections/compressed', 10)
+        self.rect_info_pub = self.create_publisher(RectInfo, '/cv/bottom/lane_marker', 10)
 
     def image_callback(self, data):
         try:
@@ -47,10 +47,10 @@ class BlueRectangleDetector(Node):
                 compressed_image_msg = self.bridge.cv2_to_compressed_imgmsg(processed_frame)
                 self.detections_pub.publish(compressed_image_msg)
             except CvBridgeError as e:
-                self.get_logger().error(f"Failed to publish processed image: {e}")
+                self.get_logger().error(f'Failed to publish processed image: {e}')
 
         except CvBridgeError as e:
-            self.get_logger().error(f"Could not convert image: {e}")
+            self.get_logger().error(f'Could not convert image: {e}')
 
     def get_angle_and_distance_of_rectangle(self, frame):
         # Convert frame to HSV color space
@@ -138,5 +138,5 @@ def main(args=None):
         if rclpy.ok():
             rclpy.shutdown()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

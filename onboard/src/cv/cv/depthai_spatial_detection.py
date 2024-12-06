@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
 
+import math
+
+import cv2
+import depthai as dai
+import numpy as np
 import rclpy
 import resource_retriever as rr
 import yaml
-import math
-import cv.depthai_camera_connect as depthai_camera_connect
-import depthai as dai
-import numpy as np
-from cv.utils import DetectionVisualizer, calculate_relative_pose
-from cv.image_tools import ImageTools
-import cv2
-import cv.correct as correct
-
 from custom_msgs.msg import CVObject, SonarSweepRequest, SonarSweepResponse
+from rclpy.node import Node
+from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String
 
-from rclpy.node import Node
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
+from cv import correct, depthai_camera_connect
+from cv.image_tools import ImageTools
+from cv.utils import DetectionVisualizer, calculate_relative_pose
 
 MM_IN_METER = 1000
 DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH = 'package://cv/models/depthai_models.yaml'
@@ -26,7 +25,7 @@ SONAR_DEPTH = 10
 SONAR_RANGE = 1.75
 SONAR_REQUESTS_PATH = 'sonar/request'
 SONAR_RESPONSES_PATH = 'sonar/cv/response'
-TASK_PLANNING_REQUESTS_PATH = "controls/desired_feature"
+TASK_PLANNING_REQUESTS_PATH = 'controls/desired_feature'
 LOOP_RATE = 10
 
 GATE_IMAGE_WIDTH = 0.2452  # Width of gate images in meters
@@ -39,7 +38,6 @@ ISP_IMG_SHAPE = (4056, 3040)  # Size of ISP image
 # Compute detections on live camera feed and publish spatial coordinates for detected objects
 class DepthAISpatialDetector(Node):
     def __init__(self):
-
         """
         Initializes the ROS node. Loads the yaml file at cv/models/depthai_models.yaml
         """
@@ -77,12 +75,12 @@ class DepthAISpatialDetector(Node):
         self.in_sonar_range = True
 
         # By default the first task is going through the gate
-        self.current_priority = "buoy_abydos_serpenscaput"
+        self.current_priority = 'buoy_abydos_serpenscaput'
 
         qos_profile = QoSProfile(
             reliability=QoSReliabilityPolicy.RELIABLE,
             history=QoSHistoryPolicy.KEEP_LAST,
-            depth=10 # queue_size in ros 1
+            depth=10, # queue_size in ros 1
         )
 
         # Initialize publishers and subscribers for sonar/task planning
@@ -128,14 +126,14 @@ class DepthAISpatialDetector(Node):
         image_manip = pipeline.create(dai.node.ImageManip)
 
         xout_nn = pipeline.create(dai.node.XLinkOut)
-        xout_nn.setStreamName("detections")
+        xout_nn.setStreamName('detections')
 
         xout_rgb = pipeline.create(dai.node.XLinkOut)
-        xout_rgb.setStreamName("rgb")
+        xout_rgb.setStreamName('rgb')
         cam_rgb.video.link(xout_rgb.input)
 
         xin_nn_input = pipeline.create(dai.node.XLinkIn)
-        xin_nn_input.setStreamName("nn_input")
+        xin_nn_input.setStreamName('nn_input')
         xin_nn_input.setNumFrames(2)
         xin_nn_input.setMaxDataSize(416*416*3)
 
@@ -225,7 +223,7 @@ class DepthAISpatialDetector(Node):
         # Create a CVObject publisher for each class
         publisher_dict = {}
         for model_class in model['classes']:
-            publisher_name = f"cv/{self.camera}/{model_class}"
+            publisher_name = f'cv/{self.camera}/{model_class}'
             publisher_dict[model_class] = self.create_publisher(CVObject,
                                                           publisher_name,
                                                           10)
@@ -233,11 +231,11 @@ class DepthAISpatialDetector(Node):
 
         # Create CompressedImage publishers for the raw RGB feed, detections feed, and depth feed
         if self.rgb_raw:
-            self.rgb_preview_publisher = self.create_publisher(CompressedImage, "camera/front/rgb/preview/compressed",
+            self.rgb_preview_publisher = self.create_publisher(CompressedImage, 'camera/front/rgb/preview/compressed',
                                                          10)
 
         if self.rgb_detections:
-            self.detection_feed_publisher = self.create_publisher(CompressedImage, "cv/front/detections/compressed",
+            self.detection_feed_publisher = self.create_publisher(CompressedImage, 'cv/front/detections/compressed',
                                                             10)
 
     def init_queues(self, device):
@@ -251,11 +249,11 @@ class DepthAISpatialDetector(Node):
             return
 
         # Assign output queues
-        self.output_queues["rgb"] = self.device.getOutputQueue(name="rgb", maxSize=1, blocking=False)
+        self.output_queues['rgb'] = self.device.getOutputQueue(name='rgb', maxSize=1, blocking=False)
 
-        self.output_queues["detections"] = self.device.getOutputQueue(name="detections", maxSize=1, blocking=False)
+        self.output_queues['detections'] = self.device.getOutputQueue(name='detections', maxSize=1, blocking=False)
 
-        self.input_queue = self.device.getInputQueue(name="nn_input", maxSize=1, blocking=False)
+        self.input_queue = self.device.getInputQueue(name='nn_input', maxSize=1, blocking=False)
 
         self.connected = True  # Flag that the output queues have been initialized
 
@@ -268,14 +266,14 @@ class DepthAISpatialDetector(Node):
         """
         # init_output_queues must be called before detect
         if not self.connected:
-            self.get_logger().warn("Output queues are not initialized so cannot detect. Call init_output_queues first.")
+            self.get_logger().warn('Output queues are not initialized so cannot detect. Call init_output_queues first.')
             return
 
         # Format a cv2 image to be sent to the device
         def to_planar(arr: np.ndarray, shape: tuple) -> np.ndarray:
             return cv2.resize(arr, shape).transpose(2, 0, 1).flatten()
 
-        inPreview = self.output_queues["rgb"].get()
+        inPreview = self.output_queues['rgb'].get()
         frame = inPreview.getCvFrame()
 
         # Publish raw RGB feed
@@ -297,7 +295,7 @@ class DepthAISpatialDetector(Node):
         self.input_queue.send(img)
 
         # Get detections from output queues
-        inDet = self.output_queues["detections"].tryGet()
+        inDet = self.output_queues['detections'].tryGet()
         if not inDet:
             return
         detections = inDet.detections
@@ -356,7 +354,7 @@ class DepthAISpatialDetector(Node):
                 # Try calling sonar on detected bounding box
                 # if sonar responds, then override existing robot-frame x info;
                 # else, keep default
-                if not (self.sonar_response == (0, 0)) and self.in_sonar_range:
+                if self.sonar_response != (0, 0) and self.in_sonar_range:
                     det_coords_robot_mm = (self.sonar_response[0],  # Override x
                                            det_coords_robot_mm[1],  # Maintain original y
                                            det_coords_robot_mm[2])  # Maintain original z
@@ -402,7 +400,7 @@ class DepthAISpatialDetector(Node):
 
         if self.publishers_dict:
             # Flush out 0, 0, 0 values
-            self.get_logger().debug("Publishing")
+            self.get_logger().debug('Publishing')
             self.publishers_dict[label].publish(object_msg)
 
     def update_sonar(self, sonar_results):
@@ -432,7 +430,6 @@ class DepthAISpatialDetector(Node):
         :return: False if the model is not in cv/models/depthai_models.yaml.
         Otherwise, the model will be run on the device.
         """
-
         # Check if model is valid
         if self.running_model not in self.models:
             return False
@@ -458,7 +455,7 @@ class DepthAISpatialDetector(Node):
         :return: angle in degrees
         """
         image_center_x = self.camera_pixel_width / 2.0
-        return math.degrees(math.atan(((x_offset - image_center_x) * 0.005246675486)))
+        return math.degrees(math.atan((x_offset - image_center_x) * 0.005246675486))
 
     def compute_angle_from_y_offset(self, y_offset):
         """
@@ -470,7 +467,7 @@ class DepthAISpatialDetector(Node):
         :return: angle in degrees
         """
         image_center_y = self.camera_pixel_height / 2.0
-        return math.degrees(math.atan(((y_offset - image_center_y) * 0.003366382395)))
+        return math.degrees(math.atan((y_offset - image_center_y) * 0.003366382395))
 
     def coords_to_angle(self, min_x, max_x):
         """

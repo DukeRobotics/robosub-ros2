@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
-import rclpy
-from rclpy.node import Node
-import resource_retriever as rr
 import cv2
 import numpy as np
-from cv_bridge import CvBridge
-from sensor_msgs.msg import CompressedImage, Image
+import rclpy
+import resource_retriever as rr
 from custom_msgs.msg import CVObject
-from cv.utils import compute_yaw, calculate_relative_pose
+from cv_bridge import CvBridge
+from rclpy.node import Node
+from sensor_msgs.msg import CompressedImage, Image
+
+from cv.utils import calculate_relative_pose, compute_yaw
 
 
 class BuoyDetectorContourMatching(Node):
@@ -27,9 +28,9 @@ class BuoyDetectorContourMatching(Node):
         path_to_reference_img = rr.get_filename('package://cv/assets/polyform-a0-buoy-contour.png', use_protocol=False)
 
         # Load the reference image in grayscale (assumes the image is already binary: white and black)
-        self.reference_image = cv2.imread("/root/dev/robosub-ros2/onboard/build/cv/assets/polyform-a0-buoy-contour.png", cv2.IMREAD_GRAYSCALE)
+        self.reference_image = cv2.imread('/root/dev/robosub-ros2/onboard/build/cv/assets/polyform-a0-buoy-contour.png', cv2.IMREAD_GRAYSCALE)
         if self.reference_image is None:
-            print("oops")
+            print('oops')
 
         # Compute the contours directly on the binary image
         self.ref_contours, _ = cv2.findContours(self.reference_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -51,7 +52,7 @@ class BuoyDetectorContourMatching(Node):
             image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         except Exception as e:
-          self.get_logger().error("Failed to convert image: %s", e)
+          self.get_logger().error('Failed to convert image: %s', e)
           return
 
         # Define the range for HSV filtering on the red buoy
@@ -70,7 +71,7 @@ class BuoyDetectorContourMatching(Node):
         red_hsv = cv2.morphologyEx(red_hsv, cv2.MORPH_CLOSE, kernel)
 
         # Publish the HSV filtered image
-        hsv_filtered_msg = self.bridge.cv2_to_imgmsg(red_hsv, "mono8")
+        hsv_filtered_msg = self.bridge.cv2_to_imgmsg(red_hsv, 'mono8')
         self.hsv_filtered_pub.publish(hsv_filtered_msg)
 
         # Find contours in the image
@@ -85,7 +86,7 @@ class BuoyDetectorContourMatching(Node):
         # (prepares for) publish contours only
         image_with_contours = image.copy()
         cv2.drawContours(image_with_contours, contours, -1, (255, 0, 0), 2)
-        contour_image_msg = self.bridge.cv2_to_imgmsg(image_with_contours, "bgr8")
+        contour_image_msg = self.bridge.cv2_to_imgmsg(image_with_contours, 'bgr8')
         self.contour_image_pub.publish(contour_image_msg)
 
         # only gets contours w/ area>100
@@ -128,7 +129,7 @@ class BuoyDetectorContourMatching(Node):
             cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         # Convert the image with the bounding box to ROS Image message and publish
-        image_msg = self.bridge.cv2_to_imgmsg(image, "bgr8")
+        image_msg = self.bridge.cv2_to_imgmsg(image, 'bgr8')
         self.contour_image_with_bbox_pub.publish(image_msg)
 
     def filter_outliers(self, bboxes):
@@ -201,5 +202,5 @@ def main(args=None):
         if rclpy.ok():
             rclpy.shutdown()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
