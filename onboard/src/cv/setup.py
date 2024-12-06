@@ -1,9 +1,6 @@
 from setuptools import find_packages, setup
-import glob
 
 package_name = 'cv'
-
-# glob all config files in /config
 
 setup(
     name=package_name,
@@ -26,7 +23,6 @@ setup(
     maintainer_email='root@todo.todo',
     description='Computer Vision pipeline, including depthai and hsv filtering.',
     license='Apache-2.0',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'bin_detector = cv.bin_detector:main',

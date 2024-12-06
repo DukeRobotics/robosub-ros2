@@ -1,0 +1,37 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+lint.flake8-quotes.inline-quotes = "single"
+lint.pydocstyle.convention = "google"
+lint.isort.relative-imports-order = "closest-to-furthest"
+lint.select = [
+    # Include all the rules, including new ones
+    "ALL",
+
+    # Include these rules, even though they are not enabled by default when
+    # using the google convention with pydocstyle
+    "D213",
+    "D400",
+    "D401"
+]
+lint.ignore = [
+    # Modules
+    "C90", # mccabe complexity
+    "DJ",  # django
+    "FBT", # flake8-boolean-trap
+    "T20", # flake8-print
+
+    # Specific Rules
+    "ANN002",
+    "ANN003",
+    "D100",
+    "D104",
+    "D107",
+    "D212",
+    "INP001",
+    "N802",
+    "PLR0913",
+    "TRY003",
+    "TD002",
+    "TD003",
+]

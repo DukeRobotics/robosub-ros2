@@ -1,3 +1,6 @@
+#!/bin/bash
+# shellcheck disable=SC1091
+
 # Store the current working directory
 original_cwd=$(pwd)
 
@@ -12,18 +15,40 @@ clean_workspace() {
     rm -rf "$workspace_dir/build" "$workspace_dir/install" "$workspace_dir/log"
 }
 
+# Function to build workspace or package
+build_workspace() {
+    workspace_dir=$1
+    package_name=$2
+
+    cd "$workspace_dir" || exit
+
+    build_cmd="colcon build"
+
+    # Don't use symlink install for core workspace
+    if [ "$workspace_dir" != "$CORE_WS" ]; then
+        build_cmd="$build_cmd --symlink-install"
+    fi
+
+    if [ -n "$package_name" ]; then
+        build_cmd="$build_cmd --packages-select $package_name"
+        echo "Building package '$package_name' in workspace: $workspace_dir"
+    else
+        echo "Building workspace: $workspace_dir"
+    fi
+
+    $build_cmd --executor sequential
+
+    source install/setup.bash
+}
+
 # Main script logic
 if [ "$1" == "core" ]; then
     # Build all packages in core workspace
-    cd "$CORE_WS"
-    colcon build --symlink-install --executor sequential
-    source install/setup.bash
+    build_workspace "$CORE_WS"
 
 elif [ "$1" == "onboard" ]; then
     # Build all packages in onboard workspace
-    cd "$ONBOARD_WS"
-    colcon build --symlink-install --executor sequential
-    source install/setup.bash
+    build_workspace "$ONBOARD_WS"
 
 elif [ "$1" == "clean" ]; then
     # Clean workspaces
@@ -38,20 +63,13 @@ elif [ "$1" == "clean" ]; then
 
 elif [ -n "$1" ]; then
     # Build a specific package in the onboard workspace
-    cd "$ONBOARD_WS"
-    colcon build --symlink-install --packages-select "$1"
-    source install/setup.bash
-
+    build_workspace "$ONBOARD_WS" "$1"
 else
     # Build all packages in both core and onboard workspaces
-    cd "$CORE_WS"
-    colcon build --executor sequential
-    source install/setup.bash
-    cd "$ONBOARD_WS"
-    colcon build --symlink-install --executor sequential
-    source install/setup.bash
+    build_workspace "$CORE_WS"
+    build_workspace "$ONBOARD_WS"
 fi
 
 # Reload bashrc and return to original directory
-source ~/.bashrc
-cd "$original_cwd"
+source /root/.bashrc
+cd "$original_cwd" || exit
