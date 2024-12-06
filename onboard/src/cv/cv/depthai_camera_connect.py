@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
 import depthai as dai
+import nmap
 import rclpy
 from rclpy.node import Node
-import nmap
 
 
 class DepthAiCameraConnect(Node):
     def __init__(self):
-        super().__init__("depthai_camera_connect")
+        super().__init__('depthai_camera_connect')
 
 def connect(pipeline):
     """
@@ -22,7 +22,6 @@ def connect(pipeline):
     :return: depthai.Device object
     :raises RuntimeError: if a successful connection to the camera could not be made
     """
-
     # The DepthAI device that we hope to obtain
     # If device is not None, a successful connection to the camera was made
     device = None
@@ -58,8 +57,8 @@ def connect(pipeline):
         # This ensures the script does not terminate if the camera is just temporarily unavailable
         rclpy.spin_once(node, timeout_sec=2)
 
-    raise RuntimeError(f"{total_tries} attempts were made to connect to the DepthAI camera using "
-                    f"autodiscovery and static IP address specification. All attempts failed.")
+    raise RuntimeError(f'{total_tries} attempts were made to connect to the DepthAI camera using '
+                    f'autodiscovery and static IP address specification. All attempts failed.')
 
 
 def custom_autodiscovery():
@@ -69,26 +68,25 @@ def custom_autodiscovery():
     :return: DepthAI IP address string
     :raises RuntimeError: if the camera's IP address could not be found
     """
-
-    MAC_address = "44:A9:2C:3C:0A:90"  # DepthAI camera MAC address
-    IP_range = "169.254.1.222"  # 192.168.1.0 to 192.168.1.255
+    MAC_address = '44:A9:2C:3C:0A:90'  # DepthAI camera MAC address
+    IP_range = '169.254.1.222'  # 192.168.1.0 to 192.168.1.255
 
     nm = nmap.PortScanner()
     scan = nm.scan(hosts=IP_range, arguments='-sP')['scan']
 
     for ip, info in scan.items():
-        print(f"Searching,... {ip}")
+        print(f'Searching,... {ip}')
         if info['status']['state'] == 'up': #and info['addresses'].get('mac') == MAC_address:
-            print("FOUND!!")
+            print('FOUND!!')
             return ip
 
-    raise RuntimeError("Custom autodiscovery failed to find camera.")
+    raise RuntimeError('Custom autodiscovery failed to find camera.')
 
-'''
+"""
 If needed for testing please port this over too thanks!
 if __name__ == "__main__":
     rospy.init_node("depthai_camera_connect")
     if connect(dai.Pipeline()):
         rospy.loginfo("Connected to DepthAI device successfully.")
 
-'''
+"""
