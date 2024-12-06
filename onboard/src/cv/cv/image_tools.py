@@ -1,10 +1,10 @@
-import numpy as np
 import cv2
+import numpy as np
 from cv_bridge import CvBridge, CvBridgeError
-from sensor_msgs.msg import Image, CompressedImage
+from sensor_msgs.msg import CompressedImage, Image
 
 
-class ImageTools(object):
+class ImageTools:
     def __init__(self):
         self._cv_bridge = CvBridge()
 
@@ -15,10 +15,10 @@ class ImageTools(object):
         try:
             return self._cv_bridge.imgmsg_to_cv2(ros_data, image_encoding)
         except CvBridgeError as e:
-            if "[16UC1] is not a color format" in str(e) or "[8UC1] is not a color format" in str(e):
+            if '[16UC1] is not a color format' in str(e) or '[8UC1] is not a color format' in str(e):
                 raise CvBridgeError(
-                    "You may be trying to use a Image method (Subscriber, Publisher, conversion) on a depth image " +
-                    "message. Original exception: " + str(e))
+                    'You may be trying to use a Image method (Subscriber, Publisher, conversion) on a depth image ' +
+                    'message. Original exception: ' + str(e))
             raise e
 
     def convert_ros_compressed_to_cv2(self, compressed_msg):
@@ -67,7 +67,7 @@ class ImageTools(object):
         elif type(image) == CompressedImage:
             cv2_img = self.convert_ros_compressed_to_cv2(image)
         else:
-            raise TypeError("Cannot convert type: " + str(type(image)))
+            raise TypeError('Cannot convert type: ' + str(type(image)))
         return cv2_img
 
     def convert_to_ros_msg(self, image, image_encoding='bgr8'):
@@ -82,7 +82,7 @@ class ImageTools(object):
         elif type(image) == CompressedImage:
             ros_msg = self.convert_ros_compressed_msg_to_ros_msg(image, image_encoding=image_encoding)
         else:
-            raise TypeError("Cannot convert type: " + str(type(image)))
+            raise TypeError('Cannot convert type: ' + str(type(image)))
         return ros_msg
 
     def convert_to_ros_compressed_msg(self, image, compressed_format='jpg', image_encoding='bgr8'):
@@ -98,17 +98,17 @@ class ImageTools(object):
         elif type(image) == CompressedImage:
             ros_cmp = image
         else:
-            raise TypeError("Cannot convert type: " + str(type(image)))
+            raise TypeError('Cannot convert type: ' + str(type(image)))
         return ros_cmp
 
     def convert_cv_bridge_depth_encoding_to_encoding_string(self, cv_bridge_depth_encoding, compressed=False):
-        encoding_str = ""
+        encoding_str = ''
         if cv_bridge_depth_encoding == 'mono16':
             encoding_str = '16UC1'
         elif cv_bridge_depth_encoding == 'mono8':
             encoding_str = '8UC1'
         else:
-            raise TypeError("Cannot convert image with encoding: " + cv_bridge_depth_encoding)
+            raise TypeError('Cannot convert image with encoding: ' + cv_bridge_depth_encoding)
 
         if compressed:
             encoding_str += '; compressedDepth'
@@ -116,13 +116,13 @@ class ImageTools(object):
         return encoding_str
 
     def convert_encoding_string_to_cv_bridge_depth_encoding(self, encoding_str):
-        cv_bridge_depth_encoding = ""
+        cv_bridge_depth_encoding = ''
         if encoding_str == '16UC1' or encoding_str == '16UC1; compressedDepth':
             cv_bridge_depth_encoding = 'mono16'
         elif encoding_str == '8UC1' or encoding_str == '8UC1; compressedDepth':
             cv_bridge_depth_encoding = 'mono8'
         else:
-            raise TypeError("Cannot convert image with encoding: " + encoding_str)
+            raise TypeError('Cannot convert image with encoding: ' + encoding_str)
 
         return cv_bridge_depth_encoding
 
@@ -136,7 +136,7 @@ class ImageTools(object):
         elif type(image) == CompressedImage:
             ros_msg = self.convert_compressedDepth_to_image_msg(image)
         else:
-            raise TypeError("Cannot convert type: " + str(type(image)))
+            raise TypeError('Cannot convert type: ' + str(type(image)))
         return ros_msg
 
     def convert_depth_to_ros_compressed_msg(self, image, image_encoding):
@@ -154,7 +154,7 @@ class ImageTools(object):
         elif type(image) == CompressedImage:
             ros_cmp = image
         else:
-            raise TypeError("Cannot convert type: " + str(type(image)))
+            raise TypeError('Cannot convert type: ' + str(type(image)))
         return ros_cmp
 
     def convert_depth_to_cv2(self, image):
@@ -162,13 +162,13 @@ class ImageTools(object):
         if type(image) == np.ndarray:
             cv2_img = image
         elif type(image) == Image:
-            encoding = image.encoding.split(";")[0]
+            encoding = image.encoding.split(';')[0]
             cv_encoding = self.convert_encoding_string_to_cv_bridge_depth_encoding(encoding)
             cv2_img = self.convert_ros_msg_to_cv2(image, image_encoding=cv_encoding)
         elif type(image) == CompressedImage:
             cv2_img = self.convert_compressedDepth_to_cv2(image)
         else:
-            raise TypeError("Cannot convert type: " + str(type(image)))
+            raise TypeError('Cannot convert type: ' + str(type(image)))
         return cv2_img
 
     def convert_compressedDepth_to_image_msg(self, compressed_image):
@@ -178,7 +178,7 @@ class ImageTools(object):
         as it's encoded in PNG
         Code from: https://answers.ros.org/question/249775/display-compresseddepth-image-python-cv2/
         """
-        encoding = compressed_image.format.split(";")[0]
+        encoding = compressed_image.format.split(';')[0]
         cv_encoding = self.convert_encoding_string_to_cv_bridge_depth_encoding(encoding)
 
         depth_img_raw = self.convert_compressedDepth_to_cv2(compressed_image)
@@ -198,7 +198,7 @@ class ImageTools(object):
         # remove white space
         depth_fmt = depth_fmt.strip()
         compr_type = compr_type.strip()
-        if compr_type != "compressedDepth":
+        if compr_type != 'compressedDepth':
             raise Exception("Compression type is not 'compressedDepth'. You probably subscribed to the wrong topic.")
 
         # remove header from raw data, if necessary

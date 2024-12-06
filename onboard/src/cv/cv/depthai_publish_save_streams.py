@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 
-import rclpy
-from rclpy.node import Node
-import depthai as dai
+import os
+import subprocess
+
 import cv2
-from sensor_msgs.msg import CompressedImage
-from image_tools import ImageTools
+import depthai as dai
 import depthai_camera_connect
 import numpy as np
+import rclpy
 import utils
-import subprocess
-import os
+from image_tools import ImageTools
+from rclpy.node import Node
+from sensor_msgs.msg import CompressedImage
 
 LOOP_RATE = 10
 
@@ -51,11 +52,11 @@ class DepthAIStreamsPublisherAndSaver(Node):
         self.publish_depth = self.declare_parameter('~depth', False).value
 
         # File paths to save the streams to. If param is empty, the stream will not be saved.
-        self.rgb_video_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~rgb_video_file_path', "").value)
-        self.rgb_preview_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~rgb_preview_file_path', "").value)
-        self.left_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~left_file_path', "").value)
-        self.right_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~right_file_path', "").value)
-        self.disparity_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~disparity_file_path', "").value)
+        self.rgb_video_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~rgb_video_file_path', '').value)
+        self.rgb_preview_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~rgb_preview_file_path', '').value)
+        self.left_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~left_file_path', '').value)
+        self.right_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~right_file_path', '').value)
+        self.disparity_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~disparity_file_path', '').value)
 
         # Whether to convert the saved encoded streams into a video
         self.convert_to_video = self.declare_parameter('~convert_to_video', False).value
@@ -151,7 +152,6 @@ class DepthAIStreamsPublisherAndSaver(Node):
         """
         Build the DepthAI.Pipeline, which takes the RGB camera feed and retrieves it using an XLinkOut.
         """
-
         # Setup ColorCamera node for RGB video/preview
         if self.publish_rgb_video or self.publish_rgb_preview or self.save_rgb_video or self.save_rgb_preview:
             camRgb = self.pipeline.create(dai.node.ColorCamera)
@@ -174,7 +174,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
             veRgbVideo.setDefaultProfilePreset(self.framerate, dai.VideoEncoderProperties.Profile.H265_MAIN)
 
             xoutVeRgbVideo = self.pipeline.create(dai.node.XLinkOut)
-            xoutVeRgbVideo.setStreamName("veRgbVideo")
+            xoutVeRgbVideo.setStreamName('veRgbVideo')
 
         # Setup VideoEncoder and XLinkOut nodes for saving RGB preview to files
         if self.save_rgb_preview:
@@ -186,7 +186,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
             veRgbPreview.setDefaultProfilePreset(self.framerate, dai.VideoEncoderProperties.Profile.H265_MAIN)
 
             xoutVeRgbPreview = self.pipeline.create(dai.node.XLinkOut)
-            xoutVeRgbPreview.setStreamName("veRgbPreview")
+            xoutVeRgbPreview.setStreamName('veRgbPreview')
 
         # Setup MonoCamera node for left camera
         if self.publish_left or self.publish_disparity or self.publish_depth or self.save_left or self.save_disparity:
@@ -201,7 +201,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
             veLeft.setDefaultProfilePreset(self.framerate, dai.VideoEncoderProperties.Profile.H264_MAIN)
 
             xoutVeLeft = self.pipeline.create(dai.node.XLinkOut)
-            xoutVeLeft.setStreamName("veLeft")
+            xoutVeLeft.setStreamName('veLeft')
 
         # Setup MonoCamera node for right camera
         if self.publish_right or self.publish_disparity or self.publish_depth or self.save_right or self.save_disparity:
@@ -216,7 +216,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
             veRight.setDefaultProfilePreset(self.framerate, dai.VideoEncoderProperties.Profile.H264_MAIN)
 
             xoutVeRight = self.pipeline.create(dai.node.XLinkOut)
-            xoutVeRight.setStreamName("veRight")
+            xoutVeRight.setStreamName('veRight')
 
         # Setup StereoDepth node for disparity/depth
         if self.publish_disparity or self.publish_depth or self.save_disparity:
@@ -230,42 +230,42 @@ class DepthAIStreamsPublisherAndSaver(Node):
             veDisparity.setDefaultProfilePreset(self.framerate, dai.VideoEncoderProperties.Profile.H265_MAIN)
 
             xoutVeDisparity = self.pipeline.create(dai.node.XLinkOut)
-            xoutVeDisparity.setStreamName("veDisparity")
+            xoutVeDisparity.setStreamName('veDisparity')
 
         # Setup XLinkOut nodes for publishing streams to topics
         if self.publish_rgb_video:
             xoutRgbVideo = self.pipeline.create(dai.node.XLinkOut)
-            xoutRgbVideo.setStreamName("rgbVideo")
+            xoutRgbVideo.setStreamName('rgbVideo')
             xoutRgbVideo.input.setBlocking(False)
             xoutRgbVideo.input.setQueueSize(1)
 
         if self.publish_rgb_preview:
             xoutRgbPreview = self.pipeline.create(dai.node.XLinkOut)
-            xoutRgbPreview.setStreamName("rgbPreview")
+            xoutRgbPreview.setStreamName('rgbPreview')
             xoutRgbPreview.input.setBlocking(False)
             xoutRgbPreview.input.setQueueSize(1)
 
         if self.publish_left:
             xoutLeft = self.pipeline.create(dai.node.XLinkOut)
-            xoutLeft.setStreamName("left")
+            xoutLeft.setStreamName('left')
             xoutLeft.input.setBlocking(False)
             xoutLeft.input.setQueueSize(1)
 
         if self.publish_right:
             xoutRight = self.pipeline.create(dai.node.XLinkOut)
-            xoutRight.setStreamName("right")
+            xoutRight.setStreamName('right')
             xoutRight.input.setBlocking(False)
             xoutRight.input.setQueueSize(1)
 
         if self.publish_disparity:
             xoutDisparity = self.pipeline.create(dai.node.XLinkOut)
-            xoutDisparity.setStreamName("disparity")
+            xoutDisparity.setStreamName('disparity')
             xoutDisparity.input.setBlocking(False)
             xoutDisparity.input.setQueueSize(1)
 
         if self.publish_depth:
             xoutDepth = self.pipeline.create(dai.node.XLinkOut)
-            xoutDepth.setStreamName("depth")
+            xoutDepth.setStreamName('depth')
             xoutDepth.input.setBlocking(False)
             xoutDepth.input.setQueueSize(1)
 
@@ -318,49 +318,48 @@ class DepthAIStreamsPublisherAndSaver(Node):
         """
         Get rgb images from the camera and publish them to STREAM_TOPIC.
         """
-
         with depthai_camera_connect.connect(self.pipeline) as device:
 
             # Output queue, to receive message on the host from the device (you can send the message
             # on the device with XLinkOut)
 
             if self.publish_rgb_video:
-                rgbVideoQueue = device.getOutputQueue(name="rgbVideo", maxSize=4, blocking=False)
+                rgbVideoQueue = device.getOutputQueue(name='rgbVideo', maxSize=4, blocking=False)
 
             if self.publish_rgb_preview:
-                rgbPreviewQueue = device.getOutputQueue(name="rgbPreview", maxSize=4, blocking=False)
+                rgbPreviewQueue = device.getOutputQueue(name='rgbPreview', maxSize=4, blocking=False)
 
             if self.publish_left:
-                leftQueue = device.getOutputQueue(name="left", maxSize=4, blocking=False)
+                leftQueue = device.getOutputQueue(name='left', maxSize=4, blocking=False)
 
             if self.publish_right:
-                rightQueue = device.getOutputQueue(name="right", maxSize=4, blocking=False)
+                rightQueue = device.getOutputQueue(name='right', maxSize=4, blocking=False)
 
             if self.publish_disparity:
-                disparityQueue = device.getOutputQueue(name="disparity", maxSize=4, blocking=False)
+                disparityQueue = device.getOutputQueue(name='disparity', maxSize=4, blocking=False)
 
             if self.publish_depth:
-                depthQueue = device.getOutputQueue(name="depth", maxSize=4, blocking=False)
+                depthQueue = device.getOutputQueue(name='depth', maxSize=4, blocking=False)
 
             if self.save_rgb_video:
-                veRgbVideoQueue = device.getOutputQueue(name="veRgbVideo", maxSize=4, blocking=False)
-                rgb_video_file = open(self.rgb_video_file_path + ".h265", 'wb')
+                veRgbVideoQueue = device.getOutputQueue(name='veRgbVideo', maxSize=4, blocking=False)
+                rgb_video_file = open(self.rgb_video_file_path + '.h265', 'wb')
 
             if self.save_rgb_preview:
-                veRgbPreviewQueue = device.getOutputQueue(name="veRgbPreview", maxSize=4, blocking=False)
-                rgb_preview_file = open(self.rgb_preview_file_path + ".h265", 'wb')
+                veRgbPreviewQueue = device.getOutputQueue(name='veRgbPreview', maxSize=4, blocking=False)
+                rgb_preview_file = open(self.rgb_preview_file_path + '.h265', 'wb')
 
             if self.save_left:
-                veLeftQueue = device.getOutputQueue(name="veLeft", maxSize=4, blocking=False)
-                left_file = open(self.left_file_path + ".h264", 'wb')
+                veLeftQueue = device.getOutputQueue(name='veLeft', maxSize=4, blocking=False)
+                left_file = open(self.left_file_path + '.h264', 'wb')
 
             if self.save_right:
-                veRightQueue = device.getOutputQueue(name="veRight", maxSize=4, blocking=False)
-                right_file = open(self.right_file_path + ".h264", 'wb')
+                veRightQueue = device.getOutputQueue(name='veRight', maxSize=4, blocking=False)
+                right_file = open(self.right_file_path + '.h264', 'wb')
 
             if self.save_disparity:
-                veDisparityQueue = device.getOutputQueue(name="veDisparity", maxSize=4, blocking=False)
-                disparity_file = open(self.disparity_file_path + ".h265", 'wb')
+                veDisparityQueue = device.getOutputQueue(name='veDisparity', maxSize=4, blocking=False)
+                disparity_file = open(self.disparity_file_path + '.h265', 'wb')
 
             self.publish_and_save_timer = self.create_timer(1 / LOOP_RATE, self.publish_and_save)
 
@@ -381,37 +380,37 @@ class DepthAIStreamsPublisherAndSaver(Node):
                 disparity_file.close()
 
         # Convert encoded video files to playable videos
-        h265_convert_options = "-vcodec libx264 -pix_fmt yuv420p" if self.qt_compatible else "-c copy"
+        h265_convert_options = '-vcodec libx264 -pix_fmt yuv420p' if self.qt_compatible else '-c copy'
 
-        rgb_video_command = (f"ffmpeg -framerate {self.framerate} -i {self.rgb_video_file_path}.h265 " +
-                             f"{h265_convert_options} {self.rgb_video_file_path}.mp4")
+        rgb_video_command = (f'ffmpeg -framerate {self.framerate} -i {self.rgb_video_file_path}.h265 ' +
+                             f'{h265_convert_options} {self.rgb_video_file_path}.mp4')
 
-        rgb_preview_command = (f"ffmpeg -framerate {self.framerate} -i {self.rgb_preview_file_path}.h265 " +
-                               f"{h265_convert_options} {self.rgb_preview_file_path}.mp4")
+        rgb_preview_command = (f'ffmpeg -framerate {self.framerate} -i {self.rgb_preview_file_path}.h265 ' +
+                               f'{h265_convert_options} {self.rgb_preview_file_path}.mp4')
 
-        left_command = (f"ffmpeg -framerate {self.framerate} -i {self.left_file_path}.h264 -c copy " +
-                        f"{self.left_file_path}.mp4")
+        left_command = (f'ffmpeg -framerate {self.framerate} -i {self.left_file_path}.h264 -c copy ' +
+                        f'{self.left_file_path}.mp4')
 
-        right_command = (f"ffmpeg -framerate {self.framerate} -i {self.right_file_path}.h264 -c copy " +
-                         f"{self.right_file_path}.mp4")
+        right_command = (f'ffmpeg -framerate {self.framerate} -i {self.right_file_path}.h264 -c copy ' +
+                         f'{self.right_file_path}.mp4')
 
-        disparity_command = (f"ffmpeg -framerate {self.framerate} -i {self.disparity_file_path}.h265 " +
-                             f"{h265_convert_options} {self.disparity_file_path}.mp4")
+        disparity_command = (f'ffmpeg -framerate {self.framerate} -i {self.disparity_file_path}.h265 ' +
+                             f'{h265_convert_options} {self.disparity_file_path}.mp4')
 
         if self.convert_to_video:
-            self.get_logger().info("Converting encoded video files to playable videos.")
+            self.get_logger().info('Converting encoded video files to playable videos.')
             if self.save_rgb_video:
-                subprocess.Popen(rgb_video_command.split(" "))
+                subprocess.Popen(rgb_video_command.split(' '))
             if self.save_rgb_preview:
-                subprocess.Popen(rgb_preview_command.split(" "))
+                subprocess.Popen(rgb_preview_command.split(' '))
             if self.save_left:
-                subprocess.Popen(left_command.split(" "))
+                subprocess.Popen(left_command.split(' '))
             if self.save_right:
-                subprocess.Popen(right_command.split(" "))
+                subprocess.Popen(right_command.split(' '))
             if self.save_disparity:
-                subprocess.Popen(disparity_command.split(" "))
+                subprocess.Popen(disparity_command.split(' '))
 
-        self.get_logger().info("To convert the encoded video files to a playable videos, run the following commands:")
+        self.get_logger().info('To convert the encoded video files to a playable videos, run the following commands:')
         if self.save_rgb_video:
             self.get_logger().info(rgb_video_command)
         if self.save_rgb_preview:

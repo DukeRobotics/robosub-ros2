@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-import numpy as np
 import math
-import cv2
 import os
-from geometry_msgs.msg import Point
+
+import cv2
+import numpy as np
 from custom_msgs.msg import CVObject
+from geometry_msgs.msg import Point
 
 
 def check_file_writable(filepath):
@@ -17,9 +18,8 @@ def check_file_writable(filepath):
         if os.path.isfile(filepath):
             # also works when file is a link and the target is writable
             return os.access(filepath, os.W_OK)
-        else:
-            # path is a dir, so cannot write as a file
-            return False
+        # path is a dir, so cannot write as a file
+        return False
     # target does not exist, check perms on parent dir
     pdir = os.path.dirname(filepath)
     if not pdir:
@@ -30,9 +30,9 @@ def check_file_writable(filepath):
 
 def cam_dist_with_obj_width(width_pixels, width_meters,
                             focal_length, img_shape, sensor_size, adjustment_factor=1):
-    '''
-        Note that adjustment factor is 1 for mono camera and 2 for depthAI camera
-    '''
+    """
+    Note that adjustment factor is 1 for mono camera and 2 for depthAI camera
+    """
     return (focal_length * width_meters * img_shape[0]) \
         / (width_pixels * sensor_size[0]) * adjustment_factor
 
@@ -61,20 +61,20 @@ def compute_angle_from_x_offset(x_offset, camera_pixel_width):
     :return: angle in degrees
     """
     image_center_x = camera_pixel_width / 2.0
-    return math.degrees(math.atan(((x_offset - image_center_x) * 0.005246675486)))
+    return math.degrees(math.atan((x_offset - image_center_x) * 0.005246675486))
 
 
 def calculate_relative_pose(bbox_bounds, input_size, label_shape, FOCAL_LENGTH, SENSOR_SIZE, adjustment_factor):
     """
-        Returns rel pose, to be used as a part of the CVObject
+    Returns rel pose, to be used as a part of the CVObject
 
-        Parameters:
-            bbox_bounds: the detection object
-            input_size: array wrt input size ([0] is width, [1] is height)
-            label_shape: the label shape ([0] is width --> only this is accessed, [1] is height)
-            FOCAL_LENGTH: a constant to pass in
-            SENSOR_SIZE: a constant to pass in
-            adjustment_factor: 1 if mono 2 if depthai
+    Parameters:
+        bbox_bounds: the detection object
+        input_size: array wrt input size ([0] is width, [1] is height)
+        label_shape: the label shape ([0] is width --> only this is accessed, [1] is height)
+        FOCAL_LENGTH: a constant to pass in
+        SENSOR_SIZE: a constant to pass in
+        adjustment_factor: 1 if mono 2 if depthai
     """
     xmin, ymin, xmax, ymax = bbox_bounds
 
@@ -101,16 +101,15 @@ def calculate_relative_pose(bbox_bounds, input_size, label_shape, FOCAL_LENGTH, 
 
 def compute_bbox_dimensions(polygon):
     """
-        Returns a CVObject messages, containing the following properties of the given Polygon:
-            width, height, xmin, ymin, xmax, ymax as
+    Returns a CVObject messages, containing the following properties of the given Polygon:
+        width, height, xmin, ymin, xmax, ymax as
 
-        Args:
-            polygon: Polygon object
+    Args:
+        polygon: Polygon object
     """
-
     # Ensure there are points in the polygon
     if len(polygon.points) < 4:
-        raise ValueError("Polygon does not represent a bounding box with four points.")
+        raise ValueError('Polygon does not represent a bounding box with four points.')
 
     # Initialize min_x, max_x, min_y, and max_y with the coordinates of the first point
     min_x = polygon.points[0].x
@@ -120,14 +119,10 @@ def compute_bbox_dimensions(polygon):
 
     # Iterate through all points to find the min and max x and y coordinates
     for point in polygon.points:
-        if point.x < min_x:
-            min_x = point.x
-        if point.x > max_x:
-            max_x = point.x
-        if point.y < min_y:
-            min_y = point.y
-        if point.y > max_y:
-            max_y = point.y
+        min_x = min(point.x, min_x)
+        max_x = max(point.x, max_x)
+        min_y = min(point.y, min_y)
+        max_y = max(point.y, max_y)
 
     # Compute the width and height
     width = max_x - min_x
@@ -160,11 +155,9 @@ def compute_bbox_dimensions(polygon):
 
 def compute_center_distance(bbox_center_x, bbox_center_y, frame_width, frame_height, width_adjustment_constant=0,
                             height_adjustment_constant=0):
-
-    '''
+    """
     Note that x, y is in the camera's reference frame
-    '''
-
+    """
     # Compute the center of the frame
     frame_center_x = frame_width / 2
     frame_center_y = frame_height / 2
@@ -200,7 +193,6 @@ class DetectionVisualizer:
 
     def putText(self, frame, text, coords, color):
         """Add text to frame, such as class label or confidence value."""
-
         (w, h), _ = cv2.getTextSize(text, self.text_type, 0.75, 2)
         # places the text labeling the class and/or confidence value of the bbox
         if coords[1]-h-10 > 0:
@@ -230,20 +222,20 @@ class DetectionVisualizer:
         return (np.clip(np.array(bbox), 0, 1) * norm_vals).astype(int)
 
     def visualize_detections(self, frame, detections):
-        """ Returns frame with bounding boxes, classes, and labels of each detection overlaid."""
+        """Returns frame with bounding boxes, classes, and labels of each detection overlaid."""
         frame_copy = frame.copy()
 
         for detection in detections:
             bbox = self.frame_norm(frame_copy, (detection.xmin, detection.ymin, detection.xmax, detection.ymax))
             # the code below specifies whether to display the bbox's class name and/or confidence value
             if self.show_class_name and self.show_confidence:
-                self.putText(frame_copy, f"{self.classes[detection.label]} {int(detection.confidence * 100)}%",
+                self.putText(frame_copy, f'{self.classes[detection.label]} {int(detection.confidence * 100)}%',
                              (bbox[0], bbox[1]), self.colors[detection.label])
             elif self.show_class_name and not self.show_confidence:
                 self.putText(frame_copy, self.classes[detection.label],
                              (bbox[0], bbox[1]), self.colors[detection.label])
             elif not self.show_class_name and self.show_confidence:
-                self.putText(frame_copy, f"{int(detection.confidence * 100)}%",
+                self.putText(frame_copy, f'{int(detection.confidence * 100)}%',
                              (bbox[0], bbox[1]), self.colors[detection.label])
 
             self.rectangle(frame_copy, bbox, self.colors[detection.label])

@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
+
 import cv2
-
-from sensor_msgs.msg import CompressedImage
-from cv.image_tools import ImageTools
-
 import rclpy
 from rclpy.node import Node
+from sensor_msgs.msg import CompressedImage
 
-import threading
+from cv.image_tools import ImageTools
+
 
 class USBCamera(Node):
     """
@@ -26,12 +25,12 @@ class USBCamera(Node):
         super().__init__(f'usb_camera_{topic}')
 
         # Read custom camera configs from launch command
-        self.topic = topic if topic else self.declare_parameter("topic","/camera/usb_camera/compressed").value
+        self.topic = topic if topic else self.declare_parameter('topic','/camera/usb_camera/compressed').value
 
-        self.device_path = device_path if device_path else self.declare_parameter("device_path","/dev/video_front").value
+        self.device_path = device_path if device_path else self.declare_parameter('device_path','/dev/video_front').value
 
         # If no custom framerate is passed in, set self.framerate to None to trigger default framerate
-        self.framerate = framerate if framerate else self.declare_parameter("framerate",-1).value
+        self.framerate = framerate if framerate else self.declare_parameter('framerate',-1).value
 
         if self.framerate == -1:
             self.framerate = None
@@ -50,7 +49,6 @@ class USBCamera(Node):
         Connect to camera found at self.device_path using cv2.VideoCaptures
         and stream every image as it comes in at the device framerate
         """
-
         total_tries = 5
         success = False
 
@@ -61,14 +59,14 @@ class USBCamera(Node):
             # Try connecting to the camera unless a connection is refused
             try:
                 # Connect to camera at device_path
-                self.get_logger().info("connecting to camera at "+ str(self.device_path))
+                self.get_logger().info('connecting to camera at '+ str(self.device_path))
                 cap = cv2.VideoCapture(self.device_path, apiPreference=cv2.CAP_V4L2)
-                self.get_logger().info("autodetected " + str(cap.getBackendName()))
-                
+                self.get_logger().info('autodetected ' + str(cap.getBackendName()))
+
                 # Read first frame
 
                 success, img = cap.read()
-                self.get_logger().info("first frame read " + str(success))
+                self.get_logger().info('first frame read ' + str(success))
 
                 # Set publisher rate (framerate) to custom framerate if specified, otherwise, set to default
                 loop_rate = None
@@ -84,8 +82,7 @@ class USBCamera(Node):
                     break
 
             except Exception:
-                self.get_looged().info("Failed to connect to USB camera, trying again...")
-                pass
+                self.get_looged().info('Failed to connect to USB camera, trying again...')
 
             if not rclpy.ok():
                 break
@@ -109,10 +106,10 @@ class USBCamera(Node):
                 # Sleep loop to maintain frame rate
                 rclpy.spin_once(self,timeout_sec=self.framerate)
         else:
-            self.get_logger().error(f"{total_tries} attempts were made to connect to the USB camera. "
-                         f"The camera was not found at device_path {self.device_path}. All attempts failed.")
-            raise RuntimeError(f"{total_tries} attempts were made to connect to the USB camera. "
-                               f"The camera was not found at device_path {self.device_path}. All attempts failed.")
+            self.get_logger().error(f'{total_tries} attempts were made to connect to the USB camera. '
+                         f'The camera was not found at device_path {self.device_path}. All attempts failed.')
+            raise RuntimeError(f'{total_tries} attempts were made to connect to the USB camera. '
+                               f'The camera was not found at device_path {self.device_path}. All attempts failed.')
 
 def main(args=None):
     rclpy.init(args=args)
