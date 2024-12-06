@@ -1,0 +1,44 @@
+name: build-and-lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-and-lint:
+    name: Build and Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create .env file with NO_GIT
+        run: echo "NO_GIT=true" > .env
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docker
+          tags: robosub-ros2:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          load: true
+
+      - name: Run Docker container
+        id: run-docker
+        run: docker compose up -d
+
+      - name: Lint Files
+        run: |
+          docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --output-type capture --sort --github-action --no-git-tree
+
+      - name: Build ROS2
+        if: always() && steps.run-docker.outcome == 'success'
+        run: |
+          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build.sh

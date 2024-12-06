@@ -1,9 +1,8 @@
+from pathlib import Path
+
 from setuptools import find_packages, setup
-import glob
 
 package_name = 'cv'
-
-# glob all config files in /config
 
 setup(
     name=package_name,
@@ -13,12 +12,11 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/config', glob.glob('./assets/*.png')),
-        ('share/' + package_name + '/config', glob.glob('./config/*.yaml')),
-        ('share/' + package_name + '/config', glob.glob('./launch/*.launch')),
-        ('share/' + package_name + '/config', glob.glob('./models/*.blob')),
-        ('share/' + package_name + '/config', glob.glob('./models/*.yaml')),
-
+        (str(Path('share') / package_name / 'assets'), list(map(str, Path('./assets').glob('*.png')))),
+        (str(Path('share') / package_name / 'config'), list(map(str, Path('./config').glob('*.yaml')))),
+        (str(Path('share') / package_name / 'launch'), list(map(str, Path('./launch').glob('*.launch')))),
+        (str(Path('share') / package_name / 'models'), list(map(str, Path('./models').glob('*.blob')))),
+        (str(Path('share') / package_name / 'models'), list(map(str, Path('./models').glob('*.yaml')))),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -26,7 +24,6 @@ setup(
     maintainer_email='root@todo.todo',
     description='Computer Vision pipeline, including depthai and hsv filtering.',
     license='Apache-2.0',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'bin_detector = cv.bin_detector:main',

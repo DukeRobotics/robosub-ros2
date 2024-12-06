@@ -1,17 +1,14 @@
-#!/usr/bin/env python3
-
 import os
 
 import rclpy
 from std_msgs.msg import Float64
-from std_srvs.srv import SetBool, SetBool_Response
+from std_srvs.srv import SetBool
+
 from data_pub.serial_republisher_node import SerialReublisherNode
 
 
 class SensorServoPublisher(SerialReublisherNode):
-    """
-    Serial publisher to publish temperature and humidity data to ROS
-    """
+    """Serial publisher to publish temperature and humidity data to ROS."""
 
     CONFIG_FILE_PATH = f'package://data_pub/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
 
@@ -24,9 +21,12 @@ class SensorServoPublisher(SerialReublisherNode):
     CONNECTION_RETRY_PERIOD = 1.0 #S
     LOOP_RATE = 2.0 #Hz
     MEDIAN_FILTER_SIZE = 3
+    MAX_ABS_TEMPERATURE = 200
+    MAX_ABS_HUMIDITY = 200
 
-    def __init__(self):
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, 'servo', self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE, use_nonblocking=True)
+    def __init__(self) -> None:
+        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, 'servo', self.CONNECTION_RETRY_PERIOD,
+                         self.LOOP_RATE, use_nonblocking=True)
 
         self._temperature = None  # Temperature to publish
         self._humidity = None
@@ -40,9 +40,9 @@ class SensorServoPublisher(SerialReublisherNode):
         self._current_temperature_msg = Float64()
         self._current_humidity_msg = Float64()
 
-    def servo_control(self, req):
+    def servo_control(self, req: SetBool.Request) -> SetBool.Response:
         """
-        Callback for servo control service
+        Respond to servo control service request.
 
         @param req: the request to control the servo
         """
@@ -51,48 +51,49 @@ class SensorServoPublisher(SerialReublisherNode):
             self.writeline('L')
         else:
             self.writeline('R')
-        return SetBool_Response(True, f'Successfully set servo to {"left" if req.data else "right"}.')
+        return SetBool.Response(True, f'Successfully set servo to {"left" if req.data else "right"}.')
 
-    def process_line(self, line):
-        """"
-        Reads and publishes individual lines
-
-        @param line: the line to read
+    def process_line(self, line: str) -> None:
+        """
+        Read and publish individual lines.
 
         Assumes data comes in the following format:
+            T:69.1
+            H:30.1
+            T:69.2
+            H:27.8
+            T:69.1
+            H:27.8
+            T:69.8
+            ...
 
-        T:69.1
-        H:30.1
-        T:69.2
-        H:27.8
-        T:69.1
-        H:27.8
-        T:69.8
-        ...
+        Args:
+            line (str): A line of data from the serial port
         """
         tag = line[0:2]  # T for temperature and H for humidity
         data = line[2:]
-        if data == "":
+        if data == '':
             return
-        if "T:" in tag:
+        if 'T:' in tag:
             self._update_temperature(float(data))  # Filter out bad readings
             self._publish_current_temperature_msg()  # Publish temperature data
-        if "H:" in tag:
+        if 'H:' in tag:
             self._update_humidity(float(data))  # Filter out bad readings
             self._publish_current_humidity_msg()  # Publish humidity data
 
-    def _update_temperature(self, new_reading):
+    def _update_temperature(self, new_reading: float) -> None:
         """
-        Update temperature reading to publish and filter out bad readings
+        Update temperature reading to publish and filter out bad readings.
 
-        @param new_reading: new temperature value to be printed
+        Args:
+            new_reading (float): New temperature value to be printed
         """
         # Ignore readings that are too large
-        if abs(new_reading) > 200:
+        if abs(new_reading) > self.MAX_ABS_TEMPERATURE:
             return
 
         # First reading
-        elif self._temperature is None:
+        if self._temperature is None:
             self._temperature = new_reading
             self._previous_temperature = [new_reading] * self.MEDIAN_FILTER_SIZE
 
@@ -102,18 +103,19 @@ class SensorServoPublisher(SerialReublisherNode):
             self._previous_temperature.pop(0)
             self._temperature = sorted(self._previous_temperature)[int(self.MEDIAN_FILTER_SIZE / 2)]
 
-    def _update_humidity(self, new_reading):
+    def _update_humidity(self, new_reading: float) -> None:
         """
-        Update humidity reading to publish and filter out bad readings
+        Update humidity reading to publish and filter out bad readings.
 
-        @param new_reading: new humidity value to be printed
+        Args:
+            new_reading (float): New humidity value to be printed
         """
         # Ignore readings that are too large
-        if abs(new_reading) > 200:
+        if abs(new_reading) > self.MAX_ABS_HUMIDITY:
             return
 
         # First reading
-        elif self._humidity is None:
+        if self._humidity is None:
             self._humidity = new_reading
             self._previous_humidity = [new_reading] * self.MEDIAN_FILTER_SIZE
 
@@ -123,22 +125,19 @@ class SensorServoPublisher(SerialReublisherNode):
             self._previous_humidity.pop(0)
             self._humidity = sorted(self._previous_humidity)[int(self.MEDIAN_FILTER_SIZE / 2)]
 
-    def _publish_current_temperature_msg(self):
-        """
-        Publishes current temperature to ROS node
-        """
+    def _publish_current_temperature_msg(self) -> None:
+        """Publish current temperature to ROS node."""
         self._current_temperature_msg.data = self._temperature
         self._pub_temperature.publish(self._current_temperature_msg)
 
-    def _publish_current_humidity_msg(self):
-        """
-        Publishes current humidity to ROS node
-        """
+    def _publish_current_humidity_msg(self) -> None:
+        """Publish current humidity to ROS node."""
         self._current_humidity_msg.data = self._humidity
         self._pub_humidity.publish(self._current_humidity_msg)
 
 
-def main(args=None):
+def main(args: list[str] | None = None) -> None:
+    """Create and run the sensor servo publisher node."""
     rclpy.init(args=args)
     sensor_servo = SensorServoPublisher()
 
