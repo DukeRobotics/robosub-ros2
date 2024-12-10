@@ -16,6 +16,7 @@ RUN apt install -y --no-install-recommends python3-venv
 RUN apt install -y --no-install-recommends python3-opencv
 RUN apt install -y --no-install-recommends ros-jazzy-cv-bridge
 RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
+RUN apt install -y --no-install-recommends ros-jazzy-robot-localization
 RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
 RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends snapd

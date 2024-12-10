@@ -30,7 +30,7 @@ vectornav:
       rateDivisor: 40                # 20 Hz
       commonField: 0x7FFF
       timeField: 0x0000              # TIMEGROUP_NONE
-      imuField: 0x0000               
+      imuField: 0x0000
       # set gpsField directly in source to enforce or condition
       attitudeField: 0x0000          # ATTITUDEGROUP_NONE
       # set insField directly in source to enforce or condition
@@ -62,7 +62,7 @@ vectornav:
 
 vn_sensor_msgs:
   ros__parameters:
-    use_enu: true
+    use_enu: false
     orientation_covariance: [0.01,  0.0,   0.0,
                             0.0,   0.01,  0.0,
                             0.0,   0.0,   0.01]
