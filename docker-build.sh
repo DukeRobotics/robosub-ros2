@@ -8,6 +8,12 @@ if [[ "$1" == "skip-wsl" && -f /proc/sys/fs/binfmt_misc/WSLInterop ]]; then
     exit 0
 fi
 
+# Get the path to the directory containing this script, which is the robosub-ros2 repository root
+robosub_ros2_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" || exit ; pwd -P )
+
+# Change to the repository root directory
+cd "$robosub_ros2_path" || exit
+
 # Load variables from .env file
 set -o allexport
 source .env
