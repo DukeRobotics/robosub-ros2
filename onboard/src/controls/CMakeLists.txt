@@ -21,7 +21,7 @@ find_package(yaml_cpp_vendor REQUIRED)
 find_package(OsqpEigen REQUIRED)
 
 include_directories(/usr/local/include/osqp)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${custom_msgs_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/controls ${custom_msgs_INCLUDE_DIRS})
 
 add_executable(controls src/controls.cpp)
 add_executable(pid_manager src/pid_manager.cpp)
@@ -29,7 +29,7 @@ add_executable(drc_pid src/drc_pid.cpp)
 add_executable(controls_utils src/controls_utils.cpp)
 add_executable(thruster_allocator src/thruster_allocator.cpp)
 
-set(CONTROLS_INCLUDE_DIR ~/dev/robosub-ros2/onboard/src/controls/include)
+set(CONTROLS_INCLUDE_DIR ~/dev/robosub-ros2/onboard/src/controls/include/controls)
 target_include_directories(controls PUBLIC ${CONTROLS_INCLUDE_DIR})
 target_include_directories(controls_utils PUBLIC ${CONTROLS_INCLUDE_DIR})
 target_include_directories(drc_pid PUBLIC ${CONTROLS_INCLUDE_DIR})
