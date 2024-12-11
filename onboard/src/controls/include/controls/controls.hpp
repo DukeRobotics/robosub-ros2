@@ -34,8 +34,8 @@
 
 class Controls : public rclcpp::Node {
    private:
-    // Rate at which thruster allocations are published (Hz)
-    static const int THRUSTER_ALLOCS_RATE;
+    // Interval at which thruster allocations are published (milliseconds)
+    static const int THRUSTER_ALLOCS_INTERVAL;
 
     // Launch file parameters
     bool sim;
@@ -133,6 +133,32 @@ class Controls : public rclcpp::Node {
     rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr static_power_global_pub;
     rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr static_power_local_pub;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr power_scale_factor_pub;
+
+    // Timer for computing and publishing thruster allocations, along with other diagnostic information
+    rclcpp::TimerBase::SharedPtr timer;
+
+    // Variables used by the `run` function for storing intermediate values
+    Eigen::VectorXd base_power = Eigen::VectorXd::Zero(AXES_COUNT);
+    Eigen::VectorXd set_power_unscaled = Eigen::VectorXd::Zero(AXES_COUNT);
+    Eigen::VectorXd set_power = Eigen::VectorXd::Zero(AXES_COUNT);
+    Eigen::VectorXd unconstrained_allocs;
+    Eigen::VectorXd constrained_allocs;
+    Eigen::VectorXd actual_power;
+    Eigen::VectorXd power_disparity;
+    LoopsMap<AxesMap<PIDGainsMap>> loops_axes_pid_gains;
+    custom_msgs::msg::ThrusterAllocs constrained_allocs_msg;
+    custom_msgs::msg::ThrusterAllocs unconstrained_allocs_msg;
+    geometry_msgs::msg::Twist base_power_msg;
+    geometry_msgs::msg::Twist set_power_unscaled_msg;
+    geometry_msgs::msg::Twist set_power_msg;
+    geometry_msgs::msg::Twist actual_power_msg;
+    geometry_msgs::msg::Twist power_disparity_msg;
+    std_msgs::msg::Float64 power_disparity_norm_msg;
+    custom_msgs::msg::ControlTypes control_types_msg;
+    std_msgs::msg::Bool status_msg;
+    custom_msgs::msg::PIDGains pid_gains_msg;
+    geometry_msgs::msg::Vector3 static_power_global_msg;
+    std_msgs::msg::Float64 power_scale_factor_msg;
 
     // *****************************************************************************************************************
     // ROS subscriber callbacks

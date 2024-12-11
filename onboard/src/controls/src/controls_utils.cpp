@@ -53,8 +53,8 @@ bool ControlsUtils::value_in_pid_derivative_types_enum(uint8_t value) {
     return value_in_array<uint8_t, PIDDerivativeTypesEnum>(value, PID_DERIVATIVE_TYPES, PID_DERIVATIVE_TYPES_COUNT);
 }
 
-bool ControlsUtils::quaternion_valid(const tf2::LinearMath::Quaternion &quaternion) {
-    tf2::LinearMath::Quaternion q;
+bool ControlsUtils::quaternion_valid(const tf2::Quaternion &quaternion) {
+    tf2::Quaternion q;
     tf2::fromMsg(quaternion, q);
     return std::abs(q.length() - 1.0) < 1e-6;
 }
@@ -73,14 +73,14 @@ bool ControlsUtils::pid_gains_map_valid(const PIDGainsMap &pid_gains_map) {
                        [&pid_gains_map](const PIDGainTypesEnum &gain) { return pid_gains_map.count(gain); });
 }
 
-void ControlsUtils::quaternion_msg_to_euler(const tf2::LinearMath::Quaternion &quaternion, double &roll, double &pitch,
+void ControlsUtils::quaternion_msg_to_euler(const tf2::Quaternion &quaternion, double &roll, double &pitch,
                                             double &yaw) {
     // Get roll, pitch, yaw from quaternion
     // The order of rotation is roll, pitch, yaw
     // Roll, pitch, yaw are in radians with range [-pi, pi]
-    tf2::LinearMath::Quaternion q;
+    tf2::Quaternion q;
     tf2::fromMsg(quaternion, q);
-    tf2::LinearMath::Matrix3x3 m(q);
+    tf2::Matrix3x3 m(q);
     m.getRPY(roll, pitch, yaw);
 }
 
@@ -161,7 +161,7 @@ void ControlsUtils::map_to_control_types(const AxesMap<ControlTypesEnum> &map,
     control_types.yaw = map.at(AxesEnum::YAW);
 }
 
-void ControlsUtils::tf_linear_vector_to_map(const tf2::LinearMath::Vector3 &vector, AxesMap<double> &map) {
+void ControlsUtils::tf_linear_vector_to_map(const tf2::Vector3 &vector, AxesMap<double> &map) {
     map[AxesEnum::X] = vector.getX();
     map[AxesEnum::Y] = vector.getY();
     map[AxesEnum::Z] = vector.getZ();
@@ -319,7 +319,7 @@ void ControlsUtils::read_robot_config(const bool &cascaded_pid,
                                       LoopsMap<AxesMap<double>> &loops_axes_error_ramp_rates,
                                       LoopsMap<AxesMap<PIDGainsMap>> &loops_axes_pid_gains,
                                       AxesMap<double> &desired_power_min, AxesMap<double> &desired_power_max,
-                                      tf2::LinearMath::Vector3 &static_power_global, double &power_scale_factor,
+                                      tf2::Vector3 &static_power_global, double &power_scale_factor,
                                       std::string &wrench_matrix_file_path, std::string &wrench_matrix_pinv_file_path) {
     try {
         // Lock the mutex to prevent other threads from accessing the robot config file while it is being read
@@ -440,7 +440,7 @@ void ControlsUtils::update_robot_config_pid_gains(const LoopsMap<AxesMap<PIDGain
     update_robot_config(update_function, "PID gains");
 }
 
-void ControlsUtils::update_robot_config_static_power_global(const tf2::LinearMath::Vector3 &static_power_global) {
+void ControlsUtils::update_robot_config_static_power_global(const tf2::Vector3 &static_power_global) {
     std::function<void(YAML::Node &)> update_function = [&static_power_global](YAML::Node &config) {
         YAML::Node static_power_global_node = config["static_power_global"];
         static_power_global_node[AXES_NAMES.at(AxesEnum::X)] = static_power_global.getX();

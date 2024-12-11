@@ -4,6 +4,7 @@
 
 #include <Eigen/Dense>
 #include <array>
+#include <chrono>
 #include <controls.hpp>
 #include <custom_msgs/msg/control_types.hpp>
 #include <custom_msgs/msg/pid_axes_info.hpp>
@@ -37,7 +38,7 @@
 #include "pid_manager.hpp"
 #include "thruster_allocator.hpp"
 
-const int Controls::THRUSTER_ALLOCS_RATE = 20;
+const int Controls::THRUSTER_ALLOCS_INTERVAL = 50;
 
 Controls::Controls() : Node("controls") {
     // Get parameters from launch file
@@ -55,7 +56,7 @@ Controls::Controls() : Node("controls") {
 
     // Initialize transform buffer and listener
     tf_buffer = std::make_unique<tf2_ros::Buffer>(this->get_clock());
-    tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+    tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
 
     // Initialize desired position to have valid orientation
     desired_position.orientation.w = 1.0;
@@ -93,7 +94,7 @@ Controls::Controls() : Node("controls") {
                                         loops_axes_control_effort_maxes.at(loop), loops_axes_derivative_types.at(loop),
                                         loops_axes_error_ramp_rates.at(loop), loops_axes_pid_gains.at(loop));
     // Initialize static power local to zero
-    static_power_local = tf2::LinearMath::Vector3(0, 0, 0);
+    static_power_local = tf2::Vector3(0, 0, 0);
 
     // Initialize axes maps to zero
     ControlsUtils::populate_axes_map<double>(0, position_pid_outputs);
@@ -158,6 +159,10 @@ Controls::Controls() : Node("controls") {
     static_power_global_pub = this->create_publisher<geometry_msgs::msg::Vector3>("controls/static_power_global", 1);
     static_power_local_pub = this->create_publisher<geometry_msgs::msg::Vector3>("controls/static_power_local", 1);
     power_scale_factor_pub = this->create_publisher<std_msgs::msg::Float64>("controls/power_scale_factor", 1);
+
+    // Start timer that runs thruster allocator
+    timer = this->create_wall_timer(std::chrono::milliseconds(THRUSTER_ALLOCS_INTERVAL),
+                                    std::bind(&Controls::run, this));
 }
 
 void Controls::desired_position_callback(const geometry_msgs::msg::Pose::SharedPtr msg) {
@@ -196,8 +201,8 @@ void Controls::state_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {
 
     // Get current time, compute delta time, and update last state message time
     // If last state message time is zero, then this is the first state message received, so delta time is zero
-    rclcpp::Time current_time = rclcpp::Clock.now();
-    double delta_time = last_state_msg_time.is_zero() ? 0 : (current_time - last_state_msg_time).toSec();
+    rclcpp::Time current_time = this->get_clock()->now();
+    double delta_time = last_state_msg_time.nanoseconds() == 0 ? 0.0 : (current_time - last_state_msg_time).seconds();
     last_state_msg_time = current_time;
 
     // Publish delta time
@@ -212,7 +217,7 @@ void Controls::state_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {
     // Get transform from odom to base_link
     geometry_msgs::msg::TransformStamped transformStamped;
     try {
-        transformStamped = tf_buffer->lookupTransform("base_link", "odom", ros::Time(0));
+        transformStamped = tf_buffer->lookupTransform("base_link", "odom", tf2::TimePointZero);
     } catch (tf2::TransformException &ex) {
         ROS_WARN("Could not get transform from odom to base_link. %s", ex.what());
         return;
@@ -313,7 +318,7 @@ void Controls::state_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {
     // in the base_link frame, that points in the same direction as static_power_global in the odom frame. Thus, we
     // are performing the inverse of the operation described above.
     // static_power_global * state.pose.pose.orientation.inverse() = static_power_local
-    tf2::LinearMath::Quaternion orientation_tf2;
+    tf2::Quaternion orientation_tf2;
     tf2::fromMsg(state.pose.pose.orientation, orientation_tf2);
     static_power_local = quatRotate(orientation_tf2.inverse(), static_power_global);
 
@@ -414,123 +419,87 @@ bool Controls::set_power_scale_factor_callback(
 }
 
 void Controls::run() {
-    rclcpp::Rate rate(THRUSTER_ALLOCS_RATE);
-
-    Eigen::VectorXd base_power(AXES_COUNT);
-    Eigen::VectorXd set_power_unscaled(AXES_COUNT);
-    Eigen::VectorXd set_power(AXES_COUNT);
-    Eigen::VectorXd unconstrained_allocs;
-    Eigen::VectorXd constrained_allocs;
-    Eigen::VectorXd actual_power;
-    Eigen::VectorXd power_disparity;
-
-    LoopsMap<AxesMap<PIDGainsMap>> loops_axes_pid_gains;
-
-    custom_msgs::msg::ThrusterAllocs constrained_allocs_msg;
-    custom_msgs::msg::ThrusterAllocs unconstrained_allocs_msg;
-    geometry_msgs::msg::Twist base_power_msg;
-    geometry_msgs::msg::Twist set_power_unscaled_msg;
-    geometry_msgs::msg::Twist set_power_msg;
-    geometry_msgs::msg::Twist actual_power_msg;
-    geometry_msgs::msg::Twist power_disparity_msg;
-    std_msgs::msg::Float64 power_disparity_norm_msg;
-    custom_msgs::msg::ControlTypes control_types_msg;
-    std_msgs::msg::Bool status_msg;
-    custom_msgs::msg::PIDGains pid_gains_msg;
-    geometry_msgs::msg::Vector3 static_power_global_msg;
-    std_msgs::msg::Float64 power_scale_factor_msg;
-
-    // Loop while ROS node is running
-    while (rclcpp::ok()) {
-        // Get set power based on control types
-        for (int i = 0; i < AXES_COUNT; i++) {
-            switch (control_types.at(AXES[i])) {
-                case custom_msgs::msg::ControlTypes::DESIRED_POSITION:
-                    // If cascaded PID is enabled, then use velocity PID outputs as set power for DESIRED_POSITION
-                    // control type
-                    base_power[i] =
-                        (cascaded_pid) ? velocity_pid_outputs.at(AXES[i]) : position_pid_outputs.at(AXES[i]);
-                    break;
-                case custom_msgs::msg::ControlTypes::DESIRED_VELOCITY:
-                    base_power[i] = velocity_pid_outputs.at(AXES[i]);
-                    break;
-                case custom_msgs::msg::ControlTypes::DESIRED_POWER:
-                    base_power[i] = desired_power.at(AXES[i]);
-                    break;
-            }
+    // Get set power based on control types
+    for (int i = 0; i < AXES_COUNT; i++) {
+        switch (control_types.at(AXES[i])) {
+            case custom_msgs::msg::ControlTypes::DESIRED_POSITION:
+                // If cascaded PID is enabled, then use velocity PID outputs as set power for DESIRED_POSITION
+                // control type
+                base_power[i] = (cascaded_pid) ? velocity_pid_outputs.at(AXES[i]) : position_pid_outputs.at(AXES[i]);
+                break;
+            case custom_msgs::msg::ControlTypes::DESIRED_VELOCITY:
+                base_power[i] = velocity_pid_outputs.at(AXES[i]);
+                break;
+            case custom_msgs::msg::ControlTypes::DESIRED_POWER:
+                base_power[i] = desired_power.at(AXES[i]);
+                break;
         }
-
-        // Convert static power local to map
-        AxesMap<double> static_power_local_map;
-        ControlsUtils::tf_linear_vector_to_map(static_power_local, static_power_local_map);
-
-        // Sum static power local and base power to get set power unscaled
-        for (const AxesEnum &axis : AXES) set_power_unscaled[axis] = base_power[axis] + static_power_local_map.at(axis);
-
-        // Apply power scale factor to set power
-        set_power = set_power_unscaled * power_scale_factor;
-
-        // Allocate thrusters
-        thruster_allocator.allocate_thrusters(set_power, unconstrained_allocs, constrained_allocs, actual_power,
-                                              power_disparity);
-
-        // Convert thruster allocation vector to message
-        ControlsUtils::eigen_vector_to_thruster_allocs_msg(constrained_allocs, constrained_allocs_msg);
-
-        // Publish thruster allocs if controls are enabled
-        if (controls_enabled) thruster_allocs_pub->publish(constrained_allocs_msg);
-
-        // Save actual power to map
-        ControlsUtils::eigen_vector_to_map(actual_power, actual_power_map);
-
-        // Publish all other messages
-        constrained_thruster_allocs_pub->publish(constrained_allocs_msg);
-
-        ControlsUtils::eigen_vector_to_thruster_allocs_msg(unconstrained_allocs, unconstrained_allocs_msg);
-        unconstrained_thruster_allocs_pub->publish(unconstrained_allocs_msg);
-
-        ControlsUtils::eigen_vector_to_twist(base_power, base_power_msg);
-        base_power_pub->publish(base_power_msg);
-
-        ControlsUtils::eigen_vector_to_twist(set_power_unscaled, set_power_unscaled_msg);
-        set_power_unscaled_pub->publish(set_power_unscaled_msg);
-
-        ControlsUtils::eigen_vector_to_twist(set_power, set_power_msg);
-        set_power_pub->publish(set_power_msg);
-
-        ControlsUtils::eigen_vector_to_twist(actual_power, actual_power_msg);
-        actual_power_pub->publish(actual_power_msg);
-
-        ControlsUtils::eigen_vector_to_twist(power_disparity, power_disparity_msg);
-        power_disparity_pub->publish(power_disparity_msg);
-
-        power_disparity_norm_msg.data = power_disparity.norm();
-        power_disparity_norm_pub->publish(power_disparity_norm_msg);
-
-        ControlsUtils::map_to_control_types(control_types, control_types_msg);
-        control_types_pub->publish(control_types_msg);
-
-        status_msg.data = controls_enabled;
-        status_pub->publish(status_msg);
-
-        for (const PIDLoopTypesEnum &loop : PID_LOOP_TYPES)
-            loops_axes_pid_gains[loop] = pid_managers.at(loop).get_axes_pid_gains();
-
-        ControlsUtils::pid_loops_axes_gains_map_to_msg(loops_axes_pid_gains, pid_gains_msg);
-        pid_gains_pub->publish(pid_gains_msg);
-
-        static_power_global_msg = tf2::toMsg(static_power_global);
-        static_power_global_pub->publish(static_power_global_msg);
-
-        power_scale_factor_msg.data = power_scale_factor;
-        power_scale_factor_pub->publish(power_scale_factor_msg);
-
-        // Spin once to let ROS process messages
-        ros::spinOnce();
-
-        // Sleep for a short duration to maintain a consistent loop rate
-        rate.sleep();
     }
+
+    // Convert static power local to map
+    AxesMap<double> static_power_local_map;
+    ControlsUtils::tf_linear_vector_to_map(static_power_local, static_power_local_map);
+
+    // Sum static power local and base power to get set power unscaled
+    for (const AxesEnum &axis : AXES) set_power_unscaled[axis] = base_power[axis] + static_power_local_map.at(axis);
+
+    // Apply power scale factor to set power
+    set_power = set_power_unscaled * power_scale_factor;
+
+    // Allocate thrusters
+    thruster_allocator.allocate_thrusters(set_power, unconstrained_allocs, constrained_allocs, actual_power,
+                                          power_disparity);
+
+    // Convert thruster allocation vector to message
+    ControlsUtils::eigen_vector_to_thruster_allocs_msg(constrained_allocs, constrained_allocs_msg);
+
+    // Publish thruster allocs if controls are enabled
+    if (controls_enabled) thruster_allocs_pub->publish(constrained_allocs_msg);
+
+    // Save actual power to map
+    ControlsUtils::eigen_vector_to_map(actual_power, actual_power_map);
+
+    // Publish all other messages
+    constrained_thruster_allocs_pub->publish(constrained_allocs_msg);
+
+    ControlsUtils::eigen_vector_to_thruster_allocs_msg(unconstrained_allocs, unconstrained_allocs_msg);
+    unconstrained_thruster_allocs_pub->publish(unconstrained_allocs_msg);
+
+    ControlsUtils::eigen_vector_to_twist(base_power, base_power_msg);
+    base_power_pub->publish(base_power_msg);
+
+    ControlsUtils::eigen_vector_to_twist(set_power_unscaled, set_power_unscaled_msg);
+    set_power_unscaled_pub->publish(set_power_unscaled_msg);
+
+    ControlsUtils::eigen_vector_to_twist(set_power, set_power_msg);
+    set_power_pub->publish(set_power_msg);
+
+    ControlsUtils::eigen_vector_to_twist(actual_power, actual_power_msg);
+    actual_power_pub->publish(actual_power_msg);
+
+    ControlsUtils::eigen_vector_to_twist(power_disparity, power_disparity_msg);
+    power_disparity_pub->publish(power_disparity_msg);
+
+    power_disparity_norm_msg.data = power_disparity.norm();
+    power_disparity_norm_pub->publish(power_disparity_norm_msg);
+
+    ControlsUtils::map_to_control_types(control_types, control_types_msg);
+    control_types_pub->publish(control_types_msg);
+
+    status_msg.data = controls_enabled;
+    status_pub->publish(status_msg);
+
+    for (const PIDLoopTypesEnum &loop : PID_LOOP_TYPES)
+        loops_axes_pid_gains[loop] = pid_managers.at(loop).get_axes_pid_gains();
+
+    ControlsUtils::pid_loops_axes_gains_map_to_msg(loops_axes_pid_gains, pid_gains_msg);
+    pid_gains_pub->publish(pid_gains_msg);
+
+    static_power_global_msg = tf2::toMsg(static_power_global);
+    static_power_global_pub->publish(static_power_global_msg);
+
+    power_scale_factor_msg.data = power_scale_factor;
+    power_scale_factor_pub->publish(power_scale_factor_msg);
 }
 
 int main(int argc, char **argv) {
