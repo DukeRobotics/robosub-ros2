@@ -15,6 +15,7 @@
 #include <custom_msgs/srv/set_pid_gains.hpp>
 #include <custom_msgs/srv/set_power_scale_factor.hpp>
 #include <custom_msgs/srv/set_static_power.hpp>
+#include <fmt/core.h>
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
@@ -85,8 +86,8 @@ Controls::Controls() : Node("controls") {
     for (const AxesEnum &axis : AXES)
         rcpputils::assert_true(
             desired_power_min.at(axis) <= desired_power_max.at(axis),
-            "Invalid desired power min and max for axis %s. Desired power min must be less than or equal to max.",
-            AXES_NAMES.at(axis).c_str());
+            fmt::format("Invalid desired power min and max for axis {}. Desired power min must be less than or equal to max.",
+                        AXES_NAMES.at(axis)));
 
     // Instantiate PID managers for each PID loop type
     for (const PIDLoopTypesEnum &loop : PID_LOOP_TYPES)
@@ -170,7 +171,7 @@ void Controls::desired_position_callback(const geometry_msgs::msg::Pose::SharedP
     if (ControlsUtils::quaternion_valid(msg->orientation))
         desired_position = *msg;
     else
-        ROS_WARN("Invalid desired position orientation. Quaternion must have length 1.");
+        RCLCPP_WARN(this->get_logger(), "Invalid desired position orientation. Quaternion must have length 1.");
 }
 
 void Controls::desired_velocity_callback(const geometry_msgs::msg::Twist::SharedPtr msg) { desired_velocity = *msg; }
@@ -184,7 +185,8 @@ void Controls::desired_power_callback(const geometry_msgs::msg::Twist::SharedPtr
     for (const AxesEnum &axis : AXES) {
         if (new_desired_power.at(axis) < desired_power_min.at(axis) ||
             new_desired_power.at(axis) > desired_power_max.at(axis)) {
-            ROS_WARN(
+            RCLCPP_WARN(
+                this->get_logger(),
                 "Invalid desired power of %f for axis %s. Desired power for axis %s must be within range [%f, %f].",
                 new_desired_power.at(axis), AXES_NAMES.at(axis).c_str(), AXES_NAMES.at(axis).c_str(),
                 desired_power_min.at(axis), desired_power_max.at(axis));
@@ -219,7 +221,7 @@ void Controls::state_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {
     try {
         transformStamped = tf_buffer->lookupTransform("base_link", "odom", tf2::TimePointZero);
     } catch (tf2::TransformException &ex) {
-        ROS_WARN("Could not get transform from odom to base_link. %s", ex.what());
+        RCLCPP_WARN(this->get_logger(), "Could not get transform from odom to base_link. %s", ex.what());
         return;
     }
 

@@ -63,7 +63,7 @@ double PID::run(double error, double delta_time, PIDInfo &info, double provided_
 
     // If delta time is nonpositive, return 0 and print error
     if (delta_time <= 0) {
-        RCLCPP_WARN(rclcpp::get_logger("contols_utils"), "Delta time must be positive.");
+        RCLCPP_WARN(rclcpp::get_logger("controls"), "Delta time must be positive.");
         return 0;
     }
 
@@ -103,7 +103,7 @@ double PID::run(double error, double delta_time, PIDInfo &info, double provided_
 
     else {
         // Print error and return 0 if derivative type is invalid
-        RCLCPP_ERROR(rclcpp::get_logger("contols_utils"), "PID run loop error: Derivative type is invalid.");
+        RCLCPP_ERROR(rclcpp::get_logger("controls"), "PID run loop error: Derivative type is invalid.");
         return 0;
     }
 

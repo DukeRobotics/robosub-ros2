@@ -8,7 +8,6 @@
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <buildtool_depend>ament_index_cpp</buildtool_depend>
 
   <depend>rclcpp</depend>
   <depend>custom_msgs</depend>
@@ -18,10 +17,10 @@
   <depend>std_srvs</depend>
   <depend>tf2</depend>
   <depend>tf2_geometry_msgs</depend>
-  <depend>yaml_cpp_vendor</depend>
+  <depend>ament_index_cpp</depend>
+  <depend>fmt</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
-    <build_type>ament_index_cpp</build_type>
-  </export>
+\  </export>
 </package>

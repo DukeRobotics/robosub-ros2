@@ -16,6 +16,7 @@
 
 #include <Eigen/Dense>
 #include <algorithm>
+#include <fmt/core.h>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -235,7 +236,7 @@ void ControlsUtils::read_matrix_from_csv(const std::string &file_path, Eigen::Ma
     // Open the CSV file
     std::ifstream file(file_path);
 
-    rcpputils::assert_true(file.is_open(), "Could not open CSV file. '%s'", file_path.c_str());
+    rcpputils::assert_true(file.is_open(), fmt::format("Could not open CSV file. '{}'", file_path));
 
     // Temporarily store matrix as vector of vectors
     std::vector<std::vector<double>> data;
@@ -275,20 +276,20 @@ void ControlsUtils::read_matrix_from_csv(const std::string &file_path, Eigen::Ma
             iss >> comma;
 
             // Ensure every value has comma succeeding it (unless it is the last value in the row)
-            rcpputils::assert_true((iss.good() && comma == ',') || iss.eof(), "File is not in valid CSV format. '%s'",
-                           file_path.c_str());
+            rcpputils::assert_true((iss.good() && comma == ',') || iss.eof(), fmt::format("File is not in valid CSV format. '{}'",
+                           file_path));
         }
 
         // Ensure the file contains only numeric values
         // If the file contains non-numeric values, the loop will have exited before the line was read completely
-        rcpputils::assert_true(iss.eof(), "CSV file contains non-numeric values. '%s'", file_path.c_str());
+        rcpputils::assert_true(iss.eof(), fmt::format("CSV file contains non-numeric values. '{}'", file_path));
 
         // Ensure all rows have the same number of columns
         if (cols == -1)
             cols = row.size();
         else
-            rcpputils::assert_true(row.size() == cols, "CSV file must have same number of columns in all rows. '%s'",
-                           file_path.c_str());
+            rcpputils::assert_true(row.size() == cols, fmt::format("CSV file must have same number of columns in all rows. '{}'",
+                           file_path));
 
         // Add the row to the temporary matrix
         data.push_back(row);
@@ -301,8 +302,8 @@ void ControlsUtils::read_matrix_from_csv(const std::string &file_path, Eigen::Ma
     int rows = data.size();
 
     // Ensure the matrix has at least one row and one column
-    rcpputils::assert_true(cols >= 1, "CSV file must have at least one column. '%s'", file_path.c_str());
-    rcpputils::assert_true(rows >= 1, "CSV file must have at least one row. '%s'", file_path.c_str());
+    rcpputils::assert_true(cols >= 1, fmt::format("CSV file must have at least one column. '{}'", file_path));
+    rcpputils::assert_true(rows >= 1, fmt::format("CSV file must have at least one row. '{}'", file_path));
 
     // Initialize the Eigen matrix
     matrix.resize(rows, cols);
@@ -379,11 +380,9 @@ void ControlsUtils::read_robot_config(const bool &cascaded_pid,
         wrench_matrix_file_path = CONTROLS_PACKAGE_PATH + "/" + wrench_matrix_file_path;
         wrench_matrix_pinv_file_path = CONTROLS_PACKAGE_PATH + "/" + wrench_matrix_pinv_file_path;
     } catch (const std::exception &e) {
-        RCLCPP_ERROR(rclcpp::get_logger("controls_utils"), "Exception: %s", e.what());
-        char error_message[256]
-        sprintf(error_message, "Could not read robot config file. Make sure it is in the correct format. '%s'",
-                       ROBOT_CONFIG_FILE_PATH.c_str())
-        rcpputils::assert_true(false, error_message);
+        RCLCPP_ERROR(rclcpp::get_logger("controls"), "Exception: %s", e.what());
+        rcpputils::assert_true(false, fmt::format("Could not read robot config file. Make sure it is in the correct format. '{}'",
+                                                  ROBOT_CONFIG_FILE_PATH));
     }
 }
 
@@ -409,12 +408,9 @@ void ControlsUtils::update_robot_config(std::function<void(YAML::Node &)> update
 
         fout.close();
     } catch (const std::exception &e) {
-        RCLCPP_ERROR(rclcpp::get_logger("controls_utils"), "Exception: %s", e.what());
-        char error_message[256];
-        sprintf(error_message, "Could not update %s in robot config file. Make sure it is in the correct format. '%s'",
-                       update_name.c_str(), ROBOT_CONFIG_FILE_PATH.c_str());
-
-        rcpputils::assert_true(false, error_message);
+        RCLCPP_ERROR(rclcpp::get_logger("controls"), "Exception: %s", e.what());
+        rcpputils::assert_true(false, fmt::format("Could not update {} in robot config file. Make sure it is in the correct format. '{}'",
+                                                  update_name, ROBOT_CONFIG_FILE_PATH));
     }
 }
 

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.14.4)
 project(controls)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -17,24 +17,24 @@ find_package(nav_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
-find_package(yaml_cpp_vendor REQUIRED)
+find_package(yaml-cpp REQUIRED)
 find_package(OsqpEigen REQUIRED)
+find_package(fmt REQUIRED)
 
 include_directories(/usr/local/include/osqp)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/controls ${custom_msgs_INCLUDE_DIRS})
 
-add_executable(controls src/controls.cpp)
-add_executable(pid_manager src/pid_manager.cpp)
-add_executable(drc_pid src/drc_pid.cpp)
-add_executable(controls_utils src/controls_utils.cpp)
-add_executable(thruster_allocator src/thruster_allocator.cpp)
+set(SOURCES
+  src/controls.cpp
+  src/thruster_allocator.cpp
+  src/pid_manager.cpp
+  src/drc_pid.cpp
+  src/controls_utils.cpp
+)
+add_executable(controls ${SOURCES})
 
 set(CONTROLS_INCLUDE_DIR ~/dev/robosub-ros2/onboard/src/controls/include/controls)
 target_include_directories(controls PUBLIC ${CONTROLS_INCLUDE_DIR})
-target_include_directories(controls_utils PUBLIC ${CONTROLS_INCLUDE_DIR})
-target_include_directories(drc_pid PUBLIC ${CONTROLS_INCLUDE_DIR})
-target_include_directories(pid_manager PUBLIC ${CONTROLS_INCLUDE_DIR})
-target_include_directories(thruster_allocator PUBLIC ${CONTROLS_INCLUDE_DIR})
 
 ament_target_dependencies(
   controls
@@ -46,46 +46,15 @@ ament_target_dependencies(
   std_srvs
   tf2
   tf2_geometry_msgs
-  yaml_cpp_vendor
+  yaml-cpp
   ament_index_cpp
 )
 
-ament_target_dependencies(
-  pid_manager
-  rclcpp
-  tf2
-  Eigen3
-  custom_msgs
-  ament_index_cpp
-)
+target_link_libraries(controls fmt::fmt yaml-cpp Eigen3::Eigen OsqpEigen::OsqpEigen)
 
-ament_target_dependencies(
-  drc_pid
-  rclcpp
-  tf2
-  Eigen3
-  custom_msgs
-  ament_index_cpp
-)
-
-ament_target_dependencies(
-  controls_utils
-  custom_msgs
-  geometry_msgs
-  rclcpp
-  ament_index_cpp
-  tf2
-  tf2_geometry_msgs
-  Eigen3
-  yaml_cpp_vendor
-)
-
-ament_target_dependencies(
-  thruster_allocator
-  rclcpp
-  custom_msgs
-  Eigen3
-  OsqpEigen
-)
+install(TARGETS controls DESTINATION lib/${PROJECT_NAME})
+install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 
 ament_package()
+
+

@@ -85,7 +85,7 @@ const std::unordered_map<PIDGainTypesEnum, std::string> PID_GAIN_TYPES_NAMES = {
                                                                                 {PIDGainTypesEnum::FF, "Ff"}};
 
 // Path to controls package
-const std::string CONTROLS_PACKAGE_PATH = ros::package::getPath("controls");
+const std::string CONTROLS_PACKAGE_PATH = ament_index_cpp::get_package_share_directory("controls");
 
 // Path to robot config file
 const std::string ROBOT_CONFIG_FILE_PATH =

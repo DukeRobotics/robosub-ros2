@@ -1,6 +1,12 @@
 #ifndef CONTROLS_UTILS_H
 #define CONTROLS_UTILS_H
 
+#include <tf2/LinearMath/Vector3.h>
+#include <yaml-cpp/yaml.h>
+
+#include <Eigen/Dense>
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <cstdlib>
 #include <custom_msgs/msg/pid_axes_info.hpp>
 #include <custom_msgs/msg/pid_derivative_type.hpp>
 #include <custom_msgs/msg/pid_gain.hpp>
@@ -12,11 +18,6 @@
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
-#include <ament_index_cpp/get_package_share_directory.hpp>
-#include <tf2/LinearMath/Vector3.h>
-
-#include <Eigen/Dense>
-#include <cstdlib>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -130,7 +131,8 @@ bool pid_gains_map_valid(const PIDGainsMap &pid_gains_map);
  * @param pitch Pitch to populate.
  * @param yaw Yaw to populate.
  */
-void quaternion_msg_to_euler(const geometry_msgs::msg::Quaternion &quaternion, double &roll, double &pitch, double &yaw);
+void quaternion_msg_to_euler(const geometry_msgs::msg::Quaternion &quaternion, double &roll, double &pitch,
+                             double &yaw);
 
 /**
  * @brief Convert pose to twist. Linear vector is identical to position. Angular vector is orientation converted to
@@ -166,7 +168,8 @@ void map_to_twist(const AxesMap<double> &map, geometry_msgs::msg::Twist &twist);
  * @param vector Eigen vector to convert.
  * @param thruster_allocs Thruster allocs message to populate.
  */
-void eigen_vector_to_thruster_allocs_msg(const Eigen::VectorXd &vector, custom_msgs::msg::ThrusterAllocs &thruster_allocs);
+void eigen_vector_to_thruster_allocs_msg(const Eigen::VectorXd &vector,
+                                         custom_msgs::msg::ThrusterAllocs &thruster_allocs);
 
 /**
  * @brief Convert Eigen vector to twist. `vector`'s entries are mapped from top to bottom to `twist` in the
