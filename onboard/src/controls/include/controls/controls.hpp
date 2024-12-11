@@ -1,21 +1,24 @@
 #ifndef CONTROLS_H
 #define CONTROLS_H
 
-#include <custom_msgs/msg/control_types.h>
-#include <custom_msgs/msg/pid_gain.h>
-#include <custom_msgs/msg/pid_gains.h>
-#include <custom_msgs/msg/thruster_allocs.h>
-#include <custom_msgs/srv/set_control_types.h>
-#include <custom_msgs/srv/set_pid_gains.h>
-#include <custom_msgs/srv/set_power_scale_factor.h>
-#include <custom_msgs/srv/set_static_power.h>
-#include <geometry_msgs/msg/pose.h>
-#include <geometry_msgs/msg/twist.h>
-#include <nav_msgs/msg/odometry.h>
+#include <custom_msgs/msg/control_types.hpp>
+#include <custom_msgs/msg/pid_axes_info.hpp>
+#include <custom_msgs/msg/pid_gain.hpp>
+#include <custom_msgs/msg/pid_gains.hpp>
+#include <custom_msgs/msg/thruster_allocs.hpp>
+#include <custom_msgs/srv/set_control_types.hpp>
+#include <custom_msgs/srv/set_pid_gains.hpp>
+#include <custom_msgs/srv/set_power_scale_factor.hpp>
+#include <custom_msgs/srv/set_static_power.hpp>
+#include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/twist.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/bool.h>
+#include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/float64.hpp>
 #include <std_srvs/srv/set_bool.hpp>
-#include <std_srvs/srv/trigger.h>
+#include <std_srvs/srv/trigger.hpp>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
 #include <Eigen/Dense>
@@ -29,7 +32,7 @@
 #include "pid_manager.hpp"
 #include "thruster_allocator.hpp"
 
-class Controls {
+class Controls : public rclcpp::Node {
    private:
     // Rate at which thruster allocations are published (Hz)
     static const int THRUSTER_ALLOCS_RATE;
@@ -44,6 +47,10 @@ class Controls {
     // Unique pointer is used to avoid writing a custom constructor and destructor for this class
     std::unique_ptr<tf2_ros::Buffer> tf_buffer;
 
+    // Transform listener
+    // Shared pointer is used to avoid writing a custom constructor and destructor for this class
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener;
+
     // Whether controls are enabled
     bool controls_enabled;
 
@@ -56,10 +63,10 @@ class Controls {
     AxesMap<double> desired_power;
 
     // Current state
-    nav_msgs::Odometry state;
+    nav_msgs::msg::Odometry state;
 
     // Timestamp of last state message
-    ros::Time last_state_msg_time;
+    rclcpp::Time last_state_msg_time;
 
     // Managers for both position and velocity PID loops
     LoopsMap<PIDManager> pid_managers;
@@ -90,42 +97,42 @@ class Controls {
     AxesMap<double> actual_power_map;
 
     // ROS topic subscribers
-    ros::Subscriber state_sub;
-    ros::Subscriber desired_position_sub;
-    ros::Subscriber desired_velocity_sub;
-    ros::Subscriber desired_power_sub;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr state_sub;
+    rclcpp::Subscription<geometry_msgs::msg::Pose>::SharedPtr desired_position_sub;
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr desired_velocity_sub;
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr desired_power_sub;
 
     // ROS service advertisers
-    ros::ServiceServer enable_controls_srv;
-    ros::ServiceServer set_control_types_srv;
-    ros::ServiceServer set_pid_gains_srv;
-    ros::ServiceServer reset_pid_loops_srv;
-    ros::ServiceServer set_static_power_global_srv;
-    ros::ServiceServer set_power_scale_factor_srv;
+    rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr enable_controls_srv;
+    rclcpp::Service<custom_msgs::srv::SetControlTypes>::SharedPtr set_control_types_srv;
+    rclcpp::Service<custom_msgs::srv::SetPIDGains>::SharedPtr set_pid_gains_srv;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr reset_pid_loops_srv;
+    rclcpp::Service<custom_msgs::srv::SetStaticPower>::SharedPtr set_static_power_global_srv;
+    rclcpp::Service<custom_msgs::srv::SetPowerScaleFactor>::SharedPtr set_power_scale_factor_srv;
 
     // ROS topic publishers
-    ros::Publisher thruster_allocs_pub;
-    ros::Publisher constrained_thruster_allocs_pub;
-    ros::Publisher unconstrained_thruster_allocs_pub;
-    ros::Publisher base_power_pub;
-    ros::Publisher set_power_unscaled_pub;
-    ros::Publisher set_power_pub;
-    ros::Publisher actual_power_pub;
-    ros::Publisher power_disparity_pub;
-    ros::Publisher power_disparity_norm_pub;
-    ros::Publisher pid_gains_pub;
-    ros::Publisher control_types_pub;
-    ros::Publisher position_efforts_pub;
-    ros::Publisher velocity_efforts_pub;
-    ros::Publisher position_error_pub;
-    ros::Publisher velocity_error_pub;
-    ros::Publisher position_pid_infos_pub;
-    ros::Publisher velocity_pid_infos_pub;
-    ros::Publisher status_pub;
-    ros::Publisher delta_time_pub;
-    ros::Publisher static_power_global_pub;
-    ros::Publisher static_power_local_pub;
-    ros::Publisher power_scale_factor_pub;
+    rclcpp::Publisher<custom_msgs::msg::ThrusterAllocs>::SharedPtr thruster_allocs_pub;
+    rclcpp::Publisher<custom_msgs::msg::ThrusterAllocs>::SharedPtr constrained_thruster_allocs_pub;
+    rclcpp::Publisher<custom_msgs::msg::ThrusterAllocs>::SharedPtr unconstrained_thruster_allocs_pub;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr base_power_pub;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr set_power_unscaled_pub;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr set_power_pub;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr actual_power_pub;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr power_disparity_pub;
+    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr power_disparity_norm_pub;
+    rclcpp::Publisher<custom_msgs::msg::PIDGains>::SharedPtr pid_gains_pub;
+    rclcpp::Publisher<custom_msgs::msg::ControlTypes>::SharedPtr control_types_pub;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr position_efforts_pub;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr velocity_efforts_pub;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr position_error_pub;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr velocity_error_pub;
+    rclcpp::Publisher<custom_msgs::msg::PIDAxesInfo>::SharedPtr position_pid_infos_pub;
+    rclcpp::Publisher<custom_msgs::msg::PIDAxesInfo>::SharedPtr velocity_pid_infos_pub;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr status_pub;
+    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr delta_time_pub;
+    rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr static_power_global_pub;
+    rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr static_power_local_pub;
+    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr power_scale_factor_pub;
 
     // *****************************************************************************************************************
     // ROS subscriber callbacks
@@ -137,14 +144,14 @@ class Controls {
      *
      * @note The orientation of the desired position must be a valid unit quaternion.
      */
-    void desired_position_callback(const geometry_msgs::msg::Pose msg);
+    void desired_position_callback(const geometry_msgs::msg::Pose::SharedPtr msg);
 
     /**
      * @brief Callback for desired velocity messages.
      *
      * @param msg Desired velocity message.
      */
-    void desired_velocity_callback(const geometry_msgs::msg::Twist msg);
+    void desired_velocity_callback(const geometry_msgs::msg::Twist::SharedPtr msg);
 
     /**
      * @brief Callback for desired power messages.
@@ -153,14 +160,14 @@ class Controls {
      *
      * @note The value of each axis in the desired power message must be in the range [-1, 1].
      */
-    void desired_power_callback(const geometry_msgs::msg::Twist msg);
+    void desired_power_callback(const geometry_msgs::msg::Twist::SharedPtr msg);
 
     /**
      * @brief Callback for state messages. Runs PID loops.
      *
      * @param msg State message.
      */
-    void state_callback(const nav_msgs::Odometry msg);
+    void state_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
 
     // *****************************************************************************************************************
     // ROS service callbacks
@@ -172,7 +179,8 @@ class Controls {
      * @param res Response indicating whether controls were enabled/disabled.
      * @return True if the service response was successfully filled, false otherwise.
      */
-    bool enable_controls_callback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
+    bool enable_controls_callback(const std::shared_ptr<std_srvs::srv::SetBool::Request> req,
+                                  std::shared_ptr<std_srvs::srv::SetBool::Response> res);
 
     /**
      * @brief Callback for setting control types.
@@ -181,8 +189,8 @@ class Controls {
      * @param res Response indicating whether control types were set.
      * @return True if the service response was successfully filled, false otherwise.
      */
-    bool set_control_types_callback(custom_msgs::srv::SetControlTypes::Request &req,
-                                    custom_msgs::srv::SetControlTypes::Response &res);
+    bool set_control_types_callback(const std::shared_ptr<custom_msgs::srv::SetControlTypes::Request> req,
+                                    std::shared_ptr<custom_msgs::srv::SetControlTypes::Response> res);
 
     /**
      * @brief Callback for updating PID gains.
@@ -191,9 +199,10 @@ class Controls {
      * @param res Response indicating whether PID gains were updated.
      * @return True if the service response was successfully filled, false otherwise.
      *
-     * @throws ros::Exception Robot config file could not be updated with the new PID gains.
+     * @throws rclcpp::Exception Robot config file could not be updated with the new PID gains.
      */
-    bool set_pid_gains_callback(custom_msgs::srv::SetPIDGains::Request &req, custom_msgs::srv::SetPIDGains::Response &res);
+    bool set_pid_gains_callback(const std::shared_ptr<custom_msgs::srv::SetPIDGains::Request> req,
+                                std::shared_ptr<custom_msgs::srv::SetPIDGains::Response> res);
 
     /**
      * @brief Callback for resetting PID loops.
@@ -202,7 +211,8 @@ class Controls {
      * @param res Response indicating whether PID loops were reset.
      * @return True if the service response was successfully filled, false otherwise.
      */
-    bool reset_pid_loops_callback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+    bool reset_pid_loops_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
+                                  std::shared_ptr<std_srvs::srv::Trigger::Response> res);
 
     /**
      * @brief Callback for updating static power global.
@@ -211,10 +221,10 @@ class Controls {
      * @param res Response indicating whether static power global was updated.
      * @return True if the service response was successfully filled, false otherwise.
      *
-     * @throws ros::Exception Robot config file could not be updated with the new static power global.
+     * @throws rclcpp::Exception Robot config file could not be updated with the new static power global.
      */
-    bool set_static_power_global_callback(custom_msgs::srv::SetStaticPower::Request &req,
-                                          custom_msgs::srv::SetStaticPower::Response &res);
+    bool set_static_power_global_callback(const std::shared_ptr<custom_msgs::srv::SetStaticPower::Request> req,
+                                          std::shared_ptr<custom_msgs::srv::SetStaticPower::Response> res);
 
     /**
      * @brief Callback for updating power scale factor.
@@ -223,22 +233,17 @@ class Controls {
      * @param res Response indicating whether power scale factor was set.
      * @return True if the service response was successfully filled, false otherwise.
      *
-     * @throws ros::Exception Robot config file could not be updated with the new power scale factor.
+     * @throws rclcpp::Exception Robot config file could not be updated with the new power scale factor.
      */
-    bool set_power_scale_factor_callback(custom_msgs::srv::SetPowerScaleFactor::Request &req,
-                                         custom_msgs::srv::SetPowerScaleFactor::Response &res);
+    bool set_power_scale_factor_callback(const std::shared_ptr<custom_msgs::srv::SetPowerScaleFactor::Request> req,
+                                         std::shared_ptr<custom_msgs::srv::SetPowerScaleFactor::Response> res);
 
    public:
     /**
      * @brief Construct a new Controls object. Initializes PID loops, thruster allocator, ROS subscribers, service
      *  advertisers, and publishers.
-     *
-     * @param argc Number of command line arguments.
-     * @param argv Command line arguments.
-     * @param nh ROS node handle. Used to create ROS subscribers, service advertisers, and publishers.
-     * @param tf_buffer Transform buffer. Used to obtain transforms between frames.
      */
-    Controls(int argc, char **argv, ros::NodeHandle &nh, std::unique_ptr<tf2_ros::Buffer> tf_buffer);
+    Controls();
 
     /**
      * @brief Loop that runs while the node is active. Allocates thrusters based on control efforts and publishes
