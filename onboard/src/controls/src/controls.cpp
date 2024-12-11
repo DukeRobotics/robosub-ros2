@@ -94,6 +94,15 @@ Controls::Controls() : Node("controls") {
         pid_managers[loop] = PIDManager(loops_axes_control_effort_mins.at(loop),
                                         loops_axes_control_effort_maxes.at(loop), loops_axes_derivative_types.at(loop),
                                         loops_axes_error_ramp_rates.at(loop), loops_axes_pid_gains.at(loop));
+
+    // Initialize PID outputs and infos to zero
+    for (const AxesEnum &axis : AXES) {
+        position_pid_outputs[axis] = 0;
+        velocity_pid_outputs[axis] = 0;
+        position_pid_infos[axis] = PIDInfo();
+        velocity_pid_infos[axis] = PIDInfo();
+    }
+
     // Initialize static power local to zero
     static_power_local = tf2::Vector3(0, 0, 0);
 
