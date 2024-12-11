@@ -1,16 +1,17 @@
 #ifndef CONTROLS_UTILS_H
 #define CONTROLS_UTILS_H
 
-#include <custom_msgs/msg/pid_axes_info.h>
-#include <custom_msgs/msg/pid_derivative_type.h>
+#include <custom_msgs/msg/pid_axes_info.hpp>
+#include <custom_msgs/msg/pid_derivative_type.hpp>
 #include <custom_msgs/msg/pid_gain.hpp>
 #include <custom_msgs/msg/pid_gains.hpp>
-#include <custom_msgs/msg/pid_info.h>
-#include <custom_msgs/msg/pid_terms.h>
-#include <custom_msgs/msg/thruster_allocs.h>
-#include <geometry_msgs/msg/pose.h>
-#include <geometry_msgs/msg/twist.h>
-#include <geometry_msgs/msg/vector3.h>
+#include <custom_msgs/msg/pid_info.hpp>
+#include <custom_msgs/msg/pid_terms.hpp>
+#include <custom_msgs/msg/thruster_allocs.hpp>
+#include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/quaternion.hpp>
+#include <geometry_msgs/msg/twist.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <tf2/LinearMath/Vector3.h>
 

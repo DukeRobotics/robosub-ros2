@@ -53,7 +53,7 @@ bool ControlsUtils::value_in_pid_derivative_types_enum(uint8_t value) {
     return value_in_array<uint8_t, PIDDerivativeTypesEnum>(value, PID_DERIVATIVE_TYPES, PID_DERIVATIVE_TYPES_COUNT);
 }
 
-bool ControlsUtils::quaternion_valid(const tf2::Quaternion &quaternion) {
+bool ControlsUtils::quaternion_valid(const geometry_msgs::msg::Quaternion &quaternion) {
     tf2::Quaternion q;
     tf2::fromMsg(quaternion, q);
     return std::abs(q.length() - 1.0) < 1e-6;
@@ -73,7 +73,7 @@ bool ControlsUtils::pid_gains_map_valid(const PIDGainsMap &pid_gains_map) {
                        [&pid_gains_map](const PIDGainTypesEnum &gain) { return pid_gains_map.count(gain); });
 }
 
-void ControlsUtils::quaternion_msg_to_euler(const tf2::Quaternion &quaternion, double &roll, double &pitch,
+void ControlsUtils::quaternion_msg_to_euler(const geometry_msgs::msg::Quaternion &quaternion, double &roll, double &pitch,
                                             double &yaw) {
     // Get roll, pitch, yaw from quaternion
     // The order of rotation is roll, pitch, yaw
