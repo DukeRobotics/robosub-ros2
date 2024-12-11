@@ -8,21 +8,24 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_index_cpp REQUIRED)
-find_package(rclcpp REQUIRED)
 find_package(custom_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(std_msgs REQUIRED)
+find_package(fmt REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(OsqpEigen REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
-find_package(OsqpEigen REQUIRED)
-find_package(fmt REQUIRED)
 
-include_directories(/usr/local/include/osqp)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/controls ${custom_msgs_INCLUDE_DIRS})
+include_directories(
+  ${custom_msgs_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
+  /usr/local/include/osqp
+)
 
 set(SOURCES
   src/controls.cpp
@@ -33,27 +36,47 @@ set(SOURCES
 )
 add_executable(controls ${SOURCES})
 
-set(CONTROLS_INCLUDE_DIR ~/dev/robosub-ros2/onboard/src/controls/include/controls)
-target_include_directories(controls PUBLIC ${CONTROLS_INCLUDE_DIR})
+target_include_directories(controls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/controls)
 
-ament_target_dependencies(
-  controls
-  rclcpp
-  std_msgs
-  custom_msgs
-  geometry_msgs
-  nav_msgs
-  std_srvs
-  tf2
-  tf2_geometry_msgs
+target_link_libraries(controls
+  Eigen3::Eigen
+  fmt::fmt
+  OsqpEigen::OsqpEigen
+  rclcpp::rclcpp
   yaml-cpp
-  ament_index_cpp
+  ${ament_index_cpp_TARGETS}
+  ${custom_msgs_TARGETS}
+  ${geometry_msgs_TARGETS}
+  ${nav_msgs_TARGETS}
+  ${std_msgs_TARGETS}
+  ${std_srvs_TARGETS}
+  ${tf2_geometry_msgs_TARGETS}
+  ${tf2_TARGETS}
 )
 
-target_link_libraries(controls fmt::fmt yaml-cpp Eigen3::Eigen OsqpEigen::OsqpEigen)
+target_precompile_headers(controls
+  PRIVATE
+    <fmt/core.h>
+    <rclcpp/rclcpp.hpp>
+    <tf2/LinearMath/Matrix3x3.h>
+    <tf2/LinearMath/Vector3.h>
+    <tf2/LinearMath/Quaternion.h>
+    <tf2_ros/transform_listener.h>
+    <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+    <Eigen/Dense>
+    <yaml-cpp/yaml.h>
+    [["OsqpEigen/OsqpEigen.h"]]
+)
 
 install(TARGETS controls DESTINATION lib/${PROJECT_NAME})
-install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
+install(
+  DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config
+)
+install(
+  DIRECTORY data/
+  DESTINATION share/${PROJECT_NAME}/data
+)
 
 ament_package()
 
