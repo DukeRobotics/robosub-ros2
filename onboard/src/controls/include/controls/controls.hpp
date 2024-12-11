@@ -51,8 +51,8 @@ class Controls {
     AxesMap<ControlTypesEnum> control_types;
 
     // Desired states
-    geometry_msgs::Pose desired_position;
-    geometry_msgs::Twist desired_velocity;
+    geometry_msgs::msg::Pose desired_position;
+    geometry_msgs::msg::Twist desired_velocity;
     AxesMap<double> desired_power;
 
     // Current state
@@ -137,14 +137,14 @@ class Controls {
      *
      * @note The orientation of the desired position must be a valid unit quaternion.
      */
-    void desired_position_callback(const geometry_msgs::Pose msg);
+    void desired_position_callback(const geometry_msgs::msg::Pose msg);
 
     /**
      * @brief Callback for desired velocity messages.
      *
      * @param msg Desired velocity message.
      */
-    void desired_velocity_callback(const geometry_msgs::Twist msg);
+    void desired_velocity_callback(const geometry_msgs::msg::Twist msg);
 
     /**
      * @brief Callback for desired power messages.
@@ -153,7 +153,7 @@ class Controls {
      *
      * @note The value of each axis in the desired power message must be in the range [-1, 1].
      */
-    void desired_power_callback(const geometry_msgs::Twist msg);
+    void desired_power_callback(const geometry_msgs::msg::Twist msg);
 
     /**
      * @brief Callback for state messages. Runs PID loops.
