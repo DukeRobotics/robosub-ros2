@@ -10,6 +10,8 @@ ARG CACHE_BUSTER
 # The commands are ordered alphabetically
 RUN apt update
 RUN apt install -y --no-install-recommends clang-format
+RUN apt install -y --no-install-recommends gdb
+RUN apt install -y --no-install-recommends gdbserver
 RUN apt install -y --no-install-recommends libeigen3-dev
 RUN apt install -y --no-install-recommends libyaml-cpp-dev
 RUN apt install -y --no-install-recommends nano
@@ -61,6 +63,9 @@ RUN git clone https://github.com/robotology/osqp-eigen.git && \
     make install && \
     cd ../.. && \
     rm -rf osqp-eigen
+
+# Copy .gdbinit file into container
+COPY gdbinit /root/.gdbinit
 
 # Create development directory
 RUN mkdir -p /root/dev/robosub-ros2
