@@ -338,24 +338,24 @@ void Controls::state_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {
     static_power_local_pub->publish(static_power_local_msg);
 }
 
-bool Controls::enable_controls_callback(const std::shared_ptr<std_srvs::srv::SetBool::Request> req,
-                                        std::shared_ptr<std_srvs::srv::SetBool::Response> res) {
+bool Controls::enable_controls_callback(const std_srvs::srv::SetBool::Request::SharedPtr req,
+                                        std_srvs::srv::SetBool::Response::SharedPtr res) {
     controls_enabled = req->data;
     res->success = true;
     res->message = controls_enabled ? "Controls enabled." : "Controls disabled.";
     return true;
 }
 
-bool Controls::set_control_types_callback(const std::shared_ptr<custom_msgs::srv::SetControlTypes::Request> req,
-                                          std::shared_ptr<custom_msgs::srv::SetControlTypes::Response> res) {
+bool Controls::set_control_types_callback(const custom_msgs::srv::SetControlTypes::Request::SharedPtr req,
+                                          custom_msgs::srv::SetControlTypes::Response::SharedPtr res) {
     res->success = ControlsUtils::control_types_to_map(req->control_types, control_types);
     res->message = res->success ? "Updated control types successfully."
                                 : "Failed to update control types. One or more control types was invalid.";
     return true;
 }
 
-bool Controls::set_pid_gains_callback(const std::shared_ptr<custom_msgs::srv::SetPIDGains::Request> req,
-                                      std::shared_ptr<custom_msgs::srv::SetPIDGains::Response> res) {
+bool Controls::set_pid_gains_callback(const custom_msgs::srv::SetPIDGains::Request::SharedPtr req,
+                                      custom_msgs::srv::SetPIDGains::Response::SharedPtr res) {
     res->success = ControlsUtils::pid_gains_valid(req->pid_gains);
 
     // If PID gains were valid, then update PID gains in PID managers and robot config file
@@ -385,8 +385,8 @@ bool Controls::set_pid_gains_callback(const std::shared_ptr<custom_msgs::srv::Se
     return true;
 }
 
-bool Controls::reset_pid_loops_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-                                        std::shared_ptr<std_srvs::srv::Trigger::Response> res) {
+bool Controls::reset_pid_loops_callback(const std_srvs::srv::Trigger::Request::SharedPtr,
+                                        std_srvs::srv::Trigger::Response::SharedPtr res) {
     // Reset all PID loops
     for (const PIDLoopTypesEnum &loop : PID_LOOP_TYPES) pid_managers[loop].reset();
 
@@ -395,8 +395,8 @@ bool Controls::reset_pid_loops_callback(const std::shared_ptr<std_srvs::srv::Tri
     return true;
 }
 
-bool Controls::set_static_power_global_callback(const std::shared_ptr<custom_msgs::srv::SetStaticPower::Request> req,
-                                                std::shared_ptr<custom_msgs::srv::SetStaticPower::Response> res) {
+bool Controls::set_static_power_global_callback(const custom_msgs::srv::SetStaticPower::Request::SharedPtr req,
+                                                custom_msgs::srv::SetStaticPower::Response::SharedPtr res) {
     tf2::fromMsg(req->static_power, static_power_global);
 
     // Update static power in robot config file
@@ -410,8 +410,8 @@ bool Controls::set_static_power_global_callback(const std::shared_ptr<custom_msg
 }
 
 bool Controls::set_power_scale_factor_callback(
-    const std::shared_ptr<custom_msgs::srv::SetPowerScaleFactor::Request> req,
-    std::shared_ptr<custom_msgs::srv::SetPowerScaleFactor::Response> res) {
+    const custom_msgs::srv::SetPowerScaleFactor::Request::SharedPtr req,
+    custom_msgs::srv::SetPowerScaleFactor::Response::SharedPtr res) {
     power_scale_factor = req->power_scale_factor;
 
     // Update power scale factor in robot config file

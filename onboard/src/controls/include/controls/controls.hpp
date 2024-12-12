@@ -205,8 +205,8 @@ class Controls : public rclcpp::Node {
      * @param res Response indicating whether controls were enabled/disabled.
      * @return True if the service response was successfully filled, false otherwise.
      */
-    bool enable_controls_callback(const std::shared_ptr<std_srvs::srv::SetBool::Request> req,
-                                  std::shared_ptr<std_srvs::srv::SetBool::Response> res);
+    bool enable_controls_callback(const std_srvs::srv::SetBool::Request::SharedPtr req,
+                                  std_srvs::srv::SetBool::Response::SharedPtr res);
 
     /**
      * @brief Callback for setting control types.
@@ -215,8 +215,8 @@ class Controls : public rclcpp::Node {
      * @param res Response indicating whether control types were set.
      * @return True if the service response was successfully filled, false otherwise.
      */
-    bool set_control_types_callback(const std::shared_ptr<custom_msgs::srv::SetControlTypes::Request> req,
-                                    std::shared_ptr<custom_msgs::srv::SetControlTypes::Response> res);
+    bool set_control_types_callback(const custom_msgs::srv::SetControlTypes::Request::SharedPtr req,
+                                    custom_msgs::srv::SetControlTypes::Response::SharedPtr res);
 
     /**
      * @brief Callback for updating PID gains.
@@ -227,8 +227,8 @@ class Controls : public rclcpp::Node {
      *
      * @throws rclcpp::Exception Robot config file could not be updated with the new PID gains.
      */
-    bool set_pid_gains_callback(const std::shared_ptr<custom_msgs::srv::SetPIDGains::Request> req,
-                                std::shared_ptr<custom_msgs::srv::SetPIDGains::Response> res);
+    bool set_pid_gains_callback(const custom_msgs::srv::SetPIDGains::Request::SharedPtr req,
+                                custom_msgs::srv::SetPIDGains::Response::SharedPtr res);
 
     /**
      * @brief Callback for resetting PID loops.
@@ -237,8 +237,8 @@ class Controls : public rclcpp::Node {
      * @param res Response indicating whether PID loops were reset.
      * @return True if the service response was successfully filled, false otherwise.
      */
-    bool reset_pid_loops_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-                                  std::shared_ptr<std_srvs::srv::Trigger::Response> res);
+    bool reset_pid_loops_callback(const std_srvs::srv::Trigger::Request::SharedPtr req,
+                                  std_srvs::srv::Trigger::Response::SharedPtr res);
 
     /**
      * @brief Callback for updating static power global.
@@ -249,8 +249,8 @@ class Controls : public rclcpp::Node {
      *
      * @throws rclcpp::Exception Robot config file could not be updated with the new static power global.
      */
-    bool set_static_power_global_callback(const std::shared_ptr<custom_msgs::srv::SetStaticPower::Request> req,
-                                          std::shared_ptr<custom_msgs::srv::SetStaticPower::Response> res);
+    bool set_static_power_global_callback(const custom_msgs::srv::SetStaticPower::Request::SharedPtr req,
+                                          custom_msgs::srv::SetStaticPower::Response::SharedPtr res);
 
     /**
      * @brief Callback for updating power scale factor.
@@ -261,8 +261,8 @@ class Controls : public rclcpp::Node {
      *
      * @throws rclcpp::Exception Robot config file could not be updated with the new power scale factor.
      */
-    bool set_power_scale_factor_callback(const std::shared_ptr<custom_msgs::srv::SetPowerScaleFactor::Request> req,
-                                         std::shared_ptr<custom_msgs::srv::SetPowerScaleFactor::Response> res);
+    bool set_power_scale_factor_callback(const custom_msgs::srv::SetPowerScaleFactor::Request::SharedPtr req,
+                                         custom_msgs::srv::SetPowerScaleFactor::Response::SharedPtr res);
 
    public:
     /**
