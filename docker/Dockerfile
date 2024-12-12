@@ -9,6 +9,7 @@ ARG CACHE_BUSTER
 # Each package is installed in a separate RUN command so that each package is cached separately in Docker
 # The commands are ordered alphabetically
 RUN apt update
+RUN apt install -y --no-install-recommends clang
 RUN apt install -y --no-install-recommends clang-format
 RUN apt install -y --no-install-recommends gdb
 RUN apt install -y --no-install-recommends gdbserver
@@ -24,6 +25,7 @@ RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
 RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends tini
+RUN apt install -y --no-install-recommends valgrind
 
 # Set up Python virtual environment and install packages
 # Virtual enviornment inherits system packages to ensure compatibility with ROS

@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(controls)
 
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_CXX_COMPILER clang++)
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -76,6 +79,10 @@ install(
 install(
   DIRECTORY data/
   DESTINATION share/${PROJECT_NAME}/data
+)
+install(
+  DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/launch
 )
 
 ament_package()
