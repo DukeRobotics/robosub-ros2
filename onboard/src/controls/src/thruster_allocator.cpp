@@ -18,7 +18,7 @@ ThrusterAllocator::ThrusterAllocator(std::string wrench_file_path, std::string w
     ControlsUtils::read_matrix_from_csv(wrench_pinv_file_path, wrench_pinv);
 
     // Check that wrench and wrench_pinv have compatible dimensions
-    rcpputils::assert_true(wrench.rows() == wrench_pinv.cols() && wrench.cols() == wrench_pinv.rows(),
+    rcpputils::check_true(wrench.rows() == wrench_pinv.cols() && wrench.cols() == wrench_pinv.rows(),
                    "If wrench is m x n, wrench_pinv must be n x m.");
 
     int num_thrusters = wrench.cols();
@@ -30,17 +30,17 @@ ThrusterAllocator::ThrusterAllocator(std::string wrench_file_path, std::string w
 
     solver.data()->setNumberOfVariables(num_thrusters);
     solver.data()->setNumberOfConstraints(num_thrusters);
-    rcpputils::assert_true(solver.data()->setHessianMatrix(hessian), "Thruster Allocator: Failed to set hessian matrix.");
-    rcpputils::assert_true(solver.data()->setGradient(gradient), "Thruster Allocator: Failed to set gradient vector.");
-    rcpputils::assert_true(solver.data()->setLinearConstraintsMatrix(linearMatrix),
+    rcpputils::check_true(solver.data()->setHessianMatrix(hessian), "Thruster Allocator: Failed to set hessian matrix.");
+    rcpputils::check_true(solver.data()->setGradient(gradient), "Thruster Allocator: Failed to set gradient vector.");
+    rcpputils::check_true(solver.data()->setLinearConstraintsMatrix(linearMatrix),
                    "Thruster Allocator: Failed to set linear matrix.");
-    rcpputils::assert_true(solver.data()->setLowerBound(lower_bound), "Thruster Allocator: Failed to set lower bound.");
-    rcpputils::assert_true(solver.data()->setUpperBound(upper_bound), "Thruster Allocator: Failed to set upper bound.");
+    rcpputils::check_true(solver.data()->setLowerBound(lower_bound), "Thruster Allocator: Failed to set lower bound.");
+    rcpputils::check_true(solver.data()->setUpperBound(upper_bound), "Thruster Allocator: Failed to set upper bound.");
 
     solver.settings()->setPolish(true);
     solver.settings()->setVerbosity(false);
 
-    rcpputils::assert_true(solver.initSolver(), "Thruster Allocator: Failed to initialize solver.");
+    rcpputils::check_true(solver.initSolver(), "Thruster Allocator: Failed to initialize solver.");
 }
 
 void ThrusterAllocator::get_pseudoinverse_solution(const Eigen::VectorXd &set_power,
@@ -51,10 +51,10 @@ void ThrusterAllocator::get_pseudoinverse_solution(const Eigen::VectorXd &set_po
 void ThrusterAllocator::get_qp_solution(const Eigen::VectorXd &set_power, Eigen::VectorXd &constrained_allocs) {
     // Update the gradient of the quadratic cost function
     Eigen::VectorXd updated_gradient = -wrench.transpose() * set_power;
-    rcpputils::assert_true(solver.updateGradient(updated_gradient), "Thruster Allocator: Failed to update gradient.");
+    rcpputils::check_true(solver.updateGradient(updated_gradient), "Thruster Allocator: Failed to update gradient.");
 
     // Solve the quadratic programming problem and get the solution
-    rcpputils::assert_true(solver.solveProblem() == OsqpEigen::ErrorExitFlag::NoError,
+    rcpputils::check_true(solver.solveProblem() == OsqpEigen::ErrorExitFlag::NoError,
                    "Thruster Allocator: Failed to solve QP problem.");
     constrained_allocs = solver.getSolution();
 }
@@ -68,8 +68,8 @@ void ThrusterAllocator::allocate_thrusters(const Eigen::VectorXd &set_power, Eig
                                            Eigen::VectorXd &constrained_allocs, Eigen::VectorXd &actual_power,
                                            Eigen::VectorXd &power_disparity) {
     // Check that set_power and wrench_pinv have compatible dimensions
-    rcpputils::assert_true(wrench_pinv.cols() == set_power.rows(),
-                   "Set power must have the same number of rows as wrench_pinv.");
+    rcpputils::check_true(wrench_pinv.cols() == set_power.rows(),
+                          "Set power must have the same number of rows as wrench_pinv.");
 
     // Compute unconstrained thruster allocations
     get_pseudoinverse_solution(set_power, unconstrained_allocs);

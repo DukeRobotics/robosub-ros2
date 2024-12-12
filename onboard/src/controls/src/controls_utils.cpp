@@ -1,31 +1,29 @@
-#include <controls_utils.hpp>
-
-#include <custom_msgs/msg/control_types.hpp>
-#include <custom_msgs/msg/pid_gain.hpp>
-#include <custom_msgs/msg/pid_gains.hpp>
-#include <custom_msgs/msg/thruster_allocs.hpp>
-#include <geometry_msgs/msg/pose.hpp>
-#include <geometry_msgs/msg/twist.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <rcpputils/asserts.hpp>
+#include <fmt/core.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Vector3.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <yaml-cpp/yaml.h>
 
 #include <Eigen/Dense>
 #include <algorithm>
-#include <fmt/core.h>
+#include <controls_types.hpp>
+#include <controls_utils.hpp>
+#include <custom_msgs/msg/control_types.hpp>
+#include <custom_msgs/msg/pid_gain.hpp>
+#include <custom_msgs/msg/pid_gains.hpp>
+#include <custom_msgs/msg/thruster_allocs.hpp>
 #include <fstream>
+#include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <rclcpp/rclcpp.hpp>
+#include <rcpputils/asserts.hpp>
 #include <sstream>
 #include <string>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <unordered_map>
-
-#include <controls_types.hpp>
 
 std::mutex ControlsUtils::robot_config_mutex;
 
@@ -74,8 +72,8 @@ bool ControlsUtils::pid_gains_map_valid(const PIDGainsMap &pid_gains_map) {
                        [&pid_gains_map](const PIDGainTypesEnum &gain) { return pid_gains_map.count(gain); });
 }
 
-void ControlsUtils::quaternion_msg_to_euler(const geometry_msgs::msg::Quaternion &quaternion, double &roll, double &pitch,
-                                            double &yaw) {
+void ControlsUtils::quaternion_msg_to_euler(const geometry_msgs::msg::Quaternion &quaternion, double &roll,
+                                            double &pitch, double &yaw) {
     // Get roll, pitch, yaw from quaternion
     // The order of rotation is roll, pitch, yaw
     // Roll, pitch, yaw are in radians with range [-pi, pi]
@@ -236,7 +234,7 @@ void ControlsUtils::read_matrix_from_csv(const std::string &file_path, Eigen::Ma
     // Open the CSV file
     std::ifstream file(file_path);
 
-    rcpputils::assert_true(file.is_open(), fmt::format("Could not open CSV file. '{}'", file_path));
+    rcpputils::check_true(file.is_open(), fmt::format("Could not open CSV file. '{}'", file_path));
 
     // Temporarily store matrix as vector of vectors
     std::vector<std::vector<double>> data;
@@ -276,20 +274,21 @@ void ControlsUtils::read_matrix_from_csv(const std::string &file_path, Eigen::Ma
             iss >> comma;
 
             // Ensure every value has comma succeeding it (unless it is the last value in the row)
-            rcpputils::assert_true((iss.good() && comma == ',') || iss.eof(), fmt::format("File is not in valid CSV format. '{}'",
-                           file_path));
+            rcpputils::check_true((iss.good() && comma == ',') || iss.eof(),
+                                  fmt::format("File is not in valid CSV format. '{}'", file_path));
         }
 
         // Ensure the file contains only numeric values
         // If the file contains non-numeric values, the loop will have exited before the line was read completely
-        rcpputils::assert_true(iss.eof(), fmt::format("CSV file contains non-numeric values. '{}'", file_path));
+        rcpputils::check_true(iss.eof(), fmt::format("CSV file contains non-numeric values. '{}'", file_path));
 
         // Ensure all rows have the same number of columns
         if (cols == -1)
             cols = row.size();
         else
-            rcpputils::assert_true(row.size() == cols, fmt::format("CSV file must have same number of columns in all rows. '{}'",
-                           file_path));
+            rcpputils::check_true(
+                static_cast<int>(row.size()) == cols,
+                fmt::format("CSV file must have same number of columns in all rows. '{}'", file_path));
 
         // Add the row to the temporary matrix
         data.push_back(row);
@@ -302,8 +301,8 @@ void ControlsUtils::read_matrix_from_csv(const std::string &file_path, Eigen::Ma
     int rows = data.size();
 
     // Ensure the matrix has at least one row and one column
-    rcpputils::assert_true(cols >= 1, fmt::format("CSV file must have at least one column. '{}'", file_path));
-    rcpputils::assert_true(rows >= 1, fmt::format("CSV file must have at least one row. '{}'", file_path));
+    rcpputils::check_true(cols >= 1, fmt::format("CSV file must have at least one column. '{}'", file_path));
+    rcpputils::check_true(rows >= 1, fmt::format("CSV file must have at least one row. '{}'", file_path));
 
     // Initialize the Eigen matrix
     matrix.resize(rows, cols);
@@ -381,8 +380,9 @@ void ControlsUtils::read_robot_config(const bool &cascaded_pid,
         wrench_matrix_pinv_file_path = CONTROLS_PACKAGE_PATH + "/" + wrench_matrix_pinv_file_path;
     } catch (const std::exception &e) {
         RCLCPP_ERROR(rclcpp::get_logger("controls"), "Exception: %s", e.what());
-        rcpputils::assert_true(false, fmt::format("Could not read robot config file. Make sure it is in the correct format. '{}'",
-                                                  ROBOT_CONFIG_FILE_PATH));
+        rcpputils::check_true(
+            false, fmt::format("Could not read robot config file. Make sure it is in the correct format. '{}'",
+                               ROBOT_CONFIG_FILE_PATH));
     }
 }
 
@@ -409,8 +409,9 @@ void ControlsUtils::update_robot_config(std::function<void(YAML::Node &)> update
         fout.close();
     } catch (const std::exception &e) {
         RCLCPP_ERROR(rclcpp::get_logger("controls"), "Exception: %s", e.what());
-        rcpputils::assert_true(false, fmt::format("Could not update {} in robot config file. Make sure it is in the correct format. '{}'",
-                                                  update_name, ROBOT_CONFIG_FILE_PATH));
+        rcpputils::check_true(
+            false, fmt::format("Could not update {} in robot config file. Make sure it is in the correct format. '{}'",
+                               update_name, ROBOT_CONFIG_FILE_PATH));
     }
 }
 

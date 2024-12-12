@@ -19,13 +19,13 @@ PID::PID() {
 PID::PID(const double &control_effort_min, const double &control_effort_max,
          const PIDDerivativeTypesEnum &derivative_type, const double &error_ramp_rate, const PIDGainsMap &pid_gains) {
     // Validate inputs
-    rcpputils::assert_true(control_effort_min <= control_effort_max,
-                   "PID initialization error: Control effort min must be less than or equal to control effort max.");
-    rcpputils::assert_true(ControlsUtils::pid_gains_map_valid(pid_gains),
-                   "PID initialization error: PID gains map is invalid.");
-    rcpputils::assert_true(error_ramp_rate >= 0, "PID initialization error: Error ramp rate must be non-negative.");
-    rcpputils::assert_true(ControlsUtils::value_in_pid_derivative_types_enum(derivative_type),
-                   "PID initialization error: Derivative type is invalid.");
+    rcpputils::check_true(control_effort_min <= control_effort_max,
+                          "PID initialization error: Control effort min must be less than or equal to control effort max.");
+    rcpputils::check_true(ControlsUtils::pid_gains_map_valid(pid_gains),
+                          "PID initialization error: PID gains map is invalid.");
+    rcpputils::check_true(error_ramp_rate >= 0, "PID initialization error: Error ramp rate must be non-negative.");
+    rcpputils::check_true(ControlsUtils::value_in_pid_derivative_types_enum(derivative_type),
+                          "PID initialization error: Derivative type is invalid.");
 
     // Set parameters
     this->control_effort_min = control_effort_min;

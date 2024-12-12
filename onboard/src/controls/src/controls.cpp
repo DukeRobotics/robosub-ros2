@@ -84,7 +84,7 @@ Controls::Controls() : Node("controls") {
 
     // Ensure that desired power min is less than or equal to desired power max for each axis
     for (const AxesEnum &axis : AXES)
-        rcpputils::assert_true(
+        rcpputils::check_true(
             desired_power_min.at(axis) <= desired_power_max.at(axis),
             fmt::format("Invalid desired power min and max for axis {}. Desired power min must be less than or equal to max.",
                         AXES_NAMES.at(axis)));
