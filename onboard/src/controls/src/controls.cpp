@@ -416,17 +416,12 @@ bool Controls::set_power_scale_factor_callback(
 
     // Update power scale factor in robot config file
     // Throws an exception if file could not be updated successfully; will shut down the node
-    try {
-        ControlsUtils::update_robot_config_power_scale_factor(power_scale_factor);
-        res->success = true;
-        res->message = "Updated power scale factor successfully.";
-        return true;
-    } catch (const std::exception &e) {
-        RCLCPP_ERROR(this->get_logger(), "Failed to update power scale factor: %s", e.what());
-        res->success = false;
-        res->message = "Failed to update power scale factor in config file";
-        return false;
-    }
+    ControlsUtils::update_robot_config_power_scale_factor(power_scale_factor);
+
+    res->success = true;
+    res->message = "Updated power scale factor successfully.";
+
+    return true;
 }
 
 void Controls::run() {
