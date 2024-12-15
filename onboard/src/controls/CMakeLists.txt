@@ -59,6 +59,7 @@ target_link_libraries(controls
 
 target_precompile_headers(controls
   PRIVATE
+    <chrono>
     <fmt/core.h>
     <rclcpp/rclcpp.hpp>
     <tf2/LinearMath/Matrix3x3.h>
