@@ -32,8 +32,10 @@ RUN apt install -y --no-install-recommends valgrind
 # The commands are ordered alphabetically
 RUN python3 -m venv /root/dev/venv --system-site-packages
 RUN /root/dev/venv/bin/pip install GitPython
+RUN /root/dev/venv/bin/pip install pandas
 RUN /root/dev/venv/bin/pip install pyserial
 RUN /root/dev/venv/bin/pip install ruff
+RUN /root/dev/venv/bin/pip install sympy
 
 # Set no password for root user
 RUN passwd -d root
