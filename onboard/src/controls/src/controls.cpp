@@ -1,3 +1,4 @@
+#include <fmt/core.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Vector3.h>
 #include <tf2_ros/transform_listener.h>
@@ -15,7 +16,6 @@
 #include <custom_msgs/srv/set_pid_gains.hpp>
 #include <custom_msgs/srv/set_power_scale_factor.hpp>
 #include <custom_msgs/srv/set_static_power.hpp>
-#include <fmt/core.h>
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
@@ -86,8 +86,9 @@ Controls::Controls() : Node("controls") {
     for (const AxesEnum &axis : AXES)
         rcpputils::check_true(
             desired_power_min.at(axis) <= desired_power_max.at(axis),
-            fmt::format("Invalid desired power min and max for axis {}. Desired power min must be less than or equal to max.",
-                        AXES_NAMES.at(axis)));
+            fmt::format(
+                "Invalid desired power min and max for axis {}. Desired power min must be less than or equal to max.",
+                AXES_NAMES.at(axis)));
 
     // Instantiate PID managers for each PID loop type
     for (const PIDLoopTypesEnum &loop : PID_LOOP_TYPES)
@@ -171,8 +172,8 @@ Controls::Controls() : Node("controls") {
     power_scale_factor_pub = this->create_publisher<std_msgs::msg::Float64>("controls/power_scale_factor", 1);
 
     // Start timer that runs thruster allocator
-    timer = this->create_wall_timer(std::chrono::milliseconds(THRUSTER_ALLOCS_INTERVAL),
-                                    std::bind(&Controls::run, this));
+    timer =
+        this->create_wall_timer(std::chrono::milliseconds(THRUSTER_ALLOCS_INTERVAL), std::bind(&Controls::run, this));
 }
 
 void Controls::desired_position_callback(const geometry_msgs::msg::Pose::SharedPtr msg) {
@@ -409,9 +410,8 @@ bool Controls::set_static_power_global_callback(const custom_msgs::srv::SetStati
     return true;
 }
 
-bool Controls::set_power_scale_factor_callback(
-    const custom_msgs::srv::SetPowerScaleFactor::Request::SharedPtr req,
-    custom_msgs::srv::SetPowerScaleFactor::Response::SharedPtr res) {
+bool Controls::set_power_scale_factor_callback(const custom_msgs::srv::SetPowerScaleFactor::Request::SharedPtr req,
+                                               custom_msgs::srv::SetPowerScaleFactor::Response::SharedPtr res) {
     power_scale_factor = req->power_scale_factor;
 
     // Update power scale factor in robot config file

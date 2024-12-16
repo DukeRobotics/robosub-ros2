@@ -1,11 +1,10 @@
 #ifndef CONTROLS_TYPES_H
 #define CONTROLS_TYPES_H
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <custom_msgs/msg/control_types.hpp>
 #include <custom_msgs/msg/pid_derivative_type.hpp>
 #include <custom_msgs/msg/pid_gain.hpp>
-#include <ament_index_cpp/get_package_share_directory.hpp>
-
 #include <unordered_map>
 
 // Control types: DESIRED_POSITION, DESIRED_VELOCITY, DESIRED_POWER

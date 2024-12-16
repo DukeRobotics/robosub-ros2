@@ -1,10 +1,10 @@
 #include "thruster_allocator.hpp"
 
 #include <OsqpEigen/OsqpEigen.h>
-#include <rclcpp/rclcpp.hpp>
-#include <rcpputils/asserts.hpp>
 
 #include <Eigen/Dense>
+#include <rclcpp/rclcpp.hpp>
+#include <rcpputils/asserts.hpp>
 #include <string>
 
 #include "controls_types.hpp"
@@ -19,7 +19,7 @@ ThrusterAllocator::ThrusterAllocator(std::string wrench_file_path, std::string w
 
     // Check that wrench and wrench_pinv have compatible dimensions
     rcpputils::check_true(wrench.rows() == wrench_pinv.cols() && wrench.cols() == wrench_pinv.rows(),
-                   "If wrench is m x n, wrench_pinv must be n x m.");
+                          "If wrench is m x n, wrench_pinv must be n x m.");
 
     int num_thrusters = wrench.cols();
     Eigen::SparseMatrix<double> hessian = (wrench.transpose() * wrench).sparseView();
@@ -30,10 +30,11 @@ ThrusterAllocator::ThrusterAllocator(std::string wrench_file_path, std::string w
 
     solver.data()->setNumberOfVariables(num_thrusters);
     solver.data()->setNumberOfConstraints(num_thrusters);
-    rcpputils::check_true(solver.data()->setHessianMatrix(hessian), "Thruster Allocator: Failed to set hessian matrix.");
+    rcpputils::check_true(solver.data()->setHessianMatrix(hessian),
+                          "Thruster Allocator: Failed to set hessian matrix.");
     rcpputils::check_true(solver.data()->setGradient(gradient), "Thruster Allocator: Failed to set gradient vector.");
     rcpputils::check_true(solver.data()->setLinearConstraintsMatrix(linearMatrix),
-                   "Thruster Allocator: Failed to set linear matrix.");
+                          "Thruster Allocator: Failed to set linear matrix.");
     rcpputils::check_true(solver.data()->setLowerBound(lower_bound), "Thruster Allocator: Failed to set lower bound.");
     rcpputils::check_true(solver.data()->setUpperBound(upper_bound), "Thruster Allocator: Failed to set upper bound.");
 
@@ -55,7 +56,7 @@ void ThrusterAllocator::get_qp_solution(const Eigen::VectorXd &set_power, Eigen:
 
     // Solve the quadratic programming problem and get the solution
     rcpputils::check_true(solver.solveProblem() == OsqpEigen::ErrorExitFlag::NoError,
-                   "Thruster Allocator: Failed to solve QP problem.");
+                          "Thruster Allocator: Failed to solve QP problem.");
     constrained_allocs = solver.getSolution();
 }
 
