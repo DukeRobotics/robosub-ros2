@@ -117,14 +117,14 @@ To make the robot move to a [desired state](#desired-state), do the following in
     2. Publish desired velocity (if any) to the `/controls/desired_velocity` topic.
     3. Publish desired power (if any) to the `/controls/desired_power` topic.
 2. Call the `/controls/set_control_types` service to set the [control types](#control-types) for each axis, if they are different from current control types (as published to the `/controls/control_types` topic).
-3. If not already enabled, enable controls by publishing `true` to the `/controls/enabled` topic.
+3. If not already enabled, enable controls by calling the `/controls/enable` service with `data: true`.
 
 Controls will now publish the [thrust allocation vector](#thrust-allocation-vector) to the `/controls/thruster_allocs` topic, and the robot will move to the desired state.
 
 > [!IMPORTANT]
 > To check if the robot has moved to the desired state, check if the current state is close to the desired state. Do _not_ check the position or velocity errors published to the `/controls/position_error` and `/controls/velocity_error` topics, as there may be a delay between the time the desired state is published and the time the errors are updated.
 
-To stop the robot, disable controls by publishing `false` to the `/controls/enabled` topic.
+To stop the robot, disable controls by calling the `/controls/enable` service with `data: false`.
 
 If the new desired state is not significantly different from the current desired state, the PID loops do _not_ need to be reset. For example, if the robot is moving towards an object detected with CV, and the estimated position of the object changes slightly, the PID loops do _not_ need to be reset. However, if the robot is moving towards an object and then starts moving towards a different object, the PID loops _do_ need to be reset.
 
@@ -138,8 +138,8 @@ The `config` directory contains the [robot config files](#robot-config-file), wh
 #### Data
 The `data` directory contains [CSV files](#csv-files) for the [wrench matrices](#wrench-matrix) and the [wrench matrices' pseudoinverces](#wrench-matrix-pseudoinverse). These are used by the [thruster allocator](#thruster-allocator) to compute the [thrust allocation vector](#thrust-allocation-vector).
 
-#### Include
-The `include` directory contains C++ header files. These are used to define the classes and functions used in the system. See the [Code Structure](#code-structure) section for more details.
+#### Include/Controls
+The `include/controls` directory contains C++ header files. These are used to define the classes and functions used in the system. See the [Code Structure](#code-structure) section for more details.
 
 #### Launch
 The `launch` directory contains ROS launch files. These are used to start the system. See the [Launch Config](#launch-config) section for more details.
@@ -151,10 +151,10 @@ The `scripts` directory contains Python scripts. See the [Code Structure](#code-
 The `src` directory contains C++ source files. These are used to define the classes and functions used in the system. See the [Code Structure](#code-structure) section for more details.
 
 #### CMakeLists.txt
-The `CMakeLists.txt` file is used to define the build process for the system. It is used by the `catkin build` command to compile the system.
+The `CMakeLists.txt` file is used to define the build process for the system. It is used by the `colcon build` command to compile the system.
 
 #### Package.xml
-The `package.xml` file is used to define the package's dependencies and other metadata. It is used by the `catkin build` command to compile the system.
+The `package.xml` file is used to define the package's dependencies and other metadata. It is used by the `colcon build` command to compile the system.
 
 #### README.md
 The `README.md` file is used to provide documentation for the package. It is used by developers to understand how the package works.
@@ -163,42 +163,36 @@ The `README.md` file is used to provide documentation for the package. It is use
 ### Code Structure
 The code is split into the following files:
 
-#### controls_types.h
+#### controls_types.hpp
 This file defines varius enums, constants, and structs used throughout the system.
 
-#### drc_pid.h/drc_pid.cpp
+#### drc_pid.hpp/drc_pid.cpp
 This file defines the `PID` class, which implements a [PID controller](#pid-controller). It takes in the error between the [setpoint](#setpoint) and the robot's current [state](#state) and computes the [control effort](#control-effort).
 
-#### pid_manager.h/pid_manager.cpp
+#### pid_manager.hpp/pid_manager.cpp
 This file defines the `PIDManager` class, which implements a [PID loop](#pid-loop) containing six [PID controllers](#pid-controller). It takes in the difference between [desired state](#desired-state) and the robot's current [state](#state) and computes the [control effort](#control-effort) needed along each [axis](#axis) to move the robot to the desired state.
 
-#### thruster_allocator.h/thruster_allocator.cpp
+#### thruster_allocator.hpp/thruster_allocator.cpp
 This file defines the `ThrusterAllocator` class, which performs [thrust allocation](#thrust-allocation). It computes the amount of force each thruster needs to exert to achieve a given [set power](#set-power).
 
-#### controls_utils.h/controls_utils.cpp
+#### controls_utils.hpp/controls_utils.cpp
 This file defines the `ControlsUtils` namespace, which includes various helper functions used throughout the system.
 
-#### controls.h/controls.cpp
+#### controls.hpp/controls.cpp
 This file defines the `Controls` class, as well as the `main` function. It takes in the current [state](#state) and [desired state](#desired-state) and outputs a [thrust allocation vector](#thrust-allocation-vector) to achieve that state. It handles all interfaces with ROS, including publishing, subscribing, and advertising. It contains the code that drives the system, calling the other classes and functions as needed.
 
 > [!IMPORTANT]
 > The `Controls` class is the _only_ class that interfaces with ROS. Thus, this package creates only one node: `controls`.
 >
 > All other classes use pure C++ and do not depend on ROS, with the following exceptions:
-> - All classes use `ROS_ASSERT_MSG`, `ROS_ERROR`, and `ROS_WARN` to log errors and warnings and throw exceptions.
+> - All classes use `rcpputils::check_true`, `RCLCPP_ERROR`, and `RCLCPP_WARN` to log errors and warnings and throw exceptions.
 > - Some functions in `ControlsUtils` work with ROS messages.
-> - Some enums in `controls_types.h` get their values from ROS messages.
+> - Some enums in `controls_types.hpp` get their values from ROS messages.
 
 #### compute_wrench_matrix.py
 This is a Python script that computes the [wrench matrix](#wrench-matrix) and its [pseudoinverse](#wrench-matrix-pseudoinverse) for a given robot, given the thruster configuration in the [robot config file](#robot-config-file). It is used to generate the [CSV files](#csv-files) in the `data` directory.
 
 It performs all computations symbolically using the [SymPy](https://www.sympy.org) library, and only converts the results to numerical values at the end. This is done to ensure that the computations are as accurate as possible.
-
-#### comp_2023.py
-This is a Python script that contains the task planning code used at RoboSub 2023. _This file has been kept for reference purposes only and is not actively maintained._
-
-#### controls_utils.py
-This is a Python script that contains various helper functions used exclusively by the `comp_2023.py` script. _This file has been kept for reference purposes only and is not actively maintained._
 
 ## Config
 
@@ -293,11 +287,11 @@ The [`static_power_global`](#static-power-global) field contains the amount of p
 
 The [`power_scale_factor`](#power-scale-factor) field contains the factor by which the [set power unscaled](#set-power-unscaled) should be multiplied to get the [set power](#set-power). It is a scalar value.
 
-The `thrusters` field contains information about each thruster. From top to bottom, the thrusters in this file should be in the _same order that is expected by offboard comms,_ in the `allocs` part of the `custom_msgs/ThrusterAllocs` message. Each thruster config contains the following subfields:
+The `thrusters` field contains information about each thruster. From top to bottom, the thrusters in this file should be in the _same order that is expected by offboard comms,_ in the `allocs` part of the `custom_msgs/msg/ThrusterAllocs` message. Each thruster config contains the following subfields:
 - `name`: The uniquely identifying  name of the thruster. Not used by the system; included for human use only.
 - `type`: The thruster's model type, such as T200. Not used by the system; included for human use only.
 - `pos`: The position of the thruster in the `base_link` frame. In other words, the position of the thruster relative to the robot's center of mass. The x, y, and z coordinates are given in that order in meters.
-- `rpy`: The orientation of the thruster in the `base_link` frame, using extrinsic Euler angles. The rotations are performed specified in the order: roll, pitch, yaw. They are also given in that order in degrees. For example:
+- `rpy`: The orientation of the thruster in the `base_link` frame, using extrinsic Euler angles. The rotations are performed in the order: roll, pitch, yaw. They are also given in that order in degrees. For example:
     - An orientation of `[0, 0, 0]` means when the thruster is commanded to exert positive power, it will push the robot in the positive x direction.
     - An orientation of `[0, 0, 180]` means the thruster is rotated 180 degrees around the z axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative x direction.
     - An orientation of `[0, 90, 0]` means the thruster is rotated 90 degrees around the y axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative z direction.
@@ -337,12 +331,13 @@ Each of these launch files contains the following parameters:
 > If `cascaded_pid` is `true`, then both `enable_position_pid` and `enable_velocity_pid` must also be `true` for the robot to move to the desired position, as both position and velocity PID loops are required to move the robot to the desired position when they are cascaded.
 
 ## Dependencies
+### TODO: Update URLs in this section
 ### ROS
 - [resource_retriever](http://wiki.ros.org/resource_retriever): A ROS package that provides C++ and Python interfaces for retrieving data from URLs. It is used by the system to read and write the [robot config files](#robot-config-file) and [CSV files](#csv-files).
-- [roscpp](http://wiki.ros.org/roscpp): The C++ client library for ROS. It is used by the system to interface with ROS.
-- [roslib](http://wiki.ros.org/roslib): The core library for ROS. It is used by the system to interface with ROS.
+- [ament_index_cpp](TODO): A ROS package that provides a C++ interface for retrieving data from URLs. It is used by the system to read and write the [robot config files](#robot-config-file) and [CSV files](#csv-files).
+- [rclcpp](TODO): The C++ client library for ROS. It is used by the system to interface with ROS.
+- [TODO roslib](http://wiki.ros.org/roslib): The core library for ROS. It is used by the system to interface with ROS.
 - [rospy](http://wiki.ros.org/rospy): The Python client library for ROS. It is used by the Python scripts to interface with ROS.
-- [tf](http://wiki.ros.org/tf): The first version of the ROS transformation library. It is used by the `comp_2023.py` script to transform between different frames.
 - [tf2_ros](http://wiki.ros.org/tf2): The second version of the ROS transformation library. It is used by the system to transform between different frames.
 
 ### ROS Messages
@@ -353,6 +348,8 @@ Each of these launch files contains the following parameters:
 - [std_srvs](http://wiki.ros.org/std_srvs): ROS services for common data types such as booleans and empty requests.
 
 ### Non-ROS C++
+- [chrono] TODO
+- [fmt] TODO
 - [Eigen3](https://eigen.tuxfamily.org): A C++ library for linear algebra. It is used by the system to perform matrix operations.
 - [OSQP](https://osqp.org): A C library for solving [quadratic programming](#quadratic-programming) problems. It is used by the [thruster allocator](#thruster-allocator) to compute the [thrust allocation vector](#thrust-allocation-vector).
 - [OSQP-Eigen](https://robotology.github.io/osqp-eigen): A C++ wrapper for OSQP. It is used by the system to interface with OSQP.
