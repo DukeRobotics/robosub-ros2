@@ -31,7 +31,8 @@ import git
 ORGANIZATION = 'dukerobotics'
 
 if (SYSTEM := platform.system()) not in ('Linux', 'Darwin', 'Windows'):
-    raise SystemExit(f'Unsupported platform: {SYSTEM}')
+    msg = f'Unsupported platform: {SYSTEM}'
+    raise SystemExit(msg)
 
 STUDIO_DATASTORES_PATH = {
     'Linux': pathlib.Path.home() / '.config/Foxglove Studio/studio-datastores/',
@@ -47,7 +48,7 @@ LAYOUTS_PATH = FOXGLOVE_PATH / 'layouts'
 
 
 def run_at_path(command: str | Sequence[str], directory: pathlib.Path, system: str = SYSTEM,
-                windows_append_cmd: bool = True):
+                windows_append_cmd: bool = True) -> None:
     """
     Run a command at a given path.
 
@@ -62,21 +63,19 @@ def run_at_path(command: str | Sequence[str], directory: pathlib.Path, system: s
         subprocess.CalledProcessError: If command returns non-zero exit code.
     """
     if not command:
-        raise ValueError('Command must not be empty')
+        msg = 'Command must not be empty'
+        raise ValueError(msg)
 
-    if isinstance(command, str):
-        args = command.split(' ')
-    else:
-        args = list(command)
+    args = command.split(' ') if isinstance(command, str) else list(command)
 
     if system == 'Windows' and windows_append_cmd:
         args[0] += '.cmd'
 
     print(f'{directory.name}: {command}')
-    subprocess.run(args, cwd=directory, check=True)
+    subprocess.run(args, cwd=directory, check=True)  # noqa: S603
 
 
-def check_npm():
+def check_npm() -> None:
     """
     Check if npm is installed.
 
@@ -85,11 +84,12 @@ def check_npm():
     """
     try:
         run_at_path('npm -v', FOXGLOVE_PATH)
-    except (FileNotFoundError, subprocess.CalledProcessError):
-        raise SystemExit('npm not found. Install npm and try again.')
+    except (FileNotFoundError, subprocess.CalledProcessError) as e:
+        msg = 'npm not found. Install npm and try again.'
+        raise SystemExit(msg) from e
 
 
-def check_foxglove_cli():
+def check_foxglove_cli() -> None:
     """
     Check if the Foxglove CLI is installed.
 
@@ -98,15 +98,17 @@ def check_foxglove_cli():
     """
     try:
         run_at_path('foxglove version', FOXGLOVE_PATH)
-    except (FileNotFoundError, subprocess.CalledProcessError):
-        raise SystemExit('The Foxglove CLI was not found. Install the Foxglove CLI and try again.')
+    except (FileNotFoundError, subprocess.CalledProcessError) as e:
+        msg = 'The Foxglove CLI was not found. Install the Foxglove CLI and try again.'
+        raise SystemExit(msg) from e
 
 
-def build_deps(skip_ci: bool = False, extension_paths: Sequence[pathlib.Path] = EXTENSION_PATHS):
+def build_deps(skip_ci: bool = False, extension_paths: Sequence[pathlib.Path] = EXTENSION_PATHS) -> None:
     """
     Build all necessary dependencies for Foxglove.
 
     Args:
+        skip_ci: If True, use existing node_modules instead of clean installing external dependencies.
         extension_paths: Sequence of extension paths to build.
     """
     run = functools.partial(run_at_path, directory=FOXGLOVE_PATH)
@@ -140,7 +142,7 @@ def build_deps(skip_ci: bool = False, extension_paths: Sequence[pathlib.Path] = 
         run_at_path('npm run build-deps --if-present', extension)
 
 
-def install_extensions(extension_paths: Sequence[pathlib.Path]):
+def install_extensions(extension_paths: Sequence[pathlib.Path]) -> None:
     """
     Install custom Foxglove extensions.
 
@@ -162,7 +164,7 @@ def install_extensions(extension_paths: Sequence[pathlib.Path]):
     print(f'Successfully installed {successes} extension(s)\n')
 
 
-def publish_extensions(extension_paths: Sequence[pathlib.Path], version: str = None):
+def publish_extensions(extension_paths: Sequence[pathlib.Path], version: str | None = None) -> None:
     """
     Publish custom Foxglove extensions.
 
@@ -176,7 +178,8 @@ def publish_extensions(extension_paths: Sequence[pathlib.Path], version: str = N
     repo = git.Repo(path=FOXGLOVE_PATH.parent)
     is_dirty = repo.is_dirty(untracked_files=True, path=FOXGLOVE_PATH)
     if is_dirty and version is None:
-        raise SystemExit('The foxglove directory is dirty! Commit changes before publishing.')
+        msg = 'The foxglove directory is dirty! Commit changes before publishing.'
+        raise SystemExit(msg)
     if version is None:
         version = repo.head.object.hexsha[:7]
 
@@ -187,10 +190,10 @@ def publish_extensions(extension_paths: Sequence[pathlib.Path], version: str = N
             continue
 
         # Update package.json version
-        with open(extension / 'package.json') as file:
+        with (extension / 'package.json').open() as file:
             package = json.load(file)
         package['version'] = version
-        with open(extension / 'package.json', 'w') as file:
+        with (extension / 'package.json').open('w') as file:
             json.dump(package, file, indent=2)
 
         # Build extension package
@@ -210,7 +213,8 @@ def publish_extensions(extension_paths: Sequence[pathlib.Path], version: str = N
     print(f'Successfully published {successes} extension(s)\n')
 
 
-def install_layouts(layouts_path: pathlib.Path = LAYOUTS_PATH, install_path: pathlib.Path = LAYOUT_INSTALL_PATH):
+def install_layouts(layouts_path: pathlib.Path = LAYOUTS_PATH,
+                    install_path: pathlib.Path = LAYOUT_INSTALL_PATH) -> None:
     """
     Install custom Foxglove layouts.
 
@@ -220,7 +224,7 @@ def install_layouts(layouts_path: pathlib.Path = LAYOUTS_PATH, install_path: pat
     """
     successes = 0
     for layout in layouts_path.glob('*.json'):
-        with open(layout) as f:
+        with (layout).open() as f:
             data = json.load(f)
 
         baseline = {
@@ -228,26 +232,26 @@ def install_layouts(layouts_path: pathlib.Path = LAYOUTS_PATH, install_path: pat
             'savedAt': datetime.datetime.now(datetime.UTC).isoformat(),
         }
 
-        id = f'{ORGANIZATION}.{layout.stem}'
+        _id = f'{ORGANIZATION}.{layout.stem}'
         name = layout.stem
         packaged_layout = {
-            'id': id,
+            'id': _id,
             'name': name,
             'permission': 'CREATOR_WRITE',
             'baseline': baseline,
         }
 
-        with open(install_path / id, 'w') as f:
+        with (install_path / _id).open('w') as f:
             json.dump(packaged_layout, f)
 
-        print(f'{id}: installed')
+        print(f'{_id}: installed')
 
         successes += 1
 
     print(f'Successfully installed {successes} layout(s)\n')
 
 
-def uninstall_extensions(install_path: pathlib.Path = EXTENSION_INSTALL_PATH):
+def uninstall_extensions(install_path: pathlib.Path = EXTENSION_INSTALL_PATH) -> None:
     """
     Uninstall all Duke Robotics extensions from Foxglove.
 
@@ -264,7 +268,7 @@ def uninstall_extensions(install_path: pathlib.Path = EXTENSION_INSTALL_PATH):
     print(f'Successfully uninstalled {len(extensions)} extension(s)\n')
 
 
-def uninstall_layouts():
+def uninstall_layouts() -> None:
     """
     Uninstall all Duke Robotics layouts from Foxglove.
 
@@ -276,7 +280,7 @@ def uninstall_layouts():
     remote_layouts = [d for d in STUDIO_DATASTORES_PATH.iterdir() if d.name.startswith('layouts-remote')]
 
     successes = 0
-    for path in (remote_layouts + [LAYOUT_INSTALL_PATH]):
+    for path in ([*remote_layouts, LAYOUT_INSTALL_PATH]):
         layouts = [d for d in path.iterdir() if d.name.startswith(ORGANIZATION)]
         for layout in layouts:
             layout.unlink()
@@ -287,7 +291,7 @@ def uninstall_layouts():
     print(f'Successfully uninstalled {successes} layouts(s)\n')
 
 
-def extension_package(name: str, extension_paths: Sequence[pathlib.Path] = EXTENSION_PATHS):
+def extension_package(name: str, extension_paths: Sequence[pathlib.Path] = EXTENSION_PATHS) -> pathlib.Path:
     """
     Type for argparse that checks if a given extension name is valid.
 
@@ -305,10 +309,11 @@ def extension_package(name: str, extension_paths: Sequence[pathlib.Path] = EXTEN
         if name == extension.name:
             return extension
 
-    raise argparse.ArgumentTypeError(f'{name} is not a valid extension name')
+    msg = f'{name} is not a valid extension name'
+    raise argparse.ArgumentTypeError(msg)
 
 
-def create_new_layout(name: str, install_path: pathlib.Path = LAYOUT_INSTALL_PATH):
+def create_new_layout(name: str, install_path: pathlib.Path = LAYOUT_INSTALL_PATH) -> None:
     """
     Create a new layout in Foxglove Desktop.
 
@@ -319,7 +324,7 @@ def create_new_layout(name: str, install_path: pathlib.Path = LAYOUT_INSTALL_PAT
         name: Name of the new layout.
         install_path: Path to install layouts to.
     """
-    with open('empty-layout.json') as f:
+    with ('empty-layout.json').open() as f:
         data = json.load(f)
 
     baseline = {
@@ -327,22 +332,20 @@ def create_new_layout(name: str, install_path: pathlib.Path = LAYOUT_INSTALL_PAT
         'savedAt': datetime.datetime.now(datetime.UTC).isoformat(),
     }
 
-    id = f'{ORGANIZATION}.{name}'
+    _id = f'{ORGANIZATION}.{name}'
     packaged_layout = {
-        'id': id,
+        'id': _id,
         'name': name,
         'permission': 'CREATOR_WRITE',
         'baseline': baseline,
     }
 
-    with open(install_path / id, 'w') as f:
+    with (install_path / _id, 'w').open() as f:
         json.dump(packaged_layout, f)
 
 
-def clean_foxglove():
-    """
-    Clean up the foxglove monorepo.
-    """
+def clean_foxglove() -> None:
+    """Clean up the foxglove monorepo."""
     run_at_path('git clean -fdx', FOXGLOVE_PATH, windows_append_cmd=False)
 
 
