@@ -75,7 +75,7 @@ class DVLOdomPublisher(Node):
         odom.child_frame_id = 'dvl_link'
 
         # set twist (set angular velocity to (0, 0, 0), should not be used)
-        odom.twist.twist = Twist(linear=Vector3(x=vx, v=vy, z=vz), angular=Vector3(x=0.0, y=0.0, z=0.0))
+        odom.twist.twist = Twist(linear=Vector3(x=vx, y=vy, z=vz), angular=Vector3(x=0.0, y=0.0, z=0.0))
         odom.twist.covariance[0] = 0.01
         odom.twist.covariance[7] = 0.01
         odom.twist.covariance[14] = 0.01
