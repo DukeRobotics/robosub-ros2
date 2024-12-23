@@ -14,8 +14,5 @@
     "watch:local-install": "nodemon --watch './src/**' -e ts,tsx --exec 'npm run local-install'",
     "package": "foxglove-extension package",
     "pretest": "foxglove-extension pretest"
-  },
-  "dependencies": {
-    "@textea/json-viewer": "^3.2.3"
   }
 }
