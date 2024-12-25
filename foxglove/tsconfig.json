@@ -1,7 +1,7 @@
 {
   "extends": "create-foxglove-extension/tsconfig/tsconfig.json",
 
-  "include": ["./extensions/*/src/**/*", "./shared/*/src/**/*", "./shared/defs/types/**/*"],
+  "include": ["./extensions/*/src/**/*", "./shared/*/src/**/*"],
   "compilerOptions": {
     "moduleResolution": "NodeNext",
     "module": "NodeNext",
