@@ -35,7 +35,7 @@ jobs:
         run: docker compose up -d
 
       - name: Install Node.js dependencies
-        run: docker compose exec robosub-ros2 npm ci
+        run: docker compose exec robosub-ros2 /root/.nvm/versions/node/v22.12.0/bin/npm ci
 
       - name: Lint Files
         run: |
