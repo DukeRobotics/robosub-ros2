@@ -63,6 +63,12 @@ class LintLanguage(Enum):
         lint_command=   f'npx --yes eslint {{path}} --config {ESLINT_CONFIG_PATH} --no-warn-ignored',
         autofix_command=f'npx --yes eslint {{path}} --config {ESLINT_CONFIG_PATH} --no-warn-ignored --fix',
     )
+    JAVASCRIPT = LintLanguageProperties(
+        name='javascript',
+        file_extensions=['.js', '.jsx'],
+        lint_command=   f'npx --yes eslint {{path}} --config {ESLINT_CONFIG_PATH} --no-warn-ignored',
+        autofix_command=f'npx --yes eslint {{path}} --config {ESLINT_CONFIG_PATH} --no-warn-ignored --fix',
+    )
 
 # Map from LintLanguage name to LintLanguage
 STR_TO_LINT_LANGUAGE = {lang.value.name: lang for lang in LintLanguage}
