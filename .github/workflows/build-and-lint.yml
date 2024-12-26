@@ -34,6 +34,9 @@ jobs:
         id: run-docker
         run: docker compose up -d
 
+      - name: Install Node.js dependencies
+        run: docker compose exec robosub-ros2 npm ci
+
       - name: Lint Files
         run: |
           docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --output-type capture --sort --github-action --no-git-tree
