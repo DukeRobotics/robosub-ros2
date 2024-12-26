@@ -119,14 +119,14 @@ function ThrusterAllocsPanel({ context }: { context: PanelExtensionContext }): J
     renderDone?.();
   }, [renderDone]);
 
-  // useEffect hook for subscribing to THRUSTER_ALLOCS_TOPIC
+  // Subscribe to THRUSTER_ALLOCS_TOPIC
   useEffect(() => {
     context.saveState({ topic: THRUSTER_ALLOCS_TOPIC });
     context.subscribe([{ topic: THRUSTER_ALLOCS_TOPIC }]);
   }, [context]);
 
-  // useEffect hook to start or stop publishing messages at a constant rate.
-  // Returns early when the panel is first mounted, which is needed for correct panel behavior subsequently.
+  // Start or stop publishing messages at a constant rate
+  // Return early when the panel is first mounted, which is needed for correct panel behavior subsequently
   useEffect(() => {
     if (firstMount.current) {
       firstMount.current = false;
@@ -137,13 +137,14 @@ function ThrusterAllocsPanel({ context }: { context: PanelExtensionContext }): J
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.publisherThrusterAllocs]);
 
-  // useEffect hook for rendering and watching renderState. Saves the values from the most recent message.
+  // Render and watch renderState
+  // Save the value from the most recent message
   useEffect(() => {
     context.onRender = (renderState: Immutable<RenderState>, done) => {
       setRenderDone(() => done);
       setState((oldState) => ({ ...oldState, colorScheme: renderState.colorScheme }));
 
-      // Save the most recent message on our topic.
+      // Save the most recent message on our topic
       if (renderState.currentFrame && renderState.currentFrame.length > 0) {
         const latestFrame = renderState.currentFrame[
           renderState.currentFrame.length - 1

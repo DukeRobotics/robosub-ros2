@@ -25,21 +25,22 @@ function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): J
     renderDone?.();
   }, [renderDone]);
 
-  // useEffect hook for subscribing to CONTROLS_STATUS_TOPIC
+  // Subscribe to CONTROLS_STATUS_TOPIC
   useEffect(() => {
     context.saveState({ topic: CONTROLS_STATUS_TOPIC });
     context.subscribe([{ topic: CONTROLS_STATUS_TOPIC }]);
   }, [context]);
 
-  // useEffect hook for rendering and watching renderState. Saves the values from the most recent message.
+  // Render and watch renderState
+  // Save the value from the most recent message
   useEffect(() => {
     context.onRender = (renderState: Immutable<RenderState>, done) => {
       setRenderDone(() => done);
 
-      // Save the most recent message on our topic.
+      // Save the most recent message on our topic
       if (renderState.currentFrame && renderState.currentFrame.length > 0) {
         const latestFrame = renderState.currentFrame[renderState.currentFrame.length - 1] as MessageEvent<StdMsgsBool>;
-        setState((oldState) => ({ ...oldState, controlsEnabled: latestFrame.message.data as boolean }));
+        setState((oldState) => ({ ...oldState, controlsEnabled: latestFrame.message.data }));
       }
     };
 

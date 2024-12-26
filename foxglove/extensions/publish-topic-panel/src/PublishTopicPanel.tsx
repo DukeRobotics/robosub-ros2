@@ -25,7 +25,7 @@ function PublishTopicPanel({ context }: { context: PanelExtensionContext }): JSX
     return {
       topicName: initialState?.topicName ?? "",
       request: initialState?.request ?? "{\n\n}",
-      schemaType: (initialState?.schemaType ?? "ros1") as keyof AllDatatypeMapsType,
+      schemaType: initialState?.schemaType ?? "ros1",
       schemaName: initialState?.schemaName ?? undefined,
       publishRate: initialState?.publishRate ?? 1,
       repeatPublish: null,

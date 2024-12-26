@@ -286,7 +286,7 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
                             "& .MuiOutlinedInput-root": {
                               "& fieldset": {
                                 // Border color is red if in edit mode, otherwise divider color
-                                borderColor: `${inEditMode ? theme.palette.error.main : theme.palette.divider}`,
+                                borderColor: inEditMode ? theme.palette.error.main : theme.palette.divider,
                               },
                             },
                           }}
