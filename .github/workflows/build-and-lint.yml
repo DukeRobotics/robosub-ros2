@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Create .env file with NO_GIT
         run: echo "NO_GIT=true" > .env
@@ -42,7 +44,7 @@ jobs:
 
       - name: Lint Files
         run: |
-          docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --output-type capture --sort --github-action --no-git-tree
+          docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --output-type capture --sort --github-action
 
       - name: Build ROS2
         if: always() && steps.run-docker.outcome == 'success'
