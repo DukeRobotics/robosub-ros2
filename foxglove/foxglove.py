@@ -383,6 +383,11 @@ if __name__ == '__main__':
         action='store_true',
         help='Use existing node_modules instead of clean installing external dependencies.',
     )
+    install_parser.add_argument(
+        '--skip-build',
+        action='store_true',
+        help='Skip preliminary build steps.',
+    )
 
     uninstall_parser = subparsers.add_parser(
         'uninstall',
@@ -441,7 +446,8 @@ if __name__ == '__main__':
 
         if args.extensions is not None:
             check_npm()
-            build_deps(skip_ci=args.skip_ci, extension_paths=args.extensions)
+            if not args.skip_build:
+                build_deps(skip_ci=args.skip_ci, extension_paths=args.extensions)
             install_extensions(args.extensions)
         if args.layouts:
             install_layouts()
