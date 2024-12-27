@@ -8,5 +8,5 @@ set -e
 
 source /root/ros_bashrc.sh
 
-cd foxglove
+cd /root/dev/robosub-ros2/foxglove
 npm ci
