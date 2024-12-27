@@ -134,7 +134,7 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
           error,
         }));
       },
-      (error) => {
+      (error: unknown) => {
         // Handle service call errors (e.g., service is not advertised)
         setState((prevState) => ({
           ...prevState,

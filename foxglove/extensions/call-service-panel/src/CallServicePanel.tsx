@@ -61,7 +61,7 @@ function CallServicePanel({ context }: { context: PanelExtensionContext }): JSX.
           error: undefined,
         }));
       },
-      (error) => {
+      (error: unknown) => {
         // Handle service call errors (e.g., service is not advertised)
         setState((oldState) => ({ ...oldState, error: error as Error }));
       },

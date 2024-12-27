@@ -5,7 +5,7 @@ import { PanelExtensionContext, RenderState, Immutable, MessageEvent } from "@fo
 import { TextField, Button, Alert, Tab, Tabs, CssBaseline, Box } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
 import { ThemeProvider } from "@mui/material/styles";
-import { useCallback, useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 
 import { allThrusterOrders } from "../dist";
@@ -77,7 +77,7 @@ const thrusters: (keyof ThrusterAllocs)[] = [
 const thrustersInOrder: (keyof ThrusterAllocs)[] = allThrusterOrders[ROBOT] as (keyof ThrusterAllocs)[];
 
 // React component for Thruster Allocs Panel
-function ThrusterAllocsPanel({ context }: { context: PanelExtensionContext }): JSX.Element {
+function ThrusterAllocsPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   // Panel state initialization
   const [renderDone, setRenderDone] = useState<() => void | undefined>();
   const firstMount = useRef(true);

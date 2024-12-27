@@ -3,7 +3,7 @@ import useTheme from "@duke-robotics/theme";
 import { PanelExtensionContext } from "@foxglove/extension";
 import { Autocomplete, Box, Button, Grid, InputAdornment, TextField, ThemeProvider } from "@mui/material";
 import Alert from "@mui/material/Alert";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 type PublishTopicPanelState = {
@@ -18,7 +18,7 @@ type PublishTopicPanelState = {
   error?: Error;
 };
 
-function PublishTopicPanel({ context }: { context: PanelExtensionContext }): JSX.Element {
+function PublishTopicPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [state, setState] = useState<PublishTopicPanelState>(() => {
     const initialState = context.initialState as PublishTopicPanelState | undefined;
 
