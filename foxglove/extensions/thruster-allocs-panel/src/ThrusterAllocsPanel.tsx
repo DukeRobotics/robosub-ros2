@@ -310,11 +310,13 @@ function ThrusterAllocsPanel({ context }: { context: PanelExtensionContext }): J
                       ? state.subscriberThrusterAllocs[thruster]
                       : state.tempThrusterAllocs[thruster]
                   }
-                  inputProps={state.panelMode === PanelMode.PUBLISHING ? { step: 0.1 } : {}}
-                  InputProps={state.panelMode === PanelMode.SUBSCRIBING ? { readOnly: true } : {}}
                   defaultValue={state.panelMode === PanelMode.SUBSCRIBING ? false : 0}
                   onChange={updateTempAllocs}
                   fullWidth
+                  slotProps={{
+                    input: state.panelMode === PanelMode.SUBSCRIBING ? { readOnly: true } : {},
+                    htmlInput: state.panelMode === PanelMode.PUBLISHING ? { step: 0.1 } : {},
+                  }}
                 />
               </Grid>
             ))}

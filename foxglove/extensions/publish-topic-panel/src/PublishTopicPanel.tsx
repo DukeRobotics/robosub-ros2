@@ -136,8 +136,10 @@ function PublishTopicPanel({ context }: { context: PanelExtensionContext }): JSX
                   topicName: event.target.value,
                 }));
               }}
-              InputProps={{
-                startAdornment: <InputAdornment position="start">/</InputAdornment>,
+              slotProps={{
+                input: {
+                  startAdornment: <InputAdornment position="start">/</InputAdornment>,
+                },
               }}
             />
           </Grid>
@@ -154,8 +156,10 @@ function PublishTopicPanel({ context }: { context: PanelExtensionContext }): JSX
               defaultValue={state.publishRate}
               disabled={state.repeatPublish != null}
               onChange={handleRateChange}
-              InputProps={{
-                endAdornment: <InputAdornment position="end">Hz</InputAdornment>,
+              slotProps={{
+                input: {
+                  endAdornment: <InputAdornment position="end">Hz</InputAdornment>,
+                },
               }}
             />
           </Grid>

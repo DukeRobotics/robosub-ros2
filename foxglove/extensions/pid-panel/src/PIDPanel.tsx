@@ -290,8 +290,8 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
                               },
                             },
                           }}
-                          inputProps={{ step: 0.1 }}
-                          value={inEditMode ? undefined : gain} // Display the true gain value if not in edit mode
+                          // Display the true gain value if not in edit mode
+                          value={inEditMode ? undefined : gain}
                           onFocus={() => {
                             // Add the current gain to editedGains when entering edit mode
                             updateEditedGains(state.pid[state.loop]![Number(axis)]![gainType]!, Number(axis), gainType);
@@ -299,6 +299,9 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
                           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                             // Update editedGains when the input value changes
                             updateEditedGains(Number(event.target.value), Number(axis), gainType);
+                          }}
+                          slotProps={{
+                            htmlInput: { step: 0.1 },
                           }}
                         />
                       </TableCell>
