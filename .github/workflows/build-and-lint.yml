@@ -42,10 +42,9 @@ jobs:
         run: |
           docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build-foxglove.sh
 
-      # docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --output-type capture --sort --github-action
       - name: Lint Files
         run: |
-          docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py
+          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/lint.sh
 
       - name: Build ROS2
         if: always() && steps.run-docker.outcome == 'success'
