@@ -1,8 +1,9 @@
 import { AllDatatypeMapsType, allDatatypeMaps } from "@duke-robotics/defs/datatype_maps";
 import useTheme from "@duke-robotics/theme";
 import { PanelExtensionContext } from "@foxglove/extension";
-import { Autocomplete, Box, Button, Grid, InputAdornment, TextField, ThemeProvider } from "@mui/material";
+import { Autocomplete, Box, Button, InputAdornment, TextField, ThemeProvider } from "@mui/material";
 import Alert from "@mui/material/Alert";
+import Grid from "@mui/material/Grid2";
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -120,7 +121,7 @@ function PublishTopicPanel({ context }: { context: PanelExtensionContext }): Rea
         )}
 
         <Grid container spacing={1}>
-          <Grid item xs={8}>
+          <Grid size={{ xs: 8 }}>
             {/* Topic Name Input */}
             <TextField
               label="Topic Name"
@@ -143,7 +144,7 @@ function PublishTopicPanel({ context }: { context: PanelExtensionContext }): Rea
               }}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid size={{ xs: 4 }}>
             {/* Rate Input */}
             <TextField
               label="Rate"
@@ -166,7 +167,7 @@ function PublishTopicPanel({ context }: { context: PanelExtensionContext }): Rea
         </Grid>
 
         <Grid container spacing={1}>
-          <Grid item xs={4}>
+          <Grid size={{ xs: 4 }}>
             {/* Schema Type Input */}
             <Autocomplete
               fullWidth
@@ -183,7 +184,7 @@ function PublishTopicPanel({ context }: { context: PanelExtensionContext }): Rea
               renderInput={(params) => <TextField {...params} label="Schema Type" margin="dense" size="small" />}
             />
           </Grid>
-          <Grid item xs={8}>
+          <Grid size={{ xs: 8 }}>
             {/* Schema Name Input */}
             <Autocomplete
               fullWidth
@@ -220,7 +221,7 @@ function PublishTopicPanel({ context }: { context: PanelExtensionContext }): Rea
 
         <Box my={1}>
           <Grid container spacing={1}>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               {/* Publish Once Button */}
               <Button
                 fullWidth
@@ -237,7 +238,7 @@ function PublishTopicPanel({ context }: { context: PanelExtensionContext }): Rea
                 {`Publish Once`}
               </Button>
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               {/* Rate Publishing Toggle */}
               <Button
                 fullWidth

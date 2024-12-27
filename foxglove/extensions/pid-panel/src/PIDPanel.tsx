@@ -20,9 +20,9 @@ import {
   Table,
   Box,
   Button,
-  Grid,
   TextField,
 } from "@mui/material";
+import Grid from "@mui/material/Grid2";
 import { ThemeProvider } from "@mui/material/styles";
 import React, { useEffect, useState } from "react";
 import { JSX } from "react/jsx-runtime";
@@ -316,12 +316,12 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
         {/* Buttons */}
         <Box my={1}>
           <Grid container spacing={1}>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <Button variant="contained" fullWidth onClick={handleReset} color="error">
                 Reset
               </Button>
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <Button
                 variant="contained"
                 fullWidth

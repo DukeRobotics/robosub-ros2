@@ -3,7 +3,7 @@ import { CustomMsgsThrusterAllocs } from "@duke-robotics/defs/types";
 import useTheme from "@duke-robotics/theme";
 import { PanelExtensionContext, RenderState, Immutable, MessageEvent } from "@foxglove/extension";
 import { TextField, Button, Alert, Tab, Tabs, CssBaseline, Box } from "@mui/material";
-import Grid from "@mui/material/Unstable_Grid2";
+import Grid from "@mui/material/Grid2";
 import { ThemeProvider } from "@mui/material/styles";
 import React, { useCallback, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
@@ -296,7 +296,7 @@ function ThrusterAllocsPanel({ context }: { context: PanelExtensionContext }): R
           displays TextFields for user to input thruster allocs values */}
           <Grid container rowSpacing={1} columnSpacing={0}>
             {thrusters.map((thruster) => (
-              <Grid key={thruster} xs={6}>
+              <Grid key={thruster} size={{ xs: 6 }}>
                 <TextField
                   type="number"
                   key={thruster}
