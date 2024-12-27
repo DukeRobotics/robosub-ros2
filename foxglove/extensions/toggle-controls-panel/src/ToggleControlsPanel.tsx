@@ -5,7 +5,7 @@ import { PanelExtensionContext, RenderState, Immutable, MessageEvent } from "@fo
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button/Button";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 
 // Define the service name for enabling/disabling controls
@@ -17,7 +17,7 @@ type ToggleControlsPanel = {
   controlsEnabled: boolean; // Current state of controls
 };
 
-function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): JSX.Element {
+function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [state, setState] = useState<ToggleControlsPanel>({ controlsEnabled: false });
   const [renderDone, setRenderDone] = useState<() => void | undefined>();
 
@@ -59,7 +59,7 @@ function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): J
     const request: StdSrvsSetBoolRequest = { data: !state.controlsEnabled };
 
     // Make the service call
-    context.callService(ENABLE_CONTROLS_SERVICE, request).catch((error) => {
+    context.callService(ENABLE_CONTROLS_SERVICE, request).catch((error: unknown) => {
       // Handle service call errors (e.g., service is not advertised)
       setState((oldState) => ({
         ...oldState,

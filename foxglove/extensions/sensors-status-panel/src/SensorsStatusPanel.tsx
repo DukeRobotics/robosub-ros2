@@ -67,7 +67,7 @@ const initState = () => {
   return state as SensorsStatusPanelState;
 };
 
-function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): JSX.Element {
+function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
   const [state, setState] = useState<SensorsStatusPanelState>(initState());
 

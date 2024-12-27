@@ -9,7 +9,7 @@ import useTheme from "@duke-robotics/theme";
 import { Immutable, PanelExtensionContext, RenderState } from "@foxglove/extension";
 import { Button, Box, Alert, ThemeProvider } from "@mui/material";
 import { JsonViewer } from "@textea/json-viewer";
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 const DEBUG = false; // Set to true to display live transformed joystick inputs
@@ -115,7 +115,7 @@ type ToggleJoystickPanelState = {
   joystickConnected: boolean;
 };
 
-function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): JSX.Element {
+function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
   const [state, setState] = useState<ToggleJoystickPanelState>({
     joystickEnabled: false,
@@ -159,6 +159,7 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): J
       ? CustomMsgsControlTypesConst.DESIRED_POSITION
       : CustomMsgsControlTypesConst.DESIRED_POWER;
     const request: CustomMsgsSetControlTypesRequest = {
+      // eslint-disable-next-line camelcase
       control_types: {
         x: desiredControl,
         y: desiredControl,
@@ -182,7 +183,7 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): J
           setState((prevState) => ({ ...prevState, error: Error(typedResponse.message) }));
         }
       },
-      (error) => {
+      (error: unknown) => {
         // Handle service call errors (e.g., service is not advertised)
         setState((prevState) => ({ ...prevState, error: error as Error }));
       },

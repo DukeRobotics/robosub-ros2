@@ -12,7 +12,7 @@ import {
   TableRow,
   ThemeProvider,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 // Topic to watch for system usage data
@@ -29,7 +29,7 @@ type SystemStatusPanelState = {
   temperature?: number;
 };
 
-function SystemStatusPanel({ context }: { context: PanelExtensionContext }): JSX.Element {
+function SystemStatusPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
   const [state, setState] = useState<SystemStatusPanelState>({});
 

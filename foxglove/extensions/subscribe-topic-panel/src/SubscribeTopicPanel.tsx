@@ -2,7 +2,7 @@ import useTheme from "@duke-robotics/theme";
 import { PanelExtensionContext, RenderState, Topic, MessageEvent, Immutable } from "@foxglove/extension";
 import { Autocomplete, Box, TextField, ThemeProvider } from "@mui/material";
 import { JsonViewer } from "@textea/json-viewer";
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { createRoot } from "react-dom/client";
 
 type SubscribeTopicPanelState = {
@@ -12,10 +12,10 @@ type SubscribeTopicPanelState = {
   message?: MessageEvent;
 };
 
-function SubscribeTopicPanel({ context }: { context: PanelExtensionContext }): JSX.Element {
+function SubscribeTopicPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
 
-  // Restore our state from the layout via the context.initialState property.
+  // Restore our state from the layout via the context.initialState property
   const [state, setState] = useState<SubscribeTopicPanelState>(() => {
     return context.initialState as SubscribeTopicPanelState;
   });
@@ -24,18 +24,18 @@ function SubscribeTopicPanel({ context }: { context: PanelExtensionContext }): J
   const topics = useMemo(() => state.topics ?? [], [state.topics]);
 
   useEffect(() => {
-    // Save our state to the layout when the topic changes.
+    // Save our state to the layout when the topic changes
     context.saveState({ topic: state.topic });
 
     if (state.topic) {
-      // Subscribe to the new image topic when a new topic is chosen.
+      // Subscribe to the new image topic when a new topic is chosen
       context.subscribe([{ topic: state.topic }]);
     } else {
       context.unsubscribeAll();
     }
   }, [context, state.topic]);
 
-  // Setup our onRender function and start watching topics and currentFrame for messages.
+  // Setup our onRender function and start watching topics and currentFrame for messages
   useEffect(() => {
     context.onRender = (renderState: Immutable<RenderState>, done) => {
       setRenderDone(() => done);
@@ -45,7 +45,7 @@ function SubscribeTopicPanel({ context }: { context: PanelExtensionContext }): J
         colorScheme: renderState.colorScheme,
       }));
 
-      // Save the most recent message on our topic.
+      // Save the most recent message on our topic
       if (renderState.currentFrame && renderState.currentFrame.length > 0) {
         const lastFrame = renderState.currentFrame.at(-1) as MessageEvent;
 
@@ -58,7 +58,7 @@ function SubscribeTopicPanel({ context }: { context: PanelExtensionContext }): J
     context.watch("colorScheme");
   }, [context]);
 
-  // Call our done function at the end of each render.
+  // Call our done function at the end of each render
   useEffect(() => {
     renderDone?.();
   }, [renderDone]);
