@@ -34,9 +34,11 @@ jobs:
         id: run-docker
         run: docker compose up -d
 
-      - name: Install Node.js dependencies
-        id: npm-ci
-        run: docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/npm-ci.sh
+      # NOTE: This must be run before TypeScript linting
+      - name: Build Foxglove
+        id: build-foglove
+        run: |
+          docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/foxglove/foxglove.py build
 
       - name: Lint Files
         run: |
@@ -46,3 +48,8 @@ jobs:
         if: always() && steps.run-docker.outcome == 'success'
         run: |
           docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build.sh
+
+      - name: Install Foxglove
+        if: always() && steps.run-docker.outcome == 'success' && steps.build-foglove.outcome == 'success'
+        run: |
+          docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/foxglove/foxglove.py install --skip-build
