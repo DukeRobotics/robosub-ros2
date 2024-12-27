@@ -6,7 +6,7 @@ import { format, Options } from "prettier";
 import { ThrusterAllocs } from "./ThrusterAllocsPanel";
 
 // Constants and export variable names
-const CONFIG_FILE_PATH = "../../../onboard/catkin_ws/src/controls/config/";
+const CONFIG_FILE_PATH = "../../../onboard/src/controls/config/";
 const THRUSTER_CONFIGS_SAVE_DIR = "dist";
 const EXPORT_VAR_NAME_CONFIGS = "allThrusterConfigs";
 const EXPORT_VAR_NAME_ORDERS = "allThrusterOrders";
@@ -81,7 +81,7 @@ async function generateThrusterConfigs(): Promise<void> {
       allThrusterConfigs[robot] = thrusterConfigs;
       allThrusterOrders[robot] = thrusterOrder;
     } catch (error: unknown) {
-      console.error(`Error processing robot ${robot}: ${(error as Error).message}`);
+      throw new Error(`Error processing robot ${robot}: ${(error as Error).message}`);
     }
   }
 }
