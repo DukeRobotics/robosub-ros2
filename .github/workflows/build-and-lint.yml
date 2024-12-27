@@ -40,7 +40,7 @@ jobs:
       - name: Build Foxglove
         id: build-foglove
         run: |
-          docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/foxglove/foxglove.py build
+          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build-foxglove.sh
 
       - name: Lint Files
         run: |
@@ -54,4 +54,4 @@ jobs:
       - name: Install Foxglove
         if: always() && steps.run-docker.outcome == 'success' && steps.build-foglove.outcome == 'success'
         run: |
-          docker compose exec robosub-ros2 /root/dev/venv/bin/python3 /root/dev/robosub-ros2/foxglove/foxglove.py install --skip-build
+          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/install-foxglove.sh
