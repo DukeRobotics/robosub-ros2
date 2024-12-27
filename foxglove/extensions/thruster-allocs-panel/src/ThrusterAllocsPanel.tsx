@@ -170,6 +170,7 @@ function ThrusterAllocsPanel({ context }: { context: PanelExtensionContext }): R
           sec: 0,
           nanosec: 0,
         },
+        // eslint-disable-next-line camelcase
         frame_id: "",
       },
       allocs: thrustersInOrder

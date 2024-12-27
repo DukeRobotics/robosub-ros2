@@ -209,6 +209,7 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
    */
   const handleSubmit = () => {
     const request: CustomMsgsSetPidGainsRequest = {
+      // eslint-disable-next-line camelcase
       pid_gains: [],
     };
 
