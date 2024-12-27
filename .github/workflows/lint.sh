@@ -8,5 +8,4 @@ set -e
 
 source /root/ros_bashrc.sh
 
-/root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py
-# /root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --output-type capture --sort --github-action
+/root/dev/venv/bin/python3 /root/dev/robosub-ros2/lint.py --print-success --output-type capture --sort --github-action
