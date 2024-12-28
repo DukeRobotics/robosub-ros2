@@ -1,8 +1,8 @@
 diff --git a/node_modules/create-foxglove-extension/dist/package.js b/node_modules/create-foxglove-extension/dist/package.js
-index 7769e05..3880ab9 100644
+index d343049..f78ba2c 100644
 --- a/node_modules/create-foxglove-extension/dist/package.js
 +++ b/node_modules/create-foxglove-extension/dist/package.js
-@@ -157,10 +157,17 @@ async function collect(extensionPath, pkg) {
+@@ -163,10 +163,17 @@ async function collect(extensionPath, pkg) {
      const files = new Set();
      const baseFiles = [
          (0, path_1.join)(extensionPath, "package.json"),
@@ -23,7 +23,7 @@ index 7769e05..3880ab9 100644
          if (!(await pathExists(file, FileType.File))) {
              throw new Error(`Missing required file ${file}`);
 diff --git a/node_modules/create-foxglove-extension/dist/webpackConfigExtension.js b/node_modules/create-foxglove-extension/dist/webpackConfigExtension.js
-index 3477c89..5009cbf 100644
+index ab7a01e..d8ed273 100644
 --- a/node_modules/create-foxglove-extension/dist/webpackConfigExtension.js
 +++ b/node_modules/create-foxglove-extension/dist/webpackConfigExtension.js
 @@ -83,7 +83,9 @@ exports.default = (extensionPath, entryPoint, env) => {
