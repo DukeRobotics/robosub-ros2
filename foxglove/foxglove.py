@@ -152,6 +152,21 @@ def install_extensions(extension_paths: Sequence[pathlib.Path]) -> None:
     print(f'Successfully installed {successes} extension(s)\n')
 
 
+def _update_extension_version(extension: pathlib.Path, version: str) -> None:
+    """
+    Update the package.json version field for an extension.
+
+    Args:
+        extension: Path to extension.
+        version: Version to write to package.json. Must conform to the semver specification.
+    """
+    with (extension / 'package.json').open() as file:
+        package = json.load(file)
+    package['version'] = version
+    with (extension / 'package.json').open('w') as file:
+        json.dump(package, file, indent=2)
+
+
 def publish_extensions(extension_paths: Sequence[pathlib.Path], version: str | None = None) -> None:
     """
     Publish custom Foxglove extensions.
@@ -178,11 +193,7 @@ def publish_extensions(extension_paths: Sequence[pathlib.Path], version: str | N
             continue
 
         # Update package.json version
-        with (extension / 'package.json').open() as file:
-            package = json.load(file)
-        package['version'] = version
-        with (extension / 'package.json').open('w') as file:
-            json.dump(package, file, indent=2)
+        _update_extension_version(extension, version)
 
         # Build extension package
         run_at_path('npm run package', extension)
@@ -192,7 +203,9 @@ def publish_extensions(extension_paths: Sequence[pathlib.Path], version: str | N
         try:
             run_at_path(f'foxglove extensions publish {package_name}', extension)
         finally:
-            run_at_path(f'rm {package_name}', extension)
+            # Clean up
+            run_at_path(f'rm {package_name}', extension) # Remove extension package
+            _update_extension_version(extension, '0.0.0') # Revert package.json version
 
         print(f'{extension.name}: published')
 
@@ -255,8 +268,7 @@ if __name__ == '__main__':
         help='Install Foxglove extensions. By default, all extensions are installed.',
     )
     install_parser.add_argument(
-        '-e', '--extensions',
-        action='extend',
+        'extensions',
         nargs='*',
         type=extension_package,
         help='Install extension(s) by name. If no name(s) are given, all extensions are installed.',
@@ -277,7 +289,6 @@ if __name__ == '__main__':
         aliases=['u'],
         help='Uninstall Foxglove extensions. By default, all extensions are uninstalled.',
     )
-    uninstall_parser.add_argument('-e', '--extensions', action='store_true', help='Uninstall all extensions.')
 
     build_parser = subparsers.add_parser(
         'build',
@@ -302,8 +313,7 @@ if __name__ == '__main__':
         help='Publish Foxglove extensions. By default, all extensions are published.',
     )
     publish_parser.add_argument(
-        '-e', '--extensions',
-        action='extend',
+        'extensions',
         nargs='*',
         type=extension_package,
         help='Specify extension(s) to publish. If no name(s) are given, all extensions are published.',
@@ -341,12 +351,7 @@ if __name__ == '__main__':
         publish_extensions(args.extensions, args.version)
 
     elif args.action in ('uninstall', 'u'):
-        # Without flags, uninstall everything
-        if args.extensions is False:
-            args.extensions = True
-
-        if args.extensions:
-            uninstall_extensions()
+        uninstall_extensions()
 
     elif args.action in ('build', 'b'):
         check_npm()
