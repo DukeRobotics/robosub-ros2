@@ -1,5 +1,5 @@
 import { allDatatypeMaps } from "@duke-robotics/defs/datatype_maps";
-import { CustomMsgsThrusterAllocs } from "@duke-robotics/defs/types";
+import { CustomMsgs } from "@duke-robotics/defs/types";
 import useTheme from "@duke-robotics/theme";
 import { PanelExtensionContext, RenderState, Immutable, MessageEvent } from "@foxglove/extension";
 import { TextField, Button, Alert, Tab, Tabs, CssBaseline, Box } from "@mui/material";
@@ -148,7 +148,7 @@ function ThrusterAllocsPanel({ context }: { context: PanelExtensionContext }): R
       if (renderState.currentFrame && renderState.currentFrame.length > 0) {
         const latestFrame = renderState.currentFrame[
           renderState.currentFrame.length - 1
-        ] as MessageEvent<CustomMsgsThrusterAllocs>;
+        ] as MessageEvent<CustomMsgs.ThrusterAllocs>;
         const newAllocs: ThrusterAllocs = { ...defaultThrusterAllocs };
         thrustersInOrder.forEach((thruster: keyof ThrusterAllocs, index) => {
           newAllocs[thruster] = latestFrame.message.allocs[index] as number | "";
@@ -164,7 +164,7 @@ function ThrusterAllocsPanel({ context }: { context: PanelExtensionContext }): R
   // Callback function to publish thruster allocs
   const publishAllocs = useCallback(() => {
     // Message creation
-    const message: CustomMsgsThrusterAllocs = {
+    const message: CustomMsgs.ThrusterAllocs = {
       header: {
         stamp: {
           sec: 0,

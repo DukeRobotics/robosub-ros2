@@ -1,4 +1,4 @@
-import { CustomMsgsSystemUsage, StdMsgsFloat64 } from "@duke-robotics/defs/types";
+import { CustomMsgs, StdMsgs } from "@duke-robotics/defs/types";
 import useTheme from "@duke-robotics/theme";
 import { PanelExtensionContext, RenderState, MessageEvent, Immutable } from "@foxglove/extension";
 import {
@@ -94,26 +94,26 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
       if (renderState.currentFrame && renderState.currentFrame.length > 0) {
         const latestFrame = renderState.currentFrame.at(-1) as MessageEvent;
         if (latestFrame.topic === SYSTEM_USAGE_TOPIC) {
-          const systemUsagelatestFrame = latestFrame as MessageEvent<CustomMsgsSystemUsage>;
+          const systemUsagelatestFrame = latestFrame as MessageEvent<CustomMsgs.SystemUsage>;
           setState((prevState) => ({
             ...prevState,
             cpuUsage: systemUsagelatestFrame.message.cpu_percent,
             ramUsage: systemUsagelatestFrame.message.ram.percentage,
           }));
         } else if (latestFrame.topic === VOLTAGE_TOPIC) {
-          const voltageLatestFrame = latestFrame as MessageEvent<StdMsgsFloat64>;
+          const voltageLatestFrame = latestFrame as MessageEvent<StdMsgs.Float64>;
           setState((prevState) => ({
             ...prevState,
             voltage: voltageLatestFrame.message.data,
           }));
         } else if (latestFrame.topic === HUMIDITY_TOPIC) {
-          const humidityLatestFrame = latestFrame as MessageEvent<StdMsgsFloat64>;
+          const humidityLatestFrame = latestFrame as MessageEvent<StdMsgs.Float64>;
           setState((prevState) => ({
             ...prevState,
             humidity: humidityLatestFrame.message.data,
           }));
         } else if (latestFrame.topic === TEMPERATURE_TOPIC) {
-          const temperatureLatestFrame = latestFrame as MessageEvent<StdMsgsFloat64>;
+          const temperatureLatestFrame = latestFrame as MessageEvent<StdMsgs.Float64>;
           setState((prevState) => ({
             ...prevState,
             temperature: temperatureLatestFrame.message.data,

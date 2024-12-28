@@ -1,10 +1,5 @@
 import { allDatatypeMaps } from "@duke-robotics/defs/datatype_maps";
-import {
-  GeometryMsgsTwist,
-  CustomMsgsSetControlTypesRequest,
-  CustomMsgsSetControlTypesResponse,
-  CustomMsgsControlTypesConst,
-} from "@duke-robotics/defs/types";
+import { GeometryMsgs, CustomMsgs } from "@duke-robotics/defs/types";
 import useTheme from "@duke-robotics/theme";
 import { Immutable, PanelExtensionContext, RenderState } from "@foxglove/extension";
 import { Button, Box, Alert, ThemeProvider } from "@mui/material";
@@ -155,10 +150,10 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
     }
 
     // Request payload to toggle control types
-    const desiredControl: CustomMsgsControlTypesConst = state.joystickEnabled
-      ? CustomMsgsControlTypesConst.DESIRED_POSITION
-      : CustomMsgsControlTypesConst.DESIRED_POWER;
-    const request: CustomMsgsSetControlTypesRequest = {
+    const desiredControl: CustomMsgs.ControlTypesConst = state.joystickEnabled
+      ? CustomMsgs.ControlTypesConst.DESIRED_POSITION
+      : CustomMsgs.ControlTypesConst.DESIRED_POWER;
+    const request: CustomMsgs.SetControlTypesRequest = {
       // eslint-disable-next-line camelcase
       control_types: {
         x: desiredControl,
@@ -173,7 +168,7 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
     // Make the service call
     context.callService(SET_CONTROL_TYPES_SERVICE, request).then(
       (response) => {
-        const typedResponse = response as CustomMsgsSetControlTypesResponse;
+        const typedResponse = response as CustomMsgs.SetControlTypesResponse;
 
         // Update the state based on the service response
         // If the service responds with failure, display the response message as an error
@@ -205,7 +200,7 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
       });
 
       // Create and publish desired power message
-      const request: GeometryMsgsTwist = {
+      const request: GeometryMsgs.Twist = {
         linear: {
           x: transformedJoystickInputs.xAxis,
           y: transformedJoystickInputs.yAxis,

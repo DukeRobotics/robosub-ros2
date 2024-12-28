@@ -28,9 +28,7 @@ export function generateRosTsGeneratorConfig(
   const outputData = {
     output: generatedTypesPath,
     rosVersion: 2,
-    // TODO: useNamespaces: true is desired for type organization,
-    // but results in linting errors (no-unsafe-member-access).
-    useNamespaces: false,
+    useNamespaces: true,
     smartEnums: true,
     input: [
       ...additionalInputs,

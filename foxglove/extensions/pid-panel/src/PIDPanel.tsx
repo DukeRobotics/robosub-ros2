@@ -1,11 +1,4 @@
-import {
-  CustomMsgsPidGainGain,
-  CustomMsgsPidGainAxis,
-  CustomMsgsPidGainLoop,
-  CustomMsgsPidGains,
-  CustomMsgsSetPidGainsRequest,
-  CustomMsgsSetPidGainsResponse,
-} from "@duke-robotics/defs/types";
+import { CustomMsgs } from "@duke-robotics/defs/types";
 import useTheme from "@duke-robotics/theme";
 import { Immutable, PanelExtensionContext, RenderState, MessageEvent } from "@foxglove/extension";
 import {
@@ -33,7 +26,7 @@ const PID_SERVICE = "/controls/set_pid_gains";
 
 type PIDPanelState = {
   error?: Error;
-  loop: CustomMsgsPidGainLoop;
+  loop: CustomMsgs.PidGainLoop;
   editedGains: Record<number, Record<number, number>>; // Indexed by axis and gain type
   pid: Record<number, Record<number, Record<number, number>>>; // Indexed by loop, axis, and gain type
 };
@@ -42,22 +35,22 @@ type PIDPanelState = {
 const initPid = () => {
   // Initialize gains to -1 to signify that the true values have not been received yet
   const gains: Record<number, number> = {
-    [CustomMsgsPidGainGain.KP]: -1,
-    [CustomMsgsPidGainGain.KI]: -1,
-    [CustomMsgsPidGainGain.KD]: -1,
-    [CustomMsgsPidGainGain.FF]: -1,
+    [CustomMsgs.PidGainGain.KP]: -1,
+    [CustomMsgs.PidGainGain.KI]: -1,
+    [CustomMsgs.PidGainGain.KD]: -1,
+    [CustomMsgs.PidGainGain.FF]: -1,
   };
   const axes: Record<number, Record<number, number>> = {
-    [CustomMsgsPidGainAxis.X]: { ...gains },
-    [CustomMsgsPidGainAxis.Y]: { ...gains },
-    [CustomMsgsPidGainAxis.Z]: { ...gains },
-    [CustomMsgsPidGainAxis.ROLL]: { ...gains },
-    [CustomMsgsPidGainAxis.PITCH]: { ...gains },
-    [CustomMsgsPidGainAxis.YAW]: { ...gains },
+    [CustomMsgs.PidGainAxis.X]: { ...gains },
+    [CustomMsgs.PidGainAxis.Y]: { ...gains },
+    [CustomMsgs.PidGainAxis.Z]: { ...gains },
+    [CustomMsgs.PidGainAxis.ROLL]: { ...gains },
+    [CustomMsgs.PidGainAxis.PITCH]: { ...gains },
+    [CustomMsgs.PidGainAxis.YAW]: { ...gains },
   };
   const loops: Record<number, Record<number, Record<number, number>>> = {
-    [CustomMsgsPidGainLoop.POSITION]: { ...axes },
-    [CustomMsgsPidGainLoop.VELOCITY]: { ...axes },
+    [CustomMsgs.PidGainLoop.POSITION]: { ...axes },
+    [CustomMsgs.PidGainLoop.VELOCITY]: { ...axes },
   };
 
   return loops;
@@ -71,7 +64,7 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
     const initialState = context.initialState as PIDPanelState | undefined;
 
     return {
-      loop: initialState?.loop ?? CustomMsgsPidGainLoop.POSITION,
+      loop: initialState?.loop ?? CustomMsgs.PidGainLoop.POSITION,
       editedGains: {},
       error: undefined,
       pid: initPid(),
@@ -90,7 +83,7 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
     context.onRender = (renderState: Immutable<RenderState>, done) => {
       setRenderDone(() => done);
       if (renderState.currentFrame && renderState.currentFrame.length > 0) {
-        const lastFrame = renderState.currentFrame.at(-1) as MessageEvent<CustomMsgsPidGains>;
+        const lastFrame = renderState.currentFrame.at(-1) as MessageEvent<CustomMsgs.PidGains>;
 
         // Loop through received pid_gains and update our PID values
         const pidGains = lastFrame.message.pid_gains;
@@ -117,14 +110,14 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
   }, [renderDone]);
 
   // Call a CustomMsgsSetPidGains service with a given request
-  const callService = (serviceName: string, request: CustomMsgsSetPidGainsRequest) => {
+  const callService = (serviceName: string, request: CustomMsgs.SetPidGainsRequest) => {
     if (!context.callService) {
       return;
     }
 
     context.callService(serviceName, request).then(
       (response) => {
-        const typedResponse = response as CustomMsgsSetPidGainsResponse;
+        const typedResponse = response as CustomMsgs.SetPidGainsResponse;
 
         // Update the state based on the service response
         // If the service responds with failure, display the response message as an error
@@ -148,7 +141,7 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
    * Switch between position and velocity PID loops.
    * @param {CustomMsgsPidGainLoop} desiredLoop
    */
-  const handleLoopChange = (_: React.ChangeEvent<unknown>, desiredLoop: CustomMsgsPidGainLoop) => {
+  const handleLoopChange = (_: React.ChangeEvent<unknown>, desiredLoop: CustomMsgs.PidGainLoop) => {
     setState((prevState) => ({ ...prevState, loop: desiredLoop }));
     handleReset(); // Reset the edited gains when switching loops
   };
@@ -160,7 +153,7 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
    */
   function getAxisEnumName(enumValue: number): string {
     // Get enum entries that start with "AXIS" and have the given value
-    const filteredEnumEntries = Object.entries(CustomMsgsPidGainAxis).filter(([_, value]) => {
+    const filteredEnumEntries = Object.entries(CustomMsgs.PidGainAxis).filter(([_, value]) => {
       return Number(value) === enumValue;
     });
 
@@ -208,7 +201,7 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
    * Submit {@link state.editedGains} to the {@link PID_SERVICE} and reset.
    */
   const handleSubmit = () => {
-    const request: CustomMsgsSetPidGainsRequest = {
+    const request: CustomMsgs.SetPidGainsRequest = {
       // eslint-disable-next-line camelcase
       pid_gains: [],
     };
@@ -250,8 +243,8 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
 
         {/* PID Loop Tabs */}
         <Tabs value={state.loop} onChange={handleLoopChange} variant="fullWidth">
-          <Tab label="Position" value={CustomMsgsPidGainLoop.POSITION} />
-          <Tab label="Velocity" value={CustomMsgsPidGainLoop.VELOCITY} />
+          <Tab label="Position" value={CustomMsgs.PidGainLoop.POSITION} />
+          <Tab label="Velocity" value={CustomMsgs.PidGainLoop.VELOCITY} />
         </Tabs>
 
         {/* PID Gains Table */}

@@ -1,4 +1,4 @@
-import { StdSrvsSetBoolRequest, StdMsgsBool } from "@duke-robotics/defs/types";
+import { StdSrvs, StdMsgs } from "@duke-robotics/defs/types";
 import useTheme from "@duke-robotics/theme";
 import { ThemeProvider } from "@emotion/react";
 import { PanelExtensionContext, RenderState, Immutable, MessageEvent } from "@foxglove/extension";
@@ -39,7 +39,7 @@ function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): R
 
       // Save the most recent message on our topic
       if (renderState.currentFrame && renderState.currentFrame.length > 0) {
-        const latestFrame = renderState.currentFrame[renderState.currentFrame.length - 1] as MessageEvent<StdMsgsBool>;
+        const latestFrame = renderState.currentFrame[renderState.currentFrame.length - 1] as MessageEvent<StdMsgs.Bool>;
         setState((oldState) => ({ ...oldState, controlsEnabled: latestFrame.message.data }));
       }
     };
@@ -56,7 +56,7 @@ function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): R
     }
 
     // Request payload to toggle controls
-    const request: StdSrvsSetBoolRequest = { data: !state.controlsEnabled };
+    const request: StdSrvs.SetBoolRequest = { data: !state.controlsEnabled };
 
     // Make the service call
     context.callService(ENABLE_CONTROLS_SERVICE, request).catch((error: unknown) => {
