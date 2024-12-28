@@ -120,7 +120,6 @@ Note that running `python foxglove.py install` will automatically build all loca
 
 - `theme`: Exports the Duke Robotics MUI Theme
 - `defs`: Exports Foxglove datatype maps and TypeScript interfaces/enums for both ROS 1 and Duke Robotics custom message definitions
-- `ros-typescript-generator`: CLI that generates TypeScript interfaces/enums from ROS definitions
 
 ## Patches
 Patches to external node modules are located in the `patches` directory.
