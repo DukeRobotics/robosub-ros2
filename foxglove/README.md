@@ -4,54 +4,32 @@ Duke Robotics uses [Foxglove](https://foxglove.dev/studio) as its data visualiza
 This directory contains Duke Robotics extensions and layouts.
 
 ## Setup
-### Dependencies
-- [npm (Latest)](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
-- [Foxglove Studio (Latest)](https://foxglove.dev/download)
-  - **Note:** Automatic installation of custom extensions and layouts requires Foxglove Studio Desktop. For Foxglove Studio Web, layouts must be manually uploaded and custom extensions are not compatible.
-
-### Installation
-To manage local installation of Duke Robotics extensions and layouts, use the `foxglove.py` CLI.
-To install all Duke Robotics extensions and layouts, use:
+To manage local installation of Duke Robotics extensions, use the `foxglove.py` CLI.
+To install all Duke Robotics extensions, run:
 ```bash
 python foxglove.py install
 ```
 Note that installation may take several minutes.
 
 To confirm installation, reload Foxglove (Command/Control+R) and check the `Add panel` button in the top left.
-Custom extensions will have the suffix `[local]`. Also, check whether custom layouts have been installed using
-the `Layout` button in the top right.
+Custom extensions will have the suffix `[local]`.
 
-To uninstall all Duke Robotics extensions and layouts, use:
+To uninstall all Duke Robotics extensions, run:
 ```bash
 python foxglove.py uninstall
 ```
 
-To install only a selection of extensions, use:
+To install only a selection of extensions, run:
 ```bash
-python foxglove.py install -e <extension-1> <extension-2> ...
+python foxglove.py install <extension-1> <extension-2> ...
 ```
-By default, the `-e` flag without arguments will install all extensions.
 
-To uninstall all extensions, use:
+To uninstall all extensions, run:
 ```bash
 python foxglove.py uninstall -e
 ```
 
-To install all layouts, use:
-```bash
-python foxglove.py install -l
-```
-To uninstall all layouts, use:
-```bash
-python foxglove.py uninstall -l
-```
-
-For more information, consult the usage guide of `foxglove.py` with the `-h` flag:
-```bash
-python foxglove.py -h
-python foxglove.py install -h
-python foxglove.py uninstall -h
-```
+For more information, consult the usage guide of `foxglove.py` with the `-h` flag.
 
 ### Development
 Ensure that the extension has been installed before starting development.
@@ -79,6 +57,17 @@ This node enables communication between the `onboard` container and the external
 ws://localhost:8765     # Local container
 ws://192.168.1.1:8765   # Robot (Tethered)
 ws://<hostname or IP of onboard container>:8765
+```
+
+### Publishing
+To publish all custom extensions, run:
+```bash
+python foxglove.py publish
+```
+
+To publish only a selection of extensions, use:
+```bash
+python foxglove.py publish <extension-1> <extension-2> ...
 ```
 
 ### Cleanup
@@ -118,8 +107,8 @@ python foxglove.py build
 
 Note that running `python foxglove.py install` will automatically build all local dependencies before installing extensions.
 
-- `theme`: Exports the Duke Robotics MUI Theme
 - `defs`: Exports Foxglove datatype maps and TypeScript interfaces/enums for both ROS 1 and Duke Robotics custom message definitions
+- `theme`: Exports the Duke Robotics MUI Theme
 
 ## Patches
 Patches to external node modules are located in the `patches` directory.
@@ -131,28 +120,20 @@ Running either `python foxglove.py <build/install>` will automatically install t
   - Before installing an extension, only remove `dist/extension.js` (instead of cleaning the entire `dist` directory)
 
 ## Other Files
-- `.eslintrc.json`: Configuration file for ESLint
+- `.eslint.config.mjs`: Configuration file for ESLint
 - `.prettierrc.yaml`: Configuration file for Prettier
 - `tsconfig.json`: Configuration file for TypeScript
 - `package.json`: Configuration file for npm
 - `package-lock.json`: The exact npm dependency tree of the foxglove monorepo, generated using `npm i`
-- `empty-layout.json`: Default Foxglove layout JSON file used when creating new layouts from the `foxglove.py` CLI
 
 ## Contributing
-### Creating a New Extension
-Fork an existing Duke Robotics example extension (`call-service-panel`, `publish-topic-panel`, or `subscribe-topic-panel`) to base the new extension off of. This ensures that all of our extensions have the same code structure and use the same core set of dependencies.
+### Adding a New Extension
+Copy an existing Duke Robotics example extension (`call-service-panel`, `publish-topic-panel`, or `subscribe-topic-panel`) as a starting point. This ensures that all of our extensions have the same code structure and use the same core set of dependencies.
 
-### Creating a New Layout
-Foxglove does not allow creating more than one layout when not signed in.
-To circumvent this issue, use the `foxglove.py` CLI:
-```bash
-python foxglove.py --new-layout <layout-name>
-```
-If `<layout-name>` is not specified, the layout name will be the current time in nanoseconds.
-
+### Adding a New Layout
 Follow the [documentation](https://foxglove.dev/docs/studio/layouts#personal-layouts) to export your layout as a JSON file to the robosub-ros `foxglove/layouts` directory. Manually look over the JSON to ensure that the settings are correct. For example, ensure that `splitPercentage` for each panel is set to the desired amount.
 
-### Creating a New Local Dependency
+### Adding a New Local Dependency
 Fork an existing local dependency (e.g., `theme`). All local dependencies must use TypeScript and an `npm run build` command must be defined in `package.json` so that `foxglove.py` can automatically compile each local dependency to `node_modules`.
 
 ## Additional Documentation
