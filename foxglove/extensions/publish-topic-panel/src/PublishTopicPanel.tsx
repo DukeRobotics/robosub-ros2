@@ -26,7 +26,7 @@ function PublishTopicPanel({ context }: { context: PanelExtensionContext }): Rea
     return {
       topicName: initialState?.topicName ?? "",
       request: initialState?.request ?? "{\n\n}",
-      schemaType: initialState?.schemaType ?? "ros1",
+      schemaType: initialState?.schemaType ?? "ros2jazzy",
       schemaName: initialState?.schemaName ?? undefined,
       publishRate: initialState?.publishRate ?? 1,
       repeatPublish: null,
