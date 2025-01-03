@@ -24,6 +24,7 @@ from collections.abc import Sequence
 import git
 
 ORGANIZATION = 'dukerobotics'
+ROS_DISTRO = 'ros-jazzy'
 
 if (SYSTEM := platform.system()) not in ('Linux', 'Darwin', 'Windows'):
     msg = f'Unsupported platform: {SYSTEM}'
@@ -167,7 +168,7 @@ def publish_extensions(extension_paths: Sequence[pathlib.Path], version: str | N
         SystemExit: If the Foxglove directory is dirty and no version is given.
     """
     repo = git.Repo(path=FOXGLOVE_PATH.parent)
-    is_dirty = repo.is_dirty(untracked_files=True, path=FOXGLOVE_PATH)
+    is_dirty = repo.is_dirty(untracked_files=True)
     if is_dirty and version is None:
         msg = 'The foxglove directory is dirty! Commit changes before publishing.'
         raise SystemExit(msg)
@@ -187,7 +188,7 @@ def publish_extensions(extension_paths: Sequence[pathlib.Path], version: str | N
         run_at_path('npm run package', extension)
 
         # Publish extension package
-        package_name = f'{ORGANIZATION}.{extension.name}-{version}.foxe'
+        package_name = f'{ORGANIZATION}.{ROS_DISTRO}-{extension.name}-{version}.foxe'
         try:
             run_at_path(f'foxglove extensions publish {package_name}', extension)
         finally:
