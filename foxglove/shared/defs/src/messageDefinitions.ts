@@ -1,6 +1,6 @@
+import { ros2jazzy } from "@duke-robotics/rosmsg-msgs-common";
 import { MessageDefinition } from "@foxglove/message-definition";
 import { parse, ParseOptions, fixupTypes } from "@foxglove/rosmsg";
-import { ros1 } from "@foxglove/rosmsg-msgs-common";
 import { mkdir, readdir, readFile, writeFile } from "fs/promises";
 import { join, basename, sep } from "path";
 import { format, Options } from "prettier";
@@ -82,12 +82,12 @@ async function loadDefinitions(
     }
   }
 
-  // Array of MessageDefinitions including all ros1 and custom_msgs
+  // Array of MessageDefinitions including all ros2jazzy and custom_msgs
   // This is used to fixup type names in the definitions
   // For example, Header is changed to std_msgs/Header
-  // Included ros1 so that fixupTypes can resolve standard ROS 1 types
+  // Included ros2jazzy so that fixupTypes can resolve standard ROS 1 types
   // This allows us to fixup type names in custom msg definitions without having to use gentools
-  const allTypes = Object.values(definitions).concat(Object.values(ros1));
+  const allTypes = Object.values(definitions).concat(Object.values(ros2jazzy));
   fixupTypes(allTypes);
 }
 

@@ -1,4 +1,4 @@
-import { ros1 } from "@foxglove/rosmsg-msgs-common";
+import { ros2jazzy } from "@duke-robotics/rosmsg-msgs-common";
 
 import { writeAllDatatypeMaps } from "./datatypeMaps";
 import { generateRosTsGeneratorConfig } from "./generateRosTsGeneratorConfig";
@@ -23,8 +23,8 @@ async function main() {
   // Get message definitions for custom msgs and export them to files
   const definitionsByGroup = await writeMessageDefinitions(CUSTOM_MSGS_DEFS_PATH, CUSTOM_MSGS_SAVE_DIR);
 
-  // Add definitions of ROS 1 built-in message types to the ros1 group
-  definitionsByGroup.set("ros1", ros1);
+  // Add definitions of ROS 1 built-in message types to the ros2jazzy group
+  definitionsByGroup.set("ros2jazzy", ros2jazzy);
 
   // Generate and export datatype maps for all message definitions, including custom msgs and ROS 1 built-in msgs
   await writeAllDatatypeMaps(definitionsByGroup, DATATYPE_MAPS_SAVE_DIR, MSG_DEFS_RELATIVE_PATH);
