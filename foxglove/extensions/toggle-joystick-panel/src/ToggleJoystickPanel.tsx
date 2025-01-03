@@ -196,7 +196,7 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
       }
 
       context.advertise(DESIRED_POWER_TOPIC, DESIRED_POWER_SCHEMA, {
-        datatypes: allDatatypeMaps.ros1[DESIRED_POWER_SCHEMA],
+        datatypes: allDatatypeMaps.ros2jazzy[DESIRED_POWER_SCHEMA],
       });
 
       // Create and publish desired power message
