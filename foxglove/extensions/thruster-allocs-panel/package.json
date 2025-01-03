@@ -1,6 +1,6 @@
 {
-  "name": "@duke-robotics/thruster-allocs-panel",
-  "displayName": "Thruster Allocs Panel",
+  "name": "@duke-robotics/ros-jazzy-thruster-allocs-panel",
+  "displayName": "Thruster Allocs Panel (Jazzy)",
   "description": "Read/set thruster allocations",
   "publisher": "Duke Robotics",
   "version": "0.0.0",

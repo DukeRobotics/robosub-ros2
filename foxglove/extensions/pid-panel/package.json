@@ -1,6 +1,6 @@
 {
-  "name": "@duke-robotics/pid-panel",
-  "displayName": "PID Panel",
+  "name": "@duke-robotics/ros-jazzy-pid-panel",
+  "displayName": "PID Panel (Jazzy)",
   "description": "Read/set PID gains",
   "publisher": "Duke Robotics",
   "version": "0.0.0",

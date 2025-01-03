@@ -1,6 +1,6 @@
 {
-  "name": "@duke-robotics/sensors-status-panel",
-  "displayName": "Sensors Status Panel",
+  "name": "@duke-robotics/ros-jazzy-sensors-status-panel",
+  "displayName": "Sensors Status Panel (Jazzy)",
   "description": "Display the connected/disconnected status of sensors",
   "publisher": "Duke Robotics",
   "version": "0.0.0",

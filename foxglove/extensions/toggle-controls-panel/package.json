@@ -1,6 +1,6 @@
 {
-  "name": "@duke-robotics/toggle-controls-panel",
-  "displayName": "Toggle Controls Panel",
+  "name": "@duke-robotics/ros-jazzy-toggle-controls-panel",
+  "displayName": "Toggle Controls Panel (Jazzy)",
   "description": "Toggle controls on/off",
   "publisher": "Duke Robotics",
   "version": "0.0.0",
