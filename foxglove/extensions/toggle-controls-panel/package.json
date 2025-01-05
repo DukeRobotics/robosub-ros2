@@ -7,7 +7,6 @@
   "main": "./dist/extension.js",
   "keywords": [],
   "scripts": {
-    "build": "foxglove-extension build",
     "foxglove:prepublish": "foxglove-extension build --mode production",
     "lint:ci": "eslint --report-unused-disable-directives .",
     "lint": "eslint --report-unused-disable-directives --fix .",
