@@ -1,6 +1,8 @@
 # Foxglove Custom Extensions
 This monorepo contains our custom Foxglove development tools and extensions.
 
+<img width="1440" alt="Foxglove Studio" src="https://github.com/user-attachments/assets/36e191b0-6a70-493d-8c44-6dd849ab425f" />
+
 ## Setup
 For initial setup instructions, follow the root [SETUP.md](../SETUP.md#set-up-foxglove-optional) file.
 
