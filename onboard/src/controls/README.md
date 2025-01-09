@@ -319,7 +319,7 @@ One pair of CSV files is required for each robot. They should be located in the 
 ### Launch Config
 The `launch` directory contains the following launch files:
 - `controls.launch`: Primary launch file for the system.
-- `controls_gdb.launch`: Launch file for debugging the system with GDB.
+- `controls_gdbserver.launch`: Launch file for debugging the system with GDB.
 - `controls_valgrind.launch`: Launch file for debugging the system with Valgrind.
 
 Each of these launch files contains the following parameters:
@@ -331,26 +331,24 @@ Each of these launch files contains the following parameters:
 > If `cascaded_pid` is `true`, then both `enable_position_pid` and `enable_velocity_pid` must also be `true` for the robot to move to the desired position, as both position and velocity PID loops are required to move the robot to the desired position when they are cascaded.
 
 ## Dependencies
-### TODO: Update URLs in this section
 ### ROS
-- [resource_retriever](http://wiki.ros.org/resource_retriever): A ROS package that provides C++ and Python interfaces for retrieving data from URLs. It is used by the system to read and write the [robot config files](#robot-config-file) and [CSV files](#csv-files).
-- [ament_index_cpp](TODO): A ROS package that provides a C++ interface for retrieving data from URLs. It is used by the system to read and write the [robot config files](#robot-config-file) and [CSV files](#csv-files).
-- [rclcpp](TODO): The C++ client library for ROS. It is used by the system to interface with ROS.
-- [TODO roslib](http://wiki.ros.org/roslib): The core library for ROS. It is used by the system to interface with ROS.
-- [rospy](http://wiki.ros.org/rospy): The Python client library for ROS. It is used by the Python scripts to interface with ROS.
-- [tf2_ros](http://wiki.ros.org/tf2): The second version of the ROS transformation library. It is used by the system to transform between different frames.
+- [ament_cmake](https://index.ros.org/p/ament_cmake): A ROS package that provides CMake functions for building ROS packages. It is used by the system to compile the code.
+- [ament_index_cpp](https://index.ros.org/p/ament_index_cpp/): A ROS package that provides C++ interfaces for querying the ament resource index, enabling packages to find each other. It is used by the system to find other ROS packages. It is used by the system to read and write the [robot config files](#robot-config-file) and [CSV files](#csv-files).
+- [rclcpp](https://index.ros.org/p/rclcpp): The C++ client library for ROS. It is used by the system to interface with ROS.
+- [resource_retriever](https://index.ros.org/p/resource_retriever): A ROS package that provides C++ and Python interfaces for retrieving data from URLs. It is used by the `compute_wrench_matrix.py` script to read and write the [robot config files](#robot-config-file) and [CSV files](#csv-files).
+- [tf2](https://index.ros.org/p/tf2) and [tf2_ros](https://index.ros.org/p/tf2_ros): The second version of the ROS transformation library. It is used by the system to transform between different frames.
+- [tf2_geometry_msgs](https://index.ros.org/p/tf2_geometry_msgs): Functions for conversion and transformation of `geometry_msgs` messages in `tf2`. It is used by the system to transform between different frames.
 
 ### ROS Messages
 - custom_msgs: Custom ROS messages used by the system. These are defined in the `custom_msgs` package in the `core` workspace.
-- [geometry_msgs](http://wiki.ros.org/geometry_msgs): ROS messages for geometric primitives such as points, vectors, and poses.
-- [nav_msgs](http://wiki.ros.org/nav_msgs): ROS messages for navigation-related data such as odometry, paths, and maps.
-- [std_msgs](http://wiki.ros.org/std_msgs): ROS messages for common data types such as strings, floats, and integers.
-- [std_srvs](http://wiki.ros.org/std_srvs): ROS services for common data types such as booleans and empty requests.
+- [geometry_msgs](https://index.ros.org/p/geometry_msgs): ROS messages for geometric primitives such as points, vectors, and poses.
+- [nav_msgs](https://index.ros.org/p/nav_msgs): ROS messages for navigation-related data such as odometry, paths, and maps.
+- [std_msgs](https://index.ros.org/p/std_msgs): ROS messages for common data types such as strings, floats, and integers.
+- [std_srvs](https://index.ros.org/p/std_srvs): ROS services for common data types such as booleans and empty requests.
 
 ### Non-ROS C++
-- [chrono] TODO
-- [fmt] TODO
 - [Eigen3](https://eigen.tuxfamily.org): A C++ library for linear algebra. It is used by the system to perform matrix operations.
+- [fmt](https://fmt.dev): A C++ library for formatting strings. It is used by the system to format messages printed to the console.
 - [OSQP](https://osqp.org): A C library for solving [quadratic programming](#quadratic-programming) problems. It is used by the [thruster allocator](#thruster-allocator) to compute the [thrust allocation vector](#thrust-allocation-vector).
 - [OSQP-Eigen](https://robotology.github.io/osqp-eigen): A C++ wrapper for OSQP. It is used by the system to interface with OSQP.
 - [yaml-cpp](https://github.com/jbeder/yaml-cpp): A C++ library for parsing YAML files. It is used by the system to parse the [robot config files](#robot-config-file).
@@ -583,7 +581,7 @@ The controls package advertises the following services:
 > [!NOTE]
 > When calling one of the services above to update the PID gains, static power global, or power scale factor, if the request is not valid, the system will not update the respective value(s), will return `false` in the response, and will continue operation.
 >
-> However, if the request is valid but an error occured in updating robot config file, a _fatal error will be thrown and the system will stop execution._
+> However, if the request is valid but an error occured in updating robot config file, a _fatal error will be thrown_ and the system will _stop execution._
 >
 > This is because if the robot config file could not be updated successfully, the updated value(s) may not be saved, any changes made to the file cannot be undone, and file corruption will interfere with the system's future operation. Thus, it is necessary to stop the system and fix the robot config file before continuing.
 
@@ -605,16 +603,16 @@ set(SOURCES
 ```
 
 #### Adding ROS Dependencies
-To add a new ROS dependency to the package, add the dependency to the `find_package` and `catkin_package` calls in the `CMakeLists.txt` file. For example, to add the `new_dependency` dependency, add the following lines to the `CMakeLists.txt` file:
+To add a new ROS dependency to the package, add a new `find_package` call in the `CMakeLists.txt` file. For example, to add the `new_dependency` dependency, add the following lines to the `CMakeLists.txt` file:
 ```cmake
-find_package(catkin REQUIRED COMPONENTS
+find_package(new_dependency REQUIRED)
+```
+If any headers from that dependency are directly included in the code, then add the dependency to the `target_link_libraries` call in the `CMakeLists.txt` file.
+```cmake
+target_link_libraries(controls
     ...
-    new_dependency
+    ${new_dependency_TARGETS}
     ...
-)
-...
-catkin_package(
-    CATKIN_DEPENDS ... new_dependency ...
 )
 ```
 Also add the dependency to the `package.xml` file. For example, to add the `new_dependency` dependency, add the following line to the `package.xml` file:
@@ -623,11 +621,15 @@ Also add the dependency to the `package.xml` file. For example, to add the `new_
 ```
 
 #### Adding Non-ROS C++ Dependencies
-To add a new non-ROS C++ dependency to the package, add the dependency to the `target_link_libraries` call in the `CMakeLists.txt` file. For example, to add the `new_dependency` dependency, add the following line to the `CMakeLists.txt` file:
+To add a new non-ROS C++ dependency to the package, add a new `find_package` call in the `CMakeLists.txt file`. For example, to add the `new_dependency` dependency, add the following lines to the `CMakeLists.txt` file:
+```cmake
+find_package(new_dependency REQUIRED)
+```
+If any headers from that dependency are directly included in the code, then add a CMake target provided by the dependency to the `target_link_libraries` call in the `CMakeLists.txt` file. The dependency's documentation should specify the CMake target(s) it provides; most commonly, this is in the format `new_dependency::new_dependency`.
 ```cmake
 target_link_libraries(controls
     ...
-    new_dependency
+    new_dependency::new_dependency
     ...
 )
 ```
