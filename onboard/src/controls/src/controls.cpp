@@ -45,9 +45,9 @@ Controls::Controls() : Node("controls") {
     // Get parameters from launch file
     this->declare_parameter<bool>("sim", false);
     this->get_parameter("sim", sim);
-    this->declare_parameter<bool>("enable_position_pid", false);
+    this->declare_parameter<bool>("enable_position_pid", true);
     this->get_parameter("enable_position_pid", enable_position_pid);
-    this->declare_parameter<bool>("enable_velocity_pid", false);
+    this->declare_parameter<bool>("enable_velocity_pid", true);
     this->get_parameter("enable_velocity_pid", enable_velocity_pid);
     this->declare_parameter<bool>("cascaded_pid", false);
     this->get_parameter("cascaded_pid", cascaded_pid);
