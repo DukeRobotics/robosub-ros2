@@ -30,7 +30,7 @@ class BuoyDetectorContourMatching(Node):
         # Load the reference image in grayscale (assumes the image is already binary: white and black)
         self.reference_image = cv2.imread('/root/dev/robosub-ros2/onboard/build/cv/assets/polyform-a0-buoy-contour.png', cv2.IMREAD_GRAYSCALE)
         if self.reference_image is None:
-            print('oops')
+            #print("oops")
 
         # Compute the contours directly on the binary image
         self.ref_contours, _ = cv2.findContours(self.reference_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -97,7 +97,7 @@ class BuoyDetectorContourMatching(Node):
 
         # Match contours with the reference image contours
         for cnt in contours:
-            print(self.ref_contours)
+            #print(self.ref_contours)
             match = cv2.matchShapes(self.ref_contours[0], cnt, cv2.CONTOURS_MATCH_I1, 0.0)
             if match < 0.2:
                 similar_size_contours.append(cnt)

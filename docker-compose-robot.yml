@@ -8,6 +8,3 @@ services:
     privileged: true
     volumes:
       - /dev:/dev
-    ports:
-      - 2202:2202
-      - 8765:8765

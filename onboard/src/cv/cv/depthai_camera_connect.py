@@ -71,13 +71,17 @@ def custom_autodiscovery():
     MAC_address = '44:A9:2C:3C:0A:90'  # DepthAI camera MAC address
     IP_range = '169.254.1.222'  # 192.168.1.0 to 192.168.1.255
 
+    MAC_address = "44:A9:2C:3C:0A:90"  # DepthAI camera MAC address
+    IP_range = "192.168.1.0/24"  # 192.168.1.0 to 192.168.1.255
+
     nm = nmap.PortScanner()
     scan = nm.scan(hosts=IP_range, arguments='-sP')['scan']
 
+    # please re-add check for mac addresses thx
     for ip, info in scan.items():
-        print(f'Searching,... {ip}')
-        if info['status']['state'] == 'up': #and info['addresses'].get('mac') == MAC_address:
-            print('FOUND!!')
+        print(f"Searching,... {ip} {info['addresses']}")
+        if info['status']['state'] == 'up' and info['addresses'].get('mac') == MAC_address:
+            print("FOUND!!")
             return ip
 
     raise RuntimeError('Custom autodiscovery failed to find camera.')
