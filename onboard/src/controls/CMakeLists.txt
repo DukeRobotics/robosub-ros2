@@ -46,7 +46,7 @@ target_link_libraries(controls
   fmt::fmt
   OsqpEigen::OsqpEigen
   rclcpp::rclcpp
-  yaml-cpp
+  yaml-cpp::yaml-cpp
   ${ament_index_cpp_TARGETS}
   ${custom_msgs_TARGETS}
   ${geometry_msgs_TARGETS}
