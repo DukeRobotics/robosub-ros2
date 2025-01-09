@@ -53,8 +53,8 @@ target_link_libraries(controls
   ${nav_msgs_TARGETS}
   ${std_msgs_TARGETS}
   ${std_srvs_TARGETS}
-  ${tf2_geometry_msgs_TARGETS}
   ${tf2_TARGETS}
+  ${tf2_geometry_msgs_TARGETS}
 )
 
 target_precompile_headers(controls
