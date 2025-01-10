@@ -301,7 +301,7 @@ The `thrusters` field contains information about each thruster. From top to bott
 > [!IMPORTANT]
 > This should be the _only_ place in the _entire codebase_ where flipped thrusters are accounted for.
 
-The `wrench_matrix_file_path` and `wrench_matrix_pseudoinverse_file_path` fields contain the paths to the [CSV files](#csv-files) containing the [wrench matrix](#wrench-matrix) and its [pseudoinverse](#wrench-matrix-pseudoinverse), respectively. These files are used by the [thruster allocator](#thruster-allocator) to compute the [thrust allocation vector](#thrust-allocation-vector). They should be unique for each robot. They should be specified relative to the directory of this package. They should not contain a leading `/`. For example, if the CSV files are in the `data` directory, the paths should be `data/wrench_matrix.csv` and `data/wrench_matrix_pseudoinverse.csv`.
+The `wrench_matrix_file_path` and `wrench_matrix_pseudoinverse_file_path` fields contain the paths to the [CSV files](#csv-files) containing the [wrench matrix](#wrench-matrix) and its [pseudoinverse](#wrench-matrix-pseudoinverse), respectively. These files are used by the [thruster allocator](#thruster-allocator) to compute the [thrust allocation vector](#thrust-allocation-vector). They should be unique for each robot. They should be specified relative to the directory of this package. They should **not** contain a leading `/`. For example, if the CSV files are in the `data` directory, the paths should be `data/wrench_matrix.csv` and `data/wrench_matrix_pseudoinverse.csv`.
 
 
 ### CSV Files
@@ -350,7 +350,7 @@ Each of these launch files contains the following parameters:
 - [Eigen3](https://eigen.tuxfamily.org): A C++ library for linear algebra. It is used by the system to perform matrix operations.
 - [fmt](https://fmt.dev): A C++ library for formatting strings. It is used by the system to format messages printed to the console.
 - [OSQP](https://osqp.org): A C library for solving [quadratic programming](#quadratic-programming) problems. It is used by the [thruster allocator](#thruster-allocator) to compute the [thrust allocation vector](#thrust-allocation-vector).
-- [OSQP-Eigen](https://robotology.github.io/osqp-eigen): A C++ wrapper for OSQP. It is used by the system to interface with OSQP.
+- [OSQP-Eigen](https://robotology.github.io/osqp-eigen): A C++ wrapper for OSQP. It is used by the system to interface with OSQP via Eigen.
 - [yaml-cpp](https://github.com/jbeder/yaml-cpp): A C++ library for parsing YAML files. It is used by the system to parse the [robot config files](#robot-config-file).
 
 ### Non-ROS Python
@@ -590,7 +590,7 @@ The controls package does not call any services.
 
 ## Development
 ### Modifying Dependencies
-If a new source file is added to the package, or if the package's dependencies are modified, the `CMakeLists.txt` and `package.xml` files must be updated to reflect these changes so that Catkin can compile the package.
+If a new source file is added to the package, or if the package's dependencies are modified, the `CMakeLists.txt` and `package.xml` files must be updated to reflect these changes so that Colcon can compile the package.
 
 #### Adding Source Files
 To add a new source file to the package, add the file to the `src` directory and add the file's name to `SOURCES` variable in the `CMakeLists.txt` file. For example, if the file is named `new_file.cpp`, add the following line to the `CMakeLists.txt` file:
