@@ -1,5 +1,6 @@
-from setuptools import find_packages, setup
 from glob import glob
+
+from setuptools import find_packages, setup
 
 package_name = 'system_utils'
 
@@ -24,7 +25,7 @@ setup(
         'console_scripts': [
             'record_bag = system_utils.record_bag:main',
             'system_info_publisher = system_utils.system_info_publisher:main',
-            'topic_transforms = system_utils.topic_transforms:main'
+            'topic_transforms = system_utils.topic_transforms:main',
         ],
     },
 )
