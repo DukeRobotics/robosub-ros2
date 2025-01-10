@@ -39,10 +39,10 @@ class BinDetector(Node):
         self.red_bin_distance_pub = self.create_publisher(Point, '/cv/bottom/bin_red/distance', 10)
 
         # centre bin publsihers (NOTE we don't actually publish to these heheheha)
-        self.bin_center_hsv_filtered_pub = self.create_publisher(Image, "/cv/bottom/bin_center/hsv_filtered", 10)
-        self.bin_center_contour_image_pub = self.create_publisher(Image, "/cv/bottom/bin_center/contour_image", 10)
-        self.bin_center_bounding_box_pub = self.create_publisher(CVObject, "/cv/bottom/bin_center/bounding_box", 10)
-        self.bin_center_distance_pub = self.create_publisher(Point, "/cv/bottom/bin_center/distance", 10)
+        self.bin_center_hsv_filtered_pub = self.create_publisher(Image, '/cv/bottom/bin_center/hsv_filtered', 10)
+        self.bin_center_contour_image_pub = self.create_publisher(Image, '/cv/bottom/bin_center/contour_image', 10)
+        self.bin_center_bounding_box_pub = self.create_publisher(CVObject, '/cv/bottom/bin_center/bounding_box', 10)
+        self.bin_center_distance_pub = self.create_publisher(Point, '/cv/bottom/bin_center/distance', 10)
         ##print("Init")
 
     def image_callback(self, data):
