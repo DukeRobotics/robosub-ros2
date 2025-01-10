@@ -134,6 +134,10 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
     ```bash
     docker exec -ti -w /root/dev/robosub-ros2 onboard2 bash
     ```
+    - If you're running this command in Git Bash on Windows, add an extra `/` before `/root`:
+        ```bash
+        docker exec -ti -w //root/dev/robosub-ros2 onboard2 bash
+        ```
 4. Now, you're ready to start developing!
     - Any changes you make in the repository on your host machine are reflected in the `/root/dev/robosub-ros2` directory in the Docker container.
     - If you set `NO_GIT=false` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
