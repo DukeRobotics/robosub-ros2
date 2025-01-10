@@ -1,12 +1,11 @@
-from rclpy.logging import get_logger
-import rclpy
-from rclpy.node import Node
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
+from rclpy.logging import get_logger
+from rclpy.node import Node
 from robot_localization.srv import SetPose
 from sensor_msgs.msg import Imu
-from tf2_ros.buffer import Buffer
 from task_planning.utils.other_utils import singleton
+from tf2_ros.buffer import Buffer
 
 logger = get_logger('state')
 

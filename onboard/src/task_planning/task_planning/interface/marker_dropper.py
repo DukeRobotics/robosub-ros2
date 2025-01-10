@@ -1,6 +1,6 @@
+from example_interfaces.srv import SetBool
 from rclpy.logging import get_logger
 from rclpy.node import Node
-from example_interfaces.srv import SetBool
 from task_planning.utils.other_utils import singleton
 
 logger = get_logger('marker_dropper')

@@ -1,22 +1,20 @@
-from typing import Optional, List, Tuple, Union
 import copy
-
-from transforms3d.euler import quat2euler, euler2quat
+from typing import Union
 
 import rclpy
-from rclpy.clock import Clock
-from rclpy.duration import Duration
 from geometry_msgs.msg import Pose, Twist
+from rclpy.clock import Clock
+from transforms3d.euler import euler2quat, quat2euler
 
 from task_planning.interface.controls import Controls
 from task_planning.interface.state import State
-from task_planning.task import task, Yield, Task
-from task_planning.utils import geometry_utils, coroutine_utils
+from task_planning.task import Task, Yield, task
+from task_planning.utils import coroutine_utils, geometry_utils
 
 logger = rclpy.logging.get_logger('move_tasks')
 
 @task
-async def move_to_pose_global(self: Task, pose: Pose, timeout: int = 30) -> Task[None, Optional[Pose], None]:
+async def move_to_pose_global(self: Task, pose: Pose, timeout: int = 30) -> Task[None, Pose | None, None]:
     """
     Move to a global pose in the "odom" frame. Returns when the robot is at the given pose with zero velocity, within
     a small tolerance.
@@ -40,13 +38,13 @@ async def move_to_pose_global(self: Task, pose: Pose, timeout: int = 30) -> Task
 
         # Check if the timeout has been reached
         if (Clock().now() - start_time).to_sec() > timeout:
-            logger.warn("Move to pose timed out")
+            logger.warning('Move to pose timed out')
             return None
 
 
 @task
 async def move_to_pose_local(self: Task, pose: Pose, keep_level=False,
-                             timeout: int = 30) -> Task[None, Optional[Pose], None]:
+                             timeout: int = 30) -> Task[None, Pose | None, None]:
     """
     Move to local pose in the "base_link" frame. Returns when the robot is at the given pose with zero velocity, within
     a small tolerance.
@@ -72,7 +70,7 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_level=False,
 
 
 @task
-async def move_with_velocity(self: Task, twist: Twist) -> Task[None, Optional[Twist], None]:
+async def move_with_velocity(self: Task, twist: Twist) -> Task[None, Twist | None, None]:
     """
     Move with a given velocity. Returns when the robot is moving with the given velocity.
 
@@ -93,7 +91,7 @@ async def move_with_velocity(self: Task, twist: Twist) -> Task[None, Optional[Tw
 
 
 @task
-async def move_with_power_for_seconds(self: Task, power: Twist, seconds: float) -> Task[None, Optional[Twist], None]:
+async def move_with_power_for_seconds(self: Task, power: Twist, seconds: float) -> Task[None, Twist | None, None]:
     """
     Move with a given power for a given number of seconds. Returns when the time has elapsed.
 
@@ -130,15 +128,15 @@ async def hold_position(self: Task) -> Task[bool, None, None]:
 
 @task
 async def depth_correction(self: Task, desired_depth: float) -> Task[None, None, None]:
-    logger.info(f"State().depth: {State().depth}")
+    logger.info(f'State().depth: {State().depth}')
     depth_delta = desired_depth - State().depth
-    logger.info(f"depth_delta: {depth_delta}")
+    logger.info(f'depth_delta: {depth_delta}')
 
-    logger.info(f"Started depth correction {depth_delta}")
+    logger.info(f'Started depth correction {depth_delta}')
     await move_to_pose_local(
         geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0),
         parent=self)
-    logger.info(f"Finished depth correction {depth_delta}")
+    logger.info(f'Finished depth correction {depth_delta}')
 
 
 @task
@@ -149,30 +147,30 @@ async def correct_depth(self: Task, desired_depth: float):
 @task
 async def move_x(self: Task, step=1):
     await move_to_pose_local(geometry_utils.create_pose(step, 0, 0, 0, 0, 0), parent=self)
-    logger.info(f"Moved x {step}")
+    logger.info(f'Moved x {step}')
 
 
 @task
 async def move_y(self: Task, step=1):
     await move_to_pose_local(geometry_utils.create_pose(0, step, 0, 0, 0, 0), parent=self)
-    logger.info(f"Moved y {step}")
+    logger.info(f'Moved y {step}')
 
 
-Direction = Union[Tuple[float, float, float], Tuple[float, float, float, float, float, float]]
-Directions = List[Direction]
+Direction = Union[tuple[float, float, float], tuple[float, float, float, float, float, float]]
+Directions = list[Direction]
 
 
 @task
 async def move_with_directions(self: Task, directions: Directions, correct_yaw=False, correct_depth=False):
 
     for direction in directions:
-        assert len(direction) in [3, 6], "Each tuple in the directions list must be of length 3 or 6. Tuple "
-        f"{direction} has length {len(direction)}."
+        assert len(direction) in [3, 6], 'Each tuple in the directions list must be of length 3 or 6. Tuple '
+        f'{direction} has length {len(direction)}.'
 
         await move_to_pose_local(
             geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
             parent=self)
-        logger.info(f"Moved to {direction}")
+        logger.info(f'Moved to {direction}')
 
         if correct_yaw:
             await self.parent.correct_yaw()

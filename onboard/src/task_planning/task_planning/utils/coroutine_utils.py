@@ -1,10 +1,9 @@
-import rclpy
+from collections.abc import Callable, Coroutine
+from typing import TypeVar
+
 from rclpy.clock import Clock
 from rclpy.duration import Duration
-from typing import Callable, Coroutine, Optional, TypeVar
-
 from task_planning.task import Task, Yield
-
 
 SendType = TypeVar('SendType')
 TransformedSendType = TypeVar('TransformedSendType')
@@ -15,9 +14,9 @@ TransformedReturnType = TypeVar('TransformedReturnType')
 
 
 async def transform(task: Task[YieldType, TransformedSendType, ReturnType],
-                    send_transformer: Optional[Callable[[SendType], TransformedSendType]] = None,
-                    yield_transformer: Optional[Callable[[YieldType], TransformedYieldType]] = None,
-                    return_transformer: Optional[Callable[[ReturnType], TransformedReturnType]] = None) -> \
+                    send_transformer: Callable[[SendType], TransformedSendType] | None = None,
+                    yield_transformer: Callable[[YieldType], TransformedYieldType] | None = None,
+                    return_transformer: Callable[[ReturnType], TransformedReturnType] | None = None) -> \
                         Coroutine[TransformedYieldType, SendType, TransformedReturnType]:
     """
     Transform the input and output of a task.
@@ -37,7 +36,6 @@ async def transform(task: Task[YieldType, TransformedSendType, ReturnType],
     Returns:
         The transformed returned value of the task
     """
-
     input = None
     output = None
     while not task.done:
@@ -74,7 +72,6 @@ async def sleep(secs: float):
     """
     Sleep for a given number of seconds. Yields frequently, then returns when the time has elapsed.
     """
-
     duration = Duration(seconds=secs)
     start_time = Clock().now()
     while start_time + duration > Clock().now():

@@ -1,14 +1,14 @@
-from rclpy.logging import get_logger
-from rclpy.node import Node
+import os
 
-from std_srvs.srv import Trigger, SetBool
-from geometry_msgs.msg import Pose, Twist
+import resource_retriever as rr
+import yaml
 from custom_msgs.msg import ControlTypes, ThrusterAllocs
 from custom_msgs.srv import SetControlTypes
+from geometry_msgs.msg import Pose, Twist
+from rclpy.logging import get_logger
+from rclpy.node import Node
+from std_srvs.srv import SetBool, Trigger
 from task_planning.utils.other_utils import singleton
-import resource_retriever as rr
-import os
-import yaml
 
 logger = get_logger('controls')
 
@@ -57,7 +57,7 @@ class Controls:
             ControlTypes,
             self.CONTROL_TYPES_TOPIC,
             self._update_control_types,
-            10
+            10,
         )
 
         self._reset_pid_loops = node.create_client(Trigger, self.RESET_PID_LOOPS_SERVICE)
@@ -132,7 +132,7 @@ class Controls:
                 z=type,
                 roll=type,
                 pitch=type,
-                yaw=type
+                yaw=type,
             ))
         self._all_axes_control_type = type
         self.start_new_move()
@@ -211,11 +211,11 @@ class Controls:
         for kwarg_name, kwarg_value in kwargs.items():
 
             if kwarg_name not in self.thruster_dict:
-                raise ValueError(f"Thruster name not in thruster_dict {kwarg_name}")
+                raise ValueError(f'Thruster name not in thruster_dict {kwarg_name}')
 
             if kwarg_value > 1 or kwarg_value < -1:
-                raise ValueError(f"Recieved {kwarg_value} for thruster {kwarg_name}. Thruster alloc must be between " +
-                                 "-1 and 1 inclusive.")
+                raise ValueError(f'Recieved {kwarg_value} for thruster {kwarg_name}. Thruster alloc must be between ' +
+                                 '-1 and 1 inclusive.')
 
             thruster_allocs[self.thruster_dict[kwarg_name]] = kwarg_value
 

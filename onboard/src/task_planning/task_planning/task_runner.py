@@ -1,19 +1,17 @@
-from task_planning.interface.controls import Controls
-from task_planning.interface.cv import CV
-from task_planning.interface.state import State
-from task_planning.interface.marker_dropper import MarkerDropper
+import time
 
 import rclpy
-from rclpy.node import Node
-import time
-from rclpy.duration import Duration
-from rclpy.clock import Clock
-
-from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
-import task_planning.comp_tasks as comp_tasks
-import task_planning.test_tasks as test_tasks
-
 import tf2_ros
+from rclpy.clock import Clock
+from rclpy.duration import Duration
+from rclpy.node import Node
+
+from task_planning import test_tasks
+from task_planning.interface.controls import Controls
+from task_planning.interface.cv import CV
+from task_planning.interface.marker_dropper import MarkerDropper
+from task_planning.interface.state import State
+from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
 
 TASK_RATE_SECS = 1 / 30
 

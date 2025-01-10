@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Obtained on October 19, 2024, from iron branch of: https://github.com/DFKI-NI/rospy_message_converter
 # Any edits made to the original are marked with "EDIT" comments.
@@ -22,7 +21,8 @@
 import array
 import base64
 from collections import OrderedDict
-from typing import Any, Dict, Iterator, Text
+from collections.abc import Iterator
+from typing import Any
 
 import numpy as np
 import rosidl_parser.definition
@@ -80,7 +80,7 @@ def convert_dictionary_to_ros_message(
         >>> convert_dictionary_to_ros_message(msg_type, dict_msg, kind)
         std_srvs.srv.SetBool_Request(data=True)
     """
-    if isinstance(message_type, Text):
+    if isinstance(message_type, str):
         # message_type = type name as string (e.g., "std_msgs/msg/String")
         if kind == 'message':
             message_class = get_message(message_type)
@@ -102,7 +102,7 @@ def convert_dictionary_to_ros_message(
 
 
 def set_message_fields(
-    msg: Any, values: Dict[str, Any], strict_mode: bool = True, check_missing_fields: bool = False
+    msg: Any, values: dict[str, Any], strict_mode: bool = True, check_missing_fields: bool = False,
 ) -> None:
     """
     Set the fields of a ROS message.
@@ -139,8 +139,7 @@ def set_message_fields(
         except AttributeError as e:
             if strict_mode:
                 raise e
-            else:
-                continue
+            continue
         field_type = type(field)
         if field_type is array.array:
             if isinstance(field_value, (str, bytes)):
@@ -174,9 +173,7 @@ def set_message_fields(
         setattr(msg, field_name, value)
 
     if check_missing_fields and remaining_message_fields:
-        error_message = 'fields in dictionary missing from ROS message: "{0}"'.format(
-            list(remaining_message_fields.keys()),
-        )
+        error_message = f'fields in dictionary missing from ROS message: "{list(remaining_message_fields.keys())}"'
         raise ValueError(error_message)
 
 
@@ -190,7 +187,6 @@ def convert_ros_message_to_dictionary(message: Any, base64_encoding: bool = True
         >>> convert_ros_message_to_dictionary(ros_message)
         OrderedDict([('data', 42)])
     """
-
     return message_to_ordereddict(message, base64_encoding=base64_encoding)
 
 
@@ -226,7 +222,7 @@ def message_to_ordereddict(
     # of the field types. But here we want the "rosidl_parser.definition" types, so we zip the
     # field names together with SLOT_TYPES. The length of these two is guaranteed to be the same
     # length by the Python code generator.
-    for field_name, field_type in zip(msg.get_fields_and_field_types().keys(), msg.SLOT_TYPES):
+    for field_name, field_type in zip(msg.get_fields_and_field_types().keys(), msg.SLOT_TYPES, strict=False):
         value = getattr(msg, field_name, None)
 
         value = _convert_value(
@@ -242,14 +238,14 @@ def message_to_ordereddict(
 
 
 def _convert_value(
-    value, *, base64_encoding: bool = True, field_type=None, truncate_length=None, no_arr=False, no_str=False
+    value, *, base64_encoding: bool = True, field_type=None, truncate_length=None, no_arr=False, no_str=False,
 ):
     if isinstance(value, bytes):
         if truncate_length is not None and len(value) > truncate_length:
             value = bytearray(''.join([chr(c) for c in value[:truncate_length]]) + '...', 'utf-8')
     elif isinstance(value, str):
         if no_str is True:
-            value = '<string length: <{0}>>'.format(len(value))
+            value = f'<string length: <{len(value)}>>'
         elif truncate_length is not None and len(value) > truncate_length:
             value = value[:truncate_length] + '...'
     elif isinstance(value, (list, tuple, array.array, np.ndarray)):
@@ -280,7 +276,7 @@ def _convert_value(
                     )
                     for v in value
                 ]
-                + ['...']
+                + ['...'],
             )
         else:
             # Convert every item in the list
@@ -294,7 +290,7 @@ def _convert_value(
                         no_str=no_str,
                     )
                     for v in value
-                ]
+                ],
             )
     elif isinstance(value, dict) or isinstance(value, OrderedDict):
         # Convert each key and value in the mapping
@@ -326,27 +322,26 @@ def _convert_value(
 def __abbreviate_array_info(value, field_type):
     value_type_name = __get_type_name(field_type.value_type)
     if isinstance(field_type, rosidl_parser.definition.Array):
-        return '<array type: {0}[{1}]>'.format(value_type_name, field_type.size)
-    elif isinstance(field_type, rosidl_parser.definition.BoundedSequence):
-        return '<sequence type: {0}[{1}], length: {2}>'.format(value_type_name, field_type.maximum_size, len(value))
-    elif isinstance(field_type, rosidl_parser.definition.UnboundedSequence):
-        return '<sequence type: {0}, length: {1}>'.format(value_type_name, len(value))
+        return f'<array type: {value_type_name}[{field_type.size}]>'
+    if isinstance(field_type, rosidl_parser.definition.BoundedSequence):
+        return f'<sequence type: {value_type_name}[{field_type.maximum_size}], length: {len(value)}>'
+    if isinstance(field_type, rosidl_parser.definition.UnboundedSequence):
+        return f'<sequence type: {value_type_name}, length: {len(value)}>'
     return 'unknown'
 
 
 def __get_type_name(value_type):
     if isinstance(value_type, rosidl_parser.definition.BasicType):
         return value_type.typename
-    elif isinstance(value_type, rosidl_parser.definition.AbstractString):
+    if isinstance(value_type, rosidl_parser.definition.AbstractString):
         return 'string'
-    elif isinstance(value_type, rosidl_parser.definition.AbstractWString):
+    if isinstance(value_type, rosidl_parser.definition.AbstractWString):
         return 'wstring'
-    elif isinstance(value_type, rosidl_parser.definition.NamedType):
+    if isinstance(value_type, rosidl_parser.definition.NamedType):
         return value_type.name
-    elif isinstance(value_type, rosidl_parser.definition.NamespacedType):
+    if isinstance(value_type, rosidl_parser.definition.NamespacedType):
         return '/'.join(value_type.namespaced_name())
-    else:
-        return 'unknown'
+    return 'unknown'
 
 
 def _get_message_fields(message) -> Iterator[tuple[str, str]]:

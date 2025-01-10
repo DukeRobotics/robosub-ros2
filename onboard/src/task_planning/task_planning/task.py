@@ -1,20 +1,18 @@
 from __future__ import annotations
 
-from rclpy.qos import QoSProfile, HistoryPolicy
-from enum import IntEnum
 import inspect
+from collections.abc import Callable, Coroutine, Generator
+from enum import IntEnum
+from typing import Any, Generic, TypeVar
+
 import jsonpickle
-from typing import Any, Callable, Coroutine, Generator, Generic, Optional, Type, TypeVar, Union
-
-from rclpy.time import Time
-from std_msgs.msg import Header
-import rclpy
-from rclpy.node import Node
 from custom_msgs.msg import TaskUpdate
-
-from task_planning.utils.other_utils import singleton
+from rclpy.node import Node
+from rclpy.qos import HistoryPolicy, QoSProfile
+from std_msgs.msg import Header
 
 from task_planning.message_conversion.jsonpickle_custom_handlers import register_custom_jsonpickle_handlers
+from task_planning.utils.other_utils import singleton
 
 # Register all JSONPickle handlers for custom classes
 register_custom_jsonpickle_handlers()
@@ -79,29 +77,28 @@ class TaskUpdatePublisher:
             AssertionError: If name is not a string
             AssertionError: If the status is not a valid TaskStatus
         """
-
         # Ensure id, parent_id, and name are of the correct types
-        assert isinstance(task_id, int), "Task id must be an int"
-        assert isinstance(parent_id, int), "Parent id must be an int"
-        assert isinstance(name, str), "Name must be a string"
+        assert isinstance(task_id, int), 'Task id must be an int'
+        assert isinstance(parent_id, int), 'Parent id must be an int'
+        assert isinstance(name, str), 'Name must be a string'
 
         # Ensure status is one of the valid statuses
-        assert status in TaskStatus, "Invalid task status"
+        assert status in TaskStatus, 'Invalid task status'
 
         # Options for jsonpickle encoding
         jsonpickle_options = {
-            "unpicklable": True,
-            "make_refs": False,
-            "warn": True,
-            "fail_safe": lambda e: "Failed to encode"  # If an object fails to encode, replace it with this string
+            'unpicklable': True,
+            'make_refs': False,
+            'warn': True,
+            'fail_safe': lambda e: 'Failed to encode',  # If an object fails to encode, replace it with this string
         }
 
         # Encode the data to JSON
-        msg_data = ""
+        msg_data = ''
         try:
             msg_data = jsonpickle.encode(data, **jsonpickle_options)
         except Exception:
-            self.get_logger().warn(f"Task with id {task_id} failed to encode data to JSON when publishing {status.name}: {data}")
+            self.get_logger().warn(f'Task with id {task_id} failed to encode data to JSON when publishing {status.name}: {data}')
             msg_data = jsonpickle.encode(str(data), **jsonpickle_options)
 
         # Create message header
@@ -115,9 +112,9 @@ class TaskUpdatePublisher:
         self.node.destroy_publisher(self.publisher)
 
 
-YieldType = TypeVar("YieldType")
-SendType = TypeVar("SendType")
-ReturnType = TypeVar("ReturnType")
+YieldType = TypeVar('YieldType')
+SendType = TypeVar('SendType')
+ReturnType = TypeVar('ReturnType')
 
 
 class Task(Generic[YieldType, SendType, ReturnType]):
@@ -141,7 +138,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
     MAIN_ID = 0
 
     def __init__(self, coroutine: Callable[..., Coroutine[YieldType, SendType, ReturnType]], *args,
-                 parent: Optional[Union[Task, int]] = None, **kwargs):
+                 parent: Task | int | None = None, **kwargs):
         """
         Initialize the Task object.
 
@@ -155,7 +152,6 @@ class Task(Generic[YieldType, SendType, ReturnType]):
             ValueError: If the parent is not a Task or Task.MAIN_ID
             AssertionError: If the coroutine is not a native coroutine
         """
-
         self._initialized = False
         self._id = id(self)
         self._done = False
@@ -169,10 +165,10 @@ class Task(Generic[YieldType, SendType, ReturnType]):
             self.parent = parent
             self._parent_id = parent.id
         else:
-            raise ValueError("Task parent must be a Task or MAIN_ID. Instead got " + str(parent))
+            raise ValueError('Task parent must be a Task or MAIN_ID. Instead got ' + str(parent))
 
         # Ensure coroutine is a native coroutine
-        assert inspect.iscoroutinefunction(coroutine), "Coroutine must be a native coroutine"
+        assert inspect.iscoroutinefunction(coroutine), 'Coroutine must be a native coroutine'
 
         # Initialize the coroutine
         self._coroutine = coroutine(self, *args, **kwargs)
@@ -182,9 +178,9 @@ class Task(Generic[YieldType, SendType, ReturnType]):
 
         initialized_data = {}
         if args:
-            initialized_data["args"] = args
+            initialized_data['args'] = args
         if kwargs:
-            initialized_data["kwargs"] = kwargs
+            initialized_data['kwargs'] = kwargs
         self._publish_update(TaskStatus.INITIALIZED, initialized_data)
         self._initialized = True
 
@@ -255,7 +251,6 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         Raises:
             AssertionError: If the status is not a valid TaskStatus
         """
-
         TaskUpdatePublisher().publish_update(self._id, self._parent_id, self._name, status, data)
 
     def step(self):
@@ -264,7 +259,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         """
         return self.send(None)
 
-    def send(self, value: SendType) -> Union[YieldType, ReturnType]:
+    def send(self, value: SendType) -> YieldType | ReturnType:
         """
         Send a value to the coroutine.
 
@@ -277,7 +272,6 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         Raises:
             Type[BaseException]: If the coroutine raises an exception
         """
-
         self._started = True
         try:
             self._publish_update(TaskStatus.RESUMED, value)
@@ -293,7 +287,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
             self._publish_update(TaskStatus.ERRORED, e)
             raise e
 
-    def throw(self, error: Type[BaseException]) -> Union[YieldType, ReturnType]:
+    def throw(self, error: type[BaseException]) -> YieldType | ReturnType:
         """
         Raise an exception in the coroutine.
 
@@ -306,7 +300,6 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         Raises:
             Type[BaseException]: If the coroutine raises an exception
         """
-
         self._started = True
         try:
             self._publish_update(TaskStatus.THREW, error)
@@ -326,7 +319,6 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         """
         Close the coroutine.
         """
-
         if not self._done:
             try:
                 self._publish_update(TaskStatus.CLOSED, None)
@@ -341,7 +333,6 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         """
         Close the coroutine when the object is deleted.
         """
-
         if self._initialized and not self._done:
             try:
                 self._publish_update(TaskStatus.DELETED, None)
@@ -365,7 +356,6 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         Raises:
             Type[BaseException]: If the coroutine raises an exception
         """
-
         input = None
         output = None
         while not self._done:

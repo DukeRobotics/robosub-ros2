@@ -3,21 +3,19 @@ import importlib
 import traceback
 
 import jsonpickle
-
-from rclpy.logging import get_logger
-
 import rosidl_runtime_py
-
-from task_planning.message_conversion.ros_message_converter import \
-    convert_dictionary_to_ros_message, convert_ros_message_to_dictionary
-
+from rclpy.logging import get_logger
+from task_planning.message_conversion.ros_message_converter import (
+    convert_dictionary_to_ros_message,
+    convert_ros_message_to_dictionary,
+)
 
 logger = get_logger('jsonpickle_custom_handlers')
 
 ACTION_CLASSES_TO_TYPES = {
-    "Goal": lambda cls_base: cls_base.Goal,
-    "Result": lambda cls_base: cls_base.Result,
-    "Feedback": lambda cls_base: cls_base.Feedback,
+    'Goal': lambda cls_base: cls_base.Goal,
+    'Result': lambda cls_base: cls_base.Result,
+    'Feedback': lambda cls_base: cls_base.Feedback,
 }
 ACTION_CLASSES_TO_TYPES_KEYS_TUPLE = tuple(ACTION_CLASSES_TO_TYPES.keys())
 
@@ -28,8 +26,8 @@ class ROSMessageHandler(jsonpickle.handlers.BaseHandler):
     """
 
     def flatten(self, obj, data):
-        data["ros/type"] = (
-            "/".join(type(obj).__module__.split(".")[:-1]) + "/" + type(obj).__name__
+        data['ros/type'] = (
+            '/'.join(type(obj).__module__.split('.')[:-1]) + '/' + type(obj).__name__
         )
         data['ros/data'] = convert_ros_message_to_dictionary(obj)
         return data
@@ -39,10 +37,10 @@ class ROSMessageHandler(jsonpickle.handlers.BaseHandler):
         dictionary = obj['ros/data']
 
         # Handle action messages that can't be directly imported
-        package, interface_type, cls_name = message_type.split("/")
-        if interface_type == "action" and cls_name.endswith(ACTION_CLASSES_TO_TYPES_KEYS_TUPLE):
-            module = importlib.import_module(f"{package}.{interface_type}")
-            cls_base_name, cls_suffix = cls_name.rsplit("_", 1)
+        package, interface_type, cls_name = message_type.split('/')
+        if interface_type == 'action' and cls_name.endswith(ACTION_CLASSES_TO_TYPES_KEYS_TUPLE):
+            module = importlib.import_module(f'{package}.{interface_type}')
+            cls_base_name, cls_suffix = cls_name.rsplit('_', 1)
             cls_base = getattr(module, cls_base_name)
             message_type = ACTION_CLASSES_TO_TYPES[cls_suffix](cls_base)
 
@@ -79,7 +77,6 @@ class BaseExceptionHandler(jsonpickle.handlers.BaseHandler):
         Raises:
             AttributeError: If the specified exception type is not found in the `builtins` module.
         """
-
         exc_type = obj['exception/type']
         exc_message = obj['exception/message']
 
@@ -106,13 +103,13 @@ def get_interface_classes() -> None:
 
     for package, interface_names in interfaces.items():
         for name in interface_names:
-            interface_type, cls_name = name.split("/")
+            interface_type, cls_name = name.split('/')
             module = importlib.import_module(f'{package}.{interface_type}')
 
             suffixes = {
-                "msg": [""],
-                "srv": ["", "_Event", "_Request", "_Response"],
-                "action": [
+                'msg': [''],
+                'srv': ['', '_Event', '_Request', '_Response'],
+                'action': [
                     '',
                     '_GetResult_Event',
                     '_GetResult_Request',
