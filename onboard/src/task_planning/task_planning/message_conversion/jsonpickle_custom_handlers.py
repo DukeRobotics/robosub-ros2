@@ -60,21 +60,37 @@ class BaseExceptionHandler(jsonpickle.handlers.BaseHandler):
         data['exception/traceback'] = traceback.format_tb(obj.__traceback__)
         return data
 
-    def restore(self, obj):
+    def restore(self, obj) -> None:
+        """
+        Restores an exception instance from serialized exception data.
+
+        This method reconstructs an exception object using the provided dictionary,
+        which contains the type and message of the exception. The traceback is not included
+        in the reconstructed exception.
+
+        Args:
+            obj (dict): A dictionary containing serialized exception data with the following keys:
+                - 'exception/type' (str): The name of the exception class (e.g., 'ValueError').
+                - 'exception/message' (str): The message of the exception.
+
+        Returns:
+            Exception: The reconstructed exception instance based on the type and message provided.
+
+        Raises:
+            AttributeError: If the specified exception type is not found in the `builtins` module.
+        """
+
         exc_type = obj['exception/type']
         exc_message = obj['exception/message']
 
         # Reconstruct the exception object; does not include traceback
         exc_class = getattr(builtins, exc_type)
-        exc_instance = exc_class(exc_message)
 
-        return exc_instance
+        return exc_class(exc_message)
 
 
-def register_custom_jsonpickle_handlers():
-    """
-    Register all custom JSONPickle handlers.
-    """
+def register_custom_jsonpickle_handlers() -> None:
+    """Register all custom JSONPickle handlers."""
     num_interface_classes = 0
     for cls in get_interface_classes():
         jsonpickle.handlers.register(cls, ROSMessageHandler, base=True)
@@ -84,28 +100,26 @@ def register_custom_jsonpickle_handlers():
     jsonpickle.handlers.register(BaseException, BaseExceptionHandler, base=True)
 
 
-def get_interface_classes():
-    """
-    Generator that yields ROS 2 interface classes (including custom interfaces).
-    """
+def get_interface_classes() -> None:
+    """Generator that yields ROS 2 interface classes (including custom interfaces)."""
     interfaces = rosidl_runtime_py.get_interfaces()
 
     for package, interface_names in interfaces.items():
         for name in interface_names:
             interface_type, cls_name = name.split("/")
-            module = importlib.import_module(f"{package}.{interface_type}")
+            module = importlib.import_module(f'{package}.{interface_type}')
 
             suffixes = {
                 "msg": [""],
                 "srv": ["", "_Event", "_Request", "_Response"],
                 "action": [
-                    "",
-                    "_GetResult_Event",
-                    "_GetResult_Request",
-                    "_GetResult_Response",
-                    "_SendGoal_Event",
-                    "_SendGoal_Request",
-                    "_SendGoal_Response",
+                    '',
+                    '_GetResult_Event',
+                    '_GetResult_Request',
+                    '_GetResult_Response',
+                    '_SendGoal_Event',
+                    '_SendGoal_Request',
+                    '_SendGoal_Response',
                 ],
             }
 
@@ -114,7 +128,7 @@ def get_interface_classes():
                 yield cls
 
             # Action messages have additional classes that are only accessible through the main action class
-            if interface_type == "action":
+            if interface_type == 'action':
                 action_cls = getattr(module, cls_name)
                 for class_to_type_func in ACTION_CLASSES_TO_TYPES.values():
                     yield class_to_type_func(action_cls)

@@ -26,6 +26,8 @@ from task_planning.interface.marker_dropper import MarkerDropper
 
 from task_planning.utils.coroutine_utils import sleep
 
+from typing import Coroutine
+
 
 # TODO: move stablize() to move_tasks.py
 #
@@ -113,29 +115,26 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
 
 
 @task
-async def buoy_task(self: Task, turn_to_face_buoy=False, depth=0.7) -> Task[None, None, None]:
-    """
-    Circumnavigate the buoy. Requires robot to have submerged 0.5 meters.
-    """
-
-    logger.info("Starting buoy task")
+async def buoy_task(self: Task, turn_to_face_buoy: bool = False, depth: float = 0.7) -> Task[None, None, None]:
+    """Circumnavigate the buoy. Requires robot to have submerged 0.5 meters."""
+    logger.info('Starting buoy task')
 
     DEPTH_LEVEL = State().orig_depth - depth
 
-    async def correct_y():
-        await cv_tasks.correct_y("buoy", parent=self)
+    async def correct_y() -> Coroutine[None, None, None]:
+        await cv_tasks.correct_y('buoy', parent=self)
 
-    async def correct_z():
-        await cv_tasks.correct_z(prop="buoy", parent=self)
+    async def correct_z() -> Coroutine[None, None, None]:
+        await cv_tasks.correct_z(prop='buoy', parent=self)
 
-    async def correct_depth():
+    async def correct_depth() -> Coroutine[None, None, None]:
         await move_tasks.correct_depth(desired_depth=DEPTH_LEVEL, parent=self)
     self.correct_depth = correct_depth
 
-    async def move_x(step=1):
+    async def move_x(step:float = 1) -> Coroutine[None, None, None]:
         await move_tasks.move_x(step=step, parent=self)
 
-    def get_step_size(dist, dist_threshold):
+    def get_step_size(dist:float, dist_threshold:float) -> float:
         if dist > 3:
             return 2
         elif dist > 2:
@@ -313,7 +312,7 @@ async def buoy_to_octagon(self: Task, direction: int = 1, move_forward: int = 0)
     async def move_with_directions(directions):
         await move_tasks.move_with_directions(directions, correct_yaw=False, correct_depth=True, parent=self)
 
-    async def correct_depth():
+    async def correct_depth() -> Coroutine[None, None, None]:
         await move_tasks.correct_depth(desired_depth=DEPTH_LEVEL, parent=self)
     self.correct_depth = correct_depth
 
@@ -323,17 +322,27 @@ async def buoy_to_octagon(self: Task, direction: int = 1, move_forward: int = 0)
         (0, 2 * direction, 0),
         (0, 2 * direction, 0),
         (0, 1 * direction, 0),
-        (move_forward, 0, 0)
+        (move_forward, 0, 0),
     ]
     await move_with_directions(directions)
 
 
 @task
-async def buoy_circumnavigation_power(self: Task, depth=0.7) -> Task[None, None, None]:
+async def buoy_circumnavigation_power(self: Task, depth: float = 0.7) -> Task[None, None, None]:
+    """
+    Perform a buoy circumnavigation task with a specified depth adjustment.
+
+    Args:
+        self (Task): The task instance.
+        depth (float): The depth offset to adjust the circumnavigation. Default is 0.7.
+
+    Returns:
+        Task[None, None, None]: The result of the circumnavigation task.
+    """
 
     DEPTH_LEVEL = State().orig_depth - depth
 
-    def publish_power():
+    def publish_power() -> None:
         power = Twist()
         power.linear.y = 0.9
         power.angular.z = -0.1
@@ -341,16 +350,16 @@ async def buoy_circumnavigation_power(self: Task, depth=0.7) -> Task[None, None,
                                          yaw=ControlTypes.DESIRED_POWER)
         Controls().publish_desired_power(power, set_control_types=False)
 
-    def stabilize():
+    def stabilize() -> None:
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
-    async def correct_depth():
+    async def correct_depth() -> Coroutine[None, None, None]:
         await move_tasks.correct_depth(desired_depth=DEPTH_LEVEL, parent=self)
 
     for _ in range(4):
         publish_power()
-        logger.info("Publish power")
+        logger.info('Publish power')
         await sleep(6)
         logger.info("Sleep 5 (1)")
         stabilize()
@@ -375,7 +384,7 @@ async def initial_submerge(self: Task, submerge_dist: float) -> Task[None, None,
         keep_level=True,
         parent=self
     )
-    logger.info(f"Submerged {submerge_dist} meters")
+    logger.info(f'Submerged {submerge_dist} meters')
 
     async def correct_roll_and_pitch():
         imu_orientation = State().imu.orientation
@@ -383,7 +392,7 @@ async def initial_submerge(self: Task, submerge_dist: float) -> Task[None, None,
         roll_correction = -euler_angles[0] * 1.2
         pitch_correction = -euler_angles[1] * 1.2
 
-        logger.info(f"Roll, pitch correction: {roll_correction, pitch_correction}")
+        logger.info(f'Roll, pitch correction: {roll_correction, pitch_correction}')
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, 0),
                                             parent=self)
 
@@ -392,6 +401,37 @@ async def initial_submerge(self: Task, submerge_dist: float) -> Task[None, None,
 
 @task
 async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
+    """
+    Perform the coin flip task, adjusting the robot's yaw and depth.
+
+    The coin flip task involves correcting the robot's yaw to return it to its original orientation and then adjusting its depth. The task continuously calculates yaw corrections based on the difference between the current and original orientations, making incremental adjustments until the yaw is within a specified threshold. After correcting yaw, the robot adjusts its depth to reach the desired level.
+
+    Args:
+        self (Task): The task instance managing the execution of the coin flip task.
+        depth_level (float): The depth adjustment level relative to the robot's original depth. Default is 0.7.
+
+    Returns:
+        Task[None, None, None]: The result of the task execution.
+
+    Detailed Process:
+        1. Calculate the desired yaw correction using the difference between the original and current IMU orientations.
+        2. Gradually adjust yaw in steps, ensuring the correction does not exceed the maximum allowed yaw change.
+        3. Once the yaw is corrected to within 5 degrees, adjust the robot's depth to the specified level.
+        4. Log each step of the process for debugging and traceability.
+
+    Logging:
+        - Logs the initial start of the coin flip task.
+        - Logs intermediate yaw corrections and desired yaw adjustments.
+        - Logs depth corrections and the final completion of the task.
+
+    Example:
+        >>> await coin_flip(task_instance, depth_level=0.5)
+
+    Notes:
+        - Uses `State` to access robot's current and original states, including depth and IMU orientation.
+        - Uses `geometry_utils` to create poses for yaw and depth corrections.
+        - The task continuously loops until the yaw correction is within the specified threshold (±5 degrees).
+    """
     logger.info("Started coin flip")
     DEPTH_LEVEL = State().orig_depth - depth_level
     MAXIMUM_YAW = math.radians(30)

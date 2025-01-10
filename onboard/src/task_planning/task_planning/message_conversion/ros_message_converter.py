@@ -22,11 +22,17 @@
 import array
 import base64
 from collections import OrderedDict
-from typing import Any, Dict, Text
+from typing import Any, Dict, Iterator, Text
 
 import numpy as np
 import rosidl_parser.definition
-from rosidl_parser.definition import AbstractNestedType, NamespacedType, Array, UnboundedSequence, BasicType
+from rosidl_parser.definition import (
+    AbstractNestedType,
+    Array,
+    BasicType,
+    NamespacedType,
+    UnboundedSequence,
+)
 from rosidl_runtime_py.convert import get_message_slot_types
 from rosidl_runtime_py.import_message import import_message_from_namespaced_type
 from rosidl_runtime_py.utilities import get_message, get_service
@@ -34,13 +40,13 @@ from rosidl_runtime_py.utilities import get_message, get_service
 
 def convert_dictionary_to_ros_message(
     message_type: Any,
-    dictionary: Dict[str, Any],
+    dictionary: dict[str, Any],
     kind: str = 'message',
     strict_mode: bool = True,
     check_missing_fields: bool = False,
 ) -> Any:
     """
-    Takes in the message type and a Python dictionary and returns a ROS message.
+    Convert a message type and a Python dictionary into a ROS message.
 
     :param message_type: Either the type name of the ROS message to return (as str), or the message class.
     :param dictionary: The values to set in the ROS message. The keys of the dictionary represent
@@ -86,7 +92,7 @@ def convert_dictionary_to_ros_message(
             service_class = get_service(message_type)
             message = service_class.Response()
         else:
-            raise ValueError('Unknown kind "%s".' % kind)
+            raise ValueError(f'Unknown kind "{kind}".')
     else:
         # message_type = message class (e.g., std_msgs.msg.String)
         message = message_type()
@@ -169,7 +175,7 @@ def set_message_fields(
 
     if check_missing_fields and remaining_message_fields:
         error_message = 'fields in dictionary missing from ROS message: "{0}"'.format(
-            list(remaining_message_fields.keys())
+            list(remaining_message_fields.keys()),
         )
         raise ValueError(error_message)
 
@@ -343,12 +349,12 @@ def __get_type_name(value_type):
         return 'unknown'
 
 
-def _get_message_fields(message):
-    field_names = [field_name for field_name in message.get_fields_and_field_types().keys()]
-    return zip(field_names, message.SLOT_TYPES)
+def _get_message_fields(message) -> Iterator[tuple[str, str]]:
+    field_names = list(message.get_fields_and_field_types())
+    return zip(field_names, message.SLOT_TYPES, strict=True)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     import doctest
 
     doctest.testmod()
