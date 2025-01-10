@@ -672,21 +672,74 @@ To debug with [GDB](https://sourceware.org/gdb), first compile this package with
 ```bash
 source build.sh controls --debug
 ```
-Then, run the following launch file to start the node through GDBServer:
+There are three ways to debug the system with GDB: through the [terminal](#terminal), through [VS Code with GDB Server](#vs-code-gdbserver), and through [VS Code with the compiled binary](#vs-code-compiled-binary).
+
+For more information on debugging with GDB, see the [GDB documentation](https://sourceware.org/gdb/current/onlinedocs/gdb/).
+
+For more information on debugging with VS Code, see the [VS Code documentation](https://code.visualstudio.com/docs/editor/debugging).
+
+#### Terminal
+Run the following launch file to start the node through GDBServer:
 ```bash
 ros2 launch controls controls_gdbserver.launch
 ```
-This will start the server at `localhost:3000`. Then, in a separate terminal, run the following command to attach GDB to the server:
+This will start the server at `localhost:3000`. In a separate terminal, run the following command to attach GDB to the server:
 ```bash
 gdb -ex "target remote localhost:3000"
 ```
+
+#### VS Code (GDBServer)
+Run the following launch file to start the node through GDBServer:
+```bash
+ros2 launch controls controls_gdbserver.launch
+```
+This will start the server at `localhost:3000`. Then, attach the VS Code debugger to the server.
+1. Go to the `Run and Debug` tab in VS Code.
+2. In the dropdown at the top, select `controls-gdbserver`
+3. Click the green play button.
+
+You can now use the GUI provided by VSCode to debug the system.
+
+> [!NOTE]
+> If you stop or restart the debugger, you must restart the node and GDB Server by running the launch file again.
+
+#### VS Code (Compiled Binary)
+You can also debug via VS Code by running the compiled binary directly through the VS Code debugger. You do **not** need to launch the node beforehand.
+1. Go to the `Run and Debug` tab in VS Code.
+2. In the dropdown at the top, select `controls-gdb`.
+3. Click the green play button.
+
+VS Code will run the compiled binary and use `gdb` to debug it.
+
+> [!NOTE]
+> This will run the node with the default values for the launch arguments. To specify different values:
+> 1. Open the `.vscode/launch.json` file.
+> 2. Find the `controls-gdb` configuration.
+> 3. Modify the `args` field in the following format:
+> ```json
+> {
+>   "name": "controls-gdb",
+>   ...
+>   "args": [
+>     "--ros-args",
+>     "-p", "param1:=value1",
+>     "-p", "param2:=value2",
+>     ...,
+>   ]
+>   ...
+> }
+> ```
+> 4. Save the file and run the debugger.
+>
+> Do **not** commit these changes to version control.
+
 ### Valgrind
 To debug with [Valgrind](https://valgrind.org), run the following launch file:
 ```bash
 ros2 launch controls controls_valgrind.launch
 ```
 > [!NOTE]
-> To modify the options used to run GDB or Valgrind, modify the `launch-prefix` in the `node` tag in the `controls_gdbserver.launch` and `controls_valgrind.launch` files.
+> To modify the options used to run GDB or Valgrind, modify the `launch-prefix` in the `node` tag in the `controls_gdbserver.launch` and `controls_valgrind.launch` files. If you're debugging with VS Code, modify `.vscode/launch.json`.
 
 ### Structural Principles
 The `controls` package is designed to be modular and extensible. It is divided into several classes, each of which is responsible for a specific aspect of the system. The classes are designed to be as independent as possible, so that they can be modified or replaced without affecting the rest of the system.
