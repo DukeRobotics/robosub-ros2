@@ -107,7 +107,7 @@ Ensure that the robot's current [state](#state) is being published to the `/stat
 
 Launch the controls node by running:
 ```bash
-roslaunch controls controls.launch
+ros2 launch controls controls.launch
 ```
 
 To make the robot move to a [desired state](#desired-state), do the following in the given order and in quick succession:
@@ -648,33 +648,45 @@ target_precompile_headers(controls
 ```
 
 ### Compiling
-When developing C++ code, first run
+When developing C++ code, source the `build.sh` script located at the repository root with `controls` as the first argument to compile only this package.
 ```bash
-cd onboard/catkin_ws
-```
-to change to the `onboard/catkin_ws` directory. Then, compile the package with:
-```bash
-catkin build controls
-```
-Then, run the package with the following command:
-```bash
-roslaunch controls controls.launch
+source build.sh controls
 ```
 
 > [!NOTE]
-> If only the controls package is modified, it is not necessary to recompile the entire workspace with `./build.sh`. Instead, only the controls package can be recompiled with the above command.
+> If you get an unusual error when compiling this package, especially one related to a "PCH file", then run `source build.sh clean onboard` to clean the build directories and try compiling again.
+
+Then, run the package with the following command:
+```bash
+ros2 launch controls controls.launch
+```
+
+> [!NOTE]
+> If only the controls package is modified, it is not necessary to recompile the entire workspace with `source build.sh`. Instead, only the controls package can be recompiled with the above command.
 >
-> However, if any compiled dependencies of the controls package are modified, then they must be recompiled. For example, if the `custom_msgs` package is modified, then the `core` workspace must be recompiled with `./build.sh` or with `catkin build` from the `core/catkin_ws` directory.
+> However, if any compiled dependencies of the controls package are modified, then they must be recompiled. For example, if the `custom_msgs` package is modified, then the `core` workspace must be recompiled with `source build.sh core`.
 
 ### Debugging
-When developing C++ code, it is often useful to debug the code with [GDB](https://sourceware.org/gdb) or [Valgrind](https://valgrind.org). The `controls` package provides launch files for debugging with GDB and Valgrind. Run them with the following commands:
+### GDB
+To debug with [GDB](https://sourceware.org/gdb), first compile this package with debug symbols:
 ```bash
-roslaunch controls controls_gdb.launch
+source build.sh controls --debug
 ```
+Then, run the following launch file to start the node through GDBServer:
 ```bash
-roslaunch controls controls_valgrind.launch
+ros2 launch controls controls_gdbserver.launch
 ```
-To modify the options used to run GDB or Valgrind, modify the `launch-prefix` in the `node` tag in the `controls_gdb.launch` and `controls_valgrind.launch` files.
+This will start the server at `localhost:3000`. Then, in a separate terminal, run the following command to attach GDB to the server:
+```bash
+gdb -ex "target remote localhost:3000"
+```
+### Valgrind
+To debug with [Valgrind](https://valgrind.org), run the following launch file:
+```bash
+ros2 launch controls controls_valgrind.launch
+```
+> [!NOTE]
+> To modify the options used to run GDB or Valgrind, modify the `launch-prefix` in the `node` tag in the `controls_gdbserver.launch` and `controls_valgrind.launch` files.
 
 ### Structural Principles
 The `controls` package is designed to be modular and extensible. It is divided into several classes, each of which is responsible for a specific aspect of the system. The classes are designed to be as independent as possible, so that they can be modified or replaced without affecting the rest of the system.
