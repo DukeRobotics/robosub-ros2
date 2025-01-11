@@ -19,6 +19,7 @@ RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
 RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends tini
+RUN apt install -y --no-install-recommends golang
 
 # Set up Python virtual environment and install packages
 # Virtual enviornment inherits system packages to ensure compatibility with ROS
@@ -33,11 +34,6 @@ ENV NVM_DIR=/root/.nvm
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash \
     && . $NVM_DIR/nvm.sh \
     && nvm install --lts=Jod
-
-# Install Foxglove CLI
-# See https://docs.foxglove.dev/docs/cli/
-RUN curl -L https://github.com/foxglove/foxglove-cli/releases/latest/download/foxglove-linux-arm64 -o /usr/local/bin/foxglove \
-    && chmod +x /usr/local/bin/foxglove
 
 # Set no password for root user
 RUN passwd -d root
@@ -85,6 +81,12 @@ RUN --mount=type=secret,id=github_auth_ssh_key,required=false \
     git config --global --add safe.directory /root/dev/robosub-ros2 && \
     git config --global pull.rebase false; \
     fi
+
+# Build and install foxglove CLI from source
+RUN git clone https://github.com/foxglove/foxglove-cli.git && \
+    cd foxglove-cli && \
+    make install && \
+    mv ~/go/bin/foxglove /usr/local/bin/foxglove
 
 # Copy Foxglove CLI configuration file
 RUN --mount=type=secret,id=foxgloverc \
