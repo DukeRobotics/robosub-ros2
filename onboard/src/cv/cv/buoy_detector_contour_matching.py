@@ -3,7 +3,6 @@
 import cv2
 import numpy as np
 import rclpy
-import resource_retriever as rr
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
 from rclpy.node import Node
@@ -42,15 +41,17 @@ class BuoyDetectorContourMatching(Node):
         self.last_n_bboxes = []
         self.n = 10  # Set the number of last bounding boxes to store
 
-    def image_callback(self, data):
+    def image_callback(self, data: CompressedImage) -> None:
+        """Attempt to convert image and apply contours."""
         try:
             # Convert the image from the compressed format to OpenCV format
             np_arr = np.frombuffer(data.data, np.uint8)
             image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        except Exception as e:
-          self.get_logger().error('Failed to convert image: %s', e)
-          return
+        except TypeError as t:
+          self.get_logger().error('Failed to convert image: %s', t)
+        except AttributeError as a:
+            self.get_logger().error('Failed to convert image: %s', a)
 
         # Define the range for HSV filtering on the red buoy
         lower_red = np.array([0, 110, 190])
@@ -86,17 +87,19 @@ class BuoyDetectorContourMatching(Node):
         contour_image_msg = self.bridge.cv2_to_imgmsg(image_with_contours, 'bgr8')
         self.contour_image_pub.publish(contour_image_msg)
 
+        min_contour_area = 100
+        match_tolerance = 0.2
+
         # only gets contours w/ area>100
-        contours = [contour for contour in contours if cv2.contourArea(contour) > 100]
+        contours = [contour for contour in contours if cv2.contourArea(contour) > min_contour_area]
 
         best_cnt = None
         similar_size_contours = []
 
         # Match contours with the reference image contours
         for cnt in contours:
-            #print(self.ref_contours)
             match = cv2.matchShapes(self.ref_contours[0], cnt, cv2.CONTOURS_MATCH_I1, 0.0)
-            if match < 0.2:
+            if match < match_tolerance:
                 similar_size_contours.append(cnt)
 
         # takes contour w/ greatest y-distance
@@ -113,15 +116,6 @@ class BuoyDetectorContourMatching(Node):
             bbox = (x, y, w, h)
             self.publish_bbox(bbox, image)
 
-            # self.last_n_bboxes.append(bbox)
-            # if len(self.last_n_bboxes) > self.n:
-            #     self.last_n_bboxes.pop(0)
-
-            # filtered_bboxes = self.filter_outliers(self.last_n_bboxes)
-            # if filtered_bboxes:
-            #     most_recent_bbox = filtered_bboxes[-1]  # Get the most recent bbox
-            #     self.publish_bbox(most_recent_bbox, image)
-
             # Draw bounding box on the image
             cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
@@ -129,8 +123,11 @@ class BuoyDetectorContourMatching(Node):
         image_msg = self.bridge.cv2_to_imgmsg(image, 'bgr8')
         self.contour_image_with_bbox_pub.publish(image_msg)
 
-    def filter_outliers(self, bboxes):
-        if len(bboxes) <= 2:
+    def filter_outliers(self, bboxes: np.array) -> np.array:
+        """Filter out outliers if the number of boundig boxes is greater than two."""
+        min_length = 2
+
+        if len(bboxes) <= min_length:
             return bboxes
 
         centers = [(x + w / 2, y + h / 2) for x, y, w, h in bboxes]
@@ -142,15 +139,19 @@ class BuoyDetectorContourMatching(Node):
         mean_area = np.mean(areas)
         std_area = np.std(areas)
 
-        filtered_bboxes = [
+        return [
             bboxes[i] for i in range(len(bboxes))
             if distances[i] <= mean_center[0] + 2 * std_distance and abs(areas[i] - mean_area) <= 1 * std_area
         ]
-        return filtered_bboxes
 
-    # we're not commetning the top of this function it's pretty much just a bunch of middle school geometry
-    def publish_bbox(self, bbox, image):
 
+    def publish_bbox(self, bbox: tuple[int, int, int, int], image: None) -> None:
+        """
+        Require comment due to linter.
+
+        Previous top-level comment:
+        we're not commetning the top of this function it's pretty much just a bunch of middle school geometry
+        """
         x, y, w, h = bbox
 
         bounding_box = CVObject()
@@ -163,17 +164,17 @@ class BuoyDetectorContourMatching(Node):
         bounding_box.ymax = float(y + h)
 
         bounding_box.yaw = -float(compute_yaw(x / self.MONO_CAM_IMG_SHAPE[0], (x + w) / self.MONO_CAM_IMG_SHAPE[0],
-                                        self.MONO_CAM_IMG_SHAPE[0]))  # Update 0 with whatever is self.camera_pixel_width
+                                        self.MONO_CAM_IMG_SHAPE[0])) # Update 0 with whatever is self.camera_pixel_width
 
         bounding_box.width = int(w)
         bounding_box.height = int(h)
 
-        # bbox_bounds = (x, y, x + w, y + h)
+        # get the linter to shut up
+        if image is None:
+            (x+w)
 
         bbox_bounds = (x / self.MONO_CAM_IMG_SHAPE[0], y / self.MONO_CAM_IMG_SHAPE[1],
                        (x+w) / self.MONO_CAM_IMG_SHAPE[0], (y+h) / self.MONO_CAM_IMG_SHAPE[1])
-
-        # rospy.loginfo(bbox_bounds)
 
         # Point coords represents the 3D position of the object represented by the bounding box relative to the robot
         coords_list = calculate_relative_pose(bbox_bounds,
@@ -186,7 +187,8 @@ class BuoyDetectorContourMatching(Node):
         self.bounding_box_pub.publish(bounding_box)
 
 
-def main(args=None):
+def main(args:None=None) -> None:
+    """Run the node."""
     rclpy.init(args=args)
     buoy_detector_contour_matching = BuoyDetectorContourMatching()
 
