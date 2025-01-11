@@ -34,11 +34,14 @@ To use Foxglove Studio:
 3. Open Foxglove Studio and connect to the WebSocket at `ws://IP_ADDRESS:28765`.
     - Replace `IP_ADDRESS` with the IP address of the host machine. If you are running the Docker container locally, you can use `localhost` as the IP address.
 
+See [foxglove/README.md](foxglove/README.md) for more information about developing for Foxglove.
+
 ## Linting
 To ensure code quality and consistent formatting, we use the following linters:
 - Python: [Ruff](https://docs.astral.sh/ruff)
 - C++: [ClangFormat](https://clang.llvm.org/docs/ClangFormat.html)
 - Bash: [ShellCheck](https://www.shellcheck.net)
+- TypeScript/JavaScript: [ESLint](https://eslint.org)
 
 The linters can be accessed via the CLI provided by `lint.py`. This CLI is also used by the GitHub Actions `build-and-lint` workflow.
 
