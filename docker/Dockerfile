@@ -9,8 +9,14 @@ ARG CACHE_BUSTER
 # Each package is installed in a separate RUN command so that each package is cached separately in Docker
 # The commands are ordered alphabetically
 RUN apt update
+RUN apt install -y --no-install-recommends clang
 RUN apt install -y --no-install-recommends clang-format
+RUN apt install -y --no-install-recommends gdb
+RUN apt install -y --no-install-recommends gdbserver
+RUN apt install -y --no-install-recommends libeigen3-dev
+RUN apt install -y --no-install-recommends libyaml-cpp-dev
 RUN apt install -y --no-install-recommends nano
+RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-venv
 RUN apt install -y --no-install-recommends python3-opencv
@@ -21,14 +27,17 @@ RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
 RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends tini
+RUN apt install -y --no-install-recommends valgrind
 
 # Set up Python virtual environment and install packages
 # Virtual enviornment inherits system packages to ensure compatibility with ROS
 # The commands are ordered alphabetically
 RUN python3 -m venv /root/dev/venv --system-site-packages
 RUN /root/dev/venv/bin/pip install GitPython
+RUN /root/dev/venv/bin/pip install pandas
 RUN /root/dev/venv/bin/pip install pyserial
 RUN /root/dev/venv/bin/pip install ruff
+RUN /root/dev/venv/bin/pip install sympy
 
 # Set no password for root user
 RUN passwd -d root
@@ -38,6 +47,31 @@ RUN mkdir -p /root/.ssh
 
 # Copy SSH config file
 COPY ssh_config /root/.ssh/config
+
+# Build and install OSQP from source
+RUN git clone --branch release-0.6.3 --recursive https://github.com/osqp/osqp.git && \
+    cd osqp && \
+    mkdir build && \
+    cd build && \
+    cmake -G "Unix Makefiles" .. && \
+    cmake --build . --target install && \
+    cd ../.. && \
+    rm -rf osqp
+
+# Build and install osqp-eigen from source
+RUN git clone https://github.com/robotology/osqp-eigen.git && \
+    cd osqp-eigen && \
+    git checkout 85c37623774c682db396505f0d4ea677040c2557 && \
+    mkdir build && \
+    cd build && \
+    cmake ../ && \
+    make && \
+    make install && \
+    cd ../.. && \
+    rm -rf osqp-eigen
+
+# Copy .gdbinit file into container
+COPY .gdbinit /root/.gdbinit
 
 # Create development directory
 RUN mkdir -p /root/dev/robosub-ros2
