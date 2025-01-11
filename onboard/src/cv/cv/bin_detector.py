@@ -47,7 +47,7 @@ class BinDetector(Node):
         self.bin_center_bounding_box_pub = self.create_publisher(CVObject, '/cv/bottom/bin_center/bounding_box', 10)
         self.bin_center_distance_pub = self.create_publisher(Point, '/cv/bottom/bin_center/distance', 10)
 
-    def image_callback(self, data: np.uint8) -> None:
+    def image_callback(self, data: CompressedImage) -> None:
         """Convert and process ROS image to OpenCV-accessible format."""
         # Convert the compressed ROS image to OpenCV format
         np_arr = np.frombuffer(data.data, np.uint8)
@@ -125,7 +125,7 @@ class BinDetector(Node):
                 self.red_bin_bounding_box_pub.publish(bbox)
                 self.red_bin_distance_pub.publish(dist)
 
-    def process_contours(self, frame: np.array, contours: np.array) -> None:
+    def process_contours(self, frame: np.array, contours: np.array) -> tuple[CVObject, Image, Point]:
         """Filter contours as needed."""
         # Combine all contours to form the large rectangle
         all_points = np.vstack(contours)
