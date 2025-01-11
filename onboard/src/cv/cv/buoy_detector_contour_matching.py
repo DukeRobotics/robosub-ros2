@@ -87,11 +87,11 @@ class BuoyDetectorContourMatching(Node):
         contour_image_msg = self.bridge.cv2_to_imgmsg(image_with_contours, 'bgr8')
         self.contour_image_pub.publish(contour_image_msg)
 
-        min_contour_area = 100
-        match_tolerance = 0.2
+        MIN_AREA_OF_CONTOUR = 100  # noqa: N806
+        MATCH_TOLERANCE = 0.2  # noqa: N806
 
         # only gets contours w/ area>100
-        contours = [contour for contour in contours if cv2.contourArea(contour) > min_contour_area]
+        contours = [contour for contour in contours if cv2.contourArea(contour) > MIN_AREA_OF_CONTOUR]
 
         best_cnt = None
         similar_size_contours = []
@@ -99,7 +99,7 @@ class BuoyDetectorContourMatching(Node):
         # Match contours with the reference image contours
         for cnt in contours:
             match = cv2.matchShapes(self.ref_contours[0], cnt, cv2.CONTOURS_MATCH_I1, 0.0)
-            if match < match_tolerance:
+            if match < MATCH_TOLERANCE:
                 similar_size_contours.append(cnt)
 
         # takes contour w/ greatest y-distance
@@ -125,9 +125,9 @@ class BuoyDetectorContourMatching(Node):
 
     def filter_outliers(self, bboxes: np.array) -> np.array:
         """Filter out outliers if the number of boundig boxes is greater than two."""
-        min_length = 2
+        MIN_LENGTH = 2  # noqa: N806
 
-        if len(bboxes) <= min_length:
+        if len(bboxes) <= MIN_LENGTH:
             return bboxes
 
         centers = [(x + w / 2, y + h / 2) for x, y, w, h in bboxes]
