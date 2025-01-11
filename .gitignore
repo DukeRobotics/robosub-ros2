@@ -4,6 +4,8 @@ __pycache__
 **/build/*
 **/install/*
 **/log/*
+**/ros2_mcap_test/*
+**/demo_2024_file/*
 
 # All playback subfolders
 **/bag_files/**
@@ -14,6 +16,10 @@ __pycache__
 *.db3
 *.bag
 
+
+
 .config
 .env
 .vscode
+.mcap
+.db3

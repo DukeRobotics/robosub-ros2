@@ -10,23 +10,36 @@ ARG CACHE_BUSTER
 # The commands are ordered alphabetically
 RUN apt update
 RUN apt install -y --no-install-recommends clang-format
+RUN apt install -y --no-install-recommends iputils-ping
 RUN apt install -y --no-install-recommends nano
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-venv
+RUN apt install -y --no-install-recommends python3-opencv
+RUN apt install -y --no-install-recommends ros-jazzy-cv-bridge
 RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
 RUN apt install -y --no-install-recommends ros-jazzy-robot-localization
 RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
 RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends tini
+RUN apt install -y --no-install-recommends python3-nmap
+RUN apt install -y --no-install-recommends iputils-ping
+RUN apt install -y --no-install-recommends python3-sklearn
 
 # Set up Python virtual environment and install packages
 # Virtual enviornment inherits system packages to ensure compatibility with ROS
 # The commands are ordered alphabetically
 RUN python3 -m venv /root/dev/venv --system-site-packages
+RUN /root/dev/venv/bin/pip install depthai
 RUN /root/dev/venv/bin/pip install GitPython
 RUN /root/dev/venv/bin/pip install pyserial
+RUN /root/dev/venv/bin/pip install python3-nmap
 RUN /root/dev/venv/bin/pip install ruff
+RUN /root/dev/venv/bin/pip install scikit-learn
+
+# Install packages from pip
+# This is not the best option but oh well
+RUN pip install depthai --break-system-packages
 
 # Set no password for root user
 RUN passwd -d root
