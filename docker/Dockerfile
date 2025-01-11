@@ -76,7 +76,7 @@ RUN git clone https://github.com/robotology/osqp-eigen.git && \
     rm -rf osqp-eigen
 
 # Build and install foxglove CLI from source
-RUN git clone https://github.com/foxglove/foxglove-cli.git && \
+RUN git clone --depth=1 --single-branch --branch=main https://github.com/foxglove/foxglove-cli.git && \
     cd foxglove-cli && \
     make install && \
     mv ~/go/bin/foxglove /usr/local/bin/foxglove
