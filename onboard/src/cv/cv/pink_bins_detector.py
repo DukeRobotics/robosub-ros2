@@ -15,17 +15,16 @@ from cv.utils import compute_yaw
 
 
 class PinkBinsDetector(Node):
+    """Detect pink bins (deprecated)."""
 
     MONO_CAM_IMG_SHAPE = (640, 480)  # Width, height in pixels
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__('pink_bins_detector')
         self.bridge = CvBridge()
-        # rospy.init_node("pink_bins_detector", anonymous=True)
-        # self.camera = self.get_parameter("~camera").get_parameter_value() # could be self.decare_parameter --> get_param does not work currently
         self.camera = self.declare_parameter('camera', 'front').value
-        self.image_sub = self.create_subscription(CompressedImage, f'/camera/usb/{self.camera}/compressed', self.image_callback,
-                                          10)
+        self.image_sub = self.create_subscription(CompressedImage, f'/camera/usb/{self.camera}/compressed',
+                                                  self.image_callback, 10)
 
         self.pink_bins_hsv_filtered_pub = self.create_publisher(Image, f'/cv/{self.camera}/pink_bins/hsv_filtered',
                                                           10)
@@ -34,7 +33,8 @@ class PinkBinsDetector(Node):
         self.pink_bins_bounding_box_pub = self.create_publisher(CVObject, f'/cv/{self.camera}/pink_bins/bounding_box',
                                                           10)
 
-    def image_callback(self, data):
+    def image_callback(self, data: CompressedImage) -> None:
+        """Convert and processes frames."""
         # Convert the compressed ROS image to OpenCV format
         np_arr = np.frombuffer(data.data, np.uint8)
         frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
@@ -42,13 +42,12 @@ class PinkBinsDetector(Node):
         # Process the frame to find and publish information on the bin
         self.process_frame(frame)
 
-    def process_frame(self, frame):
+    def process_frame(self, frame: np.array) -> None:
+        """Process farmes via masking etc."""
         # Convert frame to HSV color space
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # Define range for blue color and create mask
-        # lower_pink = np.array([110, 100, 150])
-        # upper_pink = np.array([170, 255, 255])
         mask_1 = cv2.inRange(hsv, np.array([110, 50, 130]), np.array([130, 100, 200]))
         mask_2 = cv2.inRange(hsv, np.array([130, 80, 130]), np.array([160, 150, 255]))
         mask_3 = cv2.inRange(hsv, np.array([155, 100, 150]), np.array([175, 255, 255]))
@@ -81,12 +80,11 @@ class PinkBinsDetector(Node):
             self.publish_with_no_detection(frame, hsv_filtered_msg)
             return
 
-        # TODO: hung
         sorted_cluster_labels = sorted(cluster_counts, key=cluster_counts.get, reverse=True)
         colors = [(0, 0, 255), (0, 255, 255), (255, 0, 0)]
         final_x, final_y = 0, 0
         chosen_label_score = None
-        for label, color in zip(sorted_cluster_labels[:3], colors, strict=False):
+        for label in zip(sorted_cluster_labels[:3], colors, strict=False):
             class_member_mask = (labels == label)
             max_clust_points = points[class_member_mask]
 
@@ -97,11 +95,12 @@ class PinkBinsDetector(Node):
             center_y = np.mean(max_clust_points[:, 0])
 
             if center_y > final_y:
-                final_x = center_x
-                final_y = center_y
+                final_x, final_y = center_x, center_y
                 chosen_label_score = max_clust_points.shape[0]
 
-        if chosen_label_score < 100:
+        MAX_SCORE = 100  # noqa: N806
+
+        if chosen_label_score < MAX_SCORE:
             self.publish_with_no_detection(frame, hsv_filtered_msg)
             return
 
@@ -127,13 +126,15 @@ class PinkBinsDetector(Node):
         self.pink_bins_bounding_box_pub.publish(cv_object)
 
     # called if no detections are made
-    def publish_with_no_detection(self, frame, hsv_filtered_msg):
+    def publish_with_no_detection(self, frame: np.array, hsv_filtered_msg: Image) -> None:
+        """Publish without bounding boxes."""
         frame_msg = self.bridge.cv2_to_imgmsg(frame, 'bgr8')
         self.pink_bins_dbscan_pub.publish(hsv_filtered_msg)
         self.pink_bins_detections_pub.publish(frame_msg)
 
 
-def main(args=None):
+def main(args:None=None)->None:
+    """Run the node."""
     rclpy.init(args=args)
     pink_bins_detector = PinkBinsDetector()
 

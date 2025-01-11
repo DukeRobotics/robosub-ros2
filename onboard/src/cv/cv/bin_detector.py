@@ -96,7 +96,7 @@ class BinDetector(Node):
         contours_blue, _ = cv2.findContours(mask_blue, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         contours_red, _ = cv2.findContours(mask_red, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        min_area_of_contour = 500
+        MIN_AREA_OF_CONTOUR = 500  # noqa: N806
 
         if contours_blue:
             # takes largest contour
@@ -107,7 +107,7 @@ class BinDetector(Node):
             # publishes bbox, image, distance
             bbox, image, dist = self.process_contours(frame.copy(), contours_blue)
 
-            if bbox and image and dist and cv2.contourArea(contours_blue) > min_area_of_contour:
+            if bbox and image and dist and cv2.contourArea(contours_blue) > MIN_AREA_OF_CONTOUR:
                 self.blue_bin_contour_image_pub.publish(image)
                 self.blue_bin_bounding_box_pub.publish(bbox)
                 self.blue_bin_distance_pub.publish(dist)
@@ -120,7 +120,7 @@ class BinDetector(Node):
             # only processes if area (in pixels) if selected contour >500
             # publishes bbox, image, distance
             bbox, image, dist = self.process_contours(frame.copy(), contours_red)
-            if bbox and image and dist and cv2.contourArea(contours_red) > min_area_of_contour:
+            if bbox and image and dist and cv2.contourArea(contours_red) > MIN_AREA_OF_CONTOUR:
                 self.red_bin_contour_image_pub.publish(image)
                 self.red_bin_bounding_box_pub.publish(bbox)
                 self.red_bin_distance_pub.publish(dist)
