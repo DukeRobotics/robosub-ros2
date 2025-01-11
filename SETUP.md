@@ -12,6 +12,9 @@ Steps 1-3 need to be completed once to set up the repository and required softwa
 4. [Set Up the Docker Container](#set-up-the-docker-container)
     - [Using VS Code Dev Containers](#using-vs-code-dev-containers)
     - [Without VS Code Dev Containers](#without-vs-code-dev-containers)
+5. [Set Up Foxglove (Optional)](#set-up-foxglove-optional)
+    - [Set Up Foxglove Desktop](#set-up-foxglove-desktop)
+    - [Set Up the `.foxgloverc` File](#set-up-the-foxgloverc-file)
 
 ## Prerequisites
 1. Docker (required)
@@ -66,6 +69,8 @@ GITHUB_AUTH_SSH_KEY_PUB_PATH=
 GITHUB_SIGNING_SSH_KEY_PRIV_PATH=
 GIT_ALLOWED_SIGNERS_PATH=
 NO_GIT=false
+
+FOXGLOVERC_PATH=
 ```
 > [!IMPORTANT]
 > Do **not** include any extraneous whitespace or comments in the `.env` file. Do **not** put spaces around the `=` sign.
@@ -73,6 +78,7 @@ NO_GIT=false
 - `GITHUB_AUTH_SSH_KEY_PUB_PATH`: Absolute path to the _public_ SSH key used for authenticating with GitHub.
 - `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`: Absolute path to the _private_ SSH key used for signing commits.
 - `GIT_ALLOWED_SIGNERS_PATH`: Absolute path to the allowed signers file.
+- `FOXGLOVERC_PATH` (Optional): Absolute path to the [`.foxgloverc`](#set-up-the-foxgloverc-file) file.
 
 > [!NOTE]
 > If your SSH keys are **not** located in plaintext files on your computer, then do **not** include the variables above in `.env`. Instead, include only `NO_GIT=true`.
@@ -147,3 +153,28 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
     ```bash
     docker compose down
     ```
+
+## Set Up Foxglove (Optional)
+Follow the following instructions if you plan to develop in the `foxglove` monorepo.
+
+### Set Up Foxglove Desktop
+To debug local Foxglove extensions, you must install Foxglove desktop.
+
+1. Download and install [Foxglove desktop](https://foxglove.dev/download) and sign in.
+
+### Set Up the `.foxgloverc` File
+
+Setting up the `.foxgloverc` file with allow you to publish custom Foxglove extensions to your organization.
+> [!NOTE]
+> Setting up the `.foxgloverc` file requires admin privileges in your Foxglove organization.
+1. Go to the [Foxglove settings page](https://app.foxglove.dev/duke-robotics/settings/apikeys) and generate a new API key.
+
+2. Outside of the Docker container, create a `~/.foxgloverc` file with the following information:
+```
+auth_type: 2
+base_url: https://api.foxglove.dev
+bearer_token:
+```
+Add the API key generated in Step 1 as the `bearer_token`.
+
+3. Rebuild the Docker container and run `foxglove auth info`. You should see a message indicating that you have successfully authenticated with an API key.
