@@ -16,7 +16,11 @@ __pycache__
 
 .config
 .env
-.vscode
+
+# Ignore everything in .vscode except the following files
+.vscode/*
+!.vscode/c_cpp_properties.json
+!.vscode/launch.json
 
 # Foxglove
 node_modules
