@@ -13,6 +13,7 @@ from cv.utils import calculate_relative_pose, compute_yaw
 
 
 class BuoyDetectorContourMatching(Node):
+    """Match contour with buoy."""
 
     BUOY_WIDTH = 0.2032  # Width of buoy in meters
 
@@ -20,23 +21,19 @@ class BuoyDetectorContourMatching(Node):
     MONO_CAM_SENSOR_SIZE = (3.054, 1.718)  # Width, height in mm
     MONO_CAM_FOCAL_LENGTH = 2.65  # Focal length in mm
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__('buoy_detector_contour_matching')
-        # rospy.init_node('buoy_detector_contour_matching', anonymous=True)
-
-        # ima
-        path_to_reference_img = rr.get_filename('package://cv/assets/polyform-a0-buoy-contour.png', use_protocol=False)
 
         # Load the reference image in grayscale (assumes the image is already binary: white and black)
-        self.reference_image = cv2.imread('/root/dev/robosub-ros2/onboard/build/cv/assets/polyform-a0-buoy-contour.png', cv2.IMREAD_GRAYSCALE)
-        if self.reference_image is None:
-            #print("oops")
+        self.reference_image = cv2.imread('/root/dev/robosub-ros2/onboard/build/cv/assets/polyform-a0-buoy-contour.png',
+                                          cv2.IMREAD_GRAYSCALE)
 
         # Compute the contours directly on the binary image
         self.ref_contours, _ = cv2.findContours(self.reference_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         self.bridge = CvBridge()
-        self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/front/compressed', self.image_callback, 10)  #/camera/usb/front/compressed
+        self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/front/compressed', self.image_callback,
+                                                  10)  #/camera/usb/front/compressed
         self.bounding_box_pub = self.create_publisher(CVObject,'/cv/front_usb/buoy/bounding_box', 1)
         self.hsv_filtered_pub = self.create_publisher(Image, '/cv/front_usb/buoy/hsv_filtered', 1)
         self.contour_image_pub = self.create_publisher(Image, '/cv/front_usb/buoy/contour_image', 1)
