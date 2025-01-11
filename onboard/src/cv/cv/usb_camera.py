@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 
+import contextlib
+
 import cv2
 import rclpy
 from rclpy.node import Node
@@ -11,8 +13,9 @@ from cv.image_tools import ImageTools
 
 class USBCamera(Node):
     """
-    Object to stream any camera at /dev/video* and publishes the image feed at the device framerate
-                                    (currently used for the deepwater exploration usb mono cameras)
+    Object to stream any camera at /dev/video* and publishes the image feed at the device framerate.
+
+    Currently used for the deepwater exploration usb mono cameras
 
     Launch using: roslaunch cv usb_camera.launch
     :param topic: rostopic to publish the image feed to; default is set to camera/usb_camera/compressed
@@ -20,14 +23,15 @@ class USBCamera(Node):
     :param framerate: custom framerate to stream the camera at; default is set to device default
     """
 
-    def __init__(self, topic=None, device_path=None, framerate=None):
+    def __init__(self, topic:str | None=None, device_path:str | None=None, framerate:int | None=None) -> None:
         # Instantiate new USB camera node
         super().__init__(f'usb_camera_{topic}')
 
         # Read custom camera configs from launch command
         self.topic = topic if topic else self.declare_parameter('topic','/camera/usb_camera/compressed').value
 
-        self.device_path = device_path if device_path else self.declare_parameter('device_path','/dev/video_front').value
+        self.device_path = device_path if device_path else self.declare_parameter('device_path',
+                                                                                  '/dev/video_front').value
 
         # If no custom framerate is passed in, set self.framerate to None to trigger default framerate
         self.framerate = framerate if framerate else self.declare_parameter('framerate',-1).value
@@ -39,15 +43,14 @@ class USBCamera(Node):
         self.publisher = self.create_publisher(CompressedImage, self.topic, 10)
 
         self.image_tools = ImageTools()
-        try:
+        with contextlib.suppress(Exception):
             self.run()
-        except:
-            pass
 
-    def run(self):
+    def run(self) -> None:
         """
-        Connect to camera found at self.device_path using cv2.VideoCaptures
-        and stream every image as it comes in at the device framerate
+        Connect to camera found at self.device_path using cv2.VideoCaptures.
+
+        Stream every image as it comes in at the device framerate
         """
         total_tries = 5
         success = False
@@ -69,19 +72,14 @@ class USBCamera(Node):
                 self.get_logger().info('first frame read ' + str(success))
 
                 # Set publisher rate (framerate) to custom framerate if specified, otherwise, set to default
-                loop_rate = None
                 if self.framerate is None:
-                    loop_rate = self.create_rate(cap.get(cv2.CAP_PROP_FPS))
                     self.framerate = cap.get(cv2.CAP_PROP_FPS)
-                else:
-                    loop_rate = self.create_rate(self.framerate)
 
                 # If the execution reaches the following statement, and the first frame was successfully read,
                 # then a successful camera connection was made, and we enter the main while loop
                 if success:
                     break
-
-            except Exception:
+            except Exception:  # noqa: BLE001
                 self.get_looged().info('Failed to connect to USB camera, trying again...')
 
             if not rclpy.ok():
@@ -108,10 +106,12 @@ class USBCamera(Node):
         else:
             self.get_logger().error(f'{total_tries} attempts were made to connect to the USB camera. '
                          f'The camera was not found at device_path {self.device_path}. All attempts failed.')
-            raise RuntimeError(f'{total_tries} attempts were made to connect to the USB camera. '
-                               f'The camera was not found at device_path {self.device_path}. All attempts failed.')
+            error_msg = (f'{total_tries} attempts were made to connect to the USB camera.\n'
+                         f'The camera was not found at device_path {self.device_path}. All attempts failed.')
+            raise RuntimeError(error_msg)
 
-def main(args=None):
+def main(args:list[str] | None=None) -> None:
+    """Define main function."""
     rclpy.init(args=args)
     usb_camera = USBCamera()
     try:
