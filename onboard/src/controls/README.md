@@ -695,7 +695,8 @@ ros2 launch controls controls_gdbserver.launch
 ```
 This will start the server at `localhost:3000`. Then, attach the VS Code debugger to the server.
 1. Go to the `Run and Debug` tab in VS Code.
-2. In the dropdown at the top, select `controls-gdbserver`
+2. In the dropdown at the top, select `controls-gdbserver`.
+
 3. Click the green play button.
 
 You can now use the GUI provided by VSCode to debug the system.
