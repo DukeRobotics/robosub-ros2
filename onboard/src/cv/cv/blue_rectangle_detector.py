@@ -11,16 +11,20 @@ from std_msgs.msg import Float64
 
 
 class BlueRectangleDetector(Node):
-    def __init__(self):
+    """Detect blue rectangle (on bins)."""
+    def __init__(self) -> None:
+        """Initialize node."""
         super().__init__('blue_rectangle_detector')
         self.bridge = CvBridge()
-        self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/bottom/compressed', self.image_callback, 10)
+        self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/bottom/compressed', self.image_callback,
+                                                   10)
         self.angle_pub = self.create_publisher(Float64, '/cv/bottom/lane_marker_angle', 10)
         self.distance_pub = self.create_publisher(Float64, '/cv/bottom/lane_marker_dist', 10)
         self.detections_pub = self.create_publisher(CompressedImage, '/cv/bottom/detections/compressed', 10)
         self.rect_info_pub = self.create_publisher(RectInfo, '/cv/bottom/lane_marker', 10)
 
-    def image_callback(self, data):
+    def image_callback(self, data: CompressedImage) -> None:
+        """Process image and, if proper, draws rectangle and publishes image."""
         try:
             # Convert the compressed ROS image to OpenCV format
             np_arr = np.frombuffer(data.data, np.uint8)
@@ -52,7 +56,8 @@ class BlueRectangleDetector(Node):
         except CvBridgeError as e:
             self.get_logger().error(f'Could not convert image: {e}')
 
-    def get_angle_and_distance_of_rectangle(self, frame):
+    def get_angle_and_distance_of_rectangle(self, frame: np.array) -> tuple[float, int, RectInfo, np.array]:
+        """Get angle and distance of rectangle contour."""
         # Convert frame to HSV color space
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
@@ -99,7 +104,7 @@ class BlueRectangleDetector(Node):
                 # Right side is higher than left side
                 angle = rect[-1] - 90
 
-            if angle == -90 or angle == 90:
+            if angle in (-90, 90): # this is NOT standard set notation (as in mathematics); this is a tuple
                 angle = 0.0
 
             # Calculate the center of the rectangle
@@ -125,7 +130,8 @@ class BlueRectangleDetector(Node):
         return angle, distance, rect_info, frame
 
 
-def main(args=None):
+def main(args:None=None) -> None:
+    """Start the node."""
     rclpy.init(args=args)
     blue_rectangle_detector = BlueRectangleDetector()
 
