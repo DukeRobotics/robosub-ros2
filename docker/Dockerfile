@@ -69,7 +69,7 @@ RUN git clone https://github.com/robotology/osqp-eigen.git && \
     rm -rf osqp-eigen
 
 # Copy .gdbinit file into container
-COPY gdbinit /root/.gdbinit
+COPY .gdbinit /root/.gdbinit
 
 # Create development directory
 RUN mkdir -p /root/dev/robosub-ros2
