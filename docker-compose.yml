@@ -5,5 +5,6 @@ services:
     tty: true
     volumes:
       - ./:/root/dev/robosub-ros2
+      - ~/.foxglove-studio/:/root/.foxglove-studio
     ports:
       - 28765:28765

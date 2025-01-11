@@ -25,6 +25,7 @@ RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
 RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends tini
+RUN apt install -y --no-install-recommends golang
 RUN apt install -y --no-install-recommends valgrind
 
 # Set up Python virtual environment and install packages
@@ -36,6 +37,12 @@ RUN /root/dev/venv/bin/pip install pandas
 RUN /root/dev/venv/bin/pip install pyserial
 RUN /root/dev/venv/bin/pip install ruff
 RUN /root/dev/venv/bin/pip install sympy
+
+# Install Node.js (Jod)
+ENV NVM_DIR=/root/.nvm
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash \
+    && . $NVM_DIR/nvm.sh \
+    && nvm install --lts=Jod
 
 # Set no password for root user
 RUN passwd -d root
@@ -68,6 +75,12 @@ RUN git clone https://github.com/robotology/osqp-eigen.git && \
     cd ../.. && \
     rm -rf osqp-eigen
 
+# Build and install foxglove CLI from source
+RUN git clone --depth=1 --single-branch --branch=main https://github.com/foxglove/foxglove-cli.git && \
+    cd foxglove-cli && \
+    make install && \
+    mv ~/go/bin/foxglove /usr/local/bin/foxglove
+
 # Copy .gdbinit file into container
 COPY .gdbinit /root/.gdbinit
 
@@ -93,20 +106,26 @@ RUN --mount=type=secret,id=github_auth_ssh_key,required=false \
     --mount=type=secret,id=github_signing_ssh_key,required=false \
     --mount=type=secret,id=git_allowed_signers,required=false \
     if [ "$NO_GIT" != "true" ]; then \
-        cat /run/secrets/github_auth_ssh_key > /root/.ssh/github_auth_key && \
-        cat /run/secrets/github_auth_ssh_key_pub > /root/.ssh/github_auth_key.pub && \
-        cat /run/secrets/github_signing_ssh_key > /root/.ssh/github_signing_key && \
-        cat /run/secrets/git_allowed_signers > /root/.ssh/allowed_signers && \
-        chmod 600 /root/.ssh/github_auth_key /root/.ssh/github_signing_key && \
-        chmod 644 /root/.ssh/github_auth_key.pub /root/.ssh/allowed_signers; \
-        git config --global commit.gpgSign true && \
-        git config --global gpg.format ssh && \
-        git config --global user.signingkey "/root/.ssh/github_signing_key" && \
-        git config --global gpg.ssh.allowedSignersFile "/root/.ssh/allowed_signers" && \
-        git config --global user.name "$GIT_USER_NAME" && \
-        git config --global user.email "$GIT_USER_EMAIL" && \
-        git config --global --add safe.directory /root/dev/robosub-ros2 && \
-        git config --global pull.rebase false; \
+    cat /run/secrets/github_auth_ssh_key > /root/.ssh/github_auth_key && \
+    cat /run/secrets/github_auth_ssh_key_pub > /root/.ssh/github_auth_key.pub && \
+    cat /run/secrets/github_signing_ssh_key > /root/.ssh/github_signing_key && \
+    cat /run/secrets/git_allowed_signers > /root/.ssh/allowed_signers && \
+    chmod 600 /root/.ssh/github_auth_key /root/.ssh/github_signing_key && \
+    chmod 644 /root/.ssh/github_auth_key.pub /root/.ssh/allowed_signers; \
+    git config --global commit.gpgSign true && \
+    git config --global gpg.format ssh && \
+    git config --global user.signingkey "/root/.ssh/github_signing_key" && \
+    git config --global gpg.ssh.allowedSignersFile "/root/.ssh/allowed_signers" && \
+    git config --global user.name "$GIT_USER_NAME" && \
+    git config --global user.email "$GIT_USER_EMAIL" && \
+    git config --global --add safe.directory /root/dev/robosub-ros2 && \
+    git config --global pull.rebase false; \
+    fi
+
+# Copy Foxglove CLI configuration file
+RUN --mount=type=secret,id=foxgloverc \
+    if [ -f /run/secrets/foxgloverc ]; then \
+        cat /run/secrets/foxgloverc > ~/.foxgloverc; \
     fi
 
 # Run entrypoint script via tini to ensure SIGTERM is properly handled and zombie processes are reaped
