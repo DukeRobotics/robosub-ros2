@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os
 import signal
 import subprocess
@@ -125,7 +123,7 @@ class RecordBag(Node):
         rclpy.shutdown()
 
 
-def main(args=None) -> None:
+def main(args: list[str] | None = None) -> None:
     rclpy.init(args=args)
     recorder = RecordBag()
 

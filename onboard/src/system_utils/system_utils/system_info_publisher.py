@@ -44,7 +44,7 @@ class SystemInfoPublisher(Node):
         Retrieve GPU usage information and update the message.
         """
         GPUs = GPUtil.getGPUs()
-        if GPUs:
+        if len(GPUs) > 0:
             gpu = GPUs[0]
             self._current_msg.gpu_memory.used = gpu.memoryUsed / 1000
             self._current_msg.gpu_memory.total = gpu.memoryTotal / 1000
