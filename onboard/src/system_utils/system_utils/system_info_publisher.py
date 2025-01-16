@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import GPUtil
 import psutil
@@ -21,9 +20,7 @@ class SystemInfoPublisher(Node):
     NODE_NAME: ClassVar[str] = 'system_usage_publisher'
 
     def __init__(self) -> None:
-        """
-        Initialize the SystemInfoPublisher node.
-        """
+        """Initialize the SystemInfoPublisher node."""
         super().__init__(self.NODE_NAME)
 
         self._pub = self.create_publisher(SystemUsage, self.TOPIC_NAME, 10)
@@ -33,19 +30,15 @@ class SystemInfoPublisher(Node):
         self.get_logger().info('System info publisher node started.')
 
     def get_cpu(self) -> None:
-        """
-        Retrieve CPU usage information and update the message.
-        """
+        """Retrieve CPU usage information and update the message."""
         self._current_msg.cpu_percent = float(psutil.cpu_percent(interval=0.5))
         self._current_msg.cpu_speed = psutil.cpu_freq().current if psutil.cpu_freq() else 0.0
 
     def get_gpu(self) -> None:
-        """
-        Retrieve GPU usage information and update the message.
-        """
-        GPUs = GPUtil.getGPUs()
-        if len(GPUs) > 0:
-            gpu = GPUs[0]
+        """Retrieve GPU usage information and update the message."""
+        retrieved_gpus = GPUtil.getGPUs()
+        if len(retrieved_gpus) > 0:
+            gpu = retrieved_gpus[0]
             self._current_msg.gpu_memory.used = gpu.memoryUsed / 1000
             self._current_msg.gpu_memory.total = gpu.memoryTotal / 1000
             self._current_msg.gpu_memory.percentage = gpu.memoryUsed / gpu.memoryTotal * 100
@@ -59,25 +52,19 @@ class SystemInfoPublisher(Node):
             self._current_msg.gpu_speed = 0.0
 
     def get_ram(self) -> None:
-        """
-        Retrieve RAM usage information and update the message.
-        """
+        """Retrieve RAM usage information and update the message."""
         self._current_msg.ram.used = (psutil.virtual_memory().total - psutil.virtual_memory().available) / (10**9)
         self._current_msg.ram.total = psutil.virtual_memory().total / (10**9)
         self._current_msg.ram.percentage = psutil.virtual_memory().percent
 
     def get_disk(self) -> None:
-        """
-        Retrieve disk usage information and update the message.
-        """
+        """Retrieve disk usage information and update the message."""
         self._current_msg.disk.used = float(psutil.disk_usage('/').used / (10**9))
         self._current_msg.disk.total = float(psutil.disk_usage('/').total * 0.95 / (10**9))
         self._current_msg.disk.percentage = float(psutil.disk_usage('/').percent)
 
     def run(self) -> None:
-        """
-        Start a timer to periodically publish system usage information.
-        """
+        """Start a timer to periodically publish system usage information."""
         def timer_callback() -> None:
             if not rclpy.ok():
                 timer.cancel()

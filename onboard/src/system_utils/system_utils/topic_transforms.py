@@ -1,8 +1,7 @@
-#!/usr/bin/env python
 
 import math
 from collections.abc import Callable
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import rclpy
 from geometry_msgs.msg import Pose, Twist, Vector3
@@ -36,10 +35,10 @@ class TopicTransformData:
         output_topic: str,
         output_type: type,
         output_type_conversion: Callable,
-        subscriber: Optional[Callable] = None,
-        publisher: Optional[Callable] = None,
+        subscriber: Callable | None = None,
+        publisher: Callable | None = None,
         publisher_queue_size: int = 1,
-        subscriber_queue_size: int = 1
+        subscriber_queue_size: int = 1,
     ) -> None:
         self.input_topic = input_topic
         self.input_type = input_type
@@ -107,7 +106,7 @@ class TopicTransforms(Node):
             lambda x: x.pose.pose,
             '/transforms/state/pose',
             Twist,
-            Conversions.pose_to_twist
+            Conversions.pose_to_twist,
         ),
         TopicTransformData(
             '/vectornav/IMU',
@@ -115,7 +114,7 @@ class TopicTransforms(Node):
             lambda x: x.orientation,
             '/transforms/vectornav/IMU/orientation',
             Vector3,
-            Conversions.quat_to_vector
+            Conversions.quat_to_vector,
         ),
         TopicTransformData(
             '/controls/desired_position',
@@ -123,7 +122,7 @@ class TopicTransforms(Node):
             lambda x: x,
             '/transforms/controls/desired_position',
             Twist,
-            Conversions.pose_to_twist
+            Conversions.pose_to_twist,
         ),
     ]
 
@@ -136,12 +135,12 @@ class TopicTransforms(Node):
                 data.input_type,
                 data.input_topic,
                 lambda msg, data=data: self.callback(data, msg),
-                data.subscriber_queue_size
+                data.subscriber_queue_size,
             )
             data.publisher = self.create_publisher(
                 data.output_type,
                 data.output_topic,
-                data.publisher_queue_size
+                data.publisher_queue_size,
             )
 
         self.get_logger().info('Topic transforms node started.')

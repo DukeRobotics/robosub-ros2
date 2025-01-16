@@ -124,6 +124,7 @@ class RecordBag(Node):
 
 
 def main(args: list[str] | None = None) -> None:
+    """Execute main entry point for the record_Bag node."""
     rclpy.init(args=args)
     recorder = RecordBag()
 
