@@ -37,6 +37,7 @@ RUN /root/dev/venv/bin/pip install pandas
 RUN /root/dev/venv/bin/pip install pyserial
 RUN /root/dev/venv/bin/pip install ruff
 RUN /root/dev/venv/bin/pip install sympy
+RUN /root/dev/venv/bin/pip install mypy
 
 # Install Node.js (Jod)
 ENV NVM_DIR=/root/.nvm
