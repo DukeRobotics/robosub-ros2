@@ -1,7 +1,7 @@
 import os
 import signal
 import subprocess
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import rclpy
@@ -12,6 +12,7 @@ from std_msgs.msg import Float64
 
 
 class RecordBag(Node):
+    """Node that records ROS2 bag files based on voltage sensor readings."""
 
     # Duration of time to wait for a voltage message before stopping recording
     TIMEOUT_DURATION = Duration(seconds=5)
@@ -81,14 +82,15 @@ class RecordBag(Node):
         current_time_sec = Clock().now().seconds_nanoseconds()[0]
 
         # Convert to a human-readable format
-        human_readable_time = datetime.fromtimestamp(current_time_sec).strftime('%Y.%m.%d_%I-%M-%S_%p')
+        human_readable_time = datetime.fromtimestamp(current_time_sec, tz=UTC).strftime('%Y.%m.%d_%I-%M-%S_%p')
+
 
         # Start recording all topics to a bag file
         Path('/root/dev/robosub-ros2/bag_files/').mkdir(parents=False, exist_ok=True)
 
         command = f'ros2 bag record -a -o /root/dev/robosub-ros2/bag_files/{human_readable_time}.bag'
-        self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, shell=True,
-                                        preexec_fn=os.setsid)
+        self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, shell=True,  # noqa: S602
+                                        start_new_session=True)
 
         self.get_logger().info('Started recording all topics.')
 
