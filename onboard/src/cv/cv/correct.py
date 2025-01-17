@@ -1,5 +1,6 @@
 """
-Adapted from dive-color-corrector by bornfree
+Adapted from dive-color-corrector by bornfree.
+
 https://github.com/bornfree/dive-color-corrector/blob/81f2664f4da4c025454dcff38b957fb43ca41b86/correct.py
 """
 
@@ -15,7 +16,7 @@ BLUE_MAGIC_VALUE = 1.2
 SAMPLE_SECONDS = 2  # Extracts color correction from every N seconds
 
 
-def hue_shift_red(mat, h):
+def hue_shift_red(mat, h: int):
 
     U = math.cos(h * math.pi / 180)
     W = math.sin(h * math.pi / 180)
