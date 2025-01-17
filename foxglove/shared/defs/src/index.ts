@@ -1,4 +1,4 @@
-import { ros2jazzy } from "@duke-robotics/rosmsg-msgs-common";
+import { ros2jazzy } from "@foxglove/rosmsg-msgs-common";
 
 import { writeAllDatatypeMaps } from "./datatypeMaps";
 import { generateRosTsGeneratorConfig } from "./generateRosTsGeneratorConfig";

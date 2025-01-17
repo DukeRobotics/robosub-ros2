@@ -1,6 +1,6 @@
-import { ros2jazzy } from "@duke-robotics/rosmsg-msgs-common";
 import { MessageDefinition } from "@foxglove/message-definition";
 import { parse, ParseOptions, fixupTypes } from "@foxglove/rosmsg";
+import { ros2jazzy } from "@foxglove/rosmsg-msgs-common";
 import { mkdir, readdir, readFile, writeFile } from "fs/promises";
 import { join, basename, sep } from "path";
 import { format, Options } from "prettier";

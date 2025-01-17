@@ -5,13 +5,12 @@
     "extensions/*"
   ],
   "devDependencies": {
-    "@duke-robotics/rosmsg-msgs-common": "^3.2.1",
     "@eslint/compat": "^1.2.4",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.17.0",
     "@foxglove/eslint-plugin": "^2.0.0",
     "@foxglove/extension": "^2.19.1",
-    "@foxglove/rosmsg-msgs-common": "^3.2.1",
+    "@foxglove/rosmsg-msgs-common": "^3.2.2",
     "@foxglove/schemas": "^1.6.6",
     "@textea/json-viewer": "^4.0.1",
     "@types/js-yaml": "^4.0.9",

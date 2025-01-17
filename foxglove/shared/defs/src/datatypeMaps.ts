@@ -169,7 +169,7 @@ function generateAllDatatypeMapsString(allDatatypeMaps: AllDatatypeMaps): string
 
 // Generate a CommonJS library for all datatype maps
 async function generateCjsLibrary(allDatatypeMapsString: string, relativePathToCustomMsgs: string): Promise<string> {
-  let output = `const ros2jazzy = require("@duke-robotics/rosmsg-msgs-common").ros2jazzy;
+  let output = `const ros2jazzy = require("@foxglove/rosmsg-msgs-common").ros2jazzy;
   const custom_msgs = require("${relativePathToCustomMsgs}").custom_msgs;\n\n`;
 
   output += allDatatypeMapsString;
@@ -179,7 +179,7 @@ async function generateCjsLibrary(allDatatypeMapsString: string, relativePathToC
 
 // Generate an ES Module library for all datatype maps
 async function generateEsmLibrary(allDatatypeMapsString: string, relativePathToCustomMsgs: string): Promise<string> {
-  let output = `import { ros2jazzy } from "@duke-robotics/rosmsg-msgs-common";
+  let output = `import { ros2jazzy } from "@foxglove/rosmsg-msgs-common";
   import { custom_msgs } from "${relativePathToCustomMsgs}";\n\n`;
 
   output += allDatatypeMapsString;
