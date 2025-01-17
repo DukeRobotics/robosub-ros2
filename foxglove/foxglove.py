@@ -25,7 +25,7 @@ STATUS_EMOJI = {
 }
 
 
-def run_at_path(command: str | Sequence[str], directory: pathlib.Path) -> None:
+def run_at_path(command: str, directory: pathlib.Path) -> None:
     """
     Run a command at a given path.
 
@@ -41,11 +41,9 @@ def run_at_path(command: str | Sequence[str], directory: pathlib.Path) -> None:
         msg = 'Command must not be empty'
         raise ValueError(msg)
 
-    args = command.split(' ') if isinstance(command, str) else list(command)
-
     print(f'{directory.resolve()}# {command}')
 
-    subprocess.run(args, cwd=directory, check=True)  # noqa: S603
+    subprocess.run(command, cwd=directory, check=True, shell=True)  # noqa: S602
 
 
 def doctor() -> None:
@@ -213,7 +211,8 @@ def watch(extension: pathlib.Path) -> None:
     Args:
         extension: Extension to watch for changes.
     """
-    run_at_path('npm run watch:local-install', extension)
+    command = "npx nodemon --watch './src/**' -e ts,tsx --exec 'npm run local-install'"
+    run_at_path(command, extension)
 
 
 def extension_package(name: str) -> pathlib.Path:
