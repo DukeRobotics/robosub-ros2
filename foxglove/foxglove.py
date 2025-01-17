@@ -206,8 +206,17 @@ def uninstall(install_path: pathlib.Path = EXTENSION_INSTALL_PATH) -> None:
 
     print(f'Successfully uninstalled {len(extensions)} extension(s)\n')
 
+def watch(extension: pathlib.Path) -> None:
+    """
+    Watch a Foxglove extension for changes and rebuild on save.
 
-def extension_package(name: str, extension_paths: Sequence[pathlib.Path] = EXTENSION_PATHS) -> pathlib.Path:
+    Args:
+        extension: Extension to watch for changes.
+    """
+    run_at_path('npm run watch:local-install', extension)
+
+
+def extension_package(name: str) -> pathlib.Path:
     """
     Type for argparse that checks if a given extension name is valid.
 
@@ -221,9 +230,9 @@ def extension_package(name: str, extension_paths: Sequence[pathlib.Path] = EXTEN
     Returns:
         pathlib.Path: Full path to extension.
     """
-    for extension in extension_paths:
-        if name == extension.name:
-            return extension
+    extension = (FOXGLOVE_PATH / 'extensions' / name)
+    if extension.is_dir():
+        return extension
 
     msg = f'{name} is not a valid extension name'
     raise argparse.ArgumentTypeError(msg)
@@ -316,7 +325,7 @@ def main() -> None:
     if args.action in {'install', 'i'}:
         install(args.extensions or EXTENSION_PATHS)
     elif args.action in {'watch', 'w'}:
-        run_at_path('npm run watch:local-install', args.extensions[0])
+        watch(args.extensions[0])
     elif args.action in {'publish', 'p'}:
         publish(args.extensions or EXTENSION_PATHS, args.version)
     elif args.action in {'uninstall', 'u'}:
