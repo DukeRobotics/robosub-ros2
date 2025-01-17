@@ -1,6 +1,7 @@
-#!/usr/bin/env python3
+
 
 import math
+from pathlib import Path
 
 import cv2
 import depthai as dai
@@ -19,9 +20,9 @@ from cv.image_tools import ImageTools
 from cv.utils import DetectionVisualizer, calculate_relative_pose
 
 CAMERA_CONFIG_PATH = 'package://cv/config/usb_cameras.yaml'
-with open(rr.get_filename(CAMERA_CONFIG_PATH, use_protocol=False)) as f:
+with Path.open(rr.get_filename(CAMERA_CONFIG_PATH, use_protocol=False)) as f:
     cameras = yaml.safe_load(f)
-CAMERA = cameras['front']  # TODO: use ROS params to select camera
+CAMERA = cameras['front']  # TODO: use ROS params to select camera  # noqa: FIX002
 
 MM_IN_METER = 1000
 DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH = 'package://cv/models/depthai_models.yaml'
@@ -41,11 +42,13 @@ FOCAL_LENGTH = CAMERA['focal_length']  # Focal length of camera in mm
 SENSOR_SIZE = (CAMERA['sensor_size']['width'], CAMERA['sensor_size']['height'])  # Sensor size in mm
 
 
-# Compute detections on live camera feed and publish spatial coordinates for detected objects
 class DepthAISpatialDetector(Node):
-    def __init__(self):
+    """Compute detections on live camera feed and publish spatial coordinates for detected objects."""
+    def __init__(self) -> None:
         """
-        Initializes the ROS node. Loads the yaml file at cv/models/depthai_models.yaml
+        Initialize the ROS node.
+
+        Loads the yaml file at cv/models/depthai_models.yaml
         """
         super().__init__('depthai_spatial_detection')
         self.feed_path = self.declare_parameter('feed_path', '/camera/usb/front/compressed').value
@@ -59,7 +62,7 @@ class DepthAISpatialDetector(Node):
         self.show_confidence = self.declare_parameter('show_confidence', True).value
         self.device = None
 
-        with open(rr.get_filename(DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH,
+        with Path.open(rr.get_filename(DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH,
                                   use_protocol=False)) as f:
             self.models = yaml.safe_load(f)
 
@@ -102,9 +105,9 @@ class DepthAISpatialDetector(Node):
 
         self.run()
 
-    def _update_latest_img(self, img_msg):
+    def _update_latest_img(self, img_msg: CompressedImage) -> None:
         """
-        Send an image to the device for detection
+        Send an image to the device for detection.
 
         Args:
             img_msg (sensor_msgs.msg.CompressedImage): Image to send to the device
@@ -132,10 +135,11 @@ class DepthAISpatialDetector(Node):
 
             input_queue.send(img)
 
-    def build_pipeline(self, nn_blob_path, sync_nn):
+    def build_pipeline(self, nn_blob_path:Path, sync_nn: bool) -> dai.Pipeline:  # noqa: ARG002
         """
-        Get the DepthAI Pipeline for 3D object localization. Inspiration taken from
-        https://docs.luxonis.com/projects/api/en/latest/samples/SpatialDetection/spatial_tiny_yolo/.
+        Get the DepthAI Pipeline for 3D object localization.
+
+        Inspiration taken from https://docs.luxonis.com/projects/api/en/latest/samples/SpatialDetection/spatial_tiny_yolo/.
         To understand the DepthAI pipeline structure, please see https://docs.luxonis.com/projects/api/en/latest/.
         This pipeline computes the depth map using the two mono cameras. This depth map and the RGB feed are fed into
         the YoloSpatialDetection Node, which detects objects and computes the average depth within the bounding box
@@ -194,9 +198,9 @@ class DepthAISpatialDetector(Node):
 
         return pipeline
 
-    def init_model(self, model_name):
+    def init_model(self, model_name:str) -> None:
         """
-        Creates and assigns the pipeline and sets the current model name.
+        Create and assign the pipeline and set the current model name.
 
         :param model_name: Name of the model. The model name should match a key in cv/models/depthai_models.yaml.
         For example, if depthai_models.yaml is:
@@ -230,9 +234,11 @@ class DepthAISpatialDetector(Node):
                                     use_protocol=False)
         self.pipeline = self.build_pipeline(blob_path, self.sync_nn)
 
-    def init_publishers(self, model_name):
+    def init_publishers(self, model_name:str) -> None:
         """
-        Initialize the publishers for the node. A publisher is created for each class that the model predicts.
+        Initialize the publishers for the node.
+
+        A publisher is created for each class that the model predicts.
         The publishers are created in format: "cv/camera/model_name".
         :param model_name: Name of the model that is being used.
         """
@@ -251,9 +257,10 @@ class DepthAISpatialDetector(Node):
             self.detection_feed_publisher = self.create_publisher(CompressedImage, 'cv/front/detections/compressed',
                                                             10)
 
-    def init_queues(self, device):
+    def init_queues(self, device: dai.Device) -> None:
         """
-        Assigns output queues from the pipeline to dictionary of queues.
+        Assign output queues from the pipeline to dictionary of queues.
+
         :param device: DepthAI.Device object for the connected device.
         See https://docs.luxonis.com/projects/api/en/latest/components/device/
         """
@@ -272,20 +279,18 @@ class DepthAISpatialDetector(Node):
         self.detection_visualizer = DetectionVisualizer(self.classes, self.colors,
                                                         self.show_class_name, self.show_confidence)
 
-    def detect(self):
-        """
-        Get current detections from output queues and publish.
-        """
+    def detect(self) -> None:
+        """Get current detections from output queues and publish."""
         # init_output_queues must be called before detect
         if not self.connected:
             self.get_logger().warn('Output queues are not initialized so cannot detect. Call init_output_queues first.')
             return
 
         # Get detections from output queues
-        inDet = self.output_queues['detections'].get()
-        if not inDet:
+        indet = self.output_queues['detections'].get()
+        if not indet:
             return
-        detections = inDet.detections
+        detections = indet.detections
 
         detections_dict = {}
         for detection in detections:
@@ -334,8 +339,8 @@ class DepthAISpatialDetector(Node):
                 bbox, det_coords_robot_mm, yaw_offset, label, confidence,
                 (self.camera_pixel_height, self.camera_pixel_width), self.using_sonar)
 
-    def publish_prediction(self, bbox, det_coords, yaw, label, confidence,
-                           shape, using_sonar):
+    def publish_prediction(self, bbox:tuple, det_coords:tuple, yaw:float, label:str, confidence:float,
+                           shape:tuple, using_sonar:bool) -> None:
         """
         Publish predictions to label-specific topic. Publishes to /cv/[camera]/[label].
 
@@ -375,9 +380,10 @@ class DepthAISpatialDetector(Node):
             # if object_msg.coords.x != 0 and object_msg.coords.y != 0 and object_msg.coords.z != 0:
             self.publishers_dict[label].publish(object_msg)
 
-    def update_sonar(self, sonar_results):
+    def update_sonar(self, sonar_results:SonarSweepResponse) -> None:
         """
-        Callback function for listenting to sonar response
+        Define callback function for listenting to sonar response.
+
         Updates instance variable self.sonar_response based on
         what sonar throws back if it is in range (> SONAR_RANGE = 1.75m)
         """
@@ -390,15 +396,14 @@ class DepthAISpatialDetector(Node):
         else:
             self.in_sonar_range = False
 
-    def update_priority(self, object):
-        """
-        Update the current priority class. If the priority class is detected, sonar will be called.
-        """
-        self.current_priority = object
+    def update_priority(self, obj:object) -> None:
+        """Update the current priority class. If the priority class is detected, sonar will be called."""
+        self.current_priority = obj
 
-    def run(self):
+    def run(self) -> None:
         """
-        Runs the selected model on the connected device.
+        Run the selected model on the connected device.
+
         :return: False if the model is not in cv/models/depthai_models.yaml.
         Otherwise, the model will be run on the device.
         """
@@ -417,10 +422,12 @@ class DepthAISpatialDetector(Node):
 
         return True
 
-    def compute_angle_from_x_offset(self, x_offset):
+    def compute_angle_from_x_offset(self, x_offset:float) -> float:
         """
+        Compute the angle in degrees from the x offset of the object in the image.
+
         See: https://math.stackexchange.com/questions/1320285/convert-a-pixel-displacement-to-angular-rotation
-        for implementation details.
+          for implementation details.
 
         :param x_offset: x pixels from center of image
 
@@ -430,7 +437,8 @@ class DepthAISpatialDetector(Node):
         return math.degrees(math.atan((x_offset - image_center_x) * 0.005246675486))
 
 
-def main(args=None):
+def main(args:list[str]|None=None) -> None:
+    """Define the main function that initiates the node."""
     rclpy.init(args=args)
     depthai_spatial_detector = DepthAISpatialDetector()
 
