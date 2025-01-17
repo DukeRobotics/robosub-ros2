@@ -4,10 +4,10 @@ import rclpy
 from std_msgs.msg import Float64
 from std_srvs.srv import SetBool
 
-from data_pub.serial_republisher_node import SerialReublisherNode
+from data_pub.serial_republisher_node import SerialRepublisherNode
 
 
-class SensorServoPublisher(SerialReublisherNode):
+class SensorServoPublisher(SerialRepublisherNode):
     """Serial publisher to publish temperature and humidity data to ROS."""
 
     CONFIG_FILE_PATH = f'package://data_pub/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'

@@ -16,6 +16,8 @@ __pycache__
 
 .config
 .env
-.vscode
 
-bag_files
+# Ignore everything in .vscode except the following files
+.vscode/*
+!.vscode/c_cpp_properties.json
+!.vscode/launch.json

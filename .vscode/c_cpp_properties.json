@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/opt/ros/jazzy/include/**",
+                "/usr/include/**",
+                "/usr/local/include/**",
+                "/usr/include/eigen3/**",
+                "/root/dev/robosub-ros2/onboard/src/controls/include/controls/**",
+                "/root/dev/robosub-ros2/core/install/custom_msgs/include/**"
+            ],
+            "name": "ROS",
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c17",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}

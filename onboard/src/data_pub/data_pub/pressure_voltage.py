@@ -4,10 +4,10 @@ import rclpy
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from std_msgs.msg import Float64
 
-from data_pub.serial_republisher_node import SerialReublisherNode
+from data_pub.serial_republisher_node import SerialRepublisherNode
 
 
-class PressureVoltagePublisher(SerialReublisherNode):
+class PressureVoltagePublisher(SerialRepublisherNode):
     """Serial publisher to publish voltage and pressure data to ROS."""
 
     CONFIG_FILE_PATH = f'package://data_pub/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'

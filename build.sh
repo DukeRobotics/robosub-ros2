@@ -19,6 +19,7 @@ clean_workspace() {
 build_workspace() {
     workspace_dir=$1
     package_name=$2
+    debug_mode=$3
 
     cd "$workspace_dir" || exit
 
@@ -29,11 +30,18 @@ build_workspace() {
         build_cmd="$build_cmd --symlink-install"
     fi
 
+    # Add package-specific build if specified
     if [ -n "$package_name" ]; then
         build_cmd="$build_cmd --packages-select $package_name"
         echo "Building package '$package_name' in workspace: $workspace_dir"
     else
         echo "Building workspace: $workspace_dir"
+    fi
+
+    # Add debug flags if requested
+    if [ "$debug_mode" == true ]; then
+        build_cmd="$build_cmd --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo"
+        echo "Debug mode enabled: Adding RelWithDebInfo build type to CMake."
     fi
 
     $build_cmd --executor sequential
@@ -42,13 +50,31 @@ build_workspace() {
 }
 
 # Main script logic
+debug_mode=false
+
+# Check if --debug is specified and validate against 'clean'
+for arg in "$@"; do
+    if [ "$arg" == "--debug" ]; then
+        for check_arg in "$@"; do
+            if [ "$check_arg" == "clean" ]; then
+                echo "Error: --debug flag cannot be used with the 'clean' command."
+                return 1
+            fi
+        done
+        debug_mode=true
+        # Remove --debug from arguments to avoid interference
+        set -- "${@/--debug/}"
+        break
+    fi
+done
+
 if [ "$1" == "core" ]; then
     # Build all packages in core workspace
-    build_workspace "$CORE_WS"
+    build_workspace "$CORE_WS" "" "$debug_mode"
 
 elif [ "$1" == "onboard" ]; then
     # Build all packages in onboard workspace
-    build_workspace "$ONBOARD_WS"
+    build_workspace "$ONBOARD_WS" "" "$debug_mode"
 
 elif [ "$1" == "clean" ]; then
     # Clean workspaces
@@ -63,11 +89,11 @@ elif [ "$1" == "clean" ]; then
 
 elif [ -n "$1" ]; then
     # Build a specific package in the onboard workspace
-    build_workspace "$ONBOARD_WS" "$1"
+    build_workspace "$ONBOARD_WS" "$1" "$debug_mode"
 else
     # Build all packages in both core and onboard workspaces
-    build_workspace "$CORE_WS"
-    build_workspace "$ONBOARD_WS"
+    build_workspace "$CORE_WS" "" "$debug_mode"
+    build_workspace "$ONBOARD_WS" "" "$debug_mode"
 fi
 
 # Reload bashrc and return to original directory
