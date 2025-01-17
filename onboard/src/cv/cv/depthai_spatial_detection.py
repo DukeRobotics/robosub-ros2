@@ -1,6 +1,7 @@
-#!/usr/bin/env python3
+
 
 import math
+from pathlib import Path
 
 import cv2
 import depthai as dai
@@ -35,12 +36,10 @@ SENSOR_SIZE = (6.2868, 4.712)  # Sensor size in mm
 ISP_IMG_SHAPE = (4056, 3040)  # Size of ISP image
 
 
-# Compute detections on live camera feed and publish spatial coordinates for detected objects
 class DepthAISpatialDetector(Node):
-    def __init__(self):
-        """
-        Initializes the ROS node. Loads the yaml file at cv/models/depthai_models.yaml
-        """
+    """Compute detections on live camera feed and publish spatial coordinates for detected objects."""
+    def __init__(self) -> None:
+        """Initialize the ROS node. Loads the yaml file at cv/models/depthai_models.yaml."""
         super().__init__('depthai_spatial_detection')
         self.running_model = self.declare_parameter('running_model', 'yolov7_tiny_2023_main').value
         self.rgb_raw = self.declare_parameter('rgb_raw', True).value
@@ -52,7 +51,7 @@ class DepthAISpatialDetector(Node):
         self.show_confidence = self.declare_parameter('show_confidence', True).value
         self.correct_color = self.declare_parameter('correct_color', False).value
 
-        with open(rr.get_filename(DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH,
+        with Path.open(rr.get_filename(DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH,
                                   use_protocol=False)) as f:
             self.models = yaml.safe_load(f)
 
@@ -93,9 +92,11 @@ class DepthAISpatialDetector(Node):
 
         self.run()
 
-    def build_pipeline(self, nn_blob_path, sync_nn):
+    def build_pipeline(self, nn_blob_path: Path, sync_nn: bool) -> dai.Pipline:  # noqa: ARG002
         """
-        Get the DepthAI Pipeline for 3D object localization. Inspiration taken from
+        Get the DepthAI Pipeline for 3D object localization.
+
+        Inspiration taken from
         https://docs.luxonis.com/projects/api/en/latest/samples/SpatialDetection/spatial_tiny_yolo/.
         To understand the DepthAI pipeline structure, please see https://docs.luxonis.com/projects/api/en/latest/.
         This pipeline computes the depth map using the two mono cameras. This depth map and the RGB feed are fed into
@@ -176,9 +177,9 @@ class DepthAISpatialDetector(Node):
 
         return pipeline
 
-    def init_model(self, model_name):
+    def init_model(self, model_name: str) -> None:
         """
-        Creates and assigns the pipeline and sets the current model name.
+        Create and assign the pipeline and set the current model name.
 
         :param model_name: Name of the model. The model name should match a key in cv/models/depthai_models.yaml.
         For example, if depthai_models.yaml is:
@@ -212,9 +213,10 @@ class DepthAISpatialDetector(Node):
                                     use_protocol=False)
         self.pipeline = self.build_pipeline(blob_path, self.sync_nn)
 
-    def init_publishers(self, model_name):
+    def init_publishers(self, model_name: str) -> None:
         """
         Initialize the publishers for the node. A publisher is created for each class that the model predicts.
+
         The publishers are created in format: "cv/camera/model_name".
         :param model_name: Name of the model that is being used.
         """
@@ -238,9 +240,10 @@ class DepthAISpatialDetector(Node):
             self.detection_feed_publisher = self.create_publisher(CompressedImage, 'cv/front/detections/compressed',
                                                             10)
 
-    def init_queues(self, device):
+    def init_queues(self, device: dai.Device) -> None:  # noqa: ARG002
         """
-        Assigns output queues from the pipeline to dictionary of queues.
+        Assign output queues from the pipeline to dictionary of queues.
+
         :param device: DepthAI.Device object for the connected device.
         See https://docs.luxonis.com/projects/api/en/latest/components/device/
         """
@@ -260,10 +263,8 @@ class DepthAISpatialDetector(Node):
         self.detection_visualizer = DetectionVisualizer(self.classes, self.colors,
                                                         self.show_class_name, self.show_confidence)
 
-    def detect(self):
-        """
-        Get current detections from output queues and publish.
-        """
+    def detect(self) -> None:
+        """Get current detections from output queues and publish."""
         # init_output_queues must be called before detect
         if not self.connected:
             self.get_logger().warn('Output queues are not initialized so cannot detect. Call init_output_queues first.')
@@ -273,8 +274,8 @@ class DepthAISpatialDetector(Node):
         def to_planar(arr: np.ndarray, shape: tuple) -> np.ndarray:
             return cv2.resize(arr, shape).transpose(2, 0, 1).flatten()
 
-        inPreview = self.output_queues['rgb'].get()
-        frame = inPreview.getCvFrame()
+        inpreview = self.output_queues['rgb'].get()
+        frame = inpreview.getCvFrame()
 
         # Publish raw RGB feed
         if self.rgb_raw:
@@ -295,10 +296,10 @@ class DepthAISpatialDetector(Node):
         self.input_queue.send(img)
 
         # Get detections from output queues
-        inDet = self.output_queues['detections'].tryGet()
-        if not inDet:
+        indet = self.output_queues['detections'].tryGet()
+        if not indet:
             return
-        detections = inDet.detections
+        detections = indet.detections
 
         detections_dict = {}
         for detection in detections:
@@ -363,10 +364,11 @@ class DepthAISpatialDetector(Node):
                 bbox, det_coords_robot_mm, yaw_offset, label, confidence,
                 (self.camera_pixel_height, self.camera_pixel_width), self.using_sonar)
 
-    def publish_prediction(self, bbox, det_coords, yaw, label, confidence,
-                           shape, using_sonar):
+    def publish_prediction(self, bbox: tuple, det_coords: tuple, yaw: float, label: str, confidence: float,
+                           shape: tuple, using_sonar: bool) -> None:
         """
         Publish predictions to label-specific topic. Publishes to /cv/[camera]/[label].
+
         :param bbox: Tuple for the bounding box.
             Values are from 0-1, where X increases left to right and Y increases top to bottom.
         :param det_coords: Tuple with the X, Y, and Z values in meters, and in the robot rotational reference frame.
@@ -403,9 +405,10 @@ class DepthAISpatialDetector(Node):
             self.get_logger().debug('Publishing')
             self.publishers_dict[label].publish(object_msg)
 
-    def update_sonar(self, sonar_results):
+    def update_sonar(self, sonar_results:object) -> None:
         """
-        Callback function for listenting to sonar response
+        Listen to sonar response.
+
         Updates instance variable self.sonar_response based on
         what sonar throws back if it is in range (> SONAR_RANGE = 1.75m)
         """
@@ -418,15 +421,14 @@ class DepthAISpatialDetector(Node):
         else:
             self.in_sonar_range = False
 
-    def update_priority(self, object):
-        """
-        Update the current priority class. If the priority class is detected, sonar will be called.
-        """
-        self.current_priority = object
+    def update_priority(self, obj: str) -> None:
+        """Update the current priority class. If the priority class is detected, sonar will be called."""
+        self.current_priority = obj
 
-    def run(self):
+    def run(self) -> bool:
         """
-        Runs the selected model on the connected device.
+        Run the selected model on the connected device.
+
         :return: False if the model is not in cv/models/depthai_models.yaml.
         Otherwise, the model will be run on the device.
         """
@@ -445,8 +447,10 @@ class DepthAISpatialDetector(Node):
 
         return True
 
-    def compute_angle_from_x_offset(self, x_offset):
+    def compute_angle_from_x_offset(self, x_offset: float) -> float:
         """
+        Compute angle from x offset.
+
         See: https://math.stackexchange.com/questions/1320285/convert-a-pixel-displacement-to-angular-rotation
         for implementation details.
 
@@ -457,8 +461,10 @@ class DepthAISpatialDetector(Node):
         image_center_x = self.camera_pixel_width / 2.0
         return math.degrees(math.atan((x_offset - image_center_x) * 0.005246675486))
 
-    def compute_angle_from_y_offset(self, y_offset):
+    def compute_angle_from_y_offset(self, y_offset: float) -> float:
         """
+        Compute angle from y offset.
+
         See: https://math.stackexchange.com/questions/1320285/convert-a-pixel-displacement-to-angular-rotation
         for implementation details.
 
@@ -469,10 +475,10 @@ class DepthAISpatialDetector(Node):
         image_center_y = self.camera_pixel_height / 2.0
         return math.degrees(math.atan((y_offset - image_center_y) * 0.003366382395))
 
-    def coords_to_angle(self, min_x, max_x):
+    def coords_to_angle(self, min_x: float, max_x: float) -> tuple[float, float]:
         """
-        Takes in a detected bounding box from the camera and returns the angle
-                range to sonar sweep.
+        Take in a detected bounding box from the camera and return the angle range to sonar sweep.
+
         :param min_x: minimum x coordinate of camera bounding box (robot y)
         :param max_x: maximum x coordinate of camera bounding box (robot y)
         """
@@ -483,18 +489,20 @@ class DepthAISpatialDetector(Node):
         return min_angle, max_angle
 
 
-def mm_to_meters(val_mm):
+def mm_to_meters(val_mm: float) -> float:
     """
-    Converts value from millimeters to meters.
+    Convert value from millimeters to meters.
+
     :param val_mm: Value in millimeters.
     :return: Input value converted to meters.
     """
     return val_mm / MM_IN_METER
 
 
-def camera_frame_to_robot_frame(cam_x, cam_y, cam_z):
+def camera_frame_to_robot_frame(cam_x: float, cam_y: float, cam_z: float) -> tuple[float, float, float]:
     """
     Convert coordinates in camera reference frame to coordinates in robot reference frame.
+
     This ONLY ACCOUNTS FOR THE ROTATION BETWEEN COORDINATE FRAMES, and DOES NOT ACCOUNT FOR THE TRANSLATION.
     :param cam_x: X coordinate of object in camera reference frame.
     :param cam_y: Y coordinate of object in camera reference frame.
@@ -507,7 +515,8 @@ def camera_frame_to_robot_frame(cam_x, cam_y, cam_z):
     return robot_x, robot_y, robot_z
 
 
-def main(args=None):
+def main(args: list[str]|None=None) -> None:
+    """Spin DepthAISpatialDetector."""
     rclpy.init(args=args)
     depthai_spatial_detector = DepthAISpatialDetector()
 
