@@ -1,22 +1,10 @@
 #!/usr/bin/env python3
-"""
-A CLI to automatically install/uninstall Foxglove extensions.
-
-To install a specific extension, use the -e flag:
-python foxglove.py install -e <extension-1> <extension-2> ...
-By default, the `-e` flag without arguments will install all extensions.
-
-For more information, use the -h flag:
-python foxglove.py -h
-python foxglove.py install -h
-python foxglove.py uninstall -h
-"""
+"""A CLI that manages custom extensions for Foxglove Studio."""
 
 import argparse
 import functools
 import json
 import pathlib
-import platform
 import shutil
 import subprocess
 from collections.abc import Sequence
@@ -26,26 +14,24 @@ import git
 ORGANIZATION = 'dukerobotics'
 ROS_DISTRO = 'ros-jazzy'
 
-if (SYSTEM := platform.system()) not in ('Linux', 'Darwin', 'Windows'):
-    msg = f'Unsupported platform: {SYSTEM}'
-    raise SystemExit(msg)
-
 EXTENSION_INSTALL_PATH = pathlib.Path.home() / '.foxglove-studio/extensions/'
 
 FOXGLOVE_PATH = pathlib.Path(__file__).parent.resolve()
 EXTENSION_PATHS = [d for d in (FOXGLOVE_PATH / 'extensions').iterdir() if d.is_dir()]
 
+STATUS_EMOJI = {
+    True: '✅',
+    False: '❌',
+}
 
-def run_at_path(command: str | Sequence[str], directory: pathlib.Path, system: str = SYSTEM,
-                windows_append_cmd: bool = True) -> None:
+
+def run_at_path(command: str | Sequence[str], directory: pathlib.Path) -> None:
     """
     Run a command at a given path.
 
     Args:
         command: Command to run.
         directory: Path to run command at.
-        system: Can be "Linux", "Darwin", or "Windows". Defaults to platform.system().
-        windows_append_cmd: If True, append ".cmd" to command on Windows systems.
 
     Raises:
         ValueError: If command empty.
@@ -57,42 +43,42 @@ def run_at_path(command: str | Sequence[str], directory: pathlib.Path, system: s
 
     args = command.split(' ') if isinstance(command, str) else list(command)
 
-    if system == 'Windows' and windows_append_cmd:
-        args[0] += '.cmd'
+    print(f'{directory.resolve()}# {command}')
 
-    print(f'{directory.name}: {command}')
     subprocess.run(args, cwd=directory, check=True)  # noqa: S603
 
 
-def check_npm() -> None:
+def doctor() -> None:
     """
-    Check if npm is installed.
+    Check if the Foxglove development environment is set up correctly.
 
     Raises:
-        SystemExit: If npm not found.
+        SystemExit: If any potential problems are found.
     """
-    try:
-        run_at_path('npm -v', FOXGLOVE_PATH)
-    except (FileNotFoundError, subprocess.CalledProcessError) as e:
-        msg = 'npm not found. Install npm and try again.'
-        raise SystemExit(msg) from e
+    num_success = 0
+
+    commands = {
+        'npm': 'npm -v',
+        'foxglove cli': 'foxglove version',
+        'foxglove cli authentication': 'foxglove auth info',
+    }
+
+    for title, command in commands.items():
+        try:
+            run_at_path(command, FOXGLOVE_PATH)
+            print(f'{STATUS_EMOJI[True]} {title} found')
+            num_success += 1
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            print(f'{STATUS_EMOJI[False]} {title} missing!')
+        print()
+
+    print(f'{num_success}/{len(commands)} checks passed')
+
+    if num_success != len(commands):
+        raise SystemExit(1)
 
 
-def check_foxglove_cli() -> None:
-    """
-    Check if the Foxglove CLI is installed.
-
-    Raises:
-        SystemExit: If the Foxglove CLI is not found.
-    """
-    try:
-        run_at_path('foxglove version', FOXGLOVE_PATH)
-    except (FileNotFoundError, subprocess.CalledProcessError) as e:
-        msg = 'The Foxglove CLI was not found. Install the Foxglove CLI and try again.'
-        raise SystemExit(msg) from e
-
-
-def build_deps(skip_ci: bool = False, extension_paths: Sequence[pathlib.Path] = EXTENSION_PATHS) -> None:
+def build(skip_ci: bool = False, extension_paths: Sequence[pathlib.Path] = EXTENSION_PATHS) -> None:
     """
     Build all necessary dependencies for Foxglove.
 
@@ -104,6 +90,7 @@ def build_deps(skip_ci: bool = False, extension_paths: Sequence[pathlib.Path] = 
 
     # Install external dependencies and symlink local dependencies
     if not skip_ci:
+        print('Installing external dependencies. This may take some time...')
         run('npm ci')
 
         # Patch external dependencies
@@ -116,10 +103,10 @@ def build_deps(skip_ci: bool = False, extension_paths: Sequence[pathlib.Path] = 
 
     # Compile local nonshared dependencies
     for extension in extension_paths:
-        run_at_path('npm run build-deps --if-present', extension)
+        run_at_path('npm run build --if-present', extension)
 
 
-def install_extensions(extension_paths: Sequence[pathlib.Path]) -> None:
+def install(extension_paths: Sequence[pathlib.Path]) -> None:
     """
     Install custom Foxglove extensions.
 
@@ -156,7 +143,7 @@ def _update_extension_version(extension: pathlib.Path, version: str) -> None:
         json.dump(package, file, indent=2)
 
 
-def publish_extensions(extension_paths: Sequence[pathlib.Path], version: str | None = None) -> None:
+def publish(extension_paths: Sequence[pathlib.Path], version: str | None = None) -> None:
     """
     Publish custom Foxglove extensions.
 
@@ -170,7 +157,7 @@ def publish_extensions(extension_paths: Sequence[pathlib.Path], version: str | N
     repo = git.Repo(path=FOXGLOVE_PATH.parent)
     is_dirty = repo.is_dirty(untracked_files=True)
     if is_dirty and version is None:
-        msg = 'The foxglove directory is dirty! Commit changes before publishing.'
+        msg = 'Commit changes before publishing or use the --version flag.'
         raise SystemExit(msg)
     if version is None:
         version = repo.head.object.hexsha[:7]
@@ -203,7 +190,7 @@ def publish_extensions(extension_paths: Sequence[pathlib.Path], version: str | N
     print(f'Successfully published {successes} extension(s)\n')
 
 
-def uninstall_extensions(install_path: pathlib.Path = EXTENSION_INSTALL_PATH) -> None:
+def uninstall(install_path: pathlib.Path = EXTENSION_INSTALL_PATH) -> None:
     """
     Uninstall all Duke Robotics extensions from Foxglove.
 
@@ -242,42 +229,15 @@ def extension_package(name: str, extension_paths: Sequence[pathlib.Path] = EXTEN
     raise argparse.ArgumentTypeError(msg)
 
 
-def clean_foxglove() -> None:
+def clean() -> None:
     """Clean up the foxglove monorepo."""
-    run_at_path('git clean -fdx', FOXGLOVE_PATH, windows_append_cmd=False)
+    run_at_path('git clean -fdx', FOXGLOVE_PATH)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Install/Uninstall Foxglove extensions.')
+def main() -> None:
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(description='Manage custom extensions for Foxglove Studio.')
     subparsers = parser.add_subparsers(dest='action')
-
-    install_parser = subparsers.add_parser(
-        'install',
-        aliases=['i'],
-        help='Install Foxglove extensions. By default, all extensions are installed.',
-    )
-    install_parser.add_argument(
-        'extensions',
-        nargs='*',
-        type=extension_package,
-        help='Install extension(s) by name. If no name(s) are given, all extensions are installed.',
-    )
-    install_parser.add_argument(
-        '--skip-ci',
-        action='store_true',
-        help='Use existing node_modules instead of clean installing external dependencies.',
-    )
-    install_parser.add_argument(
-        '--skip-build',
-        action='store_true',
-        help='Skip preliminary build steps.',
-    )
-
-    uninstall_parser = subparsers.add_parser(
-        'uninstall',
-        aliases=['u'],
-        help='Uninstall Foxglove extensions. By default, all extensions are uninstalled.',
-    )
 
     build_parser = subparsers.add_parser(
         'build',
@@ -290,10 +250,29 @@ if __name__ == '__main__':
         help='Use existing node_modules instead of clean installing external dependencies.',
     )
 
-    clean_parser = subparsers.add_parser(
-        'clean',
-        aliases=['c'],
-        help='Clean up the foxglove monorepo.',
+    install_parser = subparsers.add_parser(
+        'install',
+        aliases=['i'],
+        help='Install Foxglove extensions. By default, all extensions are installed.',
+    )
+    install_parser.add_argument(
+        'extensions',
+        nargs='*',
+        type=extension_package,
+        help='Install extension(s) by name.',
+    )
+
+    watch_parser = subparsers.add_parser(
+        'watch',
+        aliases=['w'],
+        help='Watch a Foxglove extension for changes and rebuild on save.',
+    )
+    watch_parser.add_argument(
+        'extensions',
+        metavar='extension',
+        nargs=1,
+        type=extension_package,
+        help='Extension to watch for changes.',
     )
 
     publish_parser = subparsers.add_parser(
@@ -305,7 +284,7 @@ if __name__ == '__main__':
         'extensions',
         nargs='*',
         type=extension_package,
-        help='Specify extension(s) to publish. If no name(s) are given, all extensions are published.',
+        help='Specify extension(s) to publish. If no names are given, all extensions are published.',
     )
     publish_parser.add_argument(
         '-v', '--version',
@@ -314,37 +293,42 @@ if __name__ == '__main__':
         help='Version to publish extensions under. If no version is given, the short HEAD commit hash is used.',
     )
 
+    subparsers.add_parser(
+        'uninstall',
+        aliases=['u'],
+        help='Uninstall all Foxglove extensions.',
+    )
+
+    subparsers.add_parser(
+        'clean',
+        aliases=['c'],
+        help='Clean up the Foxglove monorepo.',
+    )
+
+    subparsers.add_parser(
+        'doctor',
+        aliases=['d'],
+        help='Troubleshoot the Foxglove development environment.',
+    )
+
+
     args = parser.parse_args()
+    if args.action in {'install', 'i'}:
+        install(args.extensions or EXTENSION_PATHS)
+    elif args.action in {'watch', 'w'}:
+        run_at_path('npm run watch:local-install', args.extensions[0])
+    elif args.action in {'publish', 'p'}:
+        publish(args.extensions or EXTENSION_PATHS, args.version)
+    elif args.action in {'uninstall', 'u'}:
+        uninstall()
+    elif args.action in {'build', 'b'}:
+        build(skip_ci=args.skip_ci)
+    elif args.action in {'clean', 'c'}:
+        clean()
+    elif args.action in {'doctor', 'd'}:
+        doctor()
+    else:
+        parser.print_help()
 
-    if args.action in ('install', 'i'):
-        # Without flags, install everything
-        if args.extensions is None:
-            args.extensions = EXTENSION_PATHS
-        # If only the -e flag is set without additional arguments, install all extensions
-        if args.extensions == []:
-            args.extensions = EXTENSION_PATHS
-
-        if args.extensions is not None:
-            check_npm()
-            if not args.skip_build:
-                build_deps(skip_ci=args.skip_ci, extension_paths=args.extensions)
-            install_extensions(args.extensions)
-
-    elif args.action in ('publish', 'p'):
-        # Without flags, publish all extensions
-        if args.extensions is None or args.extensions == []:
-            args.extensions = EXTENSION_PATHS
-
-        check_npm()
-        check_foxglove_cli()
-        publish_extensions(args.extensions, args.version)
-
-    elif args.action in ('uninstall', 'u'):
-        uninstall_extensions()
-
-    elif args.action in ('build', 'b'):
-        check_npm()
-        build_deps(skip_ci=args.skip_ci)
-
-    elif args.action in ('clean', 'c'):
-        clean_foxglove()
+if __name__ == '__main__':
+    main()
