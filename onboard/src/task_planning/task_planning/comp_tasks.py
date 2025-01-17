@@ -475,29 +475,34 @@ async def gate_task_dead_reckoning(self: Task) -> Task[None, None, None]:
 
 @task
 async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[None, None, None]:
-    logger.info('Started gate task')
-    DEPTH_LEVEL = State().orig_depth - 0.7
+    """
+    Asynchronous task to perform gate-related operations.
+    """
 
-    async def correct_y(factor=1):
+    logger.info('Started gate task')
+    depth_level = State().orig_depth - 0.7
+
+    async def correct_y(factor: int=1) -> None:
         await cv_tasks.correct_y(prop='gate_red_cw', add_factor=0.2 + offset, mult_factor=factor, parent=self)
 
-    async def correct_z():
+    async def correct_z() -> None:
         await cv_tasks.correct_z(prop='gate_red_cw', parent=self)
 
-    async def correct_depth():
-        await move_tasks.correct_depth(desired_depth=DEPTH_LEVEL, parent=self)
+    async def correct_depth() -> None:
+        await move_tasks.correct_depth(desired_depth=depth_level, parent=self)
     self.correct_depth = correct_depth
 
-    async def move_x(step=1):
+    async def move_x(step=1) -> None:
         await move_tasks.move_x(step=step, parent=self)
 
-    def get_step_size(dist):
-        if dist > 4:
+    def get_step_size(dist: float) -> float:
+        dist_threshold = 4;
+        if dist > dist_threshold:
             return 1
         return max(dist-3 + 0.25, 0.25)
 
 
-    async def sleep(secs):
+    async def sleep(secs: float) -> None:
         duration = Duration(seconds=secs)
         start_time = Clock().now()
         while start_time + duration > Clock().now():
@@ -644,7 +649,7 @@ async def align_path_marker(self: Task, direction=1) -> Task[None, None, None]:
             return 1
         return -1
 
-    async def center_path_marker(pixel_threshold, step_size=0.20, x_offset=0, y_offset=0):
+    async def center_path_marker(pixel_threshold: float, step_size=0.20, x_offset=0, y_offset=0) -> None:
         logger.info(CV().cv_data['path_marker_distance'])
         pixel_x = CV().cv_data['path_marker_distance'].x + x_offset
         pixel_y = CV().cv_data['path_marker_distance'].y + y_offset
@@ -717,14 +722,14 @@ async def center_path_marker(self: Task):
     async def move_y(step=1):
         await move_tasks.move_y(step=step, parent=self)
 
-    def get_step_mult_factor(dist, threshold):
+    def get_step_mult_factor(dist: float, threshold: float) -> int:
         if abs(dist) < threshold:
             return 0
         if dist > threshold:
             return 1
         return -1
 
-    async def center_path_marker(pixel_threshold, step_size=0.20, x_offset=0, y_offset=0):
+    async def center_path_marker(pixel_threshold: float, step_size=0.20, x_offset=0, y_offset=0) -> None:
         logger.info(CV().cv_data['path_marker_distance'])
         pixel_x = CV().cv_data['path_marker_distance'].x + x_offset
         pixel_y = CV().cv_data['path_marker_distance'].y + y_offset
@@ -764,10 +769,10 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
 
     logger.info('Starting path marker to bins')
 
-    async def correct_depth(desired_depth):
+    async def correct_depth(desired_depth: float) -> None:
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
 
-    def is_receiving_bin_data(bin_object, latest_detection_time):
+    def is_receiving_bin_data(bin_object, latest_detection_time) -> bool:
         if not latest_detection_time or bin_object not in CV().data:
             return False
 
@@ -778,20 +783,20 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
             Clock().now().seconds_nanoseconds()[0] - CV().cv_data[bin_object].header.stamp.secs < LATENCY_THRESHOLD and \
             abs(CV().cv_data[bin_object].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
 
-    async def move_x(step=1):
+    async def move_x(step : float =1 ) -> None:
         await move_tasks.move_x(step=step, parent=self)
 
-    def stabilize():
+    def stabilize() -> None:
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
-    async def sleep(secs):
+    async def sleep(secs: int | float) -> None:
         duration = Duration(seconds=secs)
         start_time = Clock().now()
         while start_time + duration > Clock().now():
             await Yield()
 
-    async def move_to_bins():
+    async def move_to_bins() -> None:
         count = 1
         bin_red_time = None
         bin_blue_time = None
@@ -895,10 +900,10 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
         (Direction.RIGHT, 8),
     ]
 
-    async def correct_depth(desired_depth):
+    async def correct_depth(desired_depth: float) -> None:
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
 
-    def is_receiving_bin_data(bin_object, latest_detection_time):
+    def is_receiving_bin_data(bin_object, latest_detection_time: float) -> bool:
         if not latest_detection_time or bin_object not in CV().cv_data:
             return False
 
@@ -909,17 +914,17 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
             Clock().now().seconds_nanoseconds()[0] - CV().cv_data[bin_object].header.stamp.secs < LATENCY_THRESHOLD and \
             abs(CV().cv_data[bin_object].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
 
-    def stabilize():
+    def stabilize() -> None:
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
-    async def sleep(secs):
+    async def sleep(secs: float | int) -> None:
         duration = Duration(seconds=secs)
         start_time = Clock().now()
         while start_time + duration > Clock().now():
             await Yield()
 
-    async def search_for_bins():
+    async def search_for_bins() -> bool:
         logger.info('Searching for red/blue bins...')
         bin_red_time = None
         bin_blue_time = None
@@ -982,20 +987,20 @@ async def bin_task(self: Task) -> Task[None, None, None]:
 
     drop_marker = MarkerDropper().drop_marker
 
-    async def correct_x(target):
+    async def correct_x(target: float) -> None:
         await cv_tasks.correct_x(prop=target, parent=self)
 
-    async def correct_y(target):
+    async def correct_y(target: float) -> None:
         await cv_tasks.correct_y(prop=target, parent=self)
 
     async def correct_z():
         pass
 
-    async def correct_depth(desired_depth):
+    async def correct_depth(desired_depth: float) -> None:
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
     self.correct_depth = correct_depth
 
-    async def correct_yaw():
+    async def correct_yaw() -> None:
         yaw_correction = CV().cv_data['bin_angle']
         logger.info(f'Yaw correction: {yaw_correction}')
         sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
@@ -1007,7 +1012,7 @@ async def bin_task(self: Task) -> Task[None, None, None]:
         logger.info('Corrected yaw')
     self.correct_yaw = correct_yaw
 
-    async def correct_roll_and_pitch():
+    async def correct_roll_and_pitch() -> None:
         imu_orientation = State().imu.orientation
         euler_angles = quat2euler([imu_orientation.w, imu_orientation.x, imu_orientation.y, imu_orientation.z])
         roll_correction = -euler_angles[0] * 1.2
@@ -1124,7 +1129,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
     async def correct_yaw():
         yaw_correction = CV().cv_data['bin_pink_front'].yaw
-        logger.info(f'Yaw correction: {yaw_correction}')
+        logger.info('Yaw correction: %d', yaw_correction)
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction * 0.7),
             keep_level=True,
@@ -1139,21 +1144,21 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             Clock().now().seconds_nanoseconds()[0] - CV().cv_data['bin_pink_bottom'].header.stamp.secs < LATENCY_THRESHOLD and \
             abs(CV().cv_data['bin_pink_bottom'].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
 
-    def publish_power():
+    def publish_power() -> None:
         power = Twist()
         power.linear.x = 0.3
         Controls().set_axis_control_type(x=ControlTypes.DESIRED_POWER)
         Controls().publish_desired_power(power, set_control_types=False)
 
-    async def move_x(step=1):
+    async def move_x(step=1) -> None:
         await move_tasks.move_x(step=step, parent=self)
 
-    def stabilize():
+    def stabilize() -> None:
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
 
-    async def sleep(secs):
+    async def sleep(secs) -> None:
         duration = Duration(seconds=secs)
         start_time = Clock().now()
         while start_time + duration > Clock().now():
@@ -1162,18 +1167,23 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     def get_step_size(last_step_size):
         bin_pink_score = CV().cv_data['bin_pink_front'].score
         step = 0
-        if bin_pink_score < 200:
+
+        low_score = 200
+        med_score = 1000
+        high_score = 3000
+
+        if bin_pink_score < low_score:
             step = 3
-        elif bin_pink_score < 1000:
+        elif bin_pink_score < med_score:
             step = 2
-        elif bin_pink_score < 3000:
+        elif bin_pink_score < high_score:
             step = 1
         else:
             step = 0.75
 
         return min(step, last_step_size)
 
-    async def move_to_pink_bins():
+    async def move_to_pink_bins() -> None:
         count = 1
         latest_detection_time = None
         moved_above = False
@@ -1193,9 +1203,10 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             await move_x(step=step)
             last_step_size = step
 
-            logger.info(f"Bin pink front score: {CV().cv_data['bin_pink_front'].score}")
+            logger.info("Bin pink front score: %s", CV().cv_data['bin_pink_front'].score)
 
-            if CV().cv_data['bin_pink_front'].score > 4000 and not moved_above:
+            score_threshold = 4000
+            if CV().cv_data['bin_pink_front'].score > score_threshold and not moved_above:
                 await correct_depth(DEPTH_LEVEL_ABOVE_BINS + 0.1)
                 moved_above = True
 
@@ -1205,7 +1216,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
             count += 1
 
-            logger.info(f'Receiving pink bin data: {is_receiving_pink_bin_data(latest_detection_time)}')
+            logger.info('Receiving pink bin data: %s', is_receiving_pink_bin_data(latest_detection_time))
 
         if moved_above:
             await move_tasks.move_with_directions([(1.5, 0, 0)], parent=self)

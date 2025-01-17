@@ -27,14 +27,18 @@ class State:
     IMU_TOPIC = '/vectornav/IMU'
     RESET_POSE_SERVICE = '/set_pose'
 
-    def __init__(self, node: Node, bypass: bool = False, tfBuffer: Buffer = None):
+    def __init__(self, node: Node, bypass: bool = False, tf_buffer: Buffer = None) -> None:
         """
+        Initialize the state.
+
         Args:
-            tfBuffer: The transform buffer for the robot
+            node: The ROS node used for communication and state management.
+            bypass: If True, bypass certain checks. Defaults to False.
+            tf_buffer: The transform buffer for the robot. Defaults to None.
         """
         self.bypass = bypass
-        if tfBuffer:
-            self._tfBuffer = tfBuffer
+        if tf_buffer:
+            self._tf_buffer = tf_buffer
 
         self.received_state = False
         self.received_depth = False
@@ -46,87 +50,71 @@ class State:
         self._reset_pose = node.create_client(SetPose, self.RESET_POSE_SERVICE)
         if not bypass:
             while not self._reset_pose.wait_for_service(timeout_sec=1.0):
-                logger.info(f'{self.RESET_POSE_SERVICE} not ready, waiting...')
+                logger.info('%s not ready, waiting...', self.RESET_POSE_SERVICE)
 
         node.create_subscription(PoseWithCovarianceStamped, self.DEPTH_TOPIC, self._on_receive_depth, 10)
 
         node.create_subscription(Imu, self.IMU_TOPIC, self._on_receive_imu, 10)
 
     @property
-    def state(self):
-        """
-        The state
-        """
+    def state(self) -> Odometry:
+        """The state."""
         return self._state
 
     @property
-    def orig_state(self):
-        """
-        The first state message received
-        """
+    def orig_state(self) -> Odometry:
+        """The first state message received."""
         return self._orig_state
 
     @property
-    def depth(self):
-        """
-        The depth from the pressure sensor
-        """
+    def depth(self) -> float:
+        """The depth from the pressure sensor."""
         return self._depth
 
     @property
-    def orig_depth(self):
-        """
-        The depth from the pressure sensor
-        """
+    def orig_depth(self) -> float:
+        """The depth from the pressure sensor."""
         return self._orig_depth
 
     @property
-    def imu(self):
-        """
-        The IMU data
-        """
+    def imu(self) -> Imu:
+        """The IMU data."""
         return self._imu
 
     @property
-    def orig_imu(self):
-        """
-        The first IMU message received
-        """
+    def orig_imu(self) -> Imu:
+        """The first IMU message received."""
         return self._orig_imu
 
     @property
-    def tfBuffer(self):
-        """
-        The transform buffer
-        """
-        return self._tfBuffer
+    def tf_buffer(self) -> Buffer:
+        """The transform buffer."""
+        return self._tf_buffer
 
-    def _on_receive_state(self, state):
+    def _on_receive_state(self, state : Odometry) -> None:
         self._state = state
 
         if not self.received_state:
             self._orig_state = state
             self.received_state = True
 
-    def _on_receive_depth(self, depth_msg):
+    def _on_receive_depth(self, depth_msg : PoseWithCovarianceStamped) -> None:
         self._depth = depth_msg.pose.pose.position.z
 
         if not self.received_depth:
             self._orig_depth = depth_msg.pose.pose.position.z
             self.received_depth = True
 
-    def _on_receive_imu(self, imu_msg):
+    def _on_receive_imu(self, imu_msg : Imu) -> None:
         self._imu = imu_msg
 
         if not self.received_imu:
             self._orig_imu = imu_msg
             self.received_imu = True
 
-    def reset_pose(self):
-        """
-        Reset the pose
-        """
-        poseCov = PoseWithCovarianceStamped()
-        poseCov.pose.pose.orientation.w = 1
+    def reset_pose(self) -> None:
+        """Reset the pose."""
+        posecov = PoseWithCovarianceStamped()
+        posecov.pose.pose.orientation.w = 1
         if not self.bypass:
-            self._reset_pose(poseCov)
+            self._reset_pose(posecov)

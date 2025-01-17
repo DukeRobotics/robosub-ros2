@@ -106,8 +106,10 @@ def angular_distance_quat(quat1: Quaternion, quat2: Quaternion) -> Vector3:
 
 def angular_distance_rpy(rpy1: tuple[float, float, float], rpy2: tuple[float, float, float]) -> Vector3:
     """
-    Find the difference between two orientations, provided as (roll, pitch, yaw). All arguments must be in radians,
-    or they all must be in degrees. The return value will be in the same units as the input.
+    Find the difference between two orientations, provided as (roll, pitch, yaw).
+
+    All arguments must be in radians, or they all must be in degrees.
+    The return value will be in the same units as the input.
 
     Args:
         rpy1: The first orientation with three values, in order: roll, pitch, yaw.
@@ -131,7 +133,11 @@ def at_pose(current_pose: Pose, desired_pose: Pose, linear_tol: float = 0.15, ro
         current_pose: The current pose.
         desired_pose: The desired pose.
         linear_tol: The allowable linear distance in meters for the robot to be considered at the desired pose.
-        angular_tol: The allowable angular distance in radians for each axis for the robot to be considered at the
+        roll_tol: The allowable angular distance in radians in the roll axis for the robot to be considered at the
+        desired pose.
+        pitch_tol: The allowable angular distance in radians in the pitch axis for the robot to be considered at the
+        desired pose.
+        yaw_tol: The allowable angular distance in radians in the yaw axis for the robot to be considered at the
         desired pose.
 
     Returns:
@@ -181,12 +187,12 @@ def stopped_at_pose(current_pose: Pose, desired_pose: Pose, current_twist: Twist
     return at_desired_pose and at_desired_vel
 
 
-def transform_pose(tfBuffer: tf2_ros.Buffer, base_frame: str, target_frame: str, pose: Pose) -> Pose:
+def transform_pose(tf_buffer: tf2_ros.Buffer, base_frame: str, target_frame: str, pose: Pose) -> Pose:
     """
     Transform a pose from one frame to another. Uses the latest transform available at the time of the call.
 
     Args:
-        tfBuffer: The transform buffer.
+        tf_buffer: The transform buffer.
         base_frame: The frame of the input pose.
         target_frame: The frame to transform the pose to.
         pose: The pose to transform.
@@ -198,7 +204,7 @@ def transform_pose(tfBuffer: tf2_ros.Buffer, base_frame: str, target_frame: str,
     pose_stamped.pose = pose
     pose_stamped.header.frame_id = base_frame
 
-    trans = tfBuffer.lookup_transform(target_frame, base_frame, Clock().now())
+    trans = tf_buffer.lookup_transform(target_frame, base_frame, Clock().now())
     transformed = tf2_geometry_msgs.do_transform_pose(pose_stamped, trans)
 
     return transformed.pose
@@ -264,29 +270,29 @@ def create_pose(x: float, y: float, z: float, roll: float, pitch: float, yaw: fl
     return pose
 
 
-def local_pose_to_global(tfBuffer: tf2_ros.Buffer, pose: Pose) -> Pose:
+def local_pose_to_global(tf_buffer: tf2_ros.Buffer, pose: Pose) -> Pose:
     """
     Convert a pose from local coordinates to global coordinates.
 
     Args:
-        tfBuffer: The transform buffer.
+        tf_buffer: The transform buffer.
         pose: The pose to convert, in "base_link" frame.
 
     Returns:
         The global pose in "odom" frame.
     """
-    return transform_pose(tfBuffer, 'base_link', 'odom', pose)
+    return transform_pose(tf_buffer, 'base_link', 'odom', pose)
 
 
-def global_pose_to_local(tfBuffer: tf2_ros.Buffer, pose: Pose) -> Pose:
+def global_pose_to_local(tf_buffer: tf2_ros.Buffer, pose: Pose) -> Pose:
     """
     Convert a pose from global coordinates to local coordinates.
 
     Args:
-        tfBuffer: The transform buffer.
+        tf_buffer: The transform buffer.
         pose: The pose to convert, in "odom" frame.
 
     Returns:
         The local pose in "base_link" frame.
     """
-    return transform_pose(tfBuffer, 'odom', 'base_link', pose)
+    return transform_pose(tf_buffer, 'odom', 'base_link', pose)

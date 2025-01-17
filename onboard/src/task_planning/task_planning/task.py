@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import Callable, Coroutine, Generator
 from enum import IntEnum
-from typing import Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine, Generator
 
 import jsonpickle
 from custom_msgs.msg import TaskUpdate
-from rclpy.node import Node
+
+if TYPE_CHECKING:
+    from rclpy.node import Node
 from rclpy.qos import HistoryPolicy, QoSProfile
 from std_msgs.msg import Header
 
@@ -20,8 +24,9 @@ register_custom_jsonpickle_handlers()
 
 class TaskStatus(IntEnum):
     """
-    An enum to represent the status of a task. All values are equivalent to the constants defined in
-    custom_msgs/TaskUpdate.
+    An enum to represent the status of a task.
+
+    All values are equivalent to the constants defined in custom_msgs/TaskUpdate.
 
     Attributes:
         INITIALIZED: The task has been initialized
@@ -185,59 +190,43 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         self._initialized = True
 
     @property
-    def id(self):
-        """
-        The id of the task
-        """
+    def id(self) -> int:
+        """The id of the task."""
         return self._id
 
     @property
-    def parent_id(self):
-        """
-        The id of the parent task
-        """
+    def parent_id(self) -> int:
+        """The id of the parent task."""
         return self._parent_id
 
     @property
-    def done(self):
-        """
-        If the coroutine has returned, closed, or deleted
-        """
+    def done(self) -> bool:
+        """If the coroutine has returned, closed, or deleted."""
         return self._done
 
     @property
-    def started(self):
-        """
-        If the coroutine has been sent at least one value
-        """
+    def started(self) -> bool:
+        """If the coroutine has been sent at least one value."""
         return self._started
 
     @property
-    def name(self):
-        """
-        The name of the coroutine
-        """
+    def name(self) -> str:
+        """The name of the coroutine."""
         return self._name
 
     @property
-    def initialized(self):
-        """
-        If this object has been properly initialized
-        """
+    def initialized(self) -> bool:
+        """If this object has been properly initialized."""
         return self._initialized
 
     @property
-    def args(self):
-        """
-        The positional arguments used to initialize the coroutine
-        """
+    def args(self) -> tuple:
+        """The positional arguments used to initialize the coroutine."""
         return self._args
 
     @property
-    def kwargs(self):
-        """
-        The keyword arguments used to initialize the coroutine
-        """
+    def kwargs(self) -> dict[str, Any]:
+        """The keyword arguments used to initialize the coroutine."""
         return self._kwargs
 
     def _publish_update(self, status: TaskStatus, data: Any) -> None:
@@ -254,9 +243,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         TaskUpdatePublisher().publish_update(self._id, self._parent_id, self._name, status, data)
 
     def step(self):
-        """
-        Send a None value to the coroutine
-        """
+        """Send a None value to the coroutine."""
         return self.send(None)
 
     def send(self, value: SendType) -> YieldType | ReturnType:
@@ -316,9 +303,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
             raise e
 
     def close(self) -> None:
-        """
-        Close the coroutine.
-        """
+        """Close the coroutine."""
         if not self._done:
             try:
                 self._publish_update(TaskStatus.CLOSED, None)
@@ -330,9 +315,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
                 self._done = True
 
     def __del__(self) -> None:
-        """
-        Close the coroutine when the object is deleted.
-        """
+        """Close the coroutine when the object is deleted."""
         if self._initialized and not self._done:
             try:
                 self._publish_update(TaskStatus.DELETED, None)
@@ -368,9 +351,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
 
 def task(func: Callable[..., Coroutine[YieldType, SendType, ReturnType]]) -> \
         Callable[..., Task[YieldType, SendType, ReturnType]]:
-    """
-    A decorator to wrap a coroutine within Task.
-    """
+    """A decorator to wrap a coroutine within Task."""
 
     def wrapper(*args, **kwargs):
         return Task(func, *args, **kwargs)
@@ -378,9 +359,7 @@ def task(func: Callable[..., Coroutine[YieldType, SendType, ReturnType]]) -> \
 
 
 class Yield(Generic[YieldType, SendType]):
-    """
-    A class to allow coroutines to yield and accept input.
-    """
+    """A class to allow coroutines to yield and accept input."""
 
     def __init__(self, value: YieldType = None):
         self.value = value

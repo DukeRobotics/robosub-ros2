@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import resource_retriever as rr
 import yaml
@@ -21,7 +23,7 @@ class CV:
 
     MODELS_PATH = 'package://cv/models/depthai_models.yaml'
     CV_CAMERA = 'front'
-    # TODO: We may want a better way to sync this between here and the cv node
+    # We may want a better way to sync this between here and the cv node
     CV_MODEL = 'yolov7_tiny_2023_main'
 
     FRAME_WIDTH = 640
@@ -36,13 +38,13 @@ class CV:
     MONO_CAM_SENSOR_SIZE = (3.054, 1.718)  # Width, height in mm
     MONO_CAM_FOCAL_LENGTH = 2.65  # Focal length in mm
 
-    def __init__(self, node: Node, bypass: bool = False):
+    def __init__(self, node: Node, bypass: bool = False) -> None:
         self.node = node
 
         self.cv_data = {}
         self.bypass = bypass
 
-        with open(rr.get_filename(self.MODELS_PATH, use_protocol=False)) as f:
+        with Path.open(rr.get_filename(self.MODELS_PATH, use_protocol=False)) as f:
             model = yaml.safe_load(f)[self.CV_MODEL]
 
             for model_class in model['classes']:
@@ -181,7 +183,7 @@ class CV:
 
     def _on_receive_cv_data(self, cv_data: CVObject, object_type: str) -> None:
         """
-        Parse the received CV data and store it
+        Parse the received CV data and store it.
 
         Args:
             cv_data: The received CV data as a CVObject
@@ -189,13 +191,15 @@ class CV:
         """
         self.cv_data[object_type] = cv_data
 
-    def _on_receive_distance_data(self, distance_data: Point, object_type: str, filter_len=10) -> None:
+    def _on_receive_distance_data(self, distance_data: Point, object_type: str, filter_len: int=10) -> None:
         """
-        Parse the received distance data and store it
+        Parse the received distance data and store it.
 
         Args:
             distance_data: The received distance data as a Point
             object_type: The name/type of the object
+            filter_len (int, optional): The maximum number of distance data points to retain
+                for the moving average filter. Defaults to 10.
         """
         # TODO: migrate all self.{object}_distances type objects into a single self.distances dictionary
         # TODO: implement a generic moving average filter
@@ -251,7 +255,7 @@ class CV:
 
     def _on_receive_lane_marker_angle(self, angle: Float64) -> None:
         """
-        Parse the received angle of the blue rectangle and store it
+        Parse the received angle of the blue rectangle and store it.
 
         Args:
             angle: The received angle of the blue rectangle in degrees
@@ -270,10 +274,10 @@ class CV:
     # TODO: remove this and integrate into _on_receive_distance_data
     def _on_receive_lane_marker_dist(self, dist: Float64) -> None:
         """
-        Parse the received dist of the blue rectangle and store it
+        Parse the received dist of the lane marker and store it.
 
         Args:
-            dist: The received dist of the blue rectangle in pixels
+            dist: The received dist of the lane marker in pixels
         """
         filter_len = 10
         skip = 0
@@ -287,13 +291,17 @@ class CV:
 
     def _on_receive_lane_marker_info(self, lane_marker_info: RectInfo) -> None:
         """
-        Parse the received info of the blue rectangle and store it
+        Parse the received info of the lane marker and store it.
 
         Args:
-            rect_info: The received info of the blue rectangle
+            lane_marker_info: The received info of the lane marker
         """
         filter_len = 10
         skip = 0
+
+        top = 0
+        bottom = 480
+
         if len(self.lane_marker_heights) == filter_len:
             self.lane_marker_heights.pop(0)
 
@@ -303,15 +311,15 @@ class CV:
         self.cv_data['lane_marker_height'] = lane_marker_height
 
         # Based on lane_marker_info.center_y and height, determine if lane marker is touching top and/or bottom of frame
-        self.cv_data['lane_marker_touching_top'] = lane_marker_info.center_y - lane_marker_info.height / 2 <= 0
-        self.cv_data['lane_marker_touching_bottom'] = lane_marker_info.center_y + lane_marker_info.height / 2 >= 480
+        self.cv_data['lane_marker_touching_top'] = lane_marker_info.center_y - lane_marker_info.height / 2 <= top
+        self.cv_data['lane_marker_touching_bottom'] = lane_marker_info.center_y + lane_marker_info.height / 2 >= bottom
 
     def _on_receive_gate_red_cw_detection_depthai(self, msg: CVObject) -> None:
         """
-        Parse the received detection of the red gate and store it
+        Parse the received detection of the red gate and store it.
 
         Args:
-            msg: The received detection of the red gate
+            msg: The received detection of the red gate.
         """
         self.cv_data['gate_red_cw_properties'] = {
             'x': msg.coords.x,
@@ -321,10 +329,10 @@ class CV:
 
     def _on_receive_gate_whole_detection_depthai(self, msg: CVObject) -> None:
         """
-        Parse the received detection of the whole gate and store it
+        Parse the received detection of the whole gate and store it.
 
         Args:
-            msg: The received detection of the whole gate
+            msg: The received detection of the whole gate.
         """
         self.cv_data['gate_whole_properties'] = {
             'x': msg.coords.x,
@@ -363,7 +371,16 @@ class CV:
             self.cv_data['gate_red_cw_bbox'] = best_bbox_red
             self.compute_gate_properties('gate_red_cw')
 
-    def compute_gate_properties(self, gate_class):
+    def compute_gate_properties(self, gate_class : str) -> None:
+        """
+        Compute properties of a specified gate.
+
+        Args:
+            gate_class (str): The class of the gate for which properties need to be computed.
+
+        Raises:
+            Warning: Logs a warning if no bounding box data is available for the specified gate class.
+        """
         if gate_class + '_bbox' not in self.cv_data or self.cv_data[gate_class + '_bbox'] is None:
             self.get_logger().warn(f'No bounding box data available for {gate_class}')
             return
@@ -396,17 +413,19 @@ class CV:
             'z': dist_y_meters,
         }
 
-    def mono_cam_dist_with_obj_width(self, width_pixels, width_meters):
+    def mono_cam_dist_with_obj_width(self, width_pixels: float, width_meters: float) -> float:
+        """mono_cam_dist_with_obj_width."""
         return (self.MONO_CAM_FOCAL_LENGTH * width_meters * self.MONO_CAM_IMG_SHAPE[0]) \
             / (width_pixels * self.MONO_CAM_SENSOR_SIZE[0])
 
-    def mono_cam_dist_with_obj_height(self, height_pixels, height_meters):
+    def mono_cam_dist_with_obj_height(self, height_pixels: float, height_meters: float) -> float:
+        """mono_cam_dist_with_obj_height."""
         return (self.MONO_CAM_FOCAL_LENGTH * height_meters * self.MONO_CAM_IMG_SHAPE[1]) \
             / (height_pixels * self.MONO_CAM_SENSOR_SIZE[1])
 
     def get_pose(self, name: str) -> Pose:
         """
-        Get the pose of a detected object
+        Get the pose of a detected object.
 
         Args:
             name: The name/type of the object

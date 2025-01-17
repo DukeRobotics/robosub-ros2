@@ -1,6 +1,7 @@
 import builtins
 import importlib
 import traceback
+from typing import Any
 
 import jsonpickle
 import rosidl_runtime_py
@@ -21,18 +22,18 @@ ACTION_CLASSES_TO_TYPES_KEYS_TUPLE = tuple(ACTION_CLASSES_TO_TYPES.keys())
 
 
 class ROSMessageHandler(jsonpickle.handlers.BaseHandler):
-    """
-    JSONPickle handler to convert ROS messages to and from dictionaries.
-    """
+    """JSONPickle handler to convert ROS messages to and from dictionaries."""
 
-    def flatten(self, obj, data):
+    def flatten(self, obj : Any, data: dict) -> dict:
+        """Flattens a ROS message object into a dictionary with relevant details."""
         data['ros/type'] = (
             '/'.join(type(obj).__module__.split('.')[:-1]) + '/' + type(obj).__name__
         )
         data['ros/data'] = convert_ros_message_to_dictionary(obj)
         return data
 
-    def restore(self, obj):
+    def restore(self, obj: dict) -> Any:
+        """Restores a ROS message from a dictionary representation."""
         message_type = obj['ros/type']
         dictionary = obj['ros/data']
 
@@ -48,17 +49,16 @@ class ROSMessageHandler(jsonpickle.handlers.BaseHandler):
 
 
 class BaseExceptionHandler(jsonpickle.handlers.BaseHandler):
-    """
-    JSONPickle handler to convert exceptions to and from dictionaries.
-    """
+    """JSONPickle handler to convert exceptions to and from dictionaries."""
 
-    def flatten(self, obj, data):
+    def flatten(self, obj: BaseException, data: dict[str, Any]) -> dict[str, Any]:
+        """Flattens an exception object into a dictionary with relevant details."""
         data['exception/type'] = type(obj).__name__
         data['exception/message'] = str(obj)
         data['exception/traceback'] = traceback.format_tb(obj.__traceback__)
         return data
 
-    def restore(self, obj) -> None:
+    def restore(self, obj: dict) -> Exception:
         """
         Restores an exception instance from serialized exception data.
 
@@ -92,13 +92,13 @@ def register_custom_jsonpickle_handlers() -> None:
     for cls in get_interface_classes():
         jsonpickle.handlers.register(cls, ROSMessageHandler, base=True)
         num_interface_classes += 1
-    logger.info(f'Registered {num_interface_classes} interface types')
+    logger.info('Registered %d interface types', num_interface_classes)
 
     jsonpickle.handlers.register(BaseException, BaseExceptionHandler, base=True)
 
 
 def get_interface_classes() -> None:
-    """Generator that yields ROS 2 interface classes (including custom interfaces)."""
+    """Generate ROS 2 interface classes (including custom interfaces)."""
     interfaces = rosidl_runtime_py.get_interfaces()
 
     for package, interface_names in interfaces.items():

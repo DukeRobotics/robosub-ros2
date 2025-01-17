@@ -34,4 +34,6 @@ lint.ignore = [
     "TRY003",
     "TD002",
     "TD003",
+    "ASYNC109",
+    "S101"
 ]

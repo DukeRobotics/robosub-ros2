@@ -1,3 +1,4 @@
+# ruff: noqa
 #
 # Obtained on October 19, 2024, from iron branch of: https://github.com/DFKI-NI/rospy_message_converter
 # Any edits made to the original are marked with "EDIT" comments.
