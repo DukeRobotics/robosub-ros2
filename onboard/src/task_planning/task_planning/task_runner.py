@@ -18,10 +18,11 @@ TASK_RATE_SECS = 1 / 30
 
 
 class TaskPlanning(Node):
-    """Task planning node."""
+    """Node for running tasks."""
     NODE_NAME = 'task_planning'
 
     def __init__(self) -> None:
+        """Set up the task planning node."""
         main_initialized = False
 
         super().__init__(self.NODE_NAME)
@@ -124,7 +125,7 @@ class TaskPlanning(Node):
 
                 self.countdown_value -= 1
 
-            def run_tasks_callback() -> None:
+            def task_callback() -> None:
                 if self.current_task >= len(tasks) or not rclpy.ok():
                     if untethered:
                         controls.call_enable_controls(False)
@@ -139,18 +140,16 @@ class TaskPlanning(Node):
                 self.countdown_value = 10
                 self.get_logger().info('Countdown started...')
                 self.countdown_timer = self.create_timer(1.0, countdown_callback)
-                self.task_runner_timer = self.create_timer(TASK_RATE_SECS, run_tasks_callback, autostart=False)
+                self.task_runner_timer = self.create_timer(TASK_RATE_SECS, task_callback, autostart=False)
             else:
-                self.create_timer(TASK_RATE_SECS, run_tasks_callback)
+                self.create_timer(TASK_RATE_SECS, task_callback)
 
         except BaseException as e:
-
             # Main has errored
             TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.ERRORED, e)
             raise
 
         else:
-
             # Main has returned
             TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.RETURNED, None)
 
