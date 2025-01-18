@@ -1,3 +1,5 @@
+# ruff: noqa
+
 """
 Adapted from dive-color-corrector by bornfree.
 
