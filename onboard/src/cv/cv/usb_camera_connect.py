@@ -1,6 +1,8 @@
 
 
 
+from pathlib import Path
+
 import rclpy
 import yaml
 from launch import LaunchDescription, LaunchService
@@ -9,11 +11,12 @@ from launch_ros.actions import Node as LaunchNode
 from rclpy.node import Node
 
 
-def connect_all(node):
+def connect_all(node: any) -> None:  # noqa: ARG001
+    """Get all cameras."""
     # get camera specs
     # In ROS2, we need to load the YAML file directly.
     camera_config_path = './onboard/src/cv/config/usb_cameras.yaml'
-    with open(camera_config_path) as f:
+    with Path.open(camera_config_path) as f:
         cameras = yaml.safe_load(f)
 
     # List to hold launch nodes
@@ -35,7 +38,8 @@ def connect_all(node):
 
     return launch_nodes
 
-def generate_launch_description():
+def generate_launch_description() -> LaunchDescription:
+    """Generate launch description of launching USB cameras."""
     # Launch description setup
     return LaunchDescription(
         [
@@ -44,7 +48,8 @@ def generate_launch_description():
         ],
     )
 
-def main():
+def main() -> None:
+    """Start rclpy."""
     rclpy.init()
 
     # Use a launch file in ROS2

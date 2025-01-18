@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+from pathlib import Path
 
 import cv2
 import depthai as dai
@@ -436,23 +437,23 @@ class DepthAIStreamsPublisherAndSaver(Node):
         """Save videos."""
         if self.save_rgb_video:
                 self.veRgbVideoQueue = device.getOutputQueue(name='veRgbVideo', maxSize=4, blocking=False)
-                self.rgb_video_file = os.path.open(self.rgb_video_file_path + '.h265', 'wb')
+                self.rgb_video_file = Path.open(self.rgb_video_file_path + '.h265', 'wb')
 
         if self.save_rgb_preview:
             self.veRgbPreviewQueue = device.getOutputQueue(name='veRgbPreview', maxSize=4, blocking=False)
-            self.rgb_preview_file = os.path.open(self.rgb_preview_file_path + '.h265', 'wb')
+            self.rgb_preview_file = Path.open(self.rgb_preview_file_path + '.h265', 'wb')
 
         if self.save_left:
             self.veLeftQueue = device.getOutputQueue(name='veLeft', maxSize=4, blocking=False)
-            self.left_file = os.path.open(self.left_file_path + '.h264', 'wb')
+            self.left_file = Path.open(self.left_file_path + '.h264', 'wb')
 
         if self.save_right:
             self.veRightQueue = device.getOutputQueue(name='veRight', maxSize=4, blocking=False)
-            self.right_file = os.path.open(self.right_file_path + '.h264', 'wb')
+            self.right_file = Path.open(self.right_file_path + '.h264', 'wb')
 
         if self.save_disparity:
             self.veDisparityQueue = device.getOutputQueue(name='veDisparity', maxSize=4, blocking=False)
-            self.disparity_file = os.path.open(self.disparity_file_path + '.h265', 'wb')
+            self.disparity_file = Path.open(self.disparity_file_path + '.h265', 'wb')
 
         self.publish_and_save_timer = self.create_timer(1 / LOOP_RATE, self.publish_and_save)
 
