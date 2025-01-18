@@ -44,7 +44,7 @@ class CV:
         self.cv_data = {}
         self.bypass = bypass
 
-        with Path.open(rr.get_filename(self.MODELS_PATH, use_protocol=False)) as f:
+        with Path(rr.get_filename(self.MODELS_PATH, use_protocol=False)).open() as f:
             model = yaml.safe_load(f)[self.CV_MODEL]
 
             for model_class in model['classes']:

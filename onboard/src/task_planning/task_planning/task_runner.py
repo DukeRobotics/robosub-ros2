@@ -23,28 +23,19 @@ class TaskPlanning(Node):
 
     def __init__(self) -> None:
         """Set up the task planning node."""
-        main_initialized = False
-
         super().__init__(self.NODE_NAME)
         self.get_logger().info('task_planning node initialized')
 
         bypass = self.declare_parameter('bypass', False).value
         untethered = self.declare_parameter('untethered', False).value
 
-        # When ros is shutdown, if main finished initializing, publish that it has closed
-        def publish_close() -> None:
-            if main_initialized:
-                TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
-
-        rclpy.get_default_context().on_shutdown(publish_close)
-
         # Initialize transform buffer and listener
-        tfbuffer = tf2_ros.Buffer()
-        _ = tf2_ros.TransformListener(tfbuffer, self)
+        tf_buffer = tf2_ros.Buffer()
+        _ = tf2_ros.TransformListener(tf_buffer, self)
 
         # Initialize interfaces
         controls = Controls(self, bypass=bypass)
-        state = State(self, tfBuffer=tfbuffer, bypass=bypass)
+        state = State(self, tf_buffer=tf_buffer, bypass=bypass)
         CV(self, bypass=bypass)
         MarkerDropper(self, bypass=bypass)
 
@@ -57,7 +48,7 @@ class TaskPlanning(Node):
         # Ensure transform from odom to base_link is available
         if not bypass:
             try:
-                _ = tfbuffer.lookup_transform('odom', 'base_link', Clock().now(), Duration(seconds=15))
+                _ = tf_buffer.lookup_transform('odom', 'base_link', Clock().now(), Duration(seconds=15))
             except (
                 tf2_ros.LookupException,
                 tf2_ros.ConnectivityException,
@@ -72,7 +63,6 @@ class TaskPlanning(Node):
 
         # Main has initialized
         TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.INITIALIZED, None)
-        main_initialized = True
 
         self.run_tasks(controls=controls, untethered=untethered)
 
@@ -119,18 +109,27 @@ class TaskPlanning(Node):
                     self.get_logger().info('Countdown complete!')
                     self.countdown_timer.cancel()
                     controls.call_enable_controls(True)
-                    self.task_runner_timer.reset()
-                    self.get_logger().info('Running tasks...')
-                    self.current_task = 0
+                    self.task_timer.reset()
 
                 self.countdown_value -= 1
 
+            self.entered_task_callback = False
             def task_callback() -> None:
+                if not self.entered_task_callback:
+                    self.entered_task_callback = True
+                    self.get_logger().info('Running tasks...')
+
                 if self.current_task >= len(tasks) or not rclpy.ok():
                     if untethered:
                         controls.call_enable_controls(False)
-                    self.task_runner_timer.cancel()
+                    self.task_timer.cancel()
+
+                    TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
+
+                    self.destroy_node()
+                    rclpy.shutdown()
                     return
+
                 if not tasks[self.current_task].done:
                     tasks[self.current_task].step()
                 else:
@@ -140,9 +139,8 @@ class TaskPlanning(Node):
                 self.countdown_value = 10
                 self.get_logger().info('Countdown started...')
                 self.countdown_timer = self.create_timer(1.0, countdown_callback)
-                self.task_runner_timer = self.create_timer(TASK_RATE_SECS, task_callback, autostart=False)
-            else:
-                self.create_timer(TASK_RATE_SECS, task_callback)
+
+            self.task_timer = self.create_timer(TASK_RATE_SECS, task_callback, autostart=not untethered)
 
         except BaseException as e:
             # Main has errored

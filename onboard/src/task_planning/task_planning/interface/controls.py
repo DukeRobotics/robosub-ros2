@@ -92,9 +92,8 @@ class Controls:
             The thruster dictionary
         """
         config_file_path = 'package://controls/config/%s.yaml'
-        filename = rr.get_filename(config_file_path % os.getenv('ROBOT_NAME', 'oogway'), use_protocol=False)
-        filepath = Path(filename)
-        with filepath.open(filename) as f:
+        filename = Path(rr.get_filename(config_file_path % os.getenv('ROBOT_NAME', 'oogway'), use_protocol=False))
+        with filename.open() as f:
             full_thruster_dict = yaml.safe_load(f)
 
         thruster_dict = {}

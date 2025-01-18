@@ -93,7 +93,7 @@ def register_custom_jsonpickle_handlers() -> None:
     for cls in get_interface_classes():
         jsonpickle.handlers.register(cls, ROSMessageHandler, base=True)
         num_interface_classes += 1
-    logger.info('Registered %d interface types', num_interface_classes)
+    logger.info(f'Registered {num_interface_classes} interface types')
 
     jsonpickle.handlers.register(BaseException, BaseExceptionHandler, base=True)
 
