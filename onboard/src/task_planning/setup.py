@@ -20,7 +20,6 @@ setup(
     maintainer_email='hello@duke-robotics.com',
     description='Task planning package',
     license='MIT',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'task_runner = task_planning.task_runner:main',
