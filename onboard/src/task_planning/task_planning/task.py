@@ -58,14 +58,14 @@ class TaskUpdatePublisher:
         _instance: The singleton instance of this class. Is a static attribute.
         publisher: The publisher for the task_updates topic
     """
-    def __init__(self, node: Node):
+    def __init__(self, node: Node) -> None:
         qos_profile = QoSProfile(
             history=HistoryPolicy.KEEP_ALL,
         )
         self.node = node
         self.publisher = node.create_publisher(TaskUpdate, '/task_planning/updates', qos_profile)
 
-    def publish_update(self, task_id: int, parent_id: int, name: str, status: TaskStatus, data: Any) -> None:
+    def publish_update(self, task_id: int, parent_id: int, name: str, status: TaskStatus, data: Any) -> None:  # noqa: ANN401
         """
         Publish a message to the task_updates topic.
 
@@ -95,15 +95,17 @@ class TaskUpdatePublisher:
             'unpicklable': True,
             'make_refs': False,
             'warn': True,
-            'fail_safe': lambda e: 'Failed to encode',  # If an object fails to encode, replace it with this string
+            'fail_safe': lambda: 'Failed to encode',  # If an object fails to encode, replace it with this string
         }
 
         # Encode the data to JSON
         msg_data = ''
         try:
             msg_data = jsonpickle.encode(data, **jsonpickle_options)
-        except Exception:
-            self.get_logger().warn(f'Task with id {task_id} failed to encode data to JSON when publishing {status.name}: {data}')
+        except Exception:  # noqa: BLE001
+            self.get_logger().warn(
+                f'Task with id {task_id} failed to encode data to JSON when publishing {status.name}: {data}',
+            )
             msg_data = jsonpickle.encode(str(data), **jsonpickle_options)
 
         # Create message header
@@ -113,7 +115,8 @@ class TaskUpdatePublisher:
         msg = TaskUpdate(header=header, id=task_id, parent_id=parent_id, name=name, status=status, data=msg_data)
         self.publisher.publish(msg)
 
-    def __del__(self):
+    def __del__(self) -> None:
+        """Destroy the publisher when deleted."""
         self.node.destroy_publisher(self.publisher)
 
 
@@ -124,9 +127,10 @@ ReturnType = TypeVar('ReturnType')
 
 class Task(Generic[YieldType, SendType, ReturnType]):
     """
-    A wrapper around a coroutine to publish task updates for every action taken on the coroutine. All functions defined
-    for native coroutines are also defined by this class, including send, throw, close, and __await__. Also defines
-    step, which sends `None` to the coroutine.
+    A wrapper around a coroutine to publish task updates for every action taken on the coroutine.
+
+    All functions defined for native coroutines are also defined by this class, including send, throw, close, and
+    __await__. Also defines step, which sends `None` to the coroutine.
 
     Attributes:
         MAIN_ID: The id of the main task
@@ -143,7 +147,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
     MAIN_ID = 0
 
     def __init__(self, coroutine: Callable[..., Coroutine[YieldType, SendType, ReturnType]], *args,
-                 parent: Task | int | None = None, **kwargs):
+                 parent: Task | int | None = None, **kwargs) -> None:
         """
         Initialize the Task object.
 
@@ -229,7 +233,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         """The keyword arguments used to initialize the coroutine."""
         return self._kwargs
 
-    def _publish_update(self, status: TaskStatus, data: Any) -> None:
+    def _publish_update(self, status: TaskStatus, data: Any) -> None:  # noqa: ANN401
         """
         Publish a message to the task_updates topic.
 
@@ -242,7 +246,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         """
         TaskUpdatePublisher().publish_update(self._id, self._parent_id, self._name, status, data)
 
-    def step(self):
+    def step(self) -> YieldType | ReturnType:
         """Send a None value to the coroutine."""
         return self.send(None)
 
@@ -264,7 +268,6 @@ class Task(Generic[YieldType, SendType, ReturnType]):
             self._publish_update(TaskStatus.RESUMED, value)
             ret_val = self._coroutine.send(value)
             self._publish_update(TaskStatus.PAUSED, ret_val)
-            return ret_val
         except StopIteration as e:
             self._done = True
             self._publish_update(TaskStatus.RETURNED, e.value)
@@ -272,7 +275,9 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         except BaseException as e:
             self._done = True
             self._publish_update(TaskStatus.ERRORED, e)
-            raise e
+            raise
+        else:
+            return ret_val
 
     def throw(self, error: type[BaseException]) -> YieldType | ReturnType:
         """
@@ -292,7 +297,6 @@ class Task(Generic[YieldType, SendType, ReturnType]):
             self._publish_update(TaskStatus.THREW, error)
             ret_val = self._coroutine.throw(error)
             self._publish_update(TaskStatus.PAUSED, ret_val)
-            return ret_val
         except StopIteration as e:
             self._done = True
             self._publish_update(TaskStatus.RETURNED, e.value)
@@ -300,7 +304,9 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         except BaseException as e:
             self._done = True
             self._publish_update(TaskStatus.ERRORED, e)
-            raise e
+            raise
+        else:
+            return ret_val
 
     def close(self) -> None:
         """Close the coroutine."""
@@ -310,7 +316,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
                 self._coroutine.close()
             except BaseException as e:
                 self._publish_update(TaskStatus.ERRORED, e)
-                raise e
+                raise
             finally:
                 self._done = True
 
@@ -322,7 +328,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
                 self._coroutine.close()
             except BaseException as e:
                 self._publish_update(TaskStatus.ERRORED, e)
-                raise e
+                raise
             finally:
                 self._done = True
 
@@ -339,21 +345,21 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         Raises:
             Type[BaseException]: If the coroutine raises an exception
         """
-        input = None
+        input_ = None
         output = None
         while not self._done:
             # Yield output and accept input only if the coroutine has been started
             if self._started:
-                input = (yield output)
-            output = self.send(input)
+                input_ = (yield output)
+            output = self.send(input_)
         return output
 
 
 def task(func: Callable[..., Coroutine[YieldType, SendType, ReturnType]]) -> \
         Callable[..., Task[YieldType, SendType, ReturnType]]:
-    """A decorator to wrap a coroutine within Task."""
+    """Wrap a coroutine within Task."""
 
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> Task:
         return Task(func, *args, **kwargs)
     return wrapper
 
@@ -361,8 +367,9 @@ def task(func: Callable[..., Coroutine[YieldType, SendType, ReturnType]]) -> \
 class Yield(Generic[YieldType, SendType]):
     """A class to allow coroutines to yield and accept input."""
 
-    def __init__(self, value: YieldType = None):
+    def __init__(self, value: YieldType = None) -> None:
         self.value = value
 
     def __await__(self) -> Generator[YieldType, SendType, SendType]:
+        """Allow the object to be used in an asynchronous context by enabling it to be awaited."""
         return (yield self.value)

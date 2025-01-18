@@ -64,11 +64,13 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool=False,
     Args:
         self (Task): The task instance on which the method is called.
         pose (Pose): The local pose to move to, specified in the "base_link" frame.
-        keep_level (bool, optional): If True, maintains the robot's level orientation during movement. Defaults to False.
+        keep_level (bool, optional): If True, maintains the robot's level orientation during movement. Defaults to
+            False.
         time_limit (int, optional): The time limit (in seconds) for reaching the pose. Defaults to 30.
 
     Returns:
-        Task[None, Pose | None, None]: A coroutine that completes when the robot reaches the target pose or the time limit expires.
+        Task[None, Pose | None, None]: A coroutine that completes when the robot reaches the target pose or the time
+            limit expires.
 
     Send:
         Pose: A new local pose to move to.
@@ -153,7 +155,7 @@ async def depth_correction(self: Task, desired_depth: float) -> Task[None, None,
     the desired depth, then moves the system to the target depth using a local pose adjustment.
 
     Args:
-        self (Task): A reference to the task being run.
+        self: Task instance.
         desired_depth (float): The target depth to which the system should move.
 
     Returns:
@@ -177,6 +179,7 @@ async def correct_depth(self: Task, desired_depth: float) -> None:
     This asynchronous task calls the depth correction utility to adjust the system's depth.
 
     Args:
+        self: Task instance.
         desired_depth (float): The target depth to which the system should adjust.
 
     Returns:
@@ -192,6 +195,7 @@ async def move_x(self: Task, step: float = 1.0) -> None:
     This asynchronous task moves the system by a specified step along the X-axis.
 
     Args:
+        self: Task instance.
         step (float, optional): The distance to move along the X-axis. Defaults to 1.0.
 
     Returns:
@@ -209,6 +213,7 @@ async def move_y(self: Task, step: float = 1.0) -> None:
     This asynchronous task moves the system by a specified step along the Y-axis.
 
     Args:
+        self: Task instance.
         step (float, optional): The distance to move along the Y-axis. Defaults to 1.0.
 
     Returns:
@@ -223,14 +228,20 @@ Directions = list[Direction]
 
 
 @task
-async def move_with_directions(self: Task, directions: Directions, correct_yaw: bool = False, correct_depth: bool = False) -> None:
+async def move_with_directions(self: Task,
+                               directions: Directions,
+                               correct_yaw: bool = False,
+                               correct_depth: bool = False,
+                               ) -> None:
     """
     Move the task to multiple poses defined by the provided directions.
 
     This method iterates over a list of directions, moving the task to each specified pose in local coordinates.
-    Each direction must be a tuple of length 3 or 6. Optionally, it can correct the yaw and/or depth after each movement.
+    Each direction must be a tuple of length 3 or 6. Optionally, it can correct the yaw and/or depth after each
+    movement.
 
     Args:
+        self: Task instance.
         directions (Directions): A list of tuples, where each tuple specifies the target pose.
             - Tuples of length 3 represent (x, y, z).
             - Tuples of length 6 represent (x, y, z, roll, pitch, yaw).
