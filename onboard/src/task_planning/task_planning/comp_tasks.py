@@ -478,7 +478,6 @@ async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[Non
     """
     Asynchronous task to perform gate-related operations.
     """
-
     logger.info('Started gate task')
     depth_level = State().orig_depth - 0.7
 
@@ -496,7 +495,7 @@ async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[Non
         await move_tasks.move_x(step=step, parent=self)
 
     def get_step_size(dist: float) -> float:
-        dist_threshold = 4;
+        dist_threshold = 4
         if dist > dist_threshold:
             return 1
         return max(dist-3 + 0.25, 0.25)
@@ -790,7 +789,7 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
-    async def sleep(secs: int | float) -> None:
+    async def sleep(secs: float) -> None:
         duration = Duration(seconds=secs)
         start_time = Clock().now()
         while start_time + duration > Clock().now():
@@ -918,7 +917,7 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
-    async def sleep(secs: float | int) -> None:
+    async def sleep(secs: float) -> None:
         duration = Duration(seconds=secs)
         start_time = Clock().now()
         while start_time + duration > Clock().now():
@@ -1203,7 +1202,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             await move_x(step=step)
             last_step_size = step
 
-            logger.info("Bin pink front score: %s", CV().cv_data['bin_pink_front'].score)
+            logger.info('Bin pink front score: %s', CV().cv_data['bin_pink_front'].score)
 
             score_threshold = 4000
             if CV().cv_data['bin_pink_front'].score > score_threshold and not moved_above:
