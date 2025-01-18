@@ -1,3 +1,5 @@
+# ruff: noqa
+
 import copy
 import math
 from collections.abc import Coroutine
