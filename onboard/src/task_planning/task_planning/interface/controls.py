@@ -48,7 +48,7 @@ class Controls:
         self._set_control_types = node.create_client(SetControlTypes, self.CONTROL_TYPES_SERVICE)
         if not bypass:
             while not self._set_control_types.wait_for_service(timeout_sec=1.0):
-                logger.info('%s not ready, waiting...', self.CONTROL_TYPES_SERVICE)
+                logger.info(f'{self.CONTROL_TYPES_SERVICE} not ready, waiting...')
 
         # NOTE: if this variable gets out of sync with the actual control types, bad things may happen
         self._all_axes_control_type = None

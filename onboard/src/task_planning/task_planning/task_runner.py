@@ -128,6 +128,8 @@ class TaskPlanning(Node):
 
                     self.destroy_node()
                     rclpy.shutdown()
+
+                    self.get_logger().info('All tasks completed!')
                     return
 
                 if not tasks[self.current_task].done:
