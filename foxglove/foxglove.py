@@ -17,6 +17,7 @@ ROS_DISTRO = 'ros-jazzy'
 EXTENSION_INSTALL_PATH = pathlib.Path.home() / '.foxglove-studio/extensions/'
 
 FOXGLOVE_PATH = pathlib.Path(__file__).parent.resolve()
+ROOT_PATH = FOXGLOVE_PATH.parent.resolve()
 EXTENSION_PATHS = [d for d in (FOXGLOVE_PATH / 'extensions').iterdir() if d.is_dir()]
 
 STATUS_EMOJI = {
@@ -239,7 +240,7 @@ def extension_package(name: str) -> pathlib.Path:
 
 def clean() -> None:
     """Clean up the foxglove monorepo."""
-    run_at_path('git clean -fdx', FOXGLOVE_PATH)
+    run_at_path('git clean -ix foxglove', ROOT_PATH)
 
 
 def main() -> None:
