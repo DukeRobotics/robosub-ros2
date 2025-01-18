@@ -36,7 +36,7 @@ def connect(pipeline:dai.Pipeline) -> dai.Device:
 
         try:
             # Scan for camera IP address using custom autodiscovery
-            ip = custom_autodiscovery()  # TODO: use MAC address from camera config file
+            ip = custom_autodiscovery()  # TODO: use MAC address from camera config file  # noqa: FIX002
 
             # Try connecting with the discovered IP address
             # If the execution reaches the following return statement, the lines above did not raise an exception, so a
