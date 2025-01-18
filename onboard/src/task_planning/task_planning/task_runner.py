@@ -1,3 +1,4 @@
+# ruff: noqa: ERA001
 import time
 
 import rclpy
@@ -72,7 +73,10 @@ class TaskPlanning(Node):
         TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.INITIALIZED, None)
         main_initialized = True
 
-        # Run tasks
+        self.run_tasks(controls=controls, untethered=untethered)
+
+    def run_tasks(self, controls: Controls, untethered: bool = False) -> None:
+        """Countdown and run tasks."""
         try:
             # Tasks to run
             tasks = [
@@ -120,7 +124,7 @@ class TaskPlanning(Node):
 
                 self.countdown_value -= 1
 
-            def run_tasks() -> None:
+            def run_tasks_callback() -> None:
                 if self.current_task >= len(tasks) or not rclpy.ok():
                     if untethered:
                         controls.call_enable_controls(False)
@@ -135,9 +139,9 @@ class TaskPlanning(Node):
                 self.countdown_value = 10
                 self.get_logger().info('Countdown started...')
                 self.countdown_timer = self.create_timer(1.0, countdown_callback)
-                self.task_runner_timer = self.create_timer(TASK_RATE_SECS, run_tasks, autostart=False)
+                self.task_runner_timer = self.create_timer(TASK_RATE_SECS, run_tasks_callback, autostart=False)
             else:
-                self.create_timer(TASK_RATE_SECS, run_tasks)
+                self.create_timer(TASK_RATE_SECS, run_tasks_callback)
 
         except BaseException as e:
 
@@ -151,7 +155,7 @@ class TaskPlanning(Node):
             TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.RETURNED, None)
 
 
-def main(args=None) -> None:
+def main(args: list[str] | None = None) -> None:
     """Spin up the task planning node."""
     rclpy.init(args=args)
     task_planning = TaskPlanning()

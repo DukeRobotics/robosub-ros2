@@ -1,6 +1,7 @@
 import builtins
 import importlib
 import traceback
+from collections.abc import Generator
 from typing import Any
 
 import jsonpickle
@@ -97,7 +98,7 @@ def register_custom_jsonpickle_handlers() -> None:
     jsonpickle.handlers.register(BaseException, BaseExceptionHandler, base=True)
 
 
-def get_interface_classes() -> None:
+def get_interface_classes() -> Generator[Any, None, None]:
     """Generate ROS 2 interface classes (including custom interfaces)."""
     interfaces = rosidl_runtime_py.get_interfaces()
 
