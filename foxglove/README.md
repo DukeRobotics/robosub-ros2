@@ -25,27 +25,28 @@ Therefore, to install all extensions, run:
 ./foxglove.py install
 ```
 
-To uninstall local extensions and clean up the Foxglove monorepo, run:
+To clean up the Foxglove monorepo and uninstall local extensions, run:
 ```bash
-./foxglove.py uninstall
 ./foxglove.py clean
+./foxglove.py uninstall
 ```
-
+*Clean* and *uninstall* will revert the changes made by *build* and *install* respectively.
 
 ### User Guide
 ```bash
 ./foxglove.py [SUBCOMMAND]
 ```
-- [`b, build`](#building) - Prepare an extension for installation or publishing.
-- [`i, install`](#installing) - Install an extension locally.
-- [`w, watch`](#watching) - Watch an extension for changes and autobuild.
-- [`p, publish`](#publishing) - Publish an extension to your organization.
-- [`u, uninstall`](#uninstalling) - Uninstall a locally installed extension.
-- [`c, clean`](#cleaning) - Removed generated files from the Foxglove monorepo.
+- [`b, build`](#build) - Prepare an extension for installation or publish.
+- [`i, install`](#install) - Install an extension locally.
+- [`w, watch`](#watch) - Watch an extension for changes and autobuild.
+- [`p, publish`](#publish) - Publish an extension to your organization.
+- [`c, clean`](#clean) - Removed build files from the Foxglove monorepo.
+- [`u, uninstall`](#uninstall) - Uninstall a locally installed extension.
+- [`d, doctor`](#doctor) - Troubleshoot the Foxglove development environment.
 
-You can also run `./foxglove.py [SUBCOMMAND] -h` for more details.
+You can also run `./foxglove.py [SUBCOMMAND] -h` to view a help message.
 
-#### Building
+#### Build
 > [!IMPORTANT]
 > Building must be performed before local installing or publishing custom extensions. Additionally, building is a prerequisite for `lint.py` (eslint) and other Foxglove developer tools.
 
@@ -64,7 +65,7 @@ By default, `./foxglove.py build` does several things:
 > [!TIP]
 > After building once, you only need to rebuild after changes are made to the extension dependencies (e.g., `package.json`, anything in `foxglove/shared/`, etc.).
 
-#### Installing
+#### Install
 To perform a local install, run:
 ```
 ./foxglove.py install [extensions ...]
@@ -76,14 +77,14 @@ This will execute the command `npm run local-install` for each extension specifi
 > [!NOTE]
 > Extensions are installed at `~/.foxglove-studio/extensions/` and will have the prefix `dukerobotics.ros-jazzy-`.
 
-#### Watching
+#### Watch
 To start automatic building, run:
 ```bash
-./foxglove.py watch <extension>
+./foxglove.py watch extension
 ```
 This will automatically execute `npm run local-install` upon `.ts` and `.tsx` file changes in the `src` directory.
 
-#### Publishing
+#### Publish
 > [!IMPORTANT]
 > To publish extensions, you must set up the `.foxgloverc` file. See [SETUP.md](../SETUP.md#set-up-the-foxgloverc-file) for more details.
 
@@ -94,23 +95,27 @@ When you are ready to publish custom extensions to your organization, run:
 - `extensions`: A list of extensions to install. Valid arguments are directory names in `foxglove/extensions/`. If no names are given, all extensions are installed.
 - `-v, --version`: Version to publish extensions under. If no version is given, the short (length 7) HEAD commit hash is used. A version is required if the `robosub-ros2` git reposititory is dirty.
 
-#### Uninstalling
+#### Clean
+To clean up the Foxglove monorepo, run:
+```
+./foxglove.py clean
+```
+This launches an interactive session where you can remove files generated during `./foxglove.py build`.
+
+#### Uninstall
 To uninstall all Duke Robotics extensions, run:
 ```bash
 ./foxglove.py uninstall
 ```
 
-This will delete all extensions at `~/.foxglove-studio/extensions/` with the prefix `dukerobotics.ros-jazzy-`. Other custom extensions will be ignored.
+This removes all files generated during `./foxglove.py install`.
 
-#### Cleaning
-> [!CAUTION]
-> This is a destructive action and permantently removes all untracked files and directories, including those ignored by gitignore.
-
-To clean up the Foxglove monorepo, run:
+#### Doctor
+To check the development environment for potential problems, run:
 ```
-./foxglove.py clean
+./foxglove.py doctor
 ```
-This removes untracked files such as those in `node_modules` or `dist`.
+This command will exit with a non-zero status if any potential problems are found.
 
 ## Using Foxglove Studio
 > [!NOTE]
