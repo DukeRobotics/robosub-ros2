@@ -15,12 +15,15 @@ from cv.utils import compute_center_distance
 
 
 class PathMarkerDetector(Node):
+    """Detect path marker."""
     MONO_CAM_IMG_SHAPE = (640, 480)  # Width, height in pixels
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Init nodes."""
         super().__init__('path_marker_detector')
         self.bridge = CvBridge()
-        self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/bottom/compressed' , self.image_callback, 10)
+        self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/bottom/compressed',
+                                                  self.image_callback, 10)
 
         # define information published for path marker
         self.path_marker_hsv_filtered_pub = self.create_publisher(Image, '/cv/bottom/path_marker/hsv_filtered', 10)
@@ -28,7 +31,8 @@ class PathMarkerDetector(Node):
         self.path_marker_bounding_box_pub = self.create_publisher(CVObject, '/cv/bottom/path_marker/bounding_box', 10)
         self.path_marker_distance_pub = self.create_publisher(Point, '/cv/bottom/path_marker/distance', 10)
 
-    def image_callback(self, data):
+    def image_callback(self, data: CompressedImage) -> None:
+        """Get and process image."""
         # Convert the compressed ROS image to OpenCV format
         np_arr = np.frombuffer(data.data, np.uint8)
         frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
@@ -37,15 +41,14 @@ class PathMarkerDetector(Node):
         # Process the frame to find and publish information on the bin
         self.process_frame(frame)
 
-    def process_frame(self, frame):
+    def process_frame(self, frame: np.array) -> None:
+        """Process frame."""
         # Convert frame to HSV color space
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # Define range for blue color and create mask
         lower_orange = np.array([0, 130, 100])
         upper_orange = np.array([20, 255, 255])
-        # lower_orange = np.array([2, 80, 100])
-        # upper_orange = np.array([33, 255, 255])
         mask = cv2.inRange(hsv, lower_orange, upper_orange)
 
         hsv_filtered_msg = self.bridge.cv2_to_imgmsg(mask, 'mono8')
@@ -56,8 +59,12 @@ class PathMarkerDetector(Node):
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
         # Find contours in the mask
+        MIN_CONTOUR_LENGTH = 5  # noqa: N806
+        MIN_CONTOUR_AREA = 500  # noqa: N806
+
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours = [contour for contour in contours if len(contour) > 5 and cv2.contourArea(contour) > 500]
+        contours = [contour for contour in contours if len(contour) > MIN_CONTOUR_LENGTH and cv2.contourArea(contour) >
+                    MIN_CONTOUR_AREA]
 
         # Fit a line to the largest contour
         if len(contours) > 0:
@@ -98,8 +105,9 @@ class PathMarkerDetector(Node):
             cv2.circle(visualized_frame, (int(center[0]), int(center[1])), 5, (0, 0, 255), -1)
             self.path_marker_contour_image_pub.publish(self.bridge.cv2_to_imgmsg(visualized_frame))
 
-    def visualize_path_marker_detection(self, frame, center, bounding_box, orientation):
-        """Returns frame with bounding boxes of the detection."""
+    def visualize_path_marker_detection(self, frame: np.array, center: tuple, bounding_box: CVObject,
+                                        orientation: float) -> np.array:
+        """Return frame with bounding boxes of the detection."""
         frame_copy = frame.copy()
 
         center_x, center_y = center
@@ -130,7 +138,8 @@ class PathMarkerDetector(Node):
         return frame_copy
 
 
-def main(args=None):
+def main(args:None=None) -> None:
+    """Start node."""
     rclpy.init(args=args)
     path_marker_detector = PathMarkerDetector()
 
