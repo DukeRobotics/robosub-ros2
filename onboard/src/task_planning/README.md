@@ -1,7 +1,7 @@
 # Task Planning
 
 ## Execution
-Start the task planning node with
+Start the task planning node with:
 ```bash
 ros2 run task_planning task_runner --ros-args -p bypass:=False -p untethered:=False
 ```
