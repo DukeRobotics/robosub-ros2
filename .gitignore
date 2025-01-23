@@ -16,9 +16,7 @@ __pycache__
 *.db3
 *.bag
 
-
-
-.config
+# Configuration files
 .env
 
 # Ignore everything in .vscode except the following files
