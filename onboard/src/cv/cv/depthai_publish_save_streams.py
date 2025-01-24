@@ -532,7 +532,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
             self.veDisparityQueue.get().getData().tofile(self.disparity_file)
 
 
-def main(args:None=None) -> None:
+def main(args: None=None) -> None:
     """Start node."""
     rclpy.init(args=args)
     depthai_streams_publisher_and_saver = DepthAIStreamsPublisherAndSaver()

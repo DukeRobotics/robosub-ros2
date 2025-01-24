@@ -234,7 +234,7 @@ def analyze_video(input_video_path, output_video_path):
     }
 
 
-def process_video(video_data, yield_preview=False):
+def process_video(video_data, yield_preview = False):
 
     cap = cv2.VideoCapture(video_data['input_video_path'])
 

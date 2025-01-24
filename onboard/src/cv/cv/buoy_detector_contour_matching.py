@@ -1,5 +1,3 @@
-
-
 import cv2
 import numpy as np
 import rclpy
@@ -8,18 +6,12 @@ from cv_bridge import CvBridge
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage, Image
 
+from cv import config
 from cv.utils import calculate_relative_pose, compute_yaw
 
 
 class BuoyDetectorContourMatching(Node):
     """Match contour with buoy."""
-
-    BUOY_WIDTH = 0.2032  # Width of buoy in meters
-
-    MONO_CAM_IMG_SHAPE = (640, 480)  # Width, height in pixels
-    MONO_CAM_SENSOR_SIZE = (3.054, 1.718)  # Width, height in mm
-    MONO_CAM_FOCAL_LENGTH = 2.65  # Focal length in mm
-
     def __init__(self) -> None:
         super().__init__('buoy_detector_contour_matching')
 
@@ -32,7 +24,7 @@ class BuoyDetectorContourMatching(Node):
 
         self.bridge = CvBridge()
         self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/front/compressed', self.image_callback,
-                                                  10)  #/camera/usb/front/compressed
+                                                  10)
         self.bounding_box_pub = self.create_publisher(CVObject,'/cv/front_usb/buoy/bounding_box', 1)
         self.hsv_filtered_pub = self.create_publisher(Image, '/cv/front_usb/buoy/hsv_filtered', 1)
         self.contour_image_pub = self.create_publisher(Image, '/cv/front_usb/buoy/contour_image', 1)
@@ -81,7 +73,7 @@ class BuoyDetectorContourMatching(Node):
         # Get the top 3 contours with the largest area
         contours = contours[:3]
 
-        # (prepares for) publish contours only
+        # Draw contours onto image, and publish the image
         image_with_contours = image.copy()
         cv2.drawContours(image_with_contours, contours, -1, (255, 0, 0), 2)
         contour_image_msg = self.bridge.cv2_to_imgmsg(image_with_contours, 'bgr8')
@@ -90,7 +82,7 @@ class BuoyDetectorContourMatching(Node):
         MIN_AREA_OF_CONTOUR = 100  # noqa: N806
         MATCH_TOLERANCE = 0.2  # noqa: N806
 
-        # only gets contours w/ area>100
+        # only processes contours w/ area > MIN_AREA_OF_CONTOUR
         contours = [contour for contour in contours if cv2.contourArea(contour) > MIN_AREA_OF_CONTOUR]
 
         best_cnt = None
@@ -124,10 +116,8 @@ class BuoyDetectorContourMatching(Node):
         self.contour_image_with_bbox_pub.publish(image_msg)
 
     def filter_outliers(self, bboxes: np.array) -> np.array:
-        """Filter out outliers if the number of boundig boxes is greater than two."""
-        MIN_LENGTH = 2  # noqa: N806
-
-        if len(bboxes) <= MIN_LENGTH:
+        """Filter out outliers if there are more than two bounding boxes."""
+        if len(bboxes) <= 2:  # noqa: PLR2004
             return bboxes
 
         centers = [(x + w / 2, y + h / 2) for x, y, w, h in bboxes]
@@ -141,16 +131,15 @@ class BuoyDetectorContourMatching(Node):
 
         return [
             bboxes[i] for i in range(len(bboxes))
-            if distances[i] <= mean_center[0] + 2 * std_distance and abs(areas[i] - mean_area) <= 1 * std_area
+            if distances[i] <= mean_center[0] + 2 * std_distance and abs(areas[i] - mean_area) <= std_area
         ]
 
 
-    def publish_bbox(self, bbox: tuple[int, int, int, int], image: None) -> None:
+    def publish_bbox(self, bbox: tuple[int, int, int, int], image: None) -> None:  # noqa: ARG002
         """
-        Require comment due to linter.
+        Create a CVObject message to publish to the bounding box publisher.
 
-        Previous top-level comment:
-        we're not commetning the top of this function it's pretty much just a bunch of middle school geometry
+        Calculations are done based off of the pased in x, y, width, and height of the rectangle.
         """
         x, y, w, h = bbox
 
@@ -163,31 +152,27 @@ class BuoyDetectorContourMatching(Node):
         bounding_box.xmax = float(x + w)
         bounding_box.ymax = float(y + h)
 
-        bounding_box.yaw = -float(compute_yaw(x / self.MONO_CAM_IMG_SHAPE[0], (x + w) / self.MONO_CAM_IMG_SHAPE[0],
-                                        self.MONO_CAM_IMG_SHAPE[0])) # Update 0 with whatever is self.camera_pixel_width
+        bounding_box.yaw = -float(compute_yaw(x / config.mono_cam.IMG_SHAPE[0], (x + w) / config.mono_cam.IMG_SHAPE[0],
+                                        config.mono_cam.IMG_SHAPE[0])) # Update 0 with self.camera_pixel_width
 
         bounding_box.width = int(w)
         bounding_box.height = int(h)
 
-        # get the linter to shut up
-        if image is None:
-            (x+w)
-
-        bbox_bounds = (x / self.MONO_CAM_IMG_SHAPE[0], y / self.MONO_CAM_IMG_SHAPE[1],
-                       (x+w) / self.MONO_CAM_IMG_SHAPE[0], (y+h) / self.MONO_CAM_IMG_SHAPE[1])
+        bbox_bounds = (x / config.mono_cam.IMG_SHAPE[0], y / config.mono_cam.IMG_SHAPE[1],
+                       (x+w) / config.mono_cam.IMG_SHAPE[0], (y+h) / config.mono_cam.IMG_SHAPE[1])
 
         # Point coords represents the 3D position of the object represented by the bounding box relative to the robot
         coords_list = calculate_relative_pose(bbox_bounds,
-                                              self.MONO_CAM_IMG_SHAPE,
-                                              (self.BUOY_WIDTH, 0),
-                                              self.MONO_CAM_FOCAL_LENGTH,
-                                              self.MONO_CAM_SENSOR_SIZE, 1)
+                                              config.mono_cam.IMG_SHAPE,
+                                              (config.buoy.WIDTH, 0),
+                                              config.mono_cam.FOCAL_LENGTH,
+                                              config.mono_cam.SENSOR_SIZE, 1)
         bounding_box.coords.x, bounding_box.coords.y, bounding_box.coords.z = coords_list
 
         self.bounding_box_pub.publish(bounding_box)
 
 
-def main(args:None=None) -> None:
+def main(args: None = None) -> None:
     """Run the node."""
     rclpy.init(args=args)
     buoy_detector_contour_matching = BuoyDetectorContourMatching()
