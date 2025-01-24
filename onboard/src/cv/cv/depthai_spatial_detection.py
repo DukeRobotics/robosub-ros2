@@ -405,7 +405,7 @@ class DepthAISpatialDetector(Node):
             self.get_logger().debug('Publishing')
             self.publishers_dict[label].publish(object_msg)
 
-    def update_sonar(self, sonar_results:object) -> None:
+    def update_sonar(self, sonar_results: object) -> None:
         """
         Listen to sonar response.
 

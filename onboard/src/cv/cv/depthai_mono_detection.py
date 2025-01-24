@@ -1,5 +1,3 @@
-
-
 import math
 from pathlib import Path
 
@@ -135,7 +133,7 @@ class DepthAISpatialDetector(Node):
 
             input_queue.send(img)
 
-    def build_pipeline(self, nn_blob_path:Path, sync_nn: bool) -> dai.Pipeline:  # noqa: ARG002
+    def build_pipeline(self, nn_blob_path: Path, sync_nn: bool) -> dai.Pipeline:  # noqa: ARG002
         """
         Get the DepthAI Pipeline for 3D object localization.
 
@@ -198,7 +196,7 @@ class DepthAISpatialDetector(Node):
 
         return pipeline
 
-    def init_model(self, model_name:str) -> None:
+    def init_model(self, model_name: str) -> None:
         """
         Create and assign the pipeline and set the current model name.
 
@@ -234,7 +232,7 @@ class DepthAISpatialDetector(Node):
                                     use_protocol=False)
         self.pipeline = self.build_pipeline(blob_path, self.sync_nn)
 
-    def init_publishers(self, model_name:str) -> None:
+    def init_publishers(self, model_name: str) -> None:
         """
         Initialize the publishers for the node.
 
@@ -339,8 +337,8 @@ class DepthAISpatialDetector(Node):
                 bbox, det_coords_robot_mm, yaw_offset, label, confidence,
                 (self.camera_pixel_height, self.camera_pixel_width), self.using_sonar)
 
-    def publish_prediction(self, bbox:tuple, det_coords:tuple, yaw:float, label:str, confidence:float,
-                           shape:tuple, using_sonar:bool) -> None:
+    def publish_prediction(self, bbox: tuple, det_coords: tuple, yaw: float, label: str, confidence: float,
+                           shape: tuple, using_sonar: bool) -> None:
         """
         Publish predictions to label-specific topic. Publishes to /cv/[camera]/[label].
 
@@ -380,7 +378,7 @@ class DepthAISpatialDetector(Node):
             # if object_msg.coords.x != 0 and object_msg.coords.y != 0 and object_msg.coords.z != 0:
             self.publishers_dict[label].publish(object_msg)
 
-    def update_sonar(self, sonar_results:SonarSweepResponse) -> None:
+    def update_sonar(self, sonar_results: SonarSweepResponse) -> None:
         """
         Define callback function for listenting to sonar response.
 
@@ -396,7 +394,7 @@ class DepthAISpatialDetector(Node):
         else:
             self.in_sonar_range = False
 
-    def update_priority(self, obj:object) -> None:
+    def update_priority(self, obj: object) -> None:
         """Update the current priority class. If the priority class is detected, sonar will be called."""
         self.current_priority = obj
 
@@ -422,7 +420,7 @@ class DepthAISpatialDetector(Node):
 
         return True
 
-    def compute_angle_from_x_offset(self, x_offset:float) -> float:
+    def compute_angle_from_x_offset(self, x_offset: float) -> float:
         """
         Compute the angle in degrees from the x offset of the object in the image.
 
@@ -437,7 +435,7 @@ class DepthAISpatialDetector(Node):
         return math.degrees(math.atan((x_offset - image_center_x) * 0.005246675486))
 
 
-def main(args:list[str]|None=None) -> None:
+def main(args: list[str]|None=None) -> None:
     """Define the main function that initiates the node."""
     rclpy.init(args=args)
     depthai_spatial_detector = DepthAISpatialDetector()

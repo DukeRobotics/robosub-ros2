@@ -1,5 +1,3 @@
-
-
 import cv2
 import numpy as np
 import rclpy
@@ -8,6 +6,8 @@ from cv_bridge import CvBridge, CvBridgeError
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float64
+
+from cv import config
 
 
 class BlueRectangleDetector(Node):
@@ -37,7 +37,6 @@ class BlueRectangleDetector(Node):
                 angle_msg.data = angle
                 self.angle_pub.publish(angle_msg)
 
-
             if distance is not None:
                 distance_msg = Float64()
                 distance_msg.data = distance
@@ -62,9 +61,7 @@ class BlueRectangleDetector(Node):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # Define range for blue color and create mask
-        lower_blue = np.array([100, 150, 50])
-        upper_blue = np.array([140, 255, 255])
-        mask = cv2.inRange(hsv, lower_blue, upper_blue)
+        mask = cv2.inRange(hsv, config.blue_rect.lower_blue, config.blue_rect.upper_blue)
 
         # Find contours in the mask
         contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -130,7 +127,7 @@ class BlueRectangleDetector(Node):
         return angle, distance, rect_info, frame
 
 
-def main(args:None=None) -> None:
+def main(args: None = None) -> None:
     """Start the node."""
     rclpy.init(args=args)
     blue_rectangle_detector = BlueRectangleDetector()

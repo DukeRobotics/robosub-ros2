@@ -1,5 +1,3 @@
-
-
 import depthai as dai
 import nmap
 import rclpy
@@ -12,9 +10,9 @@ class DepthAiCameraConnect(Node):
     def __init__(self) -> None:
         super().__init__('depthai_camera_connect')
 
-def connect(pipeline:dai.Pipeline) -> dai.Device:
+def connect(pipeline: dai.Pipeline) -> dai.Device:
     """
-    Connect to the DepthAI camera and uploads the pipeline.
+    Connect to the DepthAI camera and upload the pipeline.
 
     It tries to connect five times, waiting 2 seconds before trying again (so the script is successful if the camera is
     just temporarily unavailable). In each try, it attempts to connect first using custom autodiscovery, then using
@@ -36,7 +34,7 @@ def connect(pipeline:dai.Pipeline) -> dai.Device:
 
         try:
             # Scan for camera IP address using custom autodiscovery
-            ip = custom_autodiscovery()  # TODO: use MAC address from camera config file  # noqa: FIX002
+            ip = custom_autodiscovery()
 
             # Try connecting with the discovered IP address
             # If the execution reaches the following return statement, the lines above did not raise an exception, so a
@@ -72,21 +70,11 @@ def custom_autodiscovery() -> str:
     nm = nmap.PortScanner()
     scan = nm.scan(hosts=ip_range, arguments='-sP')['scan']
 
-    # please re-add check for mac addresses thx
     for ip, info in scan.items():
         print(f"Searching,... {ip} {info['addresses']}")
         if info['status']['state'] == 'up' and info['addresses'].get('mac') == mac_address:
-            print('FOUND!!')
+            print('DepthAI Camera Found')
             return ip
 
     error_message = 'Custom autodiscovery failed to find camera.'
     raise RuntimeError(error_message)
-
-"""
-If needed for testing please port this over too thanks!
-if __name__ == "__main__":
-    rospy.init_node("depthai_camera_connect")
-    if connect(dai.Pipeline()):
-        rospy.loginfo("Connected to DepthAI device successfully.")
-
-"""
