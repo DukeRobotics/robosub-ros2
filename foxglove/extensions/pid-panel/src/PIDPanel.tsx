@@ -271,6 +271,7 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
                     const inEditMode = gainType in (state.editedGains[Number(axis)] ?? {});
                     return (
                       <TableCell key={gainType} sx={{ padding: "0" }}>
+                        {/* TODO: TextField doesn't take up full width of TableCell when panel is big */}
                         <TextField
                           type="number"
                           sx={{
