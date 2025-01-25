@@ -1,13 +1,13 @@
 import cv2
 import numpy as np
 import rclpy
-from cv import config
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Point
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage, Image
 
+from cv import config
 from cv.utils import calculate_relative_pose, compute_center_distance, compute_yaw
 
 
@@ -48,13 +48,13 @@ class BinDetector(Node):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # Create mask
-        mask_blue = cv2.inRange(hsv, config.bins.lower_blue, config.bins.upper_blue)
+        mask_blue = cv2.inRange(hsv, config.Bins.lower_blue, config.Bins.upper_blue)
         blue_hsv_filtered_msg = self.bridge.cv2_to_imgmsg(mask_blue, 'mono8')
         self.blue_bin_hsv_filtered_pub.publish(blue_hsv_filtered_msg)
 
         # Apply HSV filtering on the image
-        mask_red1 = cv2.inRange(hsv, config.bins.lower_red_low, config.bins.upper_red_low)
-        mask_red2 = cv2.inRange(hsv, config.bins.lower_red_high, config.bins.upper_red_high)
+        mask_red1 = cv2.inRange(hsv, config.Bins.lower_red_low, config.Bins.upper_red_low)
+        mask_red2 = cv2.inRange(hsv, config.Bins.lower_red_high, config.Bins.upper_red_high)
         mask_red = cv2.bitwise_or(mask_red1, mask_red2)
 
         # Convert cv2 image to img message, and publish the image
@@ -126,7 +126,7 @@ class BinDetector(Node):
             return None, None, None
 
         # Get dimensions, attributes of relevant shapes
-        meters_per_pixel = config.bins.WIDTH / w
+        meters_per_pixel = config.Bins.WIDTH / w
 
         # Create CVObject message, and populate relavent attributes
         bounding_box = CVObject()
@@ -139,14 +139,14 @@ class BinDetector(Node):
         bounding_box.xmax = (x + w) * meters_per_pixel
         bounding_box.ymax = (y + h) * meters_per_pixel
 
-        bounding_box.yaw = compute_yaw(x, x + w, config.mono_cam.SENSOR_SIZE[0])  # width of camera in in mm
+        bounding_box.yaw = compute_yaw(x, x + w, config.MonoCam.SENSOR_SIZE[0])  # width of camera in in mm
 
         bounding_box.width = int(w)
         bounding_box.height = int(h)
 
         # Compute distance between center of bounding box and center of image
         # Here, image x is robot's y, and image y is robot's z
-        dist_x, dist_y = compute_center_distance(x, y, *config.mono_cam.IMG_SHAPE, height_adjustment_constant=15,
+        dist_x, dist_y = compute_center_distance(x, y, *config.MonoCam.IMG_SHAPE, height_adjustment_constant=15,
                                                  width_adjustment_constant=10)
 
         # Create Point message and populate x and y distances
@@ -154,15 +154,15 @@ class BinDetector(Node):
         dist_point.x = dist_x
         dist_point.y = -dist_y
 
-        bbox_bounds = (x / config.mono_cam.IMG_SHAPE[0], y / config.mono_cam.IMG_SHAPE[1], (x+w) /
-                       config.mono_cam.IMG_SHAPE[0], (y+h) / config.mono_cam.IMG_SHAPE[1])
+        bbox_bounds = (x / config.MonoCam.IMG_SHAPE[0], y / config.MonoCam.IMG_SHAPE[1], (x+w) /
+                       config.MonoCam.IMG_SHAPE[0], (y+h) / config.MonoCam.IMG_SHAPE[1])
 
         # Point coords represents the 3D position of the object represented by the bounding box relative to the robot
         coords_list = calculate_relative_pose(bbox_bounds,
-                                              config.mono_cam.IMG_SHAPE,
-                                              (self.BIN_WIDTH, 0),
-                                              self.MONO_CAM_FOCAL_LENGTH,
-                                              config.mono_cam.SENSOR_SIZE, 1)
+                                              config.MonoCam.IMG_SHAPE,
+                                              (config.Bins.WIDTH, 0),
+                                              config.MonoCam.FOCAL_LENGTH,
+                                              config.MonoCam.SENSOR_SIZE, 1)
         bounding_box.coords.x, bounding_box.coords.y, bounding_box.coords.z = coords_list
 
         # Convert the image with the bounding box to ROS Image message and publish
@@ -172,8 +172,8 @@ class BinDetector(Node):
 
     def mono_cam_dist_with_obj_width(self, width_pixels: int, width_meters: int) -> float:
         """Calculate mono cam distance with object width."""
-        return (self.MONO_CAM_FOCAL_LENGTH * width_meters * config.mono_cam.IMG_SHAPE[0]) \
-            / (width_pixels * config.mono_cam.SENSOR_SIZE[0])
+        return(config.MonoCam.FOCAL_LENGTH * width_meters * config.MonoCam.IMG_SHAPE[0]) \
+            / (width_pixels * config.MonoCam.SENSOR_SIZE[0])
 
 def main(args: None = None) -> None:
     """Run the node."""

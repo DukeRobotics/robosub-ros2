@@ -61,7 +61,7 @@ class BlueRectangleDetector(Node):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # Define range for blue color and create mask
-        mask = cv2.inRange(hsv, config.blue_rect.lower_blue, config.blue_rect.upper_blue)
+        mask = cv2.inRange(hsv, config.BlueRect.lower_blue, config.BlueRect.upper_blue)
 
         # Find contours in the mask
         contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
