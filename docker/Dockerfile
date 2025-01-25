@@ -8,7 +8,7 @@ ARG CACHE_BUSTER
 # Install packages from apt
 # Each package is installed in a separate RUN command so that each package is cached separately in Docker
 # The commands are ordered alphabetically
-RUN apt update
+RUN apt-get update
 RUN apt install -y --no-install-recommends clang
 RUN apt install -y --no-install-recommends clang-format
 RUN apt install -y --no-install-recommends gdb
