@@ -44,9 +44,9 @@ class PinkBinsDetector(Node):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # Define range for blue color and create mask
-        mask_1 = cv2.inRange(hsv, PinkBins.lower_mask_1, PinkBins.upper_mask_1)
-        mask_2 = cv2.inRange(hsv, PinkBins.lower_mask_2, PinkBins.upper_mask_2)
-        mask_3 = cv2.inRange(hsv, PinkBins.lower_mask_3, PinkBins.upper_mask_3)
+        mask_1 = cv2.inRange(hsv, PinkBins.PINK_1_BOT, PinkBins.PINK_1_TOP)
+        mask_2 = cv2.inRange(hsv, PinkBins.PINK_2_BOT, PinkBins.PINK_2_TOP)
+        mask_3 = cv2.inRange(hsv, PinkBins.PINK_3_BOT, PinkBins.PINK_3_TOP)
 
         if self.camera == 'bottom':
             mask = cv2.inRange(hsv, np.array([160, 150, 200]), np.array([170, 255, 255]))

@@ -44,7 +44,7 @@ class PathMarkerDetector(Node):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # Define range for blue color and create mask
-        mask = cv2.inRange(hsv, PathMarker.lower_orange, PathMarker.upper_orange)
+        mask = cv2.inRange(hsv, PathMarker.ORANGE_BOT, PathMarker.ORANGE_TOP)
 
         hsv_filtered_msg = self.bridge.cv2_to_imgmsg(mask, 'mono8')
         self.path_marker_hsv_filtered_pub.publish(hsv_filtered_msg)

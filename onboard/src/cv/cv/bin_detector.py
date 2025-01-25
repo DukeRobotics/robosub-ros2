@@ -53,9 +53,9 @@ class BinDetector(Node):
         self.blue_bin_hsv_filtered_pub.publish(blue_hsv_filtered_msg)
 
         # Apply HSV filtering on the image
-        mask_red1 = cv2.inRange(hsv, Bins.lower_red_low, Bins.upper_red_low)
-        mask_red2 = cv2.inRange(hsv, Bins.lower_red_high, Bins.upper_red_high)
-        mask_red = cv2.bitwise_or(mask_red1, mask_red2)
+        mask_red_low = cv2.inRange(hsv, Bins.RED_LOW_BOT, Bins.RED_LOW_TOP)
+        mask_red_high = cv2.inRange(hsv, Bins.RED_HIGH_BOT, Bins.RED_HIGH_TOP)
+        mask_red = cv2.bitwise_or(mask_red_low, mask_red_high)
 
         # Convert cv2 image to img message, and publish the image
         red_hsv_filtered_msg = self.bridge.cv2_to_imgmsg(mask_red, 'mono8')
