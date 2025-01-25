@@ -20,7 +20,6 @@ setup(
     maintainer_email='hello@duke-robotics.com',
     description='Package that provides various system utilities.',
     license='MIT',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'record_bag = system_utils.record_bag:main',
