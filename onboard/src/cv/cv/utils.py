@@ -1,5 +1,3 @@
-
-
 import math
 import os
 from pathlib import Path
@@ -74,8 +72,8 @@ def calculate_relative_pose(bbox_bounds: object, input_size: list[float], label_
         bbox_bounds: the detection object
         input_size: array wrt input size ([0] is width, [1] is height)
         label_shape: the label shape ([0] is width --> only this is accessed, [1] is height)
-        focal_length: a constant to pass in
-        sensor_size: a constant to pass in
+        focal_length: the distance between the lens and the image sensor when the lens is focused on a subject
+        sensor_size: The physical size of the camera's image sensor
         adjustment_factor: 1 if mono 2 if depthai
     """
     xmin, ymin, xmax, ymax = bbox_bounds

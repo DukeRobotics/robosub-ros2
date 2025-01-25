@@ -22,12 +22,12 @@ class ImageTools:
             raise CvBridgeError from e
 
     def convert_ros_compressed_to_cv2(self, compressed_msg: CompressedImage) -> np.ndarray:
-        """Convert a ros CompressedImage to a CV2 image."""
+        """Convert a ROS CompressedImage message to a CV2 image."""
         np_arr = np.frombuffer(compressed_msg.data, np.uint8)
         return cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
     def convert_ros_compressed_msg_to_ros_msg(self, compressed_msg: CompressedImage, encoding: str='bgr8') -> Image:
-        """Convert a ros CompressedImage to a Image."""
+        """Convert a ROS CompressedImage message to a ROS Image message."""
         cv2_img = self.convert_ros_compressed_to_cv2(compressed_msg)
         ros_img = self._cv_bridge.cv2_to_imgmsg(cv2_img, encoding=encoding)
         ros_img.header = compressed_msg.header
@@ -125,10 +125,10 @@ class ImageTools:
         ros_msg = None
         if isinstance(image, np.ndarray):
             ros_msg = self.convert_cv2_to_ros_msg(image, encoding=image_encoding)
-        elif isinstance(image,Image):
+        elif isinstance(image, Image):
             image.encoding = self.convert_cv_bridge_depth_encoding_to_encoding_string(image_encoding)
             ros_msg = image
-        elif isinstance(image,CompressedImage):
+        elif isinstance(image, CompressedImage):
             ros_msg = self.convert_compressedDepth_to_image_msg(image)
         else:
             raise TypeError('Cannot convert type: ' + str(type(image)))
@@ -147,7 +147,7 @@ class ImageTools:
                                                                  compressed_format='png')
             ros_cmp.format = self.convert_cv_bridge_depth_encoding_to_encoding_string(image_encoding, compressed=True)
 
-        elif isinstance(image,CompressedImage):
+        elif isinstance(image, CompressedImage):
             ros_cmp = image
         else:
             raise TypeError('Cannot convert type: ' + str(type(image)))
@@ -168,7 +168,7 @@ class ImageTools:
             raise TypeError('Cannot convert type: ' + str(type(image)))
         return cv2_img
 
-    def convert_compressedDepth_to_image_msg(self, compressed_image: CompressedImage) -> Image:
+    def convert_compressed_depth_to_image_msg(self, compressed_image: CompressedImage) -> Image:
         """
         Convert a compressedDepth topic image into a ROS Image message.
 

@@ -1,5 +1,3 @@
-
-
 import contextlib
 
 import cv2
@@ -14,9 +12,9 @@ class USBCamera(Node):
     """
     Object to stream any camera at /dev/video* and publishes the image feed at the device framerate.
 
-    Currently used for the deepwater exploration usb mono cameras
+    Currently used for the deepwater exploration usb mono cameras.
 
-    Launch using: roslaunch cv usb_camera.launch
+    Launch using: roslaunch cv usb_camera.launch.
     :param topic: rostopic to publish the image feed to; default is set to camera/usb_camera/compressed
     :param device_path: path to device to read the stream from (e.g., /dev/video0); can be a symlinked path
     :param framerate: custom framerate to stream the camera at; default is set to device default
@@ -49,7 +47,7 @@ class USBCamera(Node):
         """
         Connect to camera found at self.device_path using cv2.VideoCaptures.
 
-        Stream every image as it comes in at the device framerate
+        Stream every image as it comes in at the device framerate.
         """
         total_tries = 5
         success = False
@@ -66,9 +64,8 @@ class USBCamera(Node):
                 self.get_logger().info('autodetected ' + str(cap.getBackendName()))
 
                 # Read first frame
-
                 success, img = cap.read()
-                self.get_logger().info('first frame read ' + str(success))
+                self.get_logger().info('First frame read ' + str(success))
 
                 # Set publisher rate (framerate) to custom framerate if specified, otherwise, set to default
                 if self.framerate is None:
@@ -101,7 +98,7 @@ class USBCamera(Node):
                 # Read next image
                 success, img = cap.read()
                 # Sleep loop to maintain frame rate
-                rclpy.spin_once(self,timeout_sec=self.framerate)
+                rclpy.spin_once(self, timeout_sec=self.framerate)
         else:
             self.get_logger().error(f'{total_tries} attempts were made to connect to the USB camera. '
                          f'The camera was not found at device_path {self.device_path}. All attempts failed.')
