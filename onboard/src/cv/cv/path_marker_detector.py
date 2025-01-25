@@ -9,8 +9,7 @@ from geometry_msgs.msg import Point
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage, Image
 
-from cv.config import PathMarker
-from cv.config import mono_cam as MonoCam
+from cv.config import MonoCam, PathMarker
 from cv.utils import compute_center_distance
 
 

@@ -9,8 +9,9 @@ from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage, Image
 from sklearn.cluster import DBSCAN
 
+from cv.config import MonoCam, PinkBins
 from cv.utils import compute_yaw
-from cv.config import PinkBins, mono_cam as MonoCam
+
 
 class PinkBinsDetector(Node):
     """Detect pink bins (deprecated)."""
