@@ -36,11 +36,11 @@ To clean up the Foxglove monorepo and uninstall local extensions, run:
 ```bash
 ./foxglove.py [SUBCOMMAND]
 ```
-- [`b, build`](#build) - Prepare an extension for installation or publish.
+- [`b, build`](#build) - Prepare an extension for installation or publishing.
 - [`i, install`](#install) - Install an extension locally.
-- [`w, watch`](#watch) - Watch an extension for changes and autobuild.
+- [`w, watch`](#watch) - Watch an extension for changes and automatically reinstall.
 - [`p, publish`](#publish) - Publish an extension to your organization.
-- [`c, clean`](#clean) - Removed build files from the Foxglove monorepo.
+- [`c, clean`](#clean) - Remove build files from the Foxglove monorepo.
 - [`u, uninstall`](#uninstall) - Uninstall a locally installed extension.
 - [`d, doctor`](#doctor) - Troubleshoot the Foxglove development environment.
 
@@ -59,7 +59,7 @@ To build, run:
 By default, `./foxglove.py build` does several things:
 1. Install external dependencies to `node_modules` using `npm ci`.
 2. Patch external dependencies using `patch-package`.
-3. Build local dependencies in `foxglove/shared`.
+3. Build local dependencies in `foxglove/shared/`.
 4. Build per-extension dependencies by running `npm run build`.
 
 > [!TIP]
@@ -70,7 +70,7 @@ To perform a local install, run:
 ```
 ./foxglove.py install [extensions ...]
 ```
-- `extensions`: A list of extensions to install. Valid arguments are directory names in `foxglove/extensions/`. If no names are given, all extensions are installed.
+- `extensions`: A list of extensions to install. If no extensions are given, all extensions are installed.
 
 This will execute the command `npm run local-install` for each extension specified.
 
@@ -78,11 +78,11 @@ This will execute the command `npm run local-install` for each extension specifi
 > Extensions are installed at `~/.foxglove-studio/extensions/` and will have the prefix `dukerobotics.ros-jazzy-`.
 
 #### Watch
-To start automatic building, run:
+To watch an extension for changes, run:
 ```bash
 ./foxglove.py watch extension
 ```
-This will automatically execute `npm run local-install` upon `.ts` and `.tsx` file changes in the `src` directory.
+This will automatically execute `npm run local-install` upon `.ts` or `.tsx` file changes in the `src` directory.
 
 #### Publish
 > [!IMPORTANT]
@@ -92,7 +92,7 @@ When you are ready to publish custom extensions to your organization, run:
 ```
 ./foxglove.py publish [extensions ...]
 ```
-- `extensions`: A list of extensions to install. Valid arguments are directory names in `foxglove/extensions/`. If no names are given, all extensions are installed.
+- `extensions`: A list of extensions to install. If no extensions are given, all extensions are installed.
 - `-v, --version`: Version to publish extensions under. If no version is given, the short (length 7) HEAD commit hash is used. A version is required if the `robosub-ros2` git reposititory is dirty.
 
 #### Clean
@@ -111,7 +111,7 @@ To uninstall all Duke Robotics extensions, run:
 This removes all files generated during `./foxglove.py install`.
 
 #### Doctor
-To check the development environment for potential problems, run:
+To troubleshoot the Foxglove development environment, run:
 ```
 ./foxglove.py doctor
 ```
@@ -130,8 +130,8 @@ This command will exit with a non-zero status if any potential problems are foun
 2. Open Foxglove Studio and connect to the WebSocket at `ws://IP_ADDRESS:28765`.
     - Replace `IP_ADDRESS` with the IP address of the host machine. If you are running the Docker container locally, you can use `localhost` as the IP address.
 
-## Formating & Linting
-We use eslint for linting and prettier for formatting. To lint the Foxglove monorepo, run the following command from the `robosub-ros2` root:
+## Linting & Formatting
+We use [eslint](https://eslint.org/) for linting and [prettier](https://prettier.io/) for formatting. To lint the Foxglove monorepo, run the following command from the `robosub-ros2` root:
 ```bash
 ./lint.py -p foxglove
 ```
@@ -140,23 +140,23 @@ See [SCRIPTS.md](../SCRIPTS.md#lintpy) for more information.
 
 ## Monorepo Structure
 ### Extensions
-- [`call-service-panel`](extensions/call-service-panel/README.md) - Example panel to extensions/call services
-- [`publish-topic-panel`](extensions/call-service-panel/README.md) - Example panel to publish topics
-- [`subscribe-topic-panel`](extensions/call-service-panel/README.md) - Example panel to subscribe to topics and see the raw message feed
-- [`toggle-controls-panel`](extensions/call-service-panel/README.md) - Panel to toggle controls on/off
-- [`system-status-panel`](extensions/call-service-panel/README.md) - Panel that displays system usage of the onboard computer
-- [`sensors-status-panel`](extensions/call-service-panel/README.md) - Panel that displays the connected/disconnected status of Oogway's sensors
-- [`thruster-allocs-panel`](extensions/call-service-panel/README.md) - Panel that displays the current thruster allocs and publishes desired thruster allocs
-- [`toggle-joystick-panel`](extensions/call-service-panel/README.md) - Panel to toggle joystick control on/off, as well as publish transformed joystick inputs as a desired power
-- [`pid-panel`](extensions/call-service-panel/README.md) - Panel to read/set PID gains
+- [`call-service-panel`](extensions/call-service-panel/README.md) - Example panel to call services
+- [`publish-topic-panel`](extensions/publish-topic-panel/README.md) - Example panel to publish topics
+- [`subscribe-topic-panel`](extensions/subscribe-topic-panel/README.md) - Example panel to subscribe to topics
+- [`toggle-controls-panel`](extensions/toggle-controls-panel/README.md) - Panel to toggle controls on/off
+- [`system-status-panel`](extensions/system-status-panel/README.md) - Panel that displays system usage of the onboard computer
+- [`sensors-status-panel`](extensions/sensors-status-panel/README.md) - Panel that displays the connected/disconnected status of sensors
+- [`thruster-allocs-panel`](extensions/thruster-allocs-panel/README.md) - Panel that displays the current thruster allocs and publishes desired thruster allocs
+- [`toggle-joystick-panel`](extensions/toggle-joystick-panel/README.md) - Panel to toggle joystick control on/off, as well as publish transformed joystick inputs as a desired power
+- [`pid-panel`](extensions/pid-panel/README.md) - Panel to read/set PID gains
 
 ### Local Dependencies
-Local dependencies are located in the `shared` directory.
-- [`defs`](shared/defs/README.md) - Exports Foxglove datatype maps and TypeScript interfaces/enums for both ROS 1 and Duke Robotics custom message definitions
+Local dependencies are located in the `shared/` directory.
+- [`defs`](shared/defs/README.md) - Exports Foxglove datatype maps and TypeScript interfaces/enums for both ROS 2 and Duke Robotics message definitions
 - [`theme`](shared/theme/README.md) Exports the Duke Robotics MUI Theme
 
 ### Patches
-Patches to external node modules are located in the `patches` directory.
+Patches to external node modules are located in the `patches/` directory.
 Running `./foxglove.py build` will automatically apply these patches.
 - [`create-foxglove-extension+1.0.4.patch`](patches/create-foxglove-extension+1.0.4.patch)
   - No longer require `README.md` or `CHANGELOG.md` when installing an extension
@@ -165,11 +165,11 @@ Running `./foxglove.py build` will automatically apply these patches.
 ### Monorepo Root Files
 - [`eslint.config.mjs`](eslint.config.mjs) - Configuration file for ESLint
 - [`.eslintignore`](.eslintignore) - Ignore file for ESLint
-- [`.npmrc`](`.npmrc`) - Configuration file for npm
-- [`.prettierrc.yaml`](`.prettierrc.yaml`) - Configuration file for Prettier
+- [`.npmrc`](.npmrc) - Configuration file for npm
+- [`.prettierrc.yaml`](.prettierrc.yaml) - Configuration file for Prettier
 - [`tsconfig.json`](tsconfig.json) Configuration file for TypeScript
 - [`package.json`](package.json) - Metadata file for the Foxglove monorepo
-- [`package-lock.json`](package-lock.json) - The exact npm dependency tree of the foxglove monorepo, generated using `npm i`
+- [`package-lock.json`](package-lock.json) - The npm dependency tree of the Foxglove monorepo, generated using `npm i`
 
 ## Contributing
 ### Adding a New Extension
