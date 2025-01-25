@@ -15,6 +15,7 @@ __pycache__
 *.bag
 
 # Configuration files
+.config
 .env
 
 # Ignore everything in .vscode except the following files

@@ -27,7 +27,7 @@ def check_file_writable(filepath: str) -> bool:
 
 def cam_dist_with_obj_width(width_pixels: float, width_meters: float,
                              focal_length: float, img_shape: list[int], sensor_size: float,
-                             adjustment_factor: int=1) -> float:
+                             adjustment_factor: int = 1) -> float:
     """Note that adjustment factor is 1 for mono camera and 2 for depthAI camera."""
     return (focal_length * width_meters * img_shape[0]) \
         / (width_pixels * sensor_size[0]) * adjustment_factor
@@ -35,7 +35,7 @@ def cam_dist_with_obj_width(width_pixels: float, width_meters: float,
 
 def cam_dist_with_obj_height(height_pixels: float, height_meters: float,
                              focal_length: float, img_shape: list[int], sensor_size: float,
-                             adjustment_factor: int=1) -> float:
+                             adjustment_factor: int = 1) -> float:
     """Return camera distance with object height."""
     return (focal_length * height_meters * img_shape[1]) \
         / (height_pixels * sensor_size[1]) * adjustment_factor
@@ -64,9 +64,9 @@ def compute_angle_from_x_offset(x_offset: float, camera_pixel_width: float) -> f
 
 
 def calculate_relative_pose(bbox_bounds: object, input_size: list[float], label_shape: list[float], focal_length: float,
-                             sensor_size: float,adjustment_factor: int)-> list[float]:
+                             sensor_size: float,adjustment_factor: int) -> list[float]:
     """
-    Return rel pose, to be used as a part of the CVObject.
+    Return relative pose, to be used as a part of the CVObject.
 
     Parameters:
         bbox_bounds: the detection object
@@ -87,8 +87,6 @@ def calculate_relative_pose(bbox_bounds: object, input_size: list[float], label_
 
     y_meters = dist_x * meters_per_pixel * -1
     z_meters = dist_y * meters_per_pixel * -1
-
-    # isp_img_to_det_ratio = ISP_IMG_SHAPE[0] / model['input_size'][0]  # noqa: ERA001
 
     x_meters = cam_dist_with_obj_width(bbox_width, label_shape[0], focal_length, input_size, sensor_size,
                                        adjustment_factor)
@@ -154,8 +152,8 @@ def compute_bbox_dimensions(polygon: object) -> CVObject:
 
 
 def compute_center_distance(bbox_center_x: float, bbox_center_y: float, frame_width: float, frame_height: float,
-                            width_adjustment_constant: float=0,
-                            height_adjustment_constant: float=0) -> tuple[float, float]:
+                            width_adjustment_constant: float = 0,
+                            height_adjustment_constant: float = 0) -> tuple[float, float]:
     """Note that x, y is in the camera's reference frame."""
     # Compute the center of the frame
     frame_center_x = frame_width / 2
