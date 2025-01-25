@@ -27,5 +27,6 @@ alias fg-ws="ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=28765"
 
 source /root/dev/robosub-ros2/venv.sh activate
 
+# Source nvm and use version jod
 source /root/.nvm/nvm.sh
 nvm use lts/jod
