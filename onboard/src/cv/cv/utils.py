@@ -138,14 +138,11 @@ def compute_bbox_dimensions(polygon: object) -> CVObject:
     msg.ymin = min_y
     msg.ymax = max_y
 
-    # TODO: double check is coords field of CVObject centre?  # noqa: FIX002
     center = Point()
     center.x = (min_x + max_x) / 2
     center.y = (min_y + max_y) / 2
 
     msg.coords = center
-
-    # TODO: make this not 0 and actually what its supposed to be  # noqa: FIX002
     msg.yaw = 0
 
     return msg
