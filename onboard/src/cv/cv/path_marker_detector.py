@@ -9,13 +9,13 @@ from geometry_msgs.msg import Point
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage, Image
 
+from cv.config import PathMarker
+from cv.config import mono_cam as MonoCam
 from cv.utils import compute_center_distance
 
 
 class PathMarkerDetector(Node):
     """Detect path marker."""
-    MONO_CAM_IMG_SHAPE = (640, 480)  # Width, height in pixels
-
     def __init__(self) -> None:
         """Init nodes."""
         super().__init__('path_marker_detector')
@@ -45,9 +45,7 @@ class PathMarkerDetector(Node):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # Define range for blue color and create mask
-        lower_orange = np.array([0, 130, 100])
-        upper_orange = np.array([20, 255, 255])
-        mask = cv2.inRange(hsv, lower_orange, upper_orange)
+        mask = cv2.inRange(hsv, PathMarker.lower_orange, PathMarker.upper_orange)
 
         hsv_filtered_msg = self.bridge.cv2_to_imgmsg(mask, 'mono8')
         self.path_marker_hsv_filtered_pub.publish(hsv_filtered_msg)
@@ -57,12 +55,10 @@ class PathMarkerDetector(Node):
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
         # Find contours in the mask
-        MIN_CONTOUR_LENGTH = 5  # noqa: N806
-        MIN_CONTOUR_AREA = 500  # noqa: N806
 
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours = [contour for contour in contours if len(contour) > MIN_CONTOUR_LENGTH and cv2.contourArea(contour) >
-                    MIN_CONTOUR_AREA]
+        contours = [contour for contour in contours if len(contour) > PathMarker.MIN_CONTOUR_LENGTH and
+                    cv2.contourArea(contour) > PathMarker.MIN_CONTOUR_AREA]
 
         # Fit a line to the largest contour
         if len(contours) > 0:
@@ -86,7 +82,10 @@ class PathMarkerDetector(Node):
 
             # Compute distance between center of bounding box and center of image
             # Here, image x is robot's y, and image y is robot's z
-            dist_x, dist_y = compute_center_distance(center[0], center[1], *self.MONO_CAM_IMG_SHAPE)
+            dist_x, dist_y = compute_center_distance(center[0], center[1], *MonoCam.IMG_SHAPE)
+
+            # get distances into publishable format
+            # also fix axis from camera's POV
             dist_point = Point()
             dist_point.x = dist_x
             dist_point.y = -dist_y
