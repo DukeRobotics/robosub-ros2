@@ -13,6 +13,7 @@ RUN apt install -y --no-install-recommends clang
 RUN apt install -y --no-install-recommends clang-format
 RUN apt install -y --no-install-recommends gdb
 RUN apt install -y --no-install-recommends gdbserver
+RUN apt install -y --no-install-recommends golang
 RUN apt install -y --no-install-recommends libeigen3-dev
 RUN apt install -y --no-install-recommends libyaml-cpp-dev
 RUN apt install -y --no-install-recommends nano
@@ -25,7 +26,6 @@ RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
 RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends tini
-RUN apt install -y --no-install-recommends golang
 RUN apt install -y --no-install-recommends valgrind
 
 # Set up Python virtual environment and install packages
