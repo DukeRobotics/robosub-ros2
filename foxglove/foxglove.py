@@ -124,7 +124,7 @@ def install(extension_paths: Sequence[pathlib.Path]) -> None:
 
         successes += 1
 
-    print(f'Successfully installed {successes} extension(s)\n')
+    print(f'Successfully installed {successes} extension(s)')
 
 
 def _update_extension_version(extension: pathlib.Path, version: str) -> None:
@@ -186,7 +186,7 @@ def publish(extension_paths: Sequence[pathlib.Path], version: str | None = None)
 
         successes += 1
 
-    print(f'Successfully published {successes} extension(s)\n')
+    print(f'Successfully published {successes} extension(s)')
 
 
 def uninstall(install_path: pathlib.Path = EXTENSION_INSTALL_PATH) -> None:
@@ -203,7 +203,7 @@ def uninstall(install_path: pathlib.Path = EXTENSION_INSTALL_PATH) -> None:
         shutil.rmtree(extension)
         print(f'{extension.name}: uninstalled')
 
-    print(f'Successfully uninstalled {len(extensions)} extension(s)\n')
+    print(f'Successfully uninstalled {len(extensions)} extension(s)')
 
 def watch(extension: pathlib.Path) -> None:
     """
