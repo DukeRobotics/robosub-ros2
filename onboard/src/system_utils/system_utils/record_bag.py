@@ -74,9 +74,8 @@ class RecordBag(Node):
         """
         Start recording all topics to a bag file by executing the `rosbag record` command in the shell.
 
-        The bag file is
-        saved in the bag_files directory in the robosub-ros package. The file name is the current date and time in a
-        human-readable format.
+        The bag file is saved in the bag_files directory in the robosub-ros package. The file name is the current date
+        and time in a human-readable format.
         """
         # Get the current time in seconds since the Unix epoch
         current_time_sec = Clock().now().seconds_nanoseconds()[0]
@@ -84,10 +83,8 @@ class RecordBag(Node):
         # Convert to a human-readable format
         human_readable_time = datetime.fromtimestamp(current_time_sec, tz=UTC).strftime('%Y.%m.%d_%I-%M-%S_%p')
 
-
         # Start recording all topics to a bag file
         Path('/root/dev/robosub-ros2/bag_files/').mkdir(parents=False, exist_ok=True)
-
         command = f'ros2 bag record -a -o /root/dev/robosub-ros2/bag_files/{human_readable_time}.bag'
         self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, shell=True,  # noqa: S602
                                         start_new_session=True)
@@ -105,8 +102,7 @@ class RecordBag(Node):
         """
         Check if the last voltage message received was more than TIMEOUT_DURATION ago.
 
-        If so, and if the node is
-        currently recording, stop recording and shutdown the node.
+        If so, and if the node is currently recording, stop recording and shutdown the node.
 
         Args:
             event: The timer event that triggered this function.
@@ -126,7 +122,7 @@ class RecordBag(Node):
 
 
 def main(args: list[str] | None = None) -> None:
-    """Execute main entry point for the record_Bag node."""
+    """Execute main entry point for the record_bag node."""
     rclpy.init(args=args)
     recorder = RecordBag()
 
