@@ -24,7 +24,7 @@ class RecordBag(Node):
         # Initialize variables
         self.process = None
         bypass = self.declare_parameter('bypass', False).value
-        self.enable_recording = self.declare_parameter('enable_recording', False).value
+        self.enable_recording = self.declare_parameter('enable_recording', True).value
 
         if not self.enable_recording:
             self.get_logger().info('Recording is disabled.')
