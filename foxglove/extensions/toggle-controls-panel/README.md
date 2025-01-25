@@ -8,3 +8,4 @@ If the call fails, an alert is displayed.
 ## Configuration
 The following constants can be modified:
 - `ENABLE_CONTROLS_SERVICE`: The service that handles enabling/disabling controls.
+- `CONTROLS_STATUS_TOPIC`: The topic that publishes the controls status.
