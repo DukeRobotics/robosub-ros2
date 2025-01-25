@@ -1,11 +1,11 @@
 # Foxglove Definitions
-This package exports datatype maps and TypeScript interfaces/enums for both ROS 1 and Duke Robotics custom message definitions.
+This package exports datatype maps and TypeScript interfaces/enums for both ROS 2 and Duke Robotics custom message definitions.
 Datatype maps are needed to advertise topics. TypeScript interfaces are used for static type checking.
 
 ## Usage
 ### Datatype Maps
-Foxglove requires a [datatype map](https://docs.foxglove.dev/docs/visualization/extensions/api/panel-api#native-ros-1)
-when advertising a topic in an extension. This package generates the dataype maps of all ROS 1 and Duke Robotics custom definitions.
+Foxglove requires a [datatype map](https://docs.foxglove.dev/docs/visualization/extensions/api/panel#foxglove-bridge)
+when advertising a topic in an extension. This package generates the dataype maps of all ROS 2 and Duke Robotics custom definitions.
 
 Import with:
 ```js
@@ -34,22 +34,16 @@ To view all available types, see `foxglove/shared/defs/types/dist/types.ts`.
 Interface names are translated from **snake_case** to **PascalCase** and are organized into namespaces according to the package name.
 
 ##### Messages
-[ROS messages](http://wiki.ros.org/msg) are translated directly to one interface (with no suffix).
+[ROS messages](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Interfaces.html#messages) are translated directly to one interface.
 
 ##### Services
-[ROS services](http://wiki.ros.org/Services) are split into two interfaces.
+[ROS services](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Interfaces.html#services) are split into two interfaces:
 - The *request* (before the `---`) has the suffix `request`.
-- The *reply* (after the `---`) has the suffix `response`.
-
-##### Actions
-[ROS actions](http://wiki.ros.org/actionlib) are split into three interfaces.
-- The *goal* has the suffix `ActionGoal`
-- The *feedback* has the suffix `ActionFeedback`
-- The *result* has the suffix `ActionResult`
+- The *response* (after the `---`) has the suffix `response`.
 
 ##### Constants
-Constants are translated into an enum with the suffix `Const`.
+Constants are translated into an enum.
 
 ## Acknowledgements
-- [rosmsg-msgs-common](https://github.com/foxglove/rosmsg-msgs-common)
+- [rosmsg-msgs-common](https://github.com/foxglove/ros-typescript/tree/main/packages/rosmsg-msgs-common)
 - [ros-typescript-generator](https://github.com/Greenroom-Robotics/ros-typescript-generator)
