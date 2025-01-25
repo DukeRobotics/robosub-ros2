@@ -131,7 +131,7 @@ class PathMarkerDetector(Node):
         return frame_copy
 
 
-def main(args:None=None) -> None:
+def main(args: None = None) -> None:
     """Start node."""
     rclpy.init(args=args)
     path_marker_detector = PathMarkerDetector()

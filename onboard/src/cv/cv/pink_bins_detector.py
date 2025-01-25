@@ -129,7 +129,7 @@ class PinkBinsDetector(Node):
         self.pink_bins_detections_pub.publish(frame_msg)
 
 
-def main(args: None=None)->None:
+def main(args: None = None)->None:
     """Run the node."""
     rclpy.init(args=args)
     pink_bins_detector = PinkBinsDetector()
