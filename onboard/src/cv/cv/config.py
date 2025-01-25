@@ -30,3 +30,20 @@ class BlueRect:
     """BlueRect color constants."""
     lower_blue = np.array([100, 150, 50])
     upper_blue = np.array([140, 255, 255])
+
+class PathMarker:
+    """Path marker color bounds and contour parameters."""
+    lower_orange = np.array([0, 130, 100])
+    upper_orange = np.array([20, 255, 255])
+
+    MIN_CONTOUR_LENGTH = 5
+    MIN_CONTOUR_AREA = 500
+
+class PinkBins:
+    """Pink bins color bounds."""
+    lower_mask_1 = np.array([110, 50, 130])
+    upper_mask_1 = np.array([130, 100, 200])
+    lower_mask_2 = np.array([130, 80, 130])
+    upper_mask_2 = np.array([160, 150, 255])
+    lower_mask_3 = np.array([155, 100, 150])
+    upper_mask_3 = np.array([175, 255, 255])

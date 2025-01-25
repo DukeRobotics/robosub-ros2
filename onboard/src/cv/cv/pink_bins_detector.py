@@ -10,13 +10,10 @@ from sensor_msgs.msg import CompressedImage, Image
 from sklearn.cluster import DBSCAN
 
 from cv.utils import compute_yaw
-
+from cv.config import PinkBins, mono_cam as MonoCam
 
 class PinkBinsDetector(Node):
     """Detect pink bins (deprecated)."""
-
-    MONO_CAM_IMG_SHAPE = (640, 480)  # Width, height in pixels
-
     def __init__(self) -> None:
         super().__init__('pink_bins_detector')
         self.bridge = CvBridge()
@@ -46,9 +43,9 @@ class PinkBinsDetector(Node):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # Define range for blue color and create mask
-        mask_1 = cv2.inRange(hsv, np.array([110, 50, 130]), np.array([130, 100, 200]))
-        mask_2 = cv2.inRange(hsv, np.array([130, 80, 130]), np.array([160, 150, 255]))
-        mask_3 = cv2.inRange(hsv, np.array([155, 100, 150]), np.array([175, 255, 255]))
+        mask_1 = cv2.inRange(hsv, PinkBins.lower_mask_1, PinkBins.upper_mask_1)
+        mask_2 = cv2.inRange(hsv, PinkBins.lower_mask_2, PinkBins.upper_mask_2)
+        mask_3 = cv2.inRange(hsv, PinkBins.lower_mask_3, PinkBins.upper_mask_3)
 
         if self.camera == 'bottom':
             mask = cv2.inRange(hsv, np.array([160, 150, 200]), np.array([170, 255, 255]))
@@ -116,10 +113,10 @@ class PinkBinsDetector(Node):
         self.pink_bins_detections_pub.publish(frame_msg)
 
         # Publish the bounding box of the bin
-        final_x_normalized = final_x / self.MONO_CAM_IMG_SHAPE[0]
+        final_x_normalized = final_x / MonoCam.MONO_CAM_IMG_SHAPE[0]
         cv_object = CVObject()
         cv_object.header.stamp.sec, cv_object.header.stamp.nanosec  = self.get_clock().now().seconds_nanoseconds()
-        cv_object.yaw = -compute_yaw(final_x_normalized, final_x_normalized, self.MONO_CAM_IMG_SHAPE[0])
+        cv_object.yaw = -compute_yaw(final_x_normalized, final_x_normalized, MonoCam.MONO_CAM_IMG_SHAPE[0])
         cv_object.score = float(chosen_label_score)
         self.pink_bins_bounding_box_pub.publish(cv_object)
 
