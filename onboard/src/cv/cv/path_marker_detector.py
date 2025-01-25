@@ -82,9 +82,6 @@ class PathMarkerDetector(Node):
             # Compute distance between center of bounding box and center of image
             # Here, image x is robot's y, and image y is robot's z
             dist_x, dist_y = compute_center_distance(center[0], center[1], *MonoCam.IMG_SHAPE)
-
-            # get distances into publishable format
-            # also fix axis from camera's POV
             dist_point = Point()
             dist_point.x = dist_x
             dist_point.y = -dist_y
