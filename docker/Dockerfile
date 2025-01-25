@@ -8,7 +8,7 @@ ARG CACHE_BUSTER
 # Install packages from apt
 # Each package is installed in a separate RUN command so that each package is cached separately in Docker
 # The commands are ordered alphabetically
-RUN apt update
+RUN apt-get update
 RUN apt install -y --no-install-recommends clang
 RUN apt install -y --no-install-recommends clang-format
 RUN apt install -y --no-install-recommends gdb
@@ -18,6 +18,7 @@ RUN apt install -y --no-install-recommends libyaml-cpp-dev
 RUN apt install -y --no-install-recommends nano
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-pip
+RUN apt install -y --no-install-recommends python3-transforms3d
 RUN apt install -y --no-install-recommends python3-venv
 RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
 RUN apt install -y --no-install-recommends ros-jazzy-robot-localization
@@ -32,6 +33,7 @@ RUN apt install -y --no-install-recommends valgrind
 # The commands are ordered alphabetically
 RUN python3 -m venv /root/dev/venv --system-site-packages
 RUN /root/dev/venv/bin/pip install GitPython
+RUN /root/dev/venv/bin/pip install gputil
 RUN /root/dev/venv/bin/pip install pandas
 RUN /root/dev/venv/bin/pip install pyserial
 RUN /root/dev/venv/bin/pip install ruff
