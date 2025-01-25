@@ -1,6 +1,6 @@
 import math
 from collections.abc import Callable
-from typing import ClassVar
+from typing import ClassVar, TypeVar
 
 import rclpy
 from geometry_msgs.msg import Pose, Twist, Vector3
@@ -8,6 +8,10 @@ from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from sensor_msgs.msg import Imu
 from transforms3d.euler import quat2euler
+
+
+# Generic type for ROS messages
+RosMessage = TypeVar('RosMessage')
 
 
 class TopicTransformData:
@@ -29,11 +33,11 @@ class TopicTransformData:
     def __init__(
         self,
         input_topic: str,
-        input_type: type,
-        input_type_conversion: Callable,
+        input_type: type[RosMessage],
+        input_type_conversion: Callable[[RosMessage], RosMessage],
         output_topic: str,
-        output_type: type,
-        output_type_conversion: Callable,
+        output_type: type[RosMessage],
+        output_type_conversion: Callable[[RosMessage], RosMessage],
         subscriber: Callable | None = None,
         publisher: Callable | None = None,
         publisher_queue_size: int = 1,
@@ -144,13 +148,13 @@ class TopicTransforms(Node):
 
         self.get_logger().info('Topic transforms node started.')
 
-    def callback(self, data: TopicTransformData, msg: Odometry) -> None:
+    def callback(self, data: TopicTransformData, msg: RosMessage) -> None:
         """
         Execute callback function to transform input message and publish output message.
 
         Args:
             data (TopicTransformData): Data for the transformation.
-            msg (Odometry): Input message.
+            msg (RosMessage): Input message.
         """
         converted_input = data.input_type_conversion(msg)
         output_msg = data.output_type_conversion(converted_input)
