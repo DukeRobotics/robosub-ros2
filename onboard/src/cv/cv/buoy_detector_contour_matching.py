@@ -6,7 +6,7 @@ from cv_bridge import CvBridge
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage, Image
 
-from cv import config
+from cv.config import Buoy, MonoCam
 from cv.utils import calculate_relative_pose, compute_yaw
 
 
@@ -152,21 +152,21 @@ class BuoyDetectorContourMatching(Node):
         bounding_box.xmax = float(x + w)
         bounding_box.ymax = float(y + h)
 
-        bounding_box.yaw = -float(compute_yaw(x / config.mono_cam.IMG_SHAPE[0], (x + w) / config.mono_cam.IMG_SHAPE[0],
-                                        config.mono_cam.IMG_SHAPE[0])) # Update 0 with self.camera_pixel_width
+        bounding_box.yaw = -float(compute_yaw(x / MonoCam.IMG_SHAPE[0], (x + w) / MonoCam.IMG_SHAPE[0],
+                                        MonoCam.IMG_SHAPE[0])) # Update 0 with self.camera_pixel_width
 
         bounding_box.width = int(w)
         bounding_box.height = int(h)
 
-        bbox_bounds = (x / config.mono_cam.IMG_SHAPE[0], y / config.mono_cam.IMG_SHAPE[1],
-                       (x+w) / config.mono_cam.IMG_SHAPE[0], (y+h) / config.mono_cam.IMG_SHAPE[1])
+        bbox_bounds = (x / MonoCam.IMG_SHAPE[0], y / MonoCam.IMG_SHAPE[1],
+                       (x+w) / MonoCam.IMG_SHAPE[0], (y+h) / MonoCam.IMG_SHAPE[1])
 
         # Point coords represents the 3D position of the object represented by the bounding box relative to the robot
         coords_list = calculate_relative_pose(bbox_bounds,
-                                              config.mono_cam.IMG_SHAPE,
-                                              (config.buoy.WIDTH, 0),
-                                              config.mono_cam.FOCAL_LENGTH,
-                                              config.mono_cam.SENSOR_SIZE, 1)
+                                              MonoCam.IMG_SHAPE,
+                                              (Buoy.WIDTH, 0),
+                                              MonoCam.FOCAL_LENGTH,
+                                              MonoCam.SENSOR_SIZE, 1)
         bounding_box.coords.x, bounding_box.coords.y, bounding_box.coords.z = coords_list
 
         self.bounding_box_pub.publish(bounding_box)
