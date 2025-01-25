@@ -107,20 +107,20 @@ RUN --mount=type=secret,id=github_auth_ssh_key,required=false \
     --mount=type=secret,id=github_signing_ssh_key,required=false \
     --mount=type=secret,id=git_allowed_signers,required=false \
     if [ "$NO_GIT" != "true" ]; then \
-    cat /run/secrets/github_auth_ssh_key > /root/.ssh/github_auth_key && \
-    cat /run/secrets/github_auth_ssh_key_pub > /root/.ssh/github_auth_key.pub && \
-    cat /run/secrets/github_signing_ssh_key > /root/.ssh/github_signing_key && \
-    cat /run/secrets/git_allowed_signers > /root/.ssh/allowed_signers && \
-    chmod 600 /root/.ssh/github_auth_key /root/.ssh/github_signing_key && \
-    chmod 644 /root/.ssh/github_auth_key.pub /root/.ssh/allowed_signers; \
-    git config --global commit.gpgSign true && \
-    git config --global gpg.format ssh && \
-    git config --global user.signingkey "/root/.ssh/github_signing_key" && \
-    git config --global gpg.ssh.allowedSignersFile "/root/.ssh/allowed_signers" && \
-    git config --global user.name "$GIT_USER_NAME" && \
-    git config --global user.email "$GIT_USER_EMAIL" && \
-    git config --global --add safe.directory /root/dev/robosub-ros2 && \
-    git config --global pull.rebase false; \
+        cat /run/secrets/github_auth_ssh_key > /root/.ssh/github_auth_key && \
+        cat /run/secrets/github_auth_ssh_key_pub > /root/.ssh/github_auth_key.pub && \
+        cat /run/secrets/github_signing_ssh_key > /root/.ssh/github_signing_key && \
+        cat /run/secrets/git_allowed_signers > /root/.ssh/allowed_signers && \
+        chmod 600 /root/.ssh/github_auth_key /root/.ssh/github_signing_key && \
+        chmod 644 /root/.ssh/github_auth_key.pub /root/.ssh/allowed_signers; \
+        git config --global commit.gpgSign true && \
+        git config --global gpg.format ssh && \
+        git config --global user.signingkey "/root/.ssh/github_signing_key" && \
+        git config --global gpg.ssh.allowedSignersFile "/root/.ssh/allowed_signers" && \
+        git config --global user.name "$GIT_USER_NAME" && \
+        git config --global user.email "$GIT_USER_EMAIL" && \
+        git config --global --add safe.directory /root/dev/robosub-ros2 && \
+        git config --global pull.rebase false; \
     fi
 
 # Copy Foxglove CLI configuration file
