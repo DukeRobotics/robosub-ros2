@@ -49,8 +49,8 @@ class RecordBag(Node):
         """
         Execute callback function for the voltage topic.
 
-        If the voltage is above 5V and the node is not already recording,
-        start recording. If the voltage drops below 5V and the node is currently recording, stop recording.
+        If the voltage is above 5V and the node is not already recording, start recording.
+        If the voltage drops below 5V and the node is currently recording, stop recording.
 
         Args:
             data: The voltage value published to the topic.
