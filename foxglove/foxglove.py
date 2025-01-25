@@ -303,15 +303,15 @@ def main() -> None:
     )
 
     subparsers.add_parser(
-        'uninstall',
-        aliases=['u'],
-        help='Uninstall all Foxglove extensions.',
-    )
-
-    subparsers.add_parser(
         'clean',
         aliases=['c'],
         help='Clean up the Foxglove monorepo.',
+    )
+
+    subparsers.add_parser(
+        'uninstall',
+        aliases=['u'],
+        help='Uninstall all Foxglove extensions.',
     )
 
     subparsers.add_parser(
@@ -322,18 +322,18 @@ def main() -> None:
 
 
     args = parser.parse_args()
-    if args.action in {'install', 'i'}:
+    if args.action in {'build', 'b'}:
+        build(skip_ci=args.skip_ci)
+    elif args.action in {'install', 'i'}:
         install(args.extensions or EXTENSION_PATHS)
     elif args.action in {'watch', 'w'}:
         watch(args.extensions[0])
     elif args.action in {'publish', 'p'}:
         publish(args.extensions or EXTENSION_PATHS, args.version)
-    elif args.action in {'uninstall', 'u'}:
-        uninstall()
-    elif args.action in {'build', 'b'}:
-        build(skip_ci=args.skip_ci)
     elif args.action in {'clean', 'c'}:
         clean()
+    elif args.action in {'uninstall', 'u'}:
+        uninstall()
     elif args.action in {'doctor', 'd'}:
         doctor()
     else:
