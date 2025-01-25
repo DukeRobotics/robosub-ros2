@@ -188,7 +188,7 @@ function ThrusterAllocsPanel({ context }: { context: PanelExtensionContext }): R
     // Publishes the message to THRUSTER_ALLOCS_TOPIC
     try {
       context.advertise(THRUSTER_ALLOCS_TOPIC, THRUSTER_ALLOCS_MESSAGE_TYPE, {
-        datatypes: allDatatypeMaps["custom_msgs"][THRUSTER_ALLOCS_MESSAGE_TYPE],
+        datatypes: allDatatypeMaps.custom_msgs[THRUSTER_ALLOCS_MESSAGE_TYPE],
       });
       context.publish(THRUSTER_ALLOCS_TOPIC, message);
 
