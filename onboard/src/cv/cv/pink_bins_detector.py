@@ -1,5 +1,3 @@
-
-
 from functools import reduce
 
 import cv2
@@ -43,7 +41,7 @@ class PinkBinsDetector(Node):
         self.process_frame(frame)
 
     def process_frame(self, frame: np.array) -> None:
-        """Process farmes via masking etc."""
+        """Process frames via masking."""
         # Convert frame to HSV color space
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 

@@ -87,9 +87,6 @@ class PathMarkerDetector(Node):
             # Compute distance between center of bounding box and center of image
             # Here, image x is robot's y, and image y is robot's z
             dist_x, dist_y = compute_center_distance(center[0], center[1], *self.MONO_CAM_IMG_SHAPE)
-
-            # get distances into publishable format
-            # also fix axis from camera's POV
             dist_point = Point()
             dist_point.x = dist_x
             dist_point.y = -dist_y
@@ -136,7 +133,7 @@ class PathMarkerDetector(Node):
         return frame_copy
 
 
-def main(args: None=None) -> None:
+def main(args:None=None) -> None:
     """Start node."""
     rclpy.init(args=args)
     path_marker_detector = PathMarkerDetector()
