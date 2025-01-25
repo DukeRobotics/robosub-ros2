@@ -25,5 +25,4 @@ __pycache__
 # Foxglove
 node_modules
 dist
-build
 *.foxe
