@@ -20,7 +20,7 @@ class USBCamera(Node):
     :param framerate: custom framerate to stream the camera at; default is set to device default
     """
 
-    def __init__(self, topic: str | None=None, device_path: str | None=None, framerate: int | None=None) -> None:
+    def __init__(self, topic: str | None = None, device_path: str | None = None, framerate: int | None = None) -> None:
         # Instantiate new USB camera node
         super().__init__(f'usb_camera_{topic}')
 
@@ -106,7 +106,7 @@ class USBCamera(Node):
                          f'The camera was not found at device_path {self.device_path}. All attempts failed.')
             raise RuntimeError(error_msg)
 
-def main(args: list[str] | None=None) -> None:
+def main(args: list[str] | None = None) -> None:
     """Define main function."""
     rclpy.init(args=args)
     usb_camera = USBCamera()
