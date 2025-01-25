@@ -1,13 +1,13 @@
 import numpy as np
 
 
-class mono_cam:
+class MonoCam:
     """Mono cam sensor and frame constants."""
     IMG_SHAPE = (640, 480)  # Width, height in pixels
     SENSOR_SIZE = (3.054, 1.718)  # Width, height in mm
     FOCAL_LENGTH = 2.65  # Focal length in mm
 
-class bins:
+class Bins:
     """Bin dimension and color constants."""
     WIDTH = 0.3048  # width of one square of the bin, in m
 
@@ -22,10 +22,11 @@ class bins:
     upper_blue = np.array([125, 255, 255])
 
 
-class buoy:
+class Buoy:
     """Buoy dimension and color constants."""
     WIDTH = 0.2032  # Width of buoy in meters
 
-class blue_rect:
+class BlueRect:
+    """BlueRect color constants."""
     lower_blue = np.array([100, 150, 50])
     upper_blue = np.array([140, 255, 255])
