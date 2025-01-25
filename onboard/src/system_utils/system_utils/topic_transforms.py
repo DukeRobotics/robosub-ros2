@@ -9,7 +9,6 @@ from rclpy.node import Node
 from sensor_msgs.msg import Imu
 from transforms3d.euler import quat2euler
 
-
 # Generic type for ROS messages
 RosMessage = TypeVar('RosMessage')
 
