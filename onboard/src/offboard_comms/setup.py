@@ -13,6 +13,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', [str(file) for file in Path('./launch').glob('*.xml')]),
+        ('share/' + package_name + '/config', [str(file) for file in Path('./config').glob('*.yaml')]),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -23,8 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'arduino = offboard_comms.arduino:main',
-            'thrusters = offboard_comms.thrusters:main',
-            'servo_wrapper = offboard_comms.servo_wrapper:main',
+            # 'thrusters = offboard_comms.thrusters:main',
         ],
     },
 )
