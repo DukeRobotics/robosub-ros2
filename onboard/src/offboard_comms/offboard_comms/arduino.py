@@ -26,7 +26,7 @@ ARDUINO_CORE_INSTALL_COMMAND_TEMPLATE = 'arduino-cli core install {core}'
 ARDUINO_LIBRARY_INSTALL_COMMAND_TEMPLATE = 'arduino-cli lib install {library}'
 ARDUINO_COMPILE_COMMAND_TEMPLATE = (
     'arduino-cli compile -b {fqbn} "{sketch_path}" '
-    f'--build-property "build.extra_flags=-DROBOT_NAME={ROBOT_NAME}"'
+    f'--build-property "build.extra_flags=-DROBOT_NAME={ROBOT_NAME.upper()}"'
 )
 ARDUINO_UPLOAD_COMMAND_TEMPLATE = 'arduino-cli upload -b {fqbn} -p {port} "{sketch_path}"'
 ARDUINO_GET_INSTALLED_LIBS = 'arduino-cli lib list'
