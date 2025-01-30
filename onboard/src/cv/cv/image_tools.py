@@ -5,7 +5,7 @@ from sensor_msgs.msg import CompressedImage, Image
 
 
 class ImageTools:
-    """This file houses several converters from ros messages to other types, or from other types to ros messages."""
+    """This file houses several converters from ROS messages to other types, or from other types to ros messages."""
 
     def __init__(self) -> None:
         self._cv_bridge = CvBridge()
@@ -26,7 +26,7 @@ class ImageTools:
         np_arr = np.frombuffer(compressed_msg.data, np.uint8)
         return cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
-    def convert_ros_compressed_msg_to_ros_msg(self, compressed_msg: CompressedImage, encoding: str='bgr8') -> Image:
+    def convert_ros_compressed_msg_to_ros_msg(self, compressed_msg: CompressedImage, encoding: str = 'bgr8') -> Image:
         """Convert a ROS CompressedImage message to a ROS Image message."""
         cv2_img = self.convert_ros_compressed_to_cv2(compressed_msg)
         ros_img = self._cv_bridge.cv2_to_imgmsg(cv2_img, encoding=encoding)

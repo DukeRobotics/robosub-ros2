@@ -10,8 +10,7 @@ from rclpy.node import Node
 
 def connect_all(node: any) -> None:  # noqa: ARG001
     """Get all cameras."""
-    # get camera specs
-    # In ROS2, we need to load the YAML file directly.
+    # Get camera specs. In ROS2, we need to load the YAML file directly.
     camera_config_path = './onboard/src/cv/config/usb_cameras.yaml'
     with Path.open(camera_config_path) as f:
         cameras = yaml.safe_load(f)

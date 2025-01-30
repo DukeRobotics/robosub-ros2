@@ -39,6 +39,7 @@ RUN /root/dev/venv/bin/pip install gputil
 RUN /root/dev/venv/bin/pip install pandas
 RUN /root/dev/venv/bin/pip install pyserial
 RUN /root/dev/venv/bin/pip install ruff
+RUN /root/dev/venv/bin/pip install scikit-learn
 RUN /root/dev/venv/bin/pip install sympy
 
 # Set no password for root user

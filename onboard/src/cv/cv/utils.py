@@ -64,7 +64,7 @@ def compute_angle_from_x_offset(x_offset: float, camera_pixel_width: float) -> f
 
 
 def calculate_relative_pose(bbox_bounds: object, input_size: list[float], label_shape: list[float], focal_length: float,
-                             sensor_size: float,adjustment_factor: int) -> list[float]:
+                             sensor_size: float, adjustment_factor: int) -> list[float]:
     """
     Return relative pose, to be used as a part of the CVObject.
 
@@ -171,7 +171,7 @@ class DetectionVisualizer:
     https://github.com/luxonis/depthai-experiments/blob/master/gen2-display-detections/utility.py
     """
 
-    def __init__(self, classes: list[str], colors: list[str], show_class_name: bool=True,
+    def __init__(self, classes: list[str], colors: list[str], show_class_name: bool = True,
                  show_confidence: bool=True) -> None:
         self.text_type = cv2.FONT_HERSHEY_SIMPLEX
         self.line_type = cv2.LINE_AA
@@ -184,7 +184,7 @@ class DetectionVisualizer:
         self.show_class_name = show_class_name
         self.show_confidence = show_confidence
 
-    def hex_to_rgb(self, hex_str: str) -> tuple[int,int,int]:
+    def hex_to_rgb(self, hex_str: str) -> tuple[int, int, int]:
         """Convert the hex string passed in by the args into a tuple representing the corresponding rgb color."""
         return tuple(int(hex_str[i:i+2], 16) for i in (0, 2, 4))
 

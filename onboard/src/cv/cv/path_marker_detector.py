@@ -67,7 +67,7 @@ class PathMarkerDetector(Node):
             # NOTE: CLOCKWISE yaw from 12 o'clock
             orientation_in_radians = math.radians(orientation)
 
-            # create CVObject message and populate relevant attributes
+            # Create CVObject message and populate relevant attributes
             bounding_box = CVObject()
 
             bounding_box.header.stamp = self.get_clock().now().to_msg()
@@ -86,7 +86,7 @@ class PathMarkerDetector(Node):
             dist_point.x = dist_x
             dist_point.y = -dist_y
 
-            # publish dist, bbox
+            # Publish dist, bbox
             self.path_marker_distance_pub.publish(dist_point)
             self.path_marker_bounding_box_pub.publish(bounding_box)
 
@@ -128,7 +128,7 @@ class PathMarkerDetector(Node):
         return frame_copy
 
 
-def main(args: None = None) -> None:
+def main(args:None = None) -> None:
     """Start node."""
     rclpy.init(args=args)
     path_marker_detector = PathMarkerDetector()
