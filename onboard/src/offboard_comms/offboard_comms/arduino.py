@@ -11,18 +11,23 @@ import resource_retriever as rr
 import yaml
 from serial.tools import list_ports
 
+ROBOT_NAME = os.getenv('ROBOT_NAME', 'oogway')
+
 # Template for the path to the offboard_comms package
 OFFBOARD_COMMS_PATH_TEMPLATE = 'package://offboard_comms/{subpath}'
 
 # Path to the config YAML file
 CONFIG_YAML_PATH = OFFBOARD_COMMS_PATH_TEMPLATE.format(
-    subpath=f'config/{os.getenv("ROBOT_NAME", "oogway")}.yaml',
+    subpath=f'config/{ROBOT_NAME}.yaml',
 )
 
 # Command templates for Arduino CLI
 ARDUINO_CORE_INSTALL_COMMAND_TEMPLATE = 'arduino-cli core install {core}'
 ARDUINO_LIBRARY_INSTALL_COMMAND_TEMPLATE = 'arduino-cli lib install {library}'
-ARDUINO_COMPILE_COMMAND_TEMPLATE = 'arduino-cli compile -b {fqbn} "{sketch_path}"'
+ARDUINO_COMPILE_COMMAND_TEMPLATE = (
+    'arduino-cli compile -b {fqbn} "{sketch_path}" '
+    f'--build-property "build.extra_flags=-DROBOT_NAME={ROBOT_NAME}"'
+)
 ARDUINO_UPLOAD_COMMAND_TEMPLATE = 'arduino-cli upload -b {fqbn} -p {port} "{sketch_path}"'
 ARDUINO_GET_INSTALLED_LIBS = 'arduino-cli lib list'
 ARDUINO_GET_INSTALLED_CORES = 'arduino-cli core list'
