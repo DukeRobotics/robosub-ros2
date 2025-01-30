@@ -53,7 +53,7 @@ class PinkBinsDetector(Node):
         else:
             mask = reduce(cv2.bitwise_or, [mask_1, mask_2, mask_3])
 
-        # apply filter and publish
+        # Apply filter and publish
         hsv_filtered_msg = self.bridge.cv2_to_imgmsg(mask, 'mono8')
         self.pink_bins_hsv_filtered_pub.publish(hsv_filtered_msg)
 

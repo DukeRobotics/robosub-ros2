@@ -31,7 +31,7 @@ class USBCamera(Node):
                                                                                   '/dev/video_front').value
 
         # If no custom framerate is passed in, set self.framerate to None to trigger default framerate
-        self.framerate = framerate if framerate else self.declare_parameter('framerate',-1).value
+        self.framerate = framerate if framerate else self.declare_parameter('framerate', -1).value
 
         if self.framerate == -1:
             self.framerate = None

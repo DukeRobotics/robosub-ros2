@@ -13,10 +13,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='root',
-    maintainer_email='root@todo.todo',
-    description='Computer Vision pipeline, including depthai and hsv filtering.',
-    license='Apache-2.0',
+    maintainer='Duke Robotics',
+    maintainer_email='hello@duke-robotics.com',
+    description='Computer Vision pipeline, including DepthAI and HSV filtering.',
+    license='MIT',
     entry_points={
         'console_scripts': [
             'bin_detector = cv.bin_detector:main',
