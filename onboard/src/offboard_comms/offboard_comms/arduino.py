@@ -1,3 +1,5 @@
+# ruff: noqa: S602
+
 import argparse
 import os
 import subprocess
@@ -17,32 +19,11 @@ CONFIG_YAML_PATH = OFFBOARD_COMMS_PATH_TEMPLATE.format(
     subpath=f'config/{os.getenv("ROBOT_NAME", "oogway")}.yaml',
 )
 
-# Commands to install the ROS library for Arduino
-ROS_LIB_INSTALL_COMMANDS = [
-    'rm -rf ros_lib',
-    'rm -f ros_lib.zip',
-    'rosrun rosserial_arduino make_libraries.py .',
-    'zip -r ros_lib.zip ros_lib',
-    'arduino-cli lib install --zip-path ros_lib.zip',
-    'rm -f ros_lib.zip',
-    'rm -rf ros_lib',
-]
-
-# Environment variables to update when installing the ROS library for Arduino
-ROS_LIB_ENV_UPDATES = {'ARDUINO_LIBRARY_ENABLE_UNSAFE_INSTALL': 'true'}
-
-# Path to run ros_lib installation commands at
-ROS_LIB_INSTALL_PATH = rr.get_filename(
-    OFFBOARD_COMMS_PATH_TEMPLATE.format(subpath=''), use_protocol=False,
-)
-
 # Command templates for Arduino CLI
 ARDUINO_CORE_INSTALL_COMMAND_TEMPLATE = 'arduino-cli core install {core}'
 ARDUINO_LIBRARY_INSTALL_COMMAND_TEMPLATE = 'arduino-cli lib install {library}'
 ARDUINO_COMPILE_COMMAND_TEMPLATE = 'arduino-cli compile -b {fqbn} "{sketch_path}"'
-ARDUINO_UPLOAD_COMMAND_TEMPLATE = (
-    'arduino-cli upload -b {fqbn} -p {port} "{sketch_path}"'
-)
+ARDUINO_UPLOAD_COMMAND_TEMPLATE = 'arduino-cli upload -b {fqbn} -p {port} "{sketch_path}"'
 ARDUINO_GET_INSTALLED_LIBS = 'arduino-cli lib list'
 ARDUINO_GET_INSTALLED_CORES = 'arduino-cli core list'
 
@@ -84,7 +65,7 @@ except KeyError:
         'top-level key "arduino".',
     )
 
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     print(
         f'{OUTPUT_PREFIX}: FATAL ERROR: An unexpected error occurred when loading the config YAML file at '
         f'"{config_file_resolved_path}": {e}',
@@ -107,18 +88,16 @@ def run_command(
     Run a command at a given path.
 
     Args:
-        command: Command to run.
-        print_output: Whether to allow the command to print to stdout.
-        env_updates: Dictionary of environment variables to update. If None, no environment variables will be updated.
-        path_to_run_at: Path to run the command at. If None, the command will be run at the current working directory.
+        command (str | Sequence[str]): Command to run.
+        print_output (bool): Whether to allow the command to print to stdout.
+        env_updates (dict | None): Dictionary of environment variables to update. If None, no environment variables will
+            be updated.
+        path_to_run_at (str | None): Path to run the command at. If None, the command will be run at the current working
+            directory.
 
     Raises:
-        ValueError: If command empty.
         subprocess.CalledProcessError: If command returns non-zero exit code.
     """
-    if not command:
-        raise ValueError('Command must not be empty')
-
     env = os.environ.copy()
     if env_updates:
         for key, value in env_updates.items():
@@ -146,18 +125,16 @@ def run_commands(
     Run a sequence of commands at a given path.
 
     Args:
-        commands: Sequence of commands to run.
-        print_output: Whether to allow the commands to print to stdout.
-        env_updates: Dictionary of environment variables to update. If None, no environment variables will be updated.
-        path_to_run_at: Path to run the commands at. If None, the commands will be run at the current working directory.
+        commands (Sequence[str]): Sequence of commands to run.
+        print_output (bool): Whether to allow the commands to print to stdout.
+        env_updates (dict | None): Dictionary of environment variables to update. If None, no environment variables will
+            be updated.
+        path_to_run_at (str | None): Path to run the commands at. If None, the commands will be run at the current
+            working directory.
 
     Raises:
-        ValueError: If commands empty.
         subprocess.CalledProcessError: If command returns non-zero exit code.
     """
-    if not commands:
-        raise ValueError('Commands must not be empty')
-
     for command in commands:
         run_command(
             command,
@@ -172,16 +149,12 @@ def get_arduino_cores(arduino_names: list[str]) -> list[str]:
     Get the list of Arduino cores of the given Arduino names without duplicates.
 
     Args:
-        arduino_names: List of Arduino names.
+        arduino_names (list[str]): List of Arduino names.
 
     Returns:
-        List of Arduino cores.
+        list[str]: List of Arduino cores.
     """
-    cores = set()
-    for arduino in arduino_names:
-        cores.add(ARDUINO_DATA[arduino]['core'])
-
-    return list(cores)
+    return list({ARDUINO_DATA[arduino]['core'] for arduino in arduino_names})
 
 
 def get_arduino_libs(arduino_names: list[str]) -> list[str]:
@@ -189,44 +162,22 @@ def get_arduino_libs(arduino_names: list[str]) -> list[str]:
     Get the list of Arduino libraries of the given Arduino names without duplicates.
 
     Args:
-        arduino_names: List of Arduino names.
+        arduino_names (list[str]): List of Arduino names.
 
     Returns:
-        List of Arduino libraries.
+        list[str]: List of Arduino libraries.
     """
-    libs = set()
-    for arduino in arduino_names:
-        if 'libraries' in ARDUINO_DATA[arduino] and ARDUINO_DATA[arduino]['libraries']:
-            libs.update(ARDUINO_DATA[arduino]['libraries'])
-
-    return list(libs)
-
-
-def check_if_ros_lib_is_required(arduino_names: list[str]) -> bool:
-    """
-    Check if the ROS library is required for the given Arduino names.
-
-    Args:
-        arduino_names: List of Arduino names.
-
-    Returns:
-        True if ros_lib is required, False otherwise.
-    """
-    for arduino in arduino_names:
-        if ARDUINO_DATA[arduino]['requires_ros_lib']:
-            return True
-    return False
-
+    return list({lib for arduino in arduino_names for lib in ARDUINO_DATA[arduino].get('libraries', [])})
 
 def get_arduino_port(arduino_name: str) -> str:
     """
     Get the port of the requested Arduino.
 
     Args:
-        arduino_name: Name of the Arduino.
+        arduino_name (str): Name of the Arduino.
 
     Returns:
-        Port of the requested Arduino.
+        str: Port of the requested Arduino.
 
     Raises:
         StopIteration: If the port is not found.
@@ -240,10 +191,10 @@ def get_arduino_sketch_path_absolute(arduino_name: str) -> str:
     Get the absolute path of the Arduino sketch.
 
     Args:
-        arduino_name: Name of the Arduino.
+        arduino_name (str): Name of the Arduino.
 
     Returns:
-        Absolute path of the Arduino sketch.
+        str: Absolute path of the Arduino sketch.
     """
     sketch_path_relative = ARDUINO_DATA[arduino_name]['sketch']
     return rr.get_filename(
@@ -261,41 +212,18 @@ def check_if_arduino_cores_installed(arduino_cores: list[str]) -> bool:
     Check if the given Arduino cores are installed.
 
     Args:
-        arduino_cores: List of Arduino cores.
+        arduino_cores (list[str]): List of Arduino cores.
 
     Returns:
-        True if all cores are installed, False otherwise.
-    """
-    for core in arduino_cores:
-        try:
-            installed_libs = subprocess.check_output(
-                ARDUINO_GET_INSTALLED_CORES, shell=True, text=True,
-            )
-            if core not in installed_libs:
-                return False
-        except subprocess.CalledProcessError:
-            return False
-
-    return True
-
-
-def check_if_ros_lib_installed() -> bool:
-    """
-    Check if the ROS library for Arduino is installed.
-
-    Returns:
-        True if the ROS library is installed, False otherwise.
+        bool: True if all cores are installed, False otherwise.
     """
     try:
-        installed_libs = subprocess.check_output(
-            ARDUINO_GET_INSTALLED_LIBS, shell=True, text=True,
+        installed_cores = subprocess.check_output(
+            ARDUINO_GET_INSTALLED_CORES, shell=True, text=True,
         )
-        if 'ros_lib' not in installed_libs:
-            return False
+        return all(core in installed_cores for core in arduino_cores)
     except subprocess.CalledProcessError:
         return False
-
-    return True
 
 
 def check_if_arduino_libs_installed(arduino_libs: list[str]) -> bool:
@@ -303,31 +231,27 @@ def check_if_arduino_libs_installed(arduino_libs: list[str]) -> bool:
     Check if the given Arduino libraries are installed.
 
     Args:
-        arduino_libs: List of Arduino libraries.
+        arduino_libs (list[str]): List of Arduino libraries.
 
     Returns:
-        True if all libraries are installed, False otherwise.
+        bool: True if all libraries are installed, False otherwise.
     """
-    for lib in arduino_libs:
-        try:
-            installed_libs = subprocess.check_output(
-                ARDUINO_GET_INSTALLED_LIBS, shell=True, text=True,
-            )
-            if lib.lower() not in installed_libs.lower():
-                return False
-        except subprocess.CalledProcessError:
-            return False
-
-    return True
+    try:
+        installed_libs = subprocess.check_output(
+            ARDUINO_GET_INSTALLED_LIBS, shell=True, text=True,
+        ).lower()
+        return all(lib.lower() in installed_libs for lib in arduino_libs)
+    except subprocess.CalledProcessError:
+        return False
 
 
 def install_libs(arduino_names: list[str], print_output: bool) -> None:
     """
-    Install the required Arduino core libraries and, if required, ROS library, for the given Arduino names.
+    Install the required Arduino cores and libraries for the given Arduino names.
 
     Args:
-        arduino_names: List of Arduino names.
-        print_output: Whether to allow the commands to print to stdout.
+        arduino_names (list[str]): List of Arduino names.
+        print_output (bool): Whether to allow the commands to print to stdout.
     """
     # Get the list of unique Arduino cores that need to be installed and the list of commands to install the cores
     arduino_cores = get_arduino_cores(arduino_names)
@@ -343,27 +267,6 @@ def install_libs(arduino_names: list[str], print_output: bool) -> None:
         ARDUINO_LIBRARY_INSTALL_COMMAND_TEMPLATE.format(library=lib)
         for lib in arduino_libs
     ]
-
-    # Install the ROS library for Arduino if required
-    if check_if_ros_lib_is_required(arduino_names):
-        if not check_if_ros_lib_installed():
-            print(f'{OUTPUT_PREFIX}: Installing ROS library...')
-            run_commands(
-                ROS_LIB_INSTALL_COMMANDS,
-                print_output,
-                env_updates=ROS_LIB_ENV_UPDATES,
-                path_to_run_at=ROS_LIB_INSTALL_PATH,
-            )
-            print(f'{OUTPUT_PREFIX}: ROS library installed.')
-        else:
-            print(
-                f'{OUTPUT_PREFIX}: Skipped installing ROS library because it is already installed.',
-            )
-    else:
-        print(
-            f'{OUTPUT_PREFIX}: Skipped installing ROS library because it is not required for '
-            f'{", ".join(arduino_names)} arduino(s).',
-        )
 
     # Print a linebreak
     print()
@@ -409,8 +312,8 @@ def find_ports(arduino_names: list[str], no_linebreaks: bool) -> None:
     Find and print the port(s) of the requested Arduino names.
 
     Args:
-        arduino_names: List of Arduino names.
-        no_linebreaks: Whether to print the ports without labels or linebreaks.
+        arduino_names (list[str]): List of Arduino names.
+        no_linebreaks (bool): Whether to print the ports without labels or linebreaks.
     """
     # Get the port for each arduino
     for arduino_name in arduino_names:
@@ -426,13 +329,13 @@ def find_ports(arduino_names: list[str], no_linebreaks: bool) -> None:
             print(f'{OUTPUT_PREFIX}: Could not find port of {arduino_name} arduino.')
 
 
-def compile(arduino_names: list[str], print_output: bool) -> None:
+def compile_sketches(arduino_names: list[str], print_output: bool) -> None:
     """
     Install required libraries and compile the sketches for the given Arduino names.
 
     Args:
-        arduino_names: List of Arduino names.
-        print_output: Whether to allow the commands to print to stdout.
+        arduino_names (list[str]): List of Arduino names.
+        print_output (bool): Whether to allow the commands to print to stdout.
     """
     # Install the required libraries for the given Arduino names
     install_libs(arduino_names, print_output)
@@ -477,11 +380,11 @@ def upload(arduino_names: list[str], print_output: bool) -> None:
     Install required libraries, compile the sketches, and upload them to the given Arduino names.
 
     Args:
-        arduino_names: List of Arduino names.
-        print_output: Whether to allow the commands to print to stdout.
+        arduino_names (list[str]): List of Arduino names.
+        print_output (bool): Whether to allow the commands to print to stdout.
     """
     # Compile the sketches for the given Arduino names
-    compile(arduino_names, print_output)
+    compile_sketches(arduino_names, print_output)
 
     # Print a linebreak
     print()
@@ -542,13 +445,13 @@ def upload(arduino_names: list[str], print_output: bool) -> None:
 # Argument parsing
 
 
-if __name__ == '__main__':
-
+def main(args: list[str] | None = None) -> None:
+    """Set up the command-line interface (CLI) for managing Arduino devices."""
     # Get the list of arduino names
     arduino_names = list(ARDUINO_DATA.keys())
 
     # Add 'all' to the list of arduino names to pass to argparse
-    arduino_names_with_all = arduino_names + ['all']
+    arduino_names_with_all = [*arduino_names, 'all']
 
     # Create argparse parser
     parser = argparse.ArgumentParser(
@@ -562,15 +465,14 @@ if __name__ == '__main__':
     # Subparser for install-libs command
     install_libs_parser = subparsers.add_parser(
         'install-libs',
-        help='Install core libraries and ROS library (if required) for Arduinos.',
+        help='Install cores and required libraries for Arduinos.',
     )
     install_libs_parser.add_argument(
         'arduino_names',
         nargs='+',
         choices=arduino_names_with_all,
         metavar='Arduino Names',
-        help='Names of Arduinos to install libraries for. Use '
-        '"all" to install libraries for all Arduinos.',
+        help='Names of Arduinos to install cores and libraries for. Use "all" to install libraries for all Arduinos.',
     )
     install_libs_parser.add_argument(
         '-p', '--print-output', action='store_true', help='Print output of subcommands.',
@@ -645,9 +547,12 @@ if __name__ == '__main__':
     elif args.command == 'find-ports':
         find_ports(args.arduino_names, args.nl)
     elif args.command == 'compile':
-        compile(args.arduino_names, args.print_output)
+        compile_sketches(args.arduino_names, args.print_output)
     elif args.command == 'upload':
         upload(args.arduino_names, args.print_output)
     else:
         print('Invalid command.')
         parser.print_help()
+
+if __name__ == '__main__':
+    main()
