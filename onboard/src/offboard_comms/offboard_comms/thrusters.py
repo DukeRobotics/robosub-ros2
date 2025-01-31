@@ -36,8 +36,8 @@ class Thrusters(Node):
     4. Publishing of PWM values
     """
 
-    VOLTAGE_LOWER: float = 14.0
-    VOLTAGE_UPPER: float = 18.0
+    VOLTAGE_MIN: float = 14.0
+    VOLTAGE_MAX: float = 18.0
     NUM_LOOKUP_ENTRIES: int = 201  # -1.0 to 1.0 in 0.01 increments
     VOLTAGE_FILES: ClassVar[list[tuple[int, str]]] = [
         (14.0, '14.csv'),
@@ -129,10 +129,10 @@ class Thrusters(Node):
         Args:
             msg (Float64): Voltage message containing the current system voltage.
         """
-        self.voltage = min(max(msg.data, self.VOLTAGE_LOWER), self.VOLTAGE_UPPER)
+        self.voltage = min(max(msg.data, self.VOLTAGE_MIN), self.VOLTAGE_MAX)
         if self.voltage != msg.data:
             self.get_logger().warn(
-                f'Voltage {msg.data} out of bounds. Clamped to [{self.VOLTAGE_LOWER}, {self.VOLTAGE_UPPER}]',
+                f'Voltage {msg.data} out of bounds. Clamped to [{self.VOLTAGE_MIN}, {self.VOLTAGE_MAX}]',
             )
 
     def thruster_allocs_callback(self, msg: ThrusterAllocs) -> None:
@@ -187,8 +187,7 @@ class Thrusters(Node):
         # If we're exactly at the highest voltage, use that table
         return self.voltage_tables[-1].table[index]
 
-    @staticmethod
-    def _interpolate(x1: float, y1: int, x2: float, y2: int, x: float) -> float:
+    def _interpolate(self, x1: float, y1: int, x2: float, y2: int, x: float) -> float:
         """
         Perform linear interpolation.
 
@@ -204,8 +203,7 @@ class Thrusters(Node):
         """
         return y1 + ((y2 - y1) * (x - x1)) / (x2 - x1)
 
-    @staticmethod
-    def _round_to_two_decimals(num: float) -> int:
+    def _round_to_two_decimals(self, num: float) -> int:
         """
         Round a number to two decimal places and convert to lookup table index.
 
