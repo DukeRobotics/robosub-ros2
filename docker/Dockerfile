@@ -8,7 +8,7 @@ ARG CACHE_BUSTER
 # Install packages from apt
 # Each package is installed in a separate RUN command so that each package is cached separately in Docker
 # The commands are ordered alphabetically
-RUN apt update
+RUN apt-get update
 RUN apt install -y --no-install-recommends clang
 RUN apt install -y --no-install-recommends clang-format
 RUN apt install -y --no-install-recommends gdb
@@ -36,6 +36,7 @@ RUN apt install -y --no-install-recommends valgrind
 # The commands are ordered alphabetically
 RUN python3 -m venv /root/dev/venv --system-site-packages
 RUN /root/dev/venv/bin/pip install GitPython
+RUN /root/dev/venv/bin/pip install gputil
 RUN /root/dev/venv/bin/pip install pandas
 RUN /root/dev/venv/bin/pip install pyserial
 RUN /root/dev/venv/bin/pip install ruff

@@ -1,0 +1,8 @@
+<launch>
+    <arg name="enable_recording" default="true" />
+    <arg name="bypass" default="false" />
+    <node name="record_bag" pkg="system_utils" exec="record_bag" output="screen">
+		<param name="bypass" value="$(var bypass)" />
+        <param name="enable_recording" value="$(var enable_recording)" />
+    </node>
+</launch>
