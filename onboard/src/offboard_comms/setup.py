@@ -13,6 +13,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/config', [str(file) for file in Path('./config').glob('*.yaml')]),
+        ('share/' + package_name + '/data', [str(file) for file in Path('./data').glob('*.csv')]),
         ('share/' + package_name + '/launch', [str(file) for file in Path('./launch').glob('*.xml')]),
         ('share/' + package_name + '/sketchbooks',
          [str(file) for file in Path('./sketchbooks').glob('*') if file.is_file()]),
@@ -31,7 +32,7 @@ setup(
     entry_points={
         'console_scripts': [
             'arduino = offboard_comms.arduino:main',
-            # 'thrusters = offboard_comms.thrusters:main',
+            'thrusters = offboard_comms.thrusters:main',
         ],
     },
 )

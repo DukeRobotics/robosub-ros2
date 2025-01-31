@@ -1,0 +1,7 @@
+<launch>
+  <let name="device" value="$(command 'ros2 run offboard_comms arduino find-ports thruster --nl')"/>
+
+  <node pkg="offboard_comms" exec="thrusters" name="thrusters" output="screen">
+    <param name="device" value="$(var device)"/>
+  </node>
+</launch>
