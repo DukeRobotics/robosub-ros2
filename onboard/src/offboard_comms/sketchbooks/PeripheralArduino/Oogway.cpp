@@ -13,8 +13,6 @@ private:
     int tempHumidityDelay;
     int servoDelay;
 
-    String tempHumidityTagPrefix;
-
     Voltage* voltage_sensor;
     Pressure* pressure_sensor;
     TempHumidity* temp_humidity_sensor;
@@ -24,7 +22,6 @@ private:
 public:
     Oogway(int voltageDelay, int pressureDelay, int tempHumidityDelay, int servoDelay, bool isShell = false)
         : Robot(voltageDelay, pressureDelay, tempHumidityDelay, servoDelay), isShell(isShell) {
-        tempHumidityTagPrefix = "oogway";
 
         voltage_sensor = new Voltage(VOLTAGE_PIN, 4.655);
         pressure_sensor = new Pressure();
