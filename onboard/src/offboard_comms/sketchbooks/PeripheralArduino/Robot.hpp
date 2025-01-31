@@ -1,11 +1,8 @@
 #include "Voltage.hpp"
 #include "Pressure.hpp"
 #include "TempHumidity.hpp"
-#include "Servo.hpp"
+#include "RobotServo.hpp"
 #include <Arduino.h>
-#include <map>
-#include <string>
-#include <vector>
 
 class Robot {
     protected:
@@ -24,11 +21,11 @@ class Robot {
         std::vector<Voltage> voltageList;
         std::vector<Pressure> pressureList;
         std::vector<TempHumidity> tempHumidityList;
-        std::map<std::string, Servo> servoMap;
+        std::map<String, RobotServo> servoMap;
 
     public:
-        Robot(bool isShell = false, int voltageDelay, int pressureDelay, int tempHumidityDelay, int servoDelay) :
-        isShell(isShell), voltageDelay(voltageDelay), pressureDelay(pressureDelay), tempHumidityDelay(tempHumidityDelay), servoDelay(servoDelay) {
+        Robot(int voltageDelay, int pressureDelay, int tempHumidityDelay, int servoDelay) :
+        voltageDelay(voltageDelay), pressureDelay(pressureDelay), tempHumidityDelay(tempHumidityDelay), servoDelay(servoDelay), isShell(isShell) {
             init();
         }
 
@@ -44,8 +41,8 @@ class Robot {
 
             if (currentTime - prevTimeVoltage >= voltageDelay) {
                 prevTimeVoltage = currentTime;
-                
-                for (Voltage v: voltageList) {
+
+                for (Voltage v: this->voltageList) {
                     v.callVoltage();
                 }
             }
@@ -53,7 +50,7 @@ class Robot {
             if (currentTime - prevTimePressure >= pressureDelay) {
                 prevTimePressure = currentTime;
 
-                for (Pressure p: pressureList) {
+                for (Pressure p: this->pressureList) {
                     p.callPressure();
                 }
             }
@@ -61,7 +58,7 @@ class Robot {
             if (currentTime - prevTimeTempHumidity >= tempHumidityDelay) {
                 prevTimeTempHumidity = currentTime;
 
-                for (TempHumidity th: tempHumidityList) {
+                for (TempHumidity th: this->tempHumidityList) {
                     th.callTempHumidity();
                 }
             }
@@ -70,16 +67,16 @@ class Robot {
                 prevTimeServo = currentTime;
 
                 if (Serial.available() > 0) {
-                    string input = Serial.readString();
-                    string id = input.substr(0,1);
-                    string data = input.substr(2);
+                    String input = Serial.readString();
+                    String id = input.substring(0,1);
+                    int data = (int) input.substring(2);
 
-                    if (servoMap.count(id)) {
-                        Servo s = ServoMap.at(id);
-                        if ((s.getMinPWM < data) && (data < s.getMaxPWM))
+                    if (this->servoMap.count(id)) {
+                        RobotServo s = this->servoMap.at(id);
+                        if ((s.getMinPWM() < data) && (data < s.getMaxPWM()))
                             s.callServo(data);
                     }
                 }
             }
         }
-}
+};

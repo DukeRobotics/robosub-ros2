@@ -1,4 +1,3 @@
-#include <string>
 #include <Arduino.h>
 #include <Wire.h>
 #include "MS5837.h"
@@ -6,7 +5,7 @@
 class Pressure {
     private:
         bool pressureConnected;
-        std::string pressureTag;
+        String pressureTag;
         MS5837 sensor;
     public:
         Pressure() {
@@ -45,7 +44,7 @@ class Pressure {
                 if (!error) {
                     Serial.flush();
 
-                    String printPressure = pressureTag + String(sensor.depth());
+                    String printPressure = this->pressureTag + String(sensor.depth());
                     Serial.println(printPressure);
                 }
 
@@ -57,4 +56,4 @@ class Pressure {
                 initPressure();
             }
         }
-}
+};

@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <Servo.h>
 
-class Servo {
+class RobotServo {
     private:
         int pinNum;
         int minPWM;
@@ -13,7 +13,7 @@ class Servo {
         unsigned long servoTime;
 
     public:
-        Servo(int pinNum, int minPWM, int stopPWM, int maxPWM, int delay=1000) :
+        RobotServo(int pinNum, int minPWM, int stopPWM, int maxPWM, int delay=1000) :
         pinNum(pinNum), minPWM(minPWM), stopPWM(stopPWM), maxPWM(maxPWM), delay(delay) {
             myServo.attach(pinNum);
             myServo.writeMicroseconds(1500);
@@ -21,13 +21,13 @@ class Servo {
 
         void callServo(int direction) {
             unsigned long currentTime = millis();
-            myservo.writeMicroseconds(direction);  // 1200 = 90 degrees left  // 1250 micros =  20 write
+            myServo.writeMicroseconds(direction);  // 1200 = 90 degrees left  // 1250 micros =  20 write
             servoMoved = true;
             servoTime = currentTime;
 
             // return to default position after delay milisecond
-            if(servoMoved && ((myTime - servoTime) > delay)) {
-                myservo.writeMicroseconds(1500);  // 1500 micros = 90 write
+            if(servoMoved && ((currentTime - servoTime) > delay)) {
+                myServo.writeMicroseconds(1500);  // 1500 micros = 90 write
                 servoMoved = false;
             }
         }
@@ -39,4 +39,4 @@ class Servo {
         int getMaxPWM() {
             return maxPWM;
         }
-}
+};

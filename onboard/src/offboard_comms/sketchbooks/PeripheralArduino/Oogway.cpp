@@ -8,25 +8,31 @@
 class Oogway : public Robot
 {
     private:
-        std::string tempHumidityTagPrefix;
-        std::string servo_marker_tag;
-        std::string servo_torpedo_tag;
+        bool isShell;
+        int voltageDelay;
+        int pressureDelay;
+        int tempHumidityDelay;
+        int servoDelay;
+
+        String tempHumidityTagPrefix;
+        String servo_marker_tag;
+        String servo_torpedo_tag;
 
         Voltage voltage_sensor;
         Pressure pressure_sensor;
         TempHumidity temp_humidity_sensor;
-        Servo servo_marker;
-        Servo servo_torpedo;
+        RobotServo servo_marker;
+        RobotServo servo_torpedo;
     public:
-        Oogway(bool isShell = false, int voltageDelay, int pressureDelay, int tempHumidityDelay, int servoDelay) :
-        Robot(isShell), voltageDelay(voltageDelay), pressureDelay(pressureDelay), tempHumidityDelay(tempHumidityDelay), servoDelay(servoDelay) {
+        Oogway(int voltageDelay, int pressureDelay, int tempHumidityDelay, int servoDelay, bool isShell = false) :
+        voltageDelay(voltageDelay), pressureDelay(pressureDelay), tempHumidityDelay(tempHumidityDelay), servoDelay(servoDelay), Robot(isShell) {
             tempHumidityTagPrefix = "oogway";
 
-            voltage_sensor = new Voltage(VOLTAGE_PIN);
+            voltage_sensor = new Voltage(VOLTAGE_PIN, 4.655);
             pressure_sensor = new Pressure();
             temp_humidity_sensor = new TempHumidity(TH_PIN), ;
-            servo_marker = new Servo(SERVO_MARKER, 1100, 1500, 1900);
-            servo_torpedo = new Servo(SERVO_TORPEDO, 1100, 1500, 1900);
+            servo_marker = new RobotServo(SERVO_MARKER, 1100, 1500, 1900);
+            servo_torpedo = new RobotServo(SERVO_TORPEDO, 1100, 1500, 1900);
 
             servo_marker_tag = "M";
             servo_torpedo_tag = "T";
@@ -38,6 +44,6 @@ class Oogway : public Robot
 
             pressureList.insert(pressure_sensor);
 
-            tempHumidityList.insert(temp_humdity_sensor);
+            tempHumidityList.insert(temp_humidity_sensor);
         }
-}
+};

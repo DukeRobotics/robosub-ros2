@@ -4,7 +4,8 @@
 #include <Wire.h>
 #include "DHT11.h"
 #include "MS5837.h"
-#include "tempHumidity.h"
+#include "Robot.hpp"
+#include "Oogway.cpp"
 
 #define OOGWAY 0
 #define OOGWAY_SHELL 1
@@ -19,7 +20,7 @@
 #define BAUD_RATE 9600
 
 
-Robot robot;
+Robot* robot;
 
 unsigned long currentTime;
 unsigned long prevTime = 0;
@@ -38,11 +39,12 @@ void setup() {
       break;
     default:
       robot = new Oogway(false, VOLTAGE_DELAY, PRESSURE_DELAY, TEMP_HUMIDITY_DELAY, SERVO_DELAY);
+  }
 }
 
 void loop() {
   currentTime = millis();
 
   // run all functions
-  robot.process();
+  robot->process();
 }

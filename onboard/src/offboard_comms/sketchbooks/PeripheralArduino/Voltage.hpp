@@ -2,17 +2,19 @@
 class Voltage {
     private:
         int pinNum;
-        const string voltageTag = "V: ";
         float voltage;
-
+        float onboardVoltage;
+        String voltageTag;
 
     public:
-        Voltage(int pinNum) : pinNum(pinNum) {}
+        Voltage(int pinNum, float onboardVoltage) : pinNum(pinNum), onboardVoltage(onboardVoltage) {
+            voltageTag = "V: ";
+        }
 
         void callVoltage() {
             voltage = analogRead(pinNum);
-            voltage = voltage*ONBOARD_VOLTAGE/1023*5; // from datasheet, for analog to digital conversion
-            String printVoltage = voltageTag + String(voltage);
+            voltage = voltage*onboardVoltage/1023*5; // from datasheet, for analog to digital conversion
+            String printVoltage = this->voltageTag + String(voltage);
             Serial.println(printVoltage);
         }
-}
+};
