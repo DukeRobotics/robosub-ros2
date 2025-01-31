@@ -9,10 +9,10 @@ class TempHumidity {
         DHT11* dht11; // Use a pointer instead of a direct instance
 
     public:
-        TempHumidity(int pinNum, String tagPrefix) {
+        TempHumidity(int pinNum, String tagSuffix) {
             this->pinNum = pinNum;
-            humidityTag = tagPrefix + "_H: ";
-            tempTag = tagPrefix + "_T: ";
+            humidityTag = "H" + tagSuffix + ":";
+            tempTag = "T" + tagSuffix + ":";
 
             dht11 = new DHT11(pinNum); // Dynamically allocate the DHT11 object
             dht11->setDelay(0);
