@@ -30,32 +30,31 @@ class PeripheralPublisher(SerialRepublisherNode):
     def __init__(self) -> None:
         super().__init__(NODE_NAME, BAUDRATE, CONFIG_FILE_PATH, CONFIG_NAME)
 
-        # Pressure/Voltage
-        self._pressure = None  # Pressure to publish
-        self._previous_pressure = None  # Previous pressure readings for median filter
+        # Latest readings, after filtering
+        self._pressure = None
+        self._voltage = None
+        self._temperature = None
+        self._humidity = None
 
-        self._pub_depth = self.create_publisher(PoseWithCovarianceStamped, DEPTH_DEST_TOPIC, 50)
-        self._pub_voltage = self.create_publisher(Float64, VOLTAGE_DEST_TOPIC, 10)
+        # Previous readings; used in median filter
+        self._previous_pressure = None
+        self._previous_temperature = None
+        self._previous_humidity = None
 
+        # Messages
         self._current_pressure_msg = PoseWithCovarianceStamped()
         self._current_voltage_msg = Float64()
-
-        # Temperature/Servo
-        self._temperature = None  # Temperature to publish
-        self._humidity = None
-        self._previous_temperature = None  # Previous temperature readings for median filter
-
-        self._pub_temperature = self.create_publisher(Float64, TEMPERATURE_DEST_TOPIC, 10)
-        self._pub_humidity = self.create_publisher(Float64, HUMIDITY_DEST_TOPIC, 10)
-
-        self._servo_service = self.create_service(SetBool, SERVO_SERVICE, self.servo_control)
-
         self._current_temperature_msg = Float64()
         self._current_humidity_msg = Float64()
 
-        # Serial
-        self._serial_port = None
-        self._serial = None
+        # Publishers
+        self._pub_depth = self.create_publisher(PoseWithCovarianceStamped, DEPTH_DEST_TOPIC, 50)
+        self._pub_voltage = self.create_publisher(Float64, VOLTAGE_DEST_TOPIC, 10)
+        self._pub_temperature = self.create_publisher(Float64, TEMPERATURE_DEST_TOPIC, 10)
+        self._pub_humidity = self.create_publisher(Float64, HUMIDITY_DEST_TOPIC, 10)
+
+        # Service for servo control
+        self._servo_service = self.create_service(SetBool, SERVO_SERVICE, self.servo_control)
 
     def process_line(self, line: str) -> None:
         """
@@ -89,7 +88,7 @@ class PeripheralPublisher(SerialRepublisherNode):
             self._parse_pressure()  # Parse pressure data
             self._publish_current_pressure_msg()  # Publish pressure data
         if 'V:' in tag:
-            self._current_voltage_msg = float(data)
+            self._update_voltage(float(data))
             self._publish_current_voltage_msg()
         if 'T:' in tag:
             self._update_temperature(float(data))  # Filter out bad readings
@@ -142,8 +141,18 @@ class PeripheralPublisher(SerialRepublisherNode):
         self._pub_depth.publish(self._current_pressure_msg)
         self._current_pressure_msg = PoseWithCovarianceStamped()
 
+    def _update_voltage(self, new_reading: float) -> None:
+        """
+        Update self._voltage with new reading.
+
+        Args:
+            new_reading (float): New voltage value recieved.
+        """
+        self._voltage = new_reading
+
     def _publish_current_voltage_msg(self) -> None:
         """Publish current voltage."""
+        self._current_voltage_msg.data = self._voltage
         self._pub_voltage.publish(self._current_voltage_msg)
 
     def _update_temperature(self, new_reading: float) -> None:
