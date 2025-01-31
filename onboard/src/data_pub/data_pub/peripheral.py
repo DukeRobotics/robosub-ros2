@@ -7,8 +7,8 @@ from std_srvs.srv import SetBool
 
 from data_pub.serial_republisher_node import SerialRepublisherNode
 
-CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
 CONFIG_NAME = 'peripheral'
+CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
 
 BAUDRATE = 9600
 NODE_NAME = 'peripheral_pub'
@@ -27,8 +27,12 @@ class PeripheralPublisher(SerialRepublisherNode):
     MAX_ABS_HUMIDITY = 200
     MEDIAN_FILTER_SIZE = 3
 
+    CONNECTION_RETRY_PERIOD = 1.0  # seconds
+    LOOP_RATE = 50.0  # Hz
+
     def __init__(self) -> None:
-        super().__init__(NODE_NAME, BAUDRATE, CONFIG_FILE_PATH, CONFIG_NAME)
+        super().__init__(NODE_NAME, BAUDRATE, CONFIG_FILE_PATH, CONFIG_NAME, self.CONNECTION_RETRY_PERIOD,
+                         self.LOOP_RATE, use_nonblocking=True)
 
         # Latest readings, after filtering
         self._pressure = None
