@@ -7,9 +7,9 @@ class RobotServo {
         int minPWM;
         int stopPWM;
         int maxPWM;
-        int delay; // delay in miliseconds for servo to return to stop position
+        int delay; // Delay in milliseconds for servo to return to stop position
         Servo myServo;
-        bool servoMoved = false;
+        bool servoActive = false;
         unsigned long servoTime;
 
     public:
@@ -20,28 +20,25 @@ class RobotServo {
         }
 
         void callServo(int pwm) {
+            // Reject new commands while the servo is in motion
+            if (servoActive) {
+                return;
+            }
+
             // Make sure pwm is within the min and max PWM values
             if (pwm < minPWM || pwm > maxPWM) {
                 return;
             }
 
-            unsigned long currentTime = millis();
-            myServo.writeMicroseconds(pwm);  // 1200 = 90 degrees left  // 1250 micros =  20 write
-            servoMoved = true;
-            servoTime = currentTime;
+            myServo.writeMicroseconds(pwm);
+            servoActive = true;
+            servoTime = millis();
+        }
 
-            // Return to default position after delay
-            if(servoMoved && ((currentTime - servoTime) > delay)) {
-                myServo.writeMicroseconds(stopPWM);  // 1500 micros = 90 write
-                servoMoved = false;
+        void updateServo() {
+            if (servoActive && (millis() - servoTime >= delay)) {
+                myServo.writeMicroseconds(stopPWM);
+                servoActive = false;
             }
-        }
-
-        int getMinPWM() {
-            return minPWM;
-        }
-
-        int getMaxPWM() {
-            return maxPWM;
         }
 };

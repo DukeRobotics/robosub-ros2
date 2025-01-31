@@ -96,6 +96,11 @@ public:
             }
         }
 
+        // Continuously update servos to check if they need to return to stopPWM
+        for (int i = 0; i < numServos; ++i) {
+            servoList[i]->updateServo();
+        }
+
         if (currentTime - prevTimeServo >= servoDelay) {
             prevTimeServo = currentTime;
             if (Serial.available() > 0) {
