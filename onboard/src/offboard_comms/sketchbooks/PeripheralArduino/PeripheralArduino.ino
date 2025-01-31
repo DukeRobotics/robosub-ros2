@@ -6,6 +6,10 @@
 #include "MS5837.h"
 #include "tempHumidity.h"
 
+#define OOGWAY 0
+#define OOGWAY_SHELL 1
+#define CRUSH 2
+
 // Baud rate for serial communication with Blue Robotics Bar30 High-Resolution 300m Depth/Pressure Sensor
 #define BAUD_RATE 9600
 #define VPIN 3 // voltage pin analog input
@@ -27,7 +31,7 @@ unsigned long prevTimeVoltage = 0;
 
 
 // Make one attempt to initialize to the pressure sensor
-void initPressureSensor(){
+void initPressureSensor() {
   Wire.end();
   Wire.begin();
   Wire.setWireTimeout(500, true);

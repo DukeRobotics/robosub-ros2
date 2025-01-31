@@ -11,10 +11,9 @@ class TempHumidity {
         TempHumidity(int pinNum, string tagPrefix) : pinNum(pinNum) {
             humidityTag = tagPrefix + "_H";
             tempTag = tagPrefix + "_T";
-            
+
             dht11(pinNum);
             dht11.setDelay(0);
-            
         }
 
         void callTempHumidity() {
