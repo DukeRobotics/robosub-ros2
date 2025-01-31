@@ -23,7 +23,7 @@ class PeripheralSensor(ABC):
         # Most recent readings for median filter. Stored in order of arrival from oldest to newest.
         self._previous_values: list[float] = None
 
-    def publish_value(self, new_reading: float) -> None:
+    def update_and_publish_value(self, new_reading: float) -> None:
         """
         Update sensor value with new reading, filter out bad readings, and publish the value.
 
