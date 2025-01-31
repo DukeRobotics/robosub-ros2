@@ -4,7 +4,6 @@ arduino:
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketchbooks/PeripheralArduino
-    requires_ros_lib: false
     libraries:
       - servo
   thruster:
@@ -12,4 +11,3 @@ arduino:
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketchbooks/ThrusterArduino
-    requires_ros_lib: true
