@@ -1,5 +1,3 @@
-
-
 import os
 import subprocess
 from pathlib import Path
@@ -69,9 +67,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
 
         self.start_publishers(self)
 
-        MIN_NUM_SAVED_STREAMS = 3  # noqa: N806
-
-        if num_saved_streams > MIN_NUM_SAVED_STREAMS:
+        if num_saved_streams > 3:  # noqa: PLR2004
             msg = 'Cannot save more than 3 streams at once'
             raise ValueError(msg)
 
@@ -126,7 +122,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
 
     def start_publishers(self) -> None:
         """Start publishers."""
-         # Set up publishers
+        # Set up publishers
         if self.publish_rgb_video:
             self.stream_publisher_rgb_video = self.create_publisher(CompressedImage, self.STREAM_TOPIC_RGB_VIDEO, 10)
 
@@ -177,7 +173,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
             raise ValueError(msg)
 
     def build_pipeline(self) -> None:
-        """Build the DepthAI. Pipeline, which takes the RGB camera feed and retrieves it using an XLinkOut."""
+        """Build the DepthAI pipeline, which takes the RGB camera feed and retrieves it using an XLinkOut."""
         self.build_pipeline_cam_LR(self)
 
         # Setup VideoEncoder and XLinkOut nodes for saving disparity to files
@@ -218,7 +214,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
             ve_disparity.bitstream.link(xout_ve_disparity.input)
 
     def build_pipeline_cam_LR(self) -> None:
-        """Build pipeline for left and right cams, ve left and rought, xout left and right."""
+        """Build pipeline for left and right cams, ve left and right, xout left and right."""
         # Setup MonoCamera node for left camera
         if self.publish_left or self.publish_disparity or self.publish_depth or self.save_left or self.save_disparity:
             cam_left = self.pipeline.create(dai.node.MonoCamera)
@@ -474,7 +470,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
             self.disparity_file.close()
 
     def publish_and_save(self) -> None:
-        """Publish and saves."""
+        """Publish and save."""
         # Get messages that came from the queue
         if self.publish_rgb_video:
             raw_img_rgb_video = self.rgbVideoQueue.get()
@@ -532,7 +528,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
             self.veDisparityQueue.get().getData().tofile(self.disparity_file)
 
 
-def main(args: None=None) -> None:
+def main(args: None = None) -> None:
     """Start node."""
     rclpy.init(args=args)
     depthai_streams_publisher_and_saver = DepthAIStreamsPublisherAndSaver()

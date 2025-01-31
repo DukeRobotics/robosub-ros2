@@ -1,5 +1,3 @@
-
-
 import math
 from pathlib import Path
 
@@ -16,6 +14,7 @@ from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String
 
 from cv import correct, depthai_camera_connect
+from cv.config import DepthAI
 from cv.image_tools import ImageTools
 from cv.utils import DetectionVisualizer, calculate_relative_pose
 
@@ -79,7 +78,7 @@ class DepthAISpatialDetector(Node):
         qos_profile = QoSProfile(
             reliability=QoSReliabilityPolicy.RELIABLE,
             history=QoSHistoryPolicy.KEEP_LAST,
-            depth=10, # queue_size in ros 1
+            depth=10,
         )
 
         # Initialize publishers and subscribers for sonar/task planning
@@ -92,7 +91,7 @@ class DepthAISpatialDetector(Node):
 
         self.run()
 
-    def build_pipeline(self, nn_blob_path: Path, sync_nn: bool) -> dai.Pipline:  # noqa: ARG002
+    def build_pipeline(self, nn_blob_path: Path, sync_nn: bool) -> dai.Pipeline:  # noqa: ARG002
         """
         Get the DepthAI Pipeline for 3D object localization.
 
@@ -353,7 +352,7 @@ class DepthAISpatialDetector(Node):
                 self.sonar_requests_publisher.publish(sonar_request_msg)
 
                 # Try calling sonar on detected bounding box
-                # if sonar responds, then override existing robot-frame x info;
+                # If sonar responds, then override existing robot-frame x info;
                 # else, keep default
                 if self.sonar_response != (0, 0) and self.in_sonar_range:
                     det_coords_robot_mm = (self.sonar_response[0],  # Override x
@@ -401,7 +400,6 @@ class DepthAISpatialDetector(Node):
         object_msg.sonar = using_sonar
 
         if self.publishers_dict:
-            # Flush out 0, 0, 0 values
             self.get_logger().debug('Publishing')
             self.publishers_dict[label].publish(object_msg)
 
@@ -410,7 +408,7 @@ class DepthAISpatialDetector(Node):
         Listen to sonar response.
 
         Updates instance variable self.sonar_response based on
-        what sonar throws back if it is in range (> SONAR_RANGE = 1.75m)
+        what sonar throws back if it is in range (> SONAR_RANGE = 1.75m).
         """
         # Check to see if the sonar is in range - are results from sonar valid?
         if not sonar_results.is_object:
@@ -515,7 +513,7 @@ def camera_frame_to_robot_frame(cam_x: float, cam_y: float, cam_z: float) -> tup
     return robot_x, robot_y, robot_z
 
 
-def main(args: list[str]|None=None) -> None:
+def main(args: list[str] | None = None) -> None:
     """Spin DepthAISpatialDetector."""
     rclpy.init(args=args)
     depthai_spatial_detector = DepthAISpatialDetector()

@@ -20,7 +20,7 @@ from cv.utils import DetectionVisualizer, calculate_relative_pose
 CAMERA_CONFIG_PATH = 'package://cv/config/usb_cameras.yaml'
 with Path.open(rr.get_filename(CAMERA_CONFIG_PATH, use_protocol=False)) as f:
     cameras = yaml.safe_load(f)
-CAMERA = cameras['front']  # TODO: use ROS params to select camera  # noqa: FIX002
+CAMERA = cameras['front']
 
 MM_IN_METER = 1000
 DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH = 'package://cv/models/depthai_models.yaml'
@@ -46,7 +46,7 @@ class DepthAISpatialDetector(Node):
         """
         Initialize the ROS node.
 
-        Loads the yaml file at cv/models/depthai_models.yaml
+        Loads the yaml file at cv/models/depthai_models.yaml.
         """
         super().__init__('depthai_spatial_detection')
         self.feed_path = self.declare_parameter('feed_path', '/camera/usb/front/compressed').value
@@ -374,13 +374,11 @@ class DepthAISpatialDetector(Node):
         object_msg.sonar = using_sonar
 
         if self.publishers_dict:
-            # Flush out 0, 0, 0 values
-            # if object_msg.coords.x != 0 and object_msg.coords.y != 0 and object_msg.coords.z != 0:
             self.publishers_dict[label].publish(object_msg)
 
     def update_sonar(self, sonar_results: SonarSweepResponse) -> None:
         """
-        Define callback function for listenting to sonar response.
+        Define callback function for listening to sonar response.
 
         Updates instance variable self.sonar_response based on
         what sonar throws back if it is in range (> SONAR_RANGE = 1.75m)
@@ -435,7 +433,7 @@ class DepthAISpatialDetector(Node):
         return math.degrees(math.atan((x_offset - image_center_x) * 0.005246675486))
 
 
-def main(args: list[str]|None=None) -> None:
+def main(args: list[str] | None = None) -> None:
     """Define the main function that initiates the node."""
     rclpy.init(args=args)
     depthai_spatial_detector = DepthAISpatialDetector()
