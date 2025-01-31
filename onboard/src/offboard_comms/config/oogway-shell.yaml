@@ -5,7 +5,19 @@ arduino:
     core: arduino:avr
     sketch: sketchbooks/PeripheralArduino
     libraries:
-      - servo
+    sensors:
+      - type: pressure
+        tag: P
+        topic: /sensors/depth
+      - type: voltage
+        tag: V
+        topic: /sensors/humidity
+      - type: temperature
+        tag: T
+        topic: /sensors/temperature
+      - type: humidity
+        tag: H
+        topic: /sensors/humidity
   thruster:
     ftdi: 02AB8D8451544E5450202020FF0D334A
     fqbn: arduino:megaavr:nano

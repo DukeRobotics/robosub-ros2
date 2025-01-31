@@ -6,6 +6,25 @@ arduino:
     sketch: sketchbooks/PeripheralAduino
     libraries:
       - servo
+    sensors:
+      - type: pressure
+        tag: P
+        topic: /sensors/depth
+      - type: voltage
+        tag: V
+        topic: /sensors/humidity
+      - type: temperature
+        tag: TC
+        topic: /sensors/temperature/computer
+      - type: temperature
+        tag: TB
+        topic: /sensors/temperature/battery
+      - type: humidity
+        tag: HC
+        topic: /sensors/humidity/computer
+      - type: humidity
+        tag: HB
+        topic: /sensors/humidity/battery
   thruster:
     ftdi: B0004VDI
     fqbn: arduino:avr:nano
