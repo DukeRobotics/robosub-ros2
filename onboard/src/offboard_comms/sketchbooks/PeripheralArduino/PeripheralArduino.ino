@@ -18,12 +18,7 @@
 // Baud rate for serial communication with Blue Robotics Bar30 High-Resolution 300m Depth/Pressure Sensor
 #define BAUD_RATE 9600
 
-
 Robot* robot;
-
-unsigned long currentTime;
-unsigned long prevTime = 0;
-
 
 void setup() {
   Serial.begin(BAUD_RATE);
@@ -44,8 +39,6 @@ void setup() {
 }
 
 void loop() {
-  currentTime = millis();
-
-  // run all functions
+  // Run all functions
   robot->process();
 }
