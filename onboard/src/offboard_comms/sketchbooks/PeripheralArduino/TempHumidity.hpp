@@ -1,12 +1,13 @@
 #include <Arduino.h>
 #include <DHT11.h>
 
+
 class TempHumidity {
     private:
         int pinNum;
         DHT11 dht11;
-        string humidityTag;
-        string tempTag;
+        std::string humidityTag;
+        std::string tempTag;
     public:
         TempHumidity(int pinNum, string tagPrefix) : pinNum(pinNum) {
             humidityTag = tagPrefix + "_H";
