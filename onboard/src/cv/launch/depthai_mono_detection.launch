@@ -9,7 +9,7 @@
     <arg name="show_class_name" default="True" doc='{"type":"bool","allowEmpty":false,"help":"Whether to show the class name."}'/>
     <arg name="show_confidence" default="True" doc='{"type":"bool","allowEmp
     ty":false,"help":"Whether to show the confidence value."}'/>
-    <node name="depthai_mono_detection" pkg="cv" type="depthai_mono_detection.py" output="screen">
+    <node name="depthai_mono_detection" pkg="cv" exec="depthai_mono_detection" output="screen">
         <param name="feed_path" value="$(arg feed_path)" />
         <param name="model" value="$(arg model)" />
         <param name="rgb_raw" value="$(arg rgb_raw)" />

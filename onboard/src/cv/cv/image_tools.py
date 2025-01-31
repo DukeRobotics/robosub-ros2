@@ -33,7 +33,7 @@ class ImageTools:
         ros_img.header = compressed_msg.header
         return ros_img
 
-    def convert_cv2_to_ros_msg(self, cv2_data: np.ndarray, image_encoding: str='bgr8') -> Image:
+    def convert_cv2_to_ros_msg(self, cv2_data: np.ndarray, image_encoding: str = 'bgr8') -> Image:
         """Convert from a cv2 image to a ROS Image message."""
         return self._cv_bridge.cv2_to_imgmsg(cv2_data, image_encoding)
 

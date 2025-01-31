@@ -13,7 +13,7 @@
 	<arg name="depth" default="False" doc='{"type":"bool","help":"Whether the depth map should be published."}' />
 	<arg name="convert_to_video" default="False" doc='{"type":"bool","help":"Whether to convert the saved encoded streams into a video."}' />
 	<arg name="qt_compatible" default="False" doc='{"type":"bool","help":"Whether to convert video files in a QuickTime compatible format so they are easily playable on Mac. If True, conversion will take more time and video will have a slightly different color grading. If False, you may have to use VLC media player to view some converted video files."}' />
-	<node name="depthai_publish_save_streams" pkg="cv" type="depthai_publish_save_streams.py" output="screen">
+	<node name="depthai_publish_save_streams" pkg="cv" exec="depthai_publish_save_streams" output="screen">
 		<param name="framerate" value="$(arg framerate)" />
 		<param name="rgb_video" value="$(arg rgb_video)" />
 		<param name="rgb_video_file_path" value="$(arg rgb_video_file_path)" />

@@ -5,7 +5,7 @@
 	<arg name="show_class_name" default="True" doc='{"type":"bool","allowEmpty":false,"help":"Whether to show the class name."}'/>
 	<arg name="show_confidence" default="True" doc='{"type":"bool","allowEmpty":false,"help":"Whether to show the confidence value."}'/>
 	<arg name="correct_color" default="True" doc='{"type":"bool","allowEmpty":false,"help":"Whether to apply underwater color correction."}'/>
-	<node name="depthai_simulate_detection" pkg="cv" type="depthai_simulate_detection.py" output="screen">
+	<node name="depthai_simulate_detection" pkg="cv" exec="depthai_simulate_detection" output="screen">
 		<param name="feed_path" value="$(arg feed_path)" />
 		<param name="depthai_model_name" value="$(arg depthai_model_name)" />
 		<param name="publishing_topic" value="$(arg publishing_topic)" />
