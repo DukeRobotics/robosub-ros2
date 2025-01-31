@@ -7,51 +7,55 @@ class Pressure {
     private:
         int pinNum;
         bool pressureConnected;
-        string MS5837 sensor;
+        std::string pressureTag;
+        MS5837 sensor;
     public:
         Pressure(int pinNum) : pinNum(pinNum) {
+            pressureTag = "P: ";
+
             pressureConnected = false;
             initPressure();
         }
 
-    void initPressure() {
-        Wire.end();
-        Wire.begin();
-        Wire.setWireTimeout(500, true);
+        void initPressure() {
+            Wire.end();
+            Wire.begin();
+            Wire.setWireTimeout(500, true);
 
-        sensor.setFluidDensity(997); // kg/m^3 (freshwater, 1029 for seawater)
+            sensor.setFluidDensity(997); // kg/m^3 (freshwater, 1029 for seawater)
 
-        pressureConnected = sensor.init();
+            pressureConnected = sensor.init();
 
-        if (pressureConnected) {
-            sensor.setModel(MS5837::MS5837_02BA);
+            if (pressureConnected) {
+                sensor.setModel(MS5837::MS5837_02BA);
+            }
         }
-    }
 
-    void callPressure() {
-        // If pressure sensor is connected, read the pressure
-        if (pressureConnected) {
-            byte error = sensor.read();
+        void callPressure() {
+            // If pressure sensor is connected, read the pressure
+            if (pressureConnected) {
+                byte error = sensor.read();
 
-            // If sensor.read timed out, mark pressure sensor as disconnected and clear the timeout flag
-            if (error == 5) {
-                pressureConnected = false;
-                Wire.clearWireTimeoutFlag();
+                // If sensor.read timed out, mark pressure sensor as disconnected and clear the timeout flag
+                if (error == 5) {
+                    pressureConnected = false;
+                    Wire.clearWireTimeoutFlag();
+                }
+
+                // If sensor.read was successful, print the pressure
+                if (!error) {
+                    Serial.flush();
+
+                    String printPressure = pressureTag + String(sensor.depth());
+                    Serial.println(printPressure);
+                }
+
+                // If sensor.read had an error but did not time out, try reading again in next loop
             }
 
-            // If sensor.read was successful, print the pressure
-            if (!error) {
-                Serial.flush();
-                String printPressure = PRESSURETAG + String(sensor.depth());
-                Serial.println(printPressure);
+            // If pressure sensor is disconnected, try to reinitalize it
+            else {
+                initPressure();
             }
-
-            // If sensor.read had an error but did not time out, try reading again in next loop
         }
-
-        // If pressure sensor is disconnected, try to reinitalize it
-        else {
-            initPressure();
-        }
-    }
 }

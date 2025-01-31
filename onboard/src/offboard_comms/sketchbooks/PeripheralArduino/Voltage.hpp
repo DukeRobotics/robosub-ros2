@@ -4,12 +4,12 @@
 
 class Voltage {
     private:
-
+        int pinNum;
         string voltagetag;
 
 
     public:
-    Voltage(int ) {
+    Voltage(int pinNum, string voltagetag) {
         voltagetag = "V:"
     }
 
