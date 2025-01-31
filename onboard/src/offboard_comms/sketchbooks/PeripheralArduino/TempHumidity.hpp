@@ -5,13 +5,13 @@
 class TempHumidity {
     private:
         int pinNum;
-        DHT11 dht11;
         std::string humidityTag;
         std::string tempTag;
+        DHT11 dht11;
     public:
         TempHumidity(int pinNum, string tagPrefix) : pinNum(pinNum) {
-            humidityTag = tagPrefix + "_H";
-            tempTag = tagPrefix + "_T";
+            humidityTag = tagPrefix + "_H: ";
+            tempTag = tagPrefix + "_T: ";
 
             dht11(pinNum);
             dht11.setDelay(0);
