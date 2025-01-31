@@ -16,18 +16,23 @@ class RobotServo {
         RobotServo(int pinNum, int minPWM, int stopPWM, int maxPWM, int delay=1000) :
         pinNum(pinNum), minPWM(minPWM), stopPWM(stopPWM), maxPWM(maxPWM), delay(delay) {
             myServo.attach(pinNum);
-            myServo.writeMicroseconds(1500);
+            myServo.writeMicroseconds(stopPWM);
         }
 
-        void callServo(int direction) {
+        void callServo(int pwm) {
+            // Make sure pwm is within the min and max PWM values
+            if (pwm < minPWM || pwm > maxPWM) {
+                return;
+            }
+
             unsigned long currentTime = millis();
-            myServo.writeMicroseconds(direction);  // 1200 = 90 degrees left  // 1250 micros =  20 write
+            myServo.writeMicroseconds(pwm);  // 1200 = 90 degrees left  // 1250 micros =  20 write
             servoMoved = true;
             servoTime = currentTime;
 
-            // return to default position after delay milisecond
+            // Return to default position after delay
             if(servoMoved && ((currentTime - servoTime) > delay)) {
-                myServo.writeMicroseconds(1500);  // 1500 micros = 90 write
+                myServo.writeMicroseconds(stopPWM);  // 1500 micros = 90 write
                 servoMoved = false;
             }
         }

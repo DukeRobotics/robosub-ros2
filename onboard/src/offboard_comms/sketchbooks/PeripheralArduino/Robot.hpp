@@ -101,13 +101,11 @@ public:
             if (Serial.available() > 0) {
                 String input = Serial.readString();
                 String id = input.substring(0, 1);
-                int data = input.substring(2).toInt();
+                int pwm = input.substring(2).toInt();
 
                 for (int i = 0; i < numServos; ++i) {
                     if (servoTags[i] == id) {
-                        if ((servoList[i]->getMinPWM() < data) && (data < servoList[i]->getMaxPWM())) {
-                            servoList[i]->callServo(data);
-                        }
+                        servoList[i]->callServo(pwm);
                         break;
                     }
                 }
