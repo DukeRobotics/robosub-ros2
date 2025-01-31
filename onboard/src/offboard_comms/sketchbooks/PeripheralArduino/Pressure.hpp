@@ -5,12 +5,11 @@
 
 class Pressure {
     private:
-        int pinNum;
         bool pressureConnected;
         std::string pressureTag;
         MS5837 sensor;
     public:
-        Pressure(int pinNum) : pinNum(pinNum) {
+        Pressure() {
             pressureTag = "P: ";
 
             pressureConnected = false;
@@ -50,7 +49,7 @@ class Pressure {
                     Serial.println(printPressure);
                 }
 
-                // If sensor.read had an error but did not time out, try reading again in next loop
+                // If sensor.read had an error but did not time out, try reading again in next call
             }
 
             // If pressure sensor is disconnected, try to reinitalize it
