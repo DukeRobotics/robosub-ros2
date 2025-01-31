@@ -19,6 +19,15 @@ arduino:
       - type: humidity
         tag: H
         topic: /sensors/humidity
+    servos:
+      - name: Marker Dropper
+        tag: M
+        min_pwm: 1100
+        max_pwm: 1900
+      - name: Torpedoes
+        tag: T
+        min_pwm: 1100
+        max_pwm: 1900
   thruster:
     ftdi: B0004VDI
     fqbn: arduino:avr:nano

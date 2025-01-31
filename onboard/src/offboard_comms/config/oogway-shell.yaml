@@ -5,6 +5,7 @@ arduino:
     core: arduino:avr
     sketch: sketchbooks/PeripheralArduino
     libraries:
+      - servo
     sensors:
       - type: pressure
         tag: P
@@ -18,6 +19,15 @@ arduino:
       - type: humidity
         tag: H
         topic: /sensors/humidity
+    servos:
+      - name: Marker Dropper
+        tag: M
+        min_pwm: 1100
+        max_pwm: 1900
+      - name: Torpedoes
+        tag: T
+        min_pwm: 1100
+        max_pwm: 1900
   thruster:
     ftdi: 02AB8D8451544E5450202020FF0D334A
     fqbn: arduino:megaavr:nano
