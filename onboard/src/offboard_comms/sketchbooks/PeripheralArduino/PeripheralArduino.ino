@@ -4,7 +4,6 @@
 #include <Wire.h>
 #include "DHT11.h"
 #include "MS5837.h"
-#include "Robot.hpp"
 #include "Oogway.cpp"
 
 #define OOGWAY 0
@@ -27,6 +26,8 @@ unsigned long prevTime = 0;
 
 
 void setup() {
+  Serial.begin(BAUD_RATE);
+
   switch (ROBOT_NAME) {
     case OOGWAY:
       robot = new Oogway(false, VOLTAGE_DELAY, PRESSURE_DELAY, TEMP_HUMIDITY_DELAY, SERVO_DELAY);
