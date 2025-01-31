@@ -8,7 +8,7 @@ class Voltage {
 
     public:
         Voltage(int pinNum, float onboardVoltage) : pinNum(pinNum), onboardVoltage(onboardVoltage) {
-            voltageTag = "V: ";
+            voltageTag = "V:";
         }
 
         void callVoltage() {

@@ -9,7 +9,7 @@ class Pressure {
         MS5837 sensor;
     public:
         Pressure() {
-            pressureTag = "P: ";
+            pressureTag = "P:";
 
             pressureConnected = false;
             initPressure();
