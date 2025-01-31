@@ -13,7 +13,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/config', list(map(str, Path('./config').glob('*.yaml')))),
-        ('share/' + package_name + '/launch', list(map(str,  Path('./launch').glob('*_launch.xml')))),
+        ('share/' + package_name + '/launch', list(map(str,  Path('./launch').glob('*.xml')))),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -25,8 +25,7 @@ setup(
         'console_scripts': [
             'dvl_raw = data_pub.dvl_raw:main',
             'dvl_odom = data_pub.dvl_to_odom:main',
-            'pressure_voltage = data_pub.pressure_voltage:main',
-            'sensor_servo = data_pub.sensor_servo:main',
+            'peripheral = data_pub.peripheral:main',
         ],
     },
 )

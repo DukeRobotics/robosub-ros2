@@ -35,11 +35,11 @@ class PeripheralServo:
 class PeripheralPublisher(SerialRepublisherNode):
     """Serial publisher to publish data from peripheral arduino and send servo commands."""
 
-    CONFIG_NAME = 'peripheral'
+    NAME = 'peripheral arduino'
     CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
 
     BAUDRATE = 9600
-    NODE_NAME = 'peripheral_pub'
+    NODE_NAME = 'peripheral'
     SERVO_SERVICE = 'servo_control'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
     LOOP_RATE = 50.0  # Hz
@@ -51,7 +51,7 @@ class PeripheralPublisher(SerialRepublisherNode):
     }
 
     def __init__(self) -> None:
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.CONFIG_NAME,
+        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.NAME,
                          self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE, use_nonblocking=True)
 
         self.sensors: dict[str, PeripheralSensor] = {}
@@ -63,9 +63,13 @@ class PeripheralPublisher(SerialRepublisherNode):
         if self.servos:
             self._servo_service = self.create_service(SetServo, self.SERVO_SERVICE, self.servo_control)
 
+    def get_ftdi_string(self) -> str:
+        """Get the FTDI string for the Peripheral Arduino."""
+        return self._config['arduino']['peripheral']['ftdi']
+
     def setup_sensors(self) -> None:
         """Initialize sensor classes based on the config file."""
-        for sensor in self._arduino_config[self._config_name]['sensors']:
+        for sensor in self._config['arduino'][self._config_name]['sensors']:
             sensor_class = self.SENSOR_CLASSES.get(sensor['type'])
             if sensor_class:
                 self.sensors[sensor['tag']] = sensor_class(self, sensor['tag'], sensor['topic'])
@@ -74,7 +78,7 @@ class PeripheralPublisher(SerialRepublisherNode):
 
     def setup_servos(self) -> None:
         """Initialize servo classes based on the config file."""
-        for servo in self._arduino_config[self._config_name]['servos']:
+        for servo in self._config['arduino'][self._config_name]['servos']:
             self.servos[servo['tag']] = PeripheralServo(servo['name'], servo['tag'], servo['min_pwm'], servo['max_pwm'])
 
     def process_line(self, line: str) -> None:
@@ -148,14 +152,14 @@ class PeripheralPublisher(SerialRepublisherNode):
 def main(args: list[str] | None = None) -> None:
     """Create and run the peripheral publisher node."""
     rclpy.init(args=args)
-    peripheral_pub = PeripheralPublisher()
+    peripheral = PeripheralPublisher()
 
     try:
-        rclpy.spin(peripheral_pub)
+        rclpy.spin(peripheral)
     except KeyboardInterrupt:
         pass
     finally:
-        peripheral_pub.destroy_node()
+        peripheral.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
 

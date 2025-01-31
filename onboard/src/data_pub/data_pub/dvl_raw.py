@@ -9,6 +9,7 @@ from data_pub.serial_republisher_node import SerialRepublisherNode
 class DVLRawPublisher(SerialRepublisherNode):
     """A class to read and publish raw DVL data from a serial port."""
 
+    NAME = 'DVL'
     CONFIG_FILE_PATH = f'package://data_pub/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
 
     BAUDRATE = 115200
@@ -21,7 +22,7 @@ class DVLRawPublisher(SerialRepublisherNode):
 
     def __init__(self) -> None:
 
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, 'dvl', self.CONNECTION_RETRY_PERIOD,
+        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.NAME, self.CONNECTION_RETRY_PERIOD,
                          self.LOOP_RATE)
 
         self._dvl_line_parsers = {
@@ -37,6 +38,10 @@ class DVLRawPublisher(SerialRepublisherNode):
         self._pub = self.create_publisher(DVLRaw, self.TOPIC_NAME, 10)
 
         self._current_msg = DVLRaw()
+
+    def get_ftdi_string(self) -> str:
+        """Get the FTDI string for the DVL."""
+        return self._config['dvl']['ftdi']
 
     def _extract_floats(self, num_string: str, start: int, stop: int) -> list[float]:
         """Return a list of floats from a given string, using LINE_DELIM and going from start to stop."""

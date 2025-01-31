@@ -14,18 +14,17 @@ from serial.tools import list_ports
 class SerialRepublisherNode(Node, ABC):
     """Abstract serial publisher for a ROS node."""
 
-    def __init__(self, node_name: str, baudrate: int, config_file_path: str, config_name: str,
+    def __init__(self, node_name: str, baudrate: int, config_file_path: str, name: str,
                  connection_retry_period: int=1, loop_rate: int=10, use_nonblocking: bool = False) -> None:
         self._node_name = node_name
         self._baud = baudrate
-        self._config_name = config_name
+        self._name = name
         self._connection_retry_period = connection_retry_period
         self._loop_rate = loop_rate
         self._use_nonblocking = use_nonblocking
 
         with Path(rr.get_filename(config_file_path, use_protocol=False)).open() as f:
-            config_data = yaml.safe_load(f)
-            self._arduino_config = config_data['arduino']
+            self._config = yaml.safe_load(f)
 
         super().__init__(node_name)
 
@@ -36,17 +35,21 @@ class SerialRepublisherNode(Node, ABC):
         self._serial_port = None
         self._serial = None
 
+    @abstractmethod
+    def get_ftdi_string(self) -> str:
+        """Get the FTDI string for the serial device."""
+
     def connect(self) -> None:
         """Read FTDI strings of all ports in list_ports.grep."""
         try:
-            self._serial_port = next(list_ports.grep(self._arduino_config[self._config_name]['ftdi'])).device.strip()
+            self._serial_port = next(list_ports.grep(self.get_ftdi_string())).device.strip()
             self._serial = serial.Serial(self._serial_port, self._baud,
                                             timeout=1, write_timeout=None,
                                             bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE,
                                             stopbits=serial.STOPBITS_ONE)
             self.connect_timer.cancel()
             self.run_timer.reset()
-            self.get_logger().info(f'Connected to {self._config_name} sensor at {self._serial_port}.')
+            self.get_logger().info(f'Connected to {self._name} at {self._serial_port}.')
         except StopIteration:
             self.get_logger().error(f'Error in connecting to serial device in {self._node_name}, trying again in '
                                     f'{self._connection_retry_period} seconds.')
@@ -105,7 +108,7 @@ class SerialRepublisherNode(Node, ABC):
                 self.process_line(line)
 
         except Exception: # noqa: BLE001
-            self.get_logger().error(f'Error in reading {self._config_name} serial read, trying again in 1 second.')
+            self.get_logger().error(f'Error in reading {self._name} from serial, trying again in 1 second.')
             self.get_logger().error(traceback.format_exc())
             self._serial.close()
             self._serial = None
