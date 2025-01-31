@@ -1,18 +1,28 @@
-import rclpy
 from abc import ABC, abstractmethod
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
+from rclpy.node import Node
 from std_msgs.msg import Float64
+
 
 class PeripheralSensor(ABC):
     """Abstract class for peripheral sensors."""
 
-    def __init__(self, node: rclpy.node.Node, tag: str, topic: str) -> None:
+    def __init__(self, node: Node, tag: str, topic: str, min_value: float, max_value: float,
+                 median_filter_size: int) -> None:
         self.node = node
         self.tag = tag
         self.topic = topic
+        self.min_value = min_value
+        self.max_value = max_value
+        self.median_filter_size = median_filter_size
 
-    @abstractmethod
+        # Current sensor value, after filtering
+        self._value: float = None
+
+        # Most recent readings for median filter. Stored in order of arrival from oldest to newest.
+        self._previous_values: list[float] = None
+
     def publish_value(self, new_reading: float) -> None:
         """
         Update sensor value with new reading, filter out bad readings, and publish the value.
@@ -20,6 +30,27 @@ class PeripheralSensor(ABC):
         Args:
             new_reading (float): New sensor value recieved.
         """
+        # Don't update value when new reading is too large
+        if self.min_value < new_reading < self.max_value:
+            if self.median_filter_size > 0:
+                # First reading
+                if self._value is None:
+                    self._value = new_reading
+                    self._previous_values = [new_reading] * self.median_filter_size
+
+                # Median filter
+                else:
+                    self._previous_values.append(new_reading)
+                    self._previous_values.pop(0)
+                    self._value = sorted(self._previous_values)[int(self.median_filter_size / 2)]
+            else:
+                self._value = new_reading
+
+        self._publish_current_value()
+
+    @abstractmethod
+    def _publish_current_value(self) -> None:
+        """Publish current sensor value."""
 
 
 class PressureSensor(PeripheralSensor):
@@ -29,64 +60,77 @@ class PressureSensor(PeripheralSensor):
     MAX_VALUE = 7
     MEDIAN_FILTER_SIZE = 3
 
-    def __init__(self, node: rclpy.node.Node, tag: str, topic: str) -> None:
-        super().__init__(node, tag, topic)
+    def __init__(self, node: Node, tag: str, topic: str) -> None:
+        super().__init__(node, tag, topic, self.MIN_VALUE, self.MAX_VALUE, self.MEDIAN_FILTER_SIZE)
 
-        self._pressure = None
-        self._previous_pressure = None
-        self.current_pressure_msg = PoseWithCovarianceStamped()
-
-        self.publisher = self.node.create_publisher(PoseWithCovarianceStamped, self.topic, 10)
-
-    def publish_value(self, new_reading: float) -> None:
-        """Update pressure value with new reading, filter out bad readings, and publish the value."""
-        self.update_value(new_reading)
-        self.parse_press
-
-    def update_value(self, new_reading: float) -> None:
-        """
-        Update self._pressure with new reading and filter out bad readings.
-
-        Args:
-            new_reading (float): New pressure value recieved.
-        """
-        # Ignore readings that are too large
-        if new_reading < self.MIN_VALUE or new_reading > self.MAX_VALUE:
-            return
-
-        if self.MEDIAN_FILTER_SIZE > 0:
-            # First reading
-            if self._pressure is None:
-                self._pressure = new_reading
-                self._previous_pressure = [new_reading] * self.MEDIAN_FILTER_SIZE
-
-            # Median filter
-            else:
-                self._previous_pressure.append(new_reading)
-                self._previous_pressure.pop(0)
-                self._pressure = sorted(self._previous_pressure)[int(self.MEDIAN_FILTER_SIZE / 2)]
-
-        self._publish_current_pressure_msg()
-
-    def _parse_pressure(self) -> None:
-        """Parse the pressure into an odom message."""
+        self._current_pressure_msg = PoseWithCovarianceStamped()
+        self._current_pressure_msg.header.frame_id = 'odom'  # World frame
         self._current_pressure_msg.pose.pose.position.x = 0.0
         self._current_pressure_msg.pose.pose.position.y = 0.0
-        self._current_pressure_msg.pose.pose.position.z = -1 * float(self._pressure)
-
         self._current_pressure_msg.pose.pose.orientation.x = 0.0
         self._current_pressure_msg.pose.pose.orientation.y = 0.0
         self._current_pressure_msg.pose.pose.orientation.z = 0.0
         self._current_pressure_msg.pose.pose.orientation.w = 1.0
+        self._current_pressure_msg.pose.covariance[14] = 0.01   # Only the z,z covariance
 
-        # Only the z,z covariance
-        self._current_pressure_msg.pose.covariance[14] = 0.01
+        self._publisher = self.node.create_publisher(PoseWithCovarianceStamped, self.topic, 10)
 
-    def _publish_current_pressure_msg(self) -> None:
-        """Publish current pressure."""
-        self._current_pressure_msg.header.stamp = self.get_clock().now().to_msg()
-        self._current_pressure_msg.header.frame_id = 'odom'  # World frame
+    def _publish_current_value(self) -> None:
+        """Convert pressure to odometry message and publish."""
+        self._current_pressure_msg.header.stamp = self.node.get_clock().now().to_msg()
+        self._current_pressure_msg.pose.pose.position.z = -1 * float(self._value)
+        self._publisher.publish(self._current_pressure_msg)
 
-        self._pub_depth.publish(self._current_pressure_msg)
-        self._current_pressure_msg = PoseWithCovarianceStamped()
+class VoltageSensor(PeripheralSensor):
+    """Voltage sensor class."""
 
+    MIN_VALUE = 0
+    MAX_VALUE = 30
+    MEDIAN_FILTER_SIZE = 0
+
+    def __init__(self, node: Node, tag: str, topic: str) -> None:
+        super().__init__(node, tag, topic, self.MIN_VALUE, self.MAX_VALUE, self.MEDIAN_FILTER_SIZE)
+
+        self._current_voltage_msg = Float64()
+        self._publisher = self.node.create_publisher(Float64, self.topic, 10)
+
+    def _publish_current_value(self) -> None:
+        """Publish current voltage."""
+        self._current_voltage_msg.data = self._value
+        self._publisher.publish(self._current_voltage_msg)
+
+class TemperatureSensor(PeripheralSensor):
+    """Temperature sensor class."""
+
+    MIN_VALUE = -200
+    MAX_VALUE = 200
+    MEDIAN_FILTER_SIZE = 3
+
+    def __init__(self, node: Node, tag: str, topic: str) -> None:
+        super().__init__(node, tag, topic, self.MIN_VALUE, self.MAX_VALUE, self.MEDIAN_FILTER_SIZE)
+
+        self._current_temperature_msg = Float64()
+        self._publisher = self.node.create_publisher(Float64, self.topic, 10)
+
+    def _publish_current_value(self) -> None:
+        """Publish current temperature."""
+        self._current_temperature_msg.data = self._value
+        self._publisher.publish(self._current_temperature_msg)
+
+class HumiditySensor(PeripheralSensor):
+    """Humidity sensor class."""
+
+    MIN_VALUE = 0
+    MAX_VALUE = 200
+    MEDIAN_FILTER_SIZE = 3
+
+    def __init__(self, node: Node, tag: str, topic: str) -> None:
+        super().__init__(node, tag, topic, self.MIN_VALUE, self.MAX_VALUE, self.MEDIAN_FILTER_SIZE)
+
+        self._current_humidity_msg = Float64()
+        self._publisher = self.node.create_publisher(Float64, self.topic, 10)
+
+    def _publish_current_value(self) -> None:
+        """Publish current humidity."""
+        self._current_humidity_msg.data = self._value
+        self._publisher.publish(self._current_humidity_msg)
