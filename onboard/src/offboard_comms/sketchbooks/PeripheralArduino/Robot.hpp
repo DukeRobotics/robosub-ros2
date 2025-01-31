@@ -10,111 +10,111 @@
 #define MAX_SERVOS 10
 
 class Robot {
-protected:
-    bool isShell;
-    int voltageDelay;
-    int pressureDelay;
-    int tempHumidityDelay;
-    int servoDelay;
+    protected:
+        bool isShell;
+        int voltageDelay;
+        int pressureDelay;
+        int tempHumidityDelay;
+        int servoDelay;
 
-    int currentTime;
-    int prevTimeVoltage;
-    int prevTimePressure;
-    int prevTimeTempHumidity;
-    int prevTimeServo;
+        int currentTime;
+        int prevTimeVoltage;
+        int prevTimePressure;
+        int prevTimeTempHumidity;
+        int prevTimeServo;
 
-    Voltage* voltageList[MAX_VOLTAGE_SENSORS];
-    Pressure* pressureList[MAX_PRESSURE_SENSORS];
-    TempHumidity* tempHumidityList[MAX_TEMP_HUMIDITY_SENSORS];
-    RobotServo* servoList[MAX_SERVOS];
-    String servoTags[MAX_SERVOS];
-    int numVoltage, numPressure, numTempHumidity, numServos;
+        Voltage* voltageList[MAX_VOLTAGE_SENSORS];
+        Pressure* pressureList[MAX_PRESSURE_SENSORS];
+        TempHumidity* tempHumidityList[MAX_TEMP_HUMIDITY_SENSORS];
+        RobotServo* servoList[MAX_SERVOS];
+        String servoTags[MAX_SERVOS];
+        int numVoltage, numPressure, numTempHumidity, numServos;
 
-public:
-    Robot(int voltageDelay, int pressureDelay, int tempHumidityDelay, int servoDelay) :
-        voltageDelay(voltageDelay), pressureDelay(pressureDelay), tempHumidityDelay(tempHumidityDelay), servoDelay(servoDelay), isShell(false) {
-        init();
-    }
-
-    void init() {
-        prevTimeVoltage = 0;
-        prevTimePressure = 0;
-        prevTimeTempHumidity = 0;
-        prevTimeServo = 0;
-        numVoltage = 0;
-        numPressure = 0;
-        numTempHumidity = 0;
-        numServos = 0;
-    }
-
-    void addVoltageSensor(Voltage* v) {
-        if (numVoltage < MAX_VOLTAGE_SENSORS) {
-            voltageList[numVoltage++] = v;
+    public:
+        Robot(int voltageDelay, int pressureDelay, int tempHumidityDelay, int servoDelay) :
+            voltageDelay(voltageDelay), pressureDelay(pressureDelay), tempHumidityDelay(tempHumidityDelay), servoDelay(servoDelay), isShell(false) {
+            init();
         }
-    }
 
-    void addPressureSensor(Pressure* p) {
-        if (numPressure < MAX_PRESSURE_SENSORS) {
-            pressureList[numPressure++] = p;
+        void init() {
+            prevTimeVoltage = 0;
+            prevTimePressure = 0;
+            prevTimeTempHumidity = 0;
+            prevTimeServo = 0;
+            numVoltage = 0;
+            numPressure = 0;
+            numTempHumidity = 0;
+            numServos = 0;
         }
-    }
 
-    void addTempHumiditySensor(TempHumidity* th) {
-        if (numTempHumidity < MAX_TEMP_HUMIDITY_SENSORS) {
-            tempHumidityList[numTempHumidity++] = th;
-        }
-    }
-
-    void addServo(const String& tag, RobotServo* s) {
-        if (numServos < MAX_SERVOS) {
-            servoTags[numServos] = tag;
-            servoList[numServos++] = s;
-        }
-    }
-
-    void process() {
-        currentTime = millis();
-
-        if (currentTime - prevTimeVoltage >= voltageDelay) {
-            prevTimeVoltage = currentTime;
-            for (int i = 0; i < numVoltage; ++i) {
-                voltageList[i]->callVoltage();
+        void addVoltageSensor(Voltage* v) {
+            if (numVoltage < MAX_VOLTAGE_SENSORS) {
+                voltageList[numVoltage++] = v;
             }
         }
 
-        if (currentTime - prevTimePressure >= pressureDelay) {
-            prevTimePressure = currentTime;
-            for (int i = 0; i < numPressure; ++i) {
-                pressureList[i]->callPressure();
+        void addPressureSensor(Pressure* p) {
+            if (numPressure < MAX_PRESSURE_SENSORS) {
+                pressureList[numPressure++] = p;
             }
         }
 
-        if (currentTime - prevTimeTempHumidity >= tempHumidityDelay) {
-            prevTimeTempHumidity = currentTime;
-            for (int i = 0; i < numTempHumidity; ++i) {
-                tempHumidityList[i]->callTempHumidity();
+        void addTempHumiditySensor(TempHumidity* th) {
+            if (numTempHumidity < MAX_TEMP_HUMIDITY_SENSORS) {
+                tempHumidityList[numTempHumidity++] = th;
             }
         }
 
-        // Continuously update servos to check if they need to return to stopPWM
-        for (int i = 0; i < numServos; ++i) {
-            servoList[i]->updateServo();
+        void addServo(const String& tag, RobotServo* s) {
+            if (numServos < MAX_SERVOS) {
+                servoTags[numServos] = tag;
+                servoList[numServos++] = s;
+            }
         }
 
-        if (currentTime - prevTimeServo >= servoDelay) {
-            prevTimeServo = currentTime;
-            if (Serial.available() > 0) {
-                String input = Serial.readString();
-                String id = input.substring(0, 1);
-                int pwm = input.substring(2).toInt();
+        void process() {
+            currentTime = millis();
 
-                for (int i = 0; i < numServos; ++i) {
-                    if (servoTags[i] == id) {
-                        servoList[i]->callServo(pwm);
-                        break;
+            if (currentTime - prevTimeVoltage >= voltageDelay) {
+                prevTimeVoltage = currentTime;
+                for (int i = 0; i < numVoltage; ++i) {
+                    voltageList[i]->callVoltage();
+                }
+            }
+
+            if (currentTime - prevTimePressure >= pressureDelay) {
+                prevTimePressure = currentTime;
+                for (int i = 0; i < numPressure; ++i) {
+                    pressureList[i]->callPressure();
+                }
+            }
+
+            if (currentTime - prevTimeTempHumidity >= tempHumidityDelay) {
+                prevTimeTempHumidity = currentTime;
+                for (int i = 0; i < numTempHumidity; ++i) {
+                    tempHumidityList[i]->callTempHumidity();
+                }
+            }
+
+            // Continuously update servos to check if they need to return to stopPWM
+            for (int i = 0; i < numServos; ++i) {
+                servoList[i]->updateServo();
+            }
+
+            if (currentTime - prevTimeServo >= servoDelay) {
+                prevTimeServo = currentTime;
+                if (Serial.available() > 0) {
+                    String input = Serial.readString();
+                    String id = input.substring(0, 1);
+                    int pwm = input.substring(2).toInt();
+
+                    for (int i = 0; i < numServos; ++i) {
+                        if (servoTags[i] == id) {
+                            servoList[i]->callServo(pwm);
+                            break;
+                        }
                     }
                 }
             }
         }
-    }
 };

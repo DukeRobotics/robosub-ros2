@@ -1,4 +1,5 @@
 #include <Arduino.h>
+
 class Voltage {
     private:
         int pinNum;
