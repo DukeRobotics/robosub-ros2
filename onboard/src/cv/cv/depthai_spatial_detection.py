@@ -14,7 +14,6 @@ from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String
 
 from cv import correct, depthai_camera_connect
-from cv.config import DepthAI
 from cv.image_tools import ImageTools
 from cv.utils import DetectionVisualizer, calculate_relative_pose
 
