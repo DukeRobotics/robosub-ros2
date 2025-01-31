@@ -13,7 +13,8 @@ class Servo {
         unsigned long servoTime;
 
     public:
-        Servo(int pinNum, int minPWM, int stopPWM, int maxPWM, int delay=1000) : pinNum(pinNum), minPWM(minPWM), stopPWM(stopPWM), maxPWM(maxPWM), delay(delay) {
+        Servo(int pinNum, int minPWM, int stopPWM, int maxPWM, int delay=1000) :
+        pinNum(pinNum), minPWM(minPWM), stopPWM(stopPWM), maxPWM(maxPWM), delay(delay) {
             myServo.attach(pinNum);
             myServo.writeMicroseconds(1500);
         }

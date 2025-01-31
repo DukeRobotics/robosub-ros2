@@ -1,5 +1,4 @@
 #include "Robot.hpp"
-#include <string>
 
 #define VOLTAGE_PIN 3
 #define TH_PIN 4
@@ -8,16 +7,29 @@
 
 class Oogway : public Robot
 {
-    public:
-        Oogway(bool isShell) : Robot(isShell) {
-            Voltage voltage_sensor = new Voltage(VOLTAGE_PIN);
-            Pressure pressure_sensor = new Pressure();
-            TempHumidity temp_humidity = new TempHumidity(TH_PIN);
-            Servo servo_marker = new Servo(SERVO_MARKER, 1100, 1500, 1900);
-            Servo servo_torpedo = new Servo(SERVO_TORPEDO, 1100, 1500, 1900);
+    private:
+        std::string tempHumidityTagPrefix;
+        std::string servo_marker_tag;
+        std::string servo_torpedo_tag;
 
-            std::string servo_marker_tag = "M";
-            std::string servo_torpedo_tag = "T";
+        Voltage voltage_sensor;
+        Pressure pressure_sensor;
+        TempHumidity temp_humidity_sensor;
+        Servo servo_marker;
+        Servo servo_torpedo;
+    public:
+        Oogway(bool isShell = false, int voltageDelay, int pressureDelay, int tempHumidityDelay, int servoDelay) :
+        Robot(isShell), voltageDelay(voltageDelay), pressureDelay(pressureDelay), tempHumidityDelay(tempHumidityDelay), servoDelay(servoDelay) {
+            tempHumidityTagPrefix = "oogway";
+
+            voltage_sensor = new Voltage(VOLTAGE_PIN);
+            pressure_sensor = new Pressure();
+            temp_humidity_sensor = new TempHumidity(TH_PIN), ;
+            servo_marker = new Servo(SERVO_MARKER, 1100, 1500, 1900);
+            servo_torpedo = new Servo(SERVO_TORPEDO, 1100, 1500, 1900);
+
+            servo_marker_tag = "M";
+            servo_torpedo_tag = "T";
 
             servoMap.insert({servo_marker_tag, servo_marker});
             servoMap.insert({servo_torpedo_tag, servo_torpedo});
@@ -26,6 +38,6 @@ class Oogway : public Robot
 
             pressureList.insert(pressure_sensor);
 
-            tempHumidityList.insert(temp_humdity);
+            tempHumidityList.insert(temp_humdity_sensor);
         }
 }
