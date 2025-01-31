@@ -1,9 +1,6 @@
 #include <Arduino.h>
 #include <Servo.h>
 
-#define LEFT 1250
-#define RIGHT 1750
-
 class Servo {
     private:
         int pinNum;
