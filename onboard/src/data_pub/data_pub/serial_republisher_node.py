@@ -24,7 +24,8 @@ class SerialRepublisherNode(Node, ABC):
         self._use_nonblocking = use_nonblocking
 
         with Path(rr.get_filename(config_file_path, use_protocol=False)).open() as f:
-            self._config_data = yaml.safe_load(f)
+            config_data = yaml.safe_load(f)
+            self._arduino_config = config_data['arduino']
 
         super().__init__(node_name)
 
@@ -38,7 +39,7 @@ class SerialRepublisherNode(Node, ABC):
     def connect(self) -> None:
         """Read FTDI strings of all ports in list_ports.grep."""
         try:
-            self._serial_port = next(list_ports.grep(self._config_data[self._config_name]['ftdi'])).device.strip()
+            self._serial_port = next(list_ports.grep(self._arduino_config[self._config_name]['ftdi'])).device.strip()
             self._serial = serial.Serial(self._serial_port, self._baud,
                                             timeout=1, write_timeout=None,
                                             bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE,
