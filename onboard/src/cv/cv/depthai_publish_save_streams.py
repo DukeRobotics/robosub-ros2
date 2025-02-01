@@ -82,30 +82,30 @@ class DepthAIStreamsPublisherAndSaver(Node):
     def set_parameters(self) -> None:
         """Set parameters for self."""
         # Framerate of the streams
-        self.framerate = self.declare_parameter('~framerate', 30).value
+        self.framerate = self.declare_parameter('framerate', 30).value
 
         # Whether to publish the streams to topics
-        self.publish_rgb_video = self.declare_parameter('~rgb_video', False).value
-        self.publish_rgb_preview = self.declare_parameter('~rgb_preview', False).value
-        self.publish_left = self.declare_parameter('~left', False).value
-        self.publish_right = self.declare_parameter('~right', False).value
-        self.publish_disparity = self.declare_parameter('~disparity', False).value
-        self.publish_depth = self.declare_parameter('~depth', False).value
+        self.publish_rgb_video = self.declare_parameter('rgb_video', False).value
+        self.publish_rgb_preview = self.declare_parameter('rgb_preview', False).value
+        self.publish_left = self.declare_parameter('left', False).value
+        self.publish_right = self.declare_parameter('right', False).value
+        self.publish_disparity = self.declare_parameter('disparity', False).value
+        self.publish_depth = self.declare_parameter('depth', False).value
 
         # File paths to save the streams to. If param is empty, the stream will not be saved.
         self.rgb_video_file_path = os.path.join(self.BASE_PATH, # noqa: PTH118
-                                                self.declare_parameter('~rgb_video_file_path', '').value)
+                                                self.declare_parameter('rgb_video_file_path', '').value)
         self.rgb_preview_file_path = os.path.join(self.BASE_PATH,  # noqa: PTH118
-                                               self.declare_parameter('~rgb_preview_file_path', '').value)
-        self.left_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~left_file_path', '').value) # noqa: PTH118
-        self.right_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('~right_file_path', '').value) # noqa: PTH118
+                                               self.declare_parameter('rgb_preview_file_path', '').value)
+        self.left_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('left_file_path', '').value) # noqa: PTH118
+        self.right_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('right_file_path', '').value) # noqa: PTH118
         self.disparity_file_path = os.path.join(self.BASE_PATH, # noqa: PTH118
-                                                self.declare_parameter('~disparity_file_path', '').value)
+                                                self.declare_parameter('disparity_file_path', '').value)
 
         # Whether to convert the saved encoded streams into a video
-        self.convert_to_video = self.declare_parameter('~convert_to_video', False).value
+        self.convert_to_video = self.declare_parameter('convert_to_video', False).value
         # Whether to convert video to QuickTime compatible format
-        self.qt_compatible = self.declare_parameter('~qt_compatible', False).value
+        self.qt_compatible = self.declare_parameter('qt_compatible', False).value
 
         # Whether to save the streams to files
         self.save_rgb_video = self.rgb_video_file_path != ''
