@@ -25,7 +25,7 @@ class USBCamera(Node):
         super().__init__(f'usb_camera_{topic}')
 
         # Read custom camera configs from launch command
-        self.topic = topic if topic else self.declare_parameter('topic','/camera/usb_camera/compressed').value
+        self.topic = topic if topic else self.declare_parameter('topic', '/camera/usb_camera/compressed').value
 
         self.device_path = device_path if device_path else self.declare_parameter('device_path',
                                                                                   '/dev/video_front').value
