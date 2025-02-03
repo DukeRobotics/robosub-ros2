@@ -12,7 +12,7 @@ arduino:
         topic: /sensors/depth
       - type: voltage
         tag: V
-        topic: /sensors/humidity
+        topic: /sensors/voltage
       - type: temperature
         tag: TC
         topic: /sensors/temperature/computer

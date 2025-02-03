@@ -12,7 +12,7 @@ arduino:
         topic: /sensors/depth
       - type: voltage
         tag: V
-        topic: /sensors/humidity
+        topic: /sensors/voltage
       - type: temperature
         tag: T
         topic: /sensors/temperature
@@ -20,11 +20,11 @@ arduino:
         tag: H
         topic: /sensors/humidity
     servos:
-      - name: Marker Dropper
+      - name: marker dropper
         tag: M
         min_pwm: 1100
         max_pwm: 1900
-      - name: Torpedoes
+      - name: torpedoes
         tag: T
         min_pwm: 1100
         max_pwm: 1900
