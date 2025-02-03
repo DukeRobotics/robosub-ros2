@@ -28,6 +28,7 @@ The following are the folders and files in the CV package:
 * `pink_bins_detector.py`: Detects pink bins using HSV filtering.
 * `usb_camera_connect.py`: Connects and opens USB cameras.
 * `usb_camera.py`: Publishes images coming from USB cameras.
+* `utils.py`: Auxillary functions that momdularize certain repeated calculations such as distance.
 
 `launch`: Contains the various launch files for our CV package. There are specific launch files for each file.
 * `bin_detector.xml`: Runs the bin detector script.
@@ -39,7 +40,7 @@ The following are the folders and files in the CV package:
 * `path_marker_detector.xml`: Runs the path marker detector script.
 * `pink_bins_detector.xml`: Runs the pink bins detector script.
 * `usb_camera_connect.xml`: Runs the USB camera connect script.
-* `USB_Camera.xml`: Runs the USB camera script.
+* `usb_camera.xml`: Runs the USB camera script.
 
 `models`: Contains our pre-trained models and a `.yaml` file that specifies the details of each model (classes predicted, topic name, and the path to the model weights)
 * `depthai_models.yaml`: contains models for object detection. A model is specified by a name, what classes it predicts, and the path to a .blob file, as well as other configuration parameters. `input_size` is [width, height]. The blob file format is specific to the processors that the OAK cameras use.
@@ -142,11 +143,11 @@ Once 1+ models are enabled for a specific node, they subscribe and publish to to
   * For each camera frame feed that a model processes, it will publish predictions to this topic
   * `<camera>` corresponds to the camera being used (e.g., `bottom`)
   * `<object>` corresponds to the object being detected (e.g., `bin_blue`)
-  * `<stage>` corresponds to the stage of the pipeline that is being published (`hsv_filter`, `detection`, etc.)
+  * `<stage>` corresponds to the stage of the pipeline that is being published (`hsv_filtered`, `bounding_box`, etc.)
   * For DepthAI pipelines, for each detected object in a frame, the model will publish the `xmin`, `ymin`, `xmax`, and `ymax`
     coordinates (normalized to \[0, 1\], with (0, 0) being the top-left corner), `label` of the object, `score` (a confidence value in the range
     of \[0, 1\]), and the `width` and `height` of the frame.
-  * If a model is enabled but detects no objects in a frame, it will not publish any messages to any topic
+  * If a model is enabled but detects no objects in a frame, it will not publish any messages that indicates a detection. Topics like `hsv_filtered` are still published for the debugging of HSV color bounds.
   * Type: custom_msgs/CVObject
 
 Note that the camera feed frame rate will likely be greater than the rate at which predictions can
