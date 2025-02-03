@@ -40,6 +40,7 @@ class PeripheralPublisher(SerialRepublisherNode):
 
     BAUDRATE = 9600
     NODE_NAME = 'peripheral'
+    ARDUINO_NAME = 'peripheral'
     SERVO_SERVICE = 'servo_control'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
     LOOP_RATE = 50.0  # Hz
@@ -65,11 +66,11 @@ class PeripheralPublisher(SerialRepublisherNode):
 
     def get_ftdi_string(self) -> str:
         """Get the FTDI string for the Peripheral Arduino."""
-        return self._config['arduino']['peripheral']['ftdi']
+        return self._config['arduino'][self.ARDUINO_NAME]['ftdi']
 
     def setup_sensors(self) -> None:
         """Initialize sensor classes based on the config file."""
-        for sensor in self._config['arduino'][self._config_name]['sensors']:
+        for sensor in self._config['arduino'][self.ARDUINO_NAME]['sensors']:
             sensor_class = self.SENSOR_CLASSES.get(sensor['type'])
             if sensor_class:
                 self.sensors[sensor['tag']] = sensor_class(self, sensor['tag'], sensor['topic'])
@@ -78,7 +79,7 @@ class PeripheralPublisher(SerialRepublisherNode):
 
     def setup_servos(self) -> None:
         """Initialize servo classes based on the config file."""
-        for servo in self._config['arduino'][self._config_name]['servos']:
+        for servo in self._config['arduino'][self.ARDUINO_NAME]['servos']:
             self.servos[servo['tag']] = PeripheralServo(servo['name'], servo['tag'], servo['min_pwm'], servo['max_pwm'])
 
     def process_line(self, line: str) -> None:
