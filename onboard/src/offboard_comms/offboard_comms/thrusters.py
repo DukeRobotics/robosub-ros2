@@ -92,7 +92,7 @@ class Thrusters(Node):
         try:
             device = self.declare_parameter('device', self.serial_port).value
             self.ser = serial.Serial(port=device, baudrate=57600, timeout=1.0)
-            self.get_logger().info(f'Serial connection initialized on {device}')
+            self.get_logger().info(f'Connected to thruster arduino at {device}.')
         except serial.SerialException as e:
             self.get_logger().error(f'Failed to initialize serial connection: {e}')
             self.ser = None
