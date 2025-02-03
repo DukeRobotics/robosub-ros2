@@ -55,7 +55,10 @@ class DVLRawPublisher(SerialRepublisherNode):
             line (str): line to process
         """
         data_type = line[1:3]
-        self._dvl_line_parsers[data_type](self._clean_line(line))
+        if data_type in self._dvl_line_parsers:
+            self._dvl_line_parsers[data_type](self._clean_line(line))
+        else:
+            self.get_logger().warn(f'Unknown data type: {data_type}')
 
     def _clean_line(self, line: str) -> str:
         """
