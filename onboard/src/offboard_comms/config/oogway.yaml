@@ -1,6 +1,6 @@
 arduino:
   peripheral:
-    ftdi: A10N1UC1
+    ftdi: B0004Z2N
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketchbooks/PeripheralArduino
