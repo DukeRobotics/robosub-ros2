@@ -105,7 +105,7 @@ class PeripheralPublisher(SerialRepublisherNode):
         Args:
             line (str): A line of data from the serial port
         """
-        tag, data = line.split(":", 1)
+        tag, data = line.split(':', 1)
         if data == '':
             return
         if tag in self.sensors:
