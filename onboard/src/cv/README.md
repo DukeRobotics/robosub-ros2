@@ -117,9 +117,7 @@ ros2 launch cv <file_name>.xml
 
 where `<file_name>` refers to the file name one is trying to launch (for more details about the files, see the section titled [Structure](#Structure)).
 
-After starting up a CV node, all models are initially disabled. You can select which model(s) you
-want to enable for this camera by using the following service (where `<camera>` is the value you
-chose above):
+No further arugments are required in the command line -- additional parameters can be modified in the `.xml` files and `config.py`.
 
 * `enable_model_<camera>`
   * Takes in the model name (string) and a boolean flag to specify whether to turn the model on or off
