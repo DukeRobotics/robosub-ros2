@@ -8,8 +8,8 @@ class Voltage {
         String voltageTag;
 
     public:
-        Voltage(int pinNum, float onboardVoltage) : pinNum(pinNum), onboardVoltage(onboardVoltage) {
-            voltageTag = "V:";
+        Voltage(int pinNum, float onboardVoltage, String tagSuffix) : pinNum(pinNum), onboardVoltage(onboardVoltage) {
+            voltageTag = "V" + tagSuffix + ":";
         }
 
         void callVoltage() {

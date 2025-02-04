@@ -8,8 +8,8 @@ class Pressure {
         String pressureTag;
         MS5837 sensor;
     public:
-        Pressure() {
-            pressureTag = "P:";
+        Pressure(String tagSuffix) {
+            pressureTag = "P" + tagSuffix + ":";
 
             pressureConnected = false;
             initPressure();

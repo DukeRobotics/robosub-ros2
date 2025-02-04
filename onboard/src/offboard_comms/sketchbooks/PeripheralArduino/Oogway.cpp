@@ -23,14 +23,14 @@ public:
     Oogway(int voltageDelay, int pressureDelay, int tempHumidityDelay, int servoDelay, bool isShell = false)
         : Robot(voltageDelay, pressureDelay, tempHumidityDelay, servoDelay), isShell(isShell) {
 
-        voltage_sensor = new Voltage(VOLTAGE_PIN, 4.655);
-        pressure_sensor = new Pressure();
+        voltage_sensor = new Voltage(VOLTAGE_PIN, 4.655, "");
+        pressure_sensor = new Pressure("");
         temp_humidity_sensor = new TempHumidity(TH_PIN, "");
-        servo_marker = new RobotServo(SERVO_MARKER, 1100, 1500, 1900);
-        servo_torpedo = new RobotServo(SERVO_TORPEDO, 1100, 1500, 1900);
+        servo_marker = new RobotServo(SERVO_MARKER, 1100, 1500, 1900, "M");
+        servo_torpedo = new RobotServo(SERVO_TORPEDO, 1100, 1500, 1900, "T");
 
-        addServo("M", servo_marker);
-        addServo("T", servo_torpedo);
+        addServo(servo_marker);
+        addServo(servo_torpedo);
         addVoltageSensor(voltage_sensor);
         addPressureSensor(pressure_sensor);
         addTempHumiditySensor(temp_humidity_sensor);

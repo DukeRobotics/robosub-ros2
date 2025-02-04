@@ -7,16 +7,21 @@ class RobotServo {
         int minPWM;
         int stopPWM;
         int maxPWM;
+        String tag;
         int delay; // Delay in milliseconds for servo to return to stop position
         Servo myServo;
         bool servoActive = false;
         unsigned long servoTime;
 
     public:
-        RobotServo(int pinNum, int minPWM, int stopPWM, int maxPWM, int delay=1000) :
-        pinNum(pinNum), minPWM(minPWM), stopPWM(stopPWM), maxPWM(maxPWM), delay(delay) {
+        RobotServo(int pinNum, int minPWM, int stopPWM, int maxPWM, String tag, int delay=1000) :
+        pinNum(pinNum), minPWM(minPWM), stopPWM(stopPWM), maxPWM(maxPWM), tag(tag), delay(delay) {
             myServo.attach(pinNum);
             myServo.writeMicroseconds(stopPWM);
+        }
+
+        String getTag() {
+            return tag;
         }
 
         void callServo(int pwm) {

@@ -27,7 +27,6 @@ class Robot {
         Pressure* pressureList[MAX_PRESSURE_SENSORS];
         TempHumidity* tempHumidityList[MAX_TEMP_HUMIDITY_SENSORS];
         RobotServo* servoList[MAX_SERVOS];
-        String servoTags[MAX_SERVOS];
         int numVoltage, numPressure, numTempHumidity, numServos;
 
     public:
@@ -65,9 +64,8 @@ class Robot {
             }
         }
 
-        void addServo(const String& tag, RobotServo* s) {
+        void addServo(RobotServo* s) {
             if (numServos < MAX_SERVOS) {
-                servoTags[numServos] = tag;
                 servoList[numServos++] = s;
             }
         }
@@ -110,7 +108,7 @@ class Robot {
                     int pwm = input.substring(colonIndex + 1).toInt();
 
                     for (int i = 0; i < numServos; ++i) {
-                        if (servoTags[i] == id) {
+                        if (servoList[i]->getTag() == id) {
                             servoList[i]->callServo(pwm);
                             break;
                         }

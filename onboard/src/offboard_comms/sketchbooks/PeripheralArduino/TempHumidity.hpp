@@ -9,8 +9,7 @@ class TempHumidity {
         DHT11* dht11; // Use a pointer instead of a direct instance
 
     public:
-        TempHumidity(int pinNum, String tagSuffix) {
-            this->pinNum = pinNum;
+        TempHumidity(int pinNum, String tagSuffix) : pinNum(pinNum) {
             humidityTag = "H" + tagSuffix + ":";
             tempTag = "T" + tagSuffix + ":";
 
