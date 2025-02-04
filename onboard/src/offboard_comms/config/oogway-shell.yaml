@@ -7,12 +7,12 @@ arduino:
     libraries:
       - servo
     sensors:
-      - type: pressure
-        tag: P
-        topic: /sensors/depth
       - type: voltage
         tag: V
         topic: /sensors/voltage
+      - type: pressure
+        tag: P
+        topic: /sensors/depth
       - type: temperature
         tag: T
         topic: /sensors/temperature
