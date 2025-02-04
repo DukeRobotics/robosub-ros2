@@ -131,14 +131,14 @@ Once 1+ models are enabled for a specific node, they subscribe and publish to to
 
 ## Topics
 
-#### Subscribing:
+### Subscribed
 
  * `/camera/<camera>/compressed`
    * The topic that the camera publishes each frame to
    * If no actual camera feed is available, you can use a bag file. See the Wiki for more details.
    * Type: `sensor_msgs/CompressedImage`
 
-#### Publishing:
+### Published
 
 * `cv/<camera>/<object>/<stage>`
   * For each camera frame feed that a model processes, it will publish predictions to this topic.
@@ -155,7 +155,7 @@ Note that the camera feed frame rate will likely be greater than the rate at whi
 be generated (especially if more than one model is enabled at the same time), so the publishing rate
 could be anywhere from like 0.2 to 10 FPS depending on computing power/the GPU/other factors.
 
-# Other Files
+## Other Files
 
 The `utils.py` file contains the `DetectionVisualizer` class which provides functions to draw bounding boxes and their labels onto images. It is used by DepthAI files when publishing visualized detections.
 
