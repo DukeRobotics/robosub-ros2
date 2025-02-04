@@ -105,8 +105,9 @@ class Robot {
                 prevTimeServo = currentTime;
                 if (Serial.available() > 0) {
                     String input = Serial.readString();
-                    String id = input.substring(0, 1);
-                    int pwm = input.substring(2).toInt();
+                    int colonIndex = input.indexOf(":");
+                    String id = input.substring(0, colonIndex);
+                    int pwm = input.substring(colonIndex + 1).toInt();
 
                     for (int i = 0; i < numServos; ++i) {
                         if (servoTags[i] == id) {
