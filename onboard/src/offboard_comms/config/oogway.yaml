@@ -3,7 +3,7 @@ arduino:
     ftdi: B0004Z2N
     fqbn: arduino:avr:nano
     core: arduino:avr
-    sketch: sketchbooks/PeripheralArduino
+    sketch: sketches/PeripheralArduino
     libraries:
       - servo
     sensors:
@@ -32,4 +32,4 @@ arduino:
     ftdi: B0004VDI
     fqbn: arduino:avr:nano
     core: arduino:avr
-    sketch: sketchbooks/ThrusterArduino
+    sketch: sketches/ThrusterArduino
