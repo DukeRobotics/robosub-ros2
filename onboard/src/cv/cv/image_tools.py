@@ -5,7 +5,7 @@ from sensor_msgs.msg import CompressedImage, Image
 
 
 class ImageTools:
-    """This file houses several converters from ROS messages to other types, or from other types to ros messages."""
+    """This file houses several converters from ROS messages to other types, or from other types to ROS messages."""
 
     def __init__(self) -> None:
         self._cv_bridge = CvBridge()
@@ -129,7 +129,7 @@ class ImageTools:
             image.encoding = self.convert_cv_bridge_depth_encoding_to_encoding_string(image_encoding)
             ros_msg = image
         elif isinstance(image, CompressedImage):
-            ros_msg = self.convert_compressedDepth_to_image_msg(image)
+            ros_msg = self.convert_compressed_depth_to_image_msg(image)
         else:
             raise TypeError('Cannot convert type: ' + str(type(image)))
         return ros_msg
@@ -163,7 +163,7 @@ class ImageTools:
             cv_encoding = self.convert_encoding_string_to_cv_bridge_depth_encoding(encoding)
             cv2_img = self.convert_ros_msg_to_cv2(image, image_encoding=cv_encoding)
         elif isinstance(image, CompressedImage):
-            cv2_img = self.convert_compressedDepth_to_cv2(image)
+            cv2_img = self.convert_compressed_depth_to_cv2(image)
         else:
             raise TypeError('Cannot convert type: ' + str(type(image)))
         return cv2_img
@@ -178,13 +178,13 @@ class ImageTools:
         encoding = compressed_image.format.split(';')[0]
         cv_encoding = self.convert_encoding_string_to_cv_bridge_depth_encoding(encoding)
 
-        depth_img_raw = self.convert_compressedDepth_to_cv2(compressed_image)
+        depth_img_raw = self.convert_compressed_depth_to_cv2(compressed_image)
         img_msg = self._cv_bridge.cv2_to_imgmsg(depth_img_raw, cv_encoding)
         img_msg.header = compressed_image.header
         img_msg.encoding = encoding
         return img_msg
 
-    def convert_compressedDepth_to_cv2(self, compressed_depth: CompressedImage) -> np.ndarray:
+    def convert_compressed_depth_to_cv2(self, compressed_depth: CompressedImage) -> np.ndarray:
         """
         Convert a compressedDepth topic image into a cv2 image.
 
