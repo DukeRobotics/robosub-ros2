@@ -29,10 +29,10 @@ public:
         servo_marker = new RobotServo(SERVO_MARKER, 1100, 1500, 1900, "M");
         servo_torpedo = new RobotServo(SERVO_TORPEDO, 1100, 1500, 1900, "T");
 
-        addServo(servo_marker);
-        addServo(servo_torpedo);
         addVoltageSensor(voltage_sensor);
         addPressureSensor(pressure_sensor);
         addTempHumiditySensor(temp_humidity_sensor);
+        addServo(servo_marker);
+        addServo(servo_torpedo);
     }
 };
