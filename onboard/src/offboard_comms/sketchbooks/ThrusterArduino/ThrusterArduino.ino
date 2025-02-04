@@ -17,6 +17,8 @@ Adafruit_PWMServoDriver pwm_multiplexer(0x40);
 int NUM_THRUSTERS;
 int THRUSTER_PWM_OFFSET; // Hardware specific offset for PWMs -- refers to the robot-specific offsets
 
+byte START_FLAG[] = {0xFF, 0xFF};
+
 uint64_t last_cmd_ms_ts;
 
 uint16_t* pwms;
@@ -75,19 +77,20 @@ void setup() {
 
 void loop() {
     // Only send new thruster values if we recieve new data -- the thrusters store the last command
-    if (Serial.available() >= NUM_THRUSTERS * sizeof(uint16_t) + 1) {
+    if (Serial.available() >= NUM_THRUSTERS * sizeof(uint16_t) + 2) {
         uint16_t allocs[NUM_THRUSTERS];
         byte incomingData[NUM_THRUSTERS * 2];
-        byte startFlag = 0xFF;
 
+        byte window[2] = {0x00, 0x00};
         while (true) {
             if (Serial.available() > 0) {
-            byte incomingByte = Serial.read();
+                window[0] = window[1];
+                window[1] = Serial.read();
 
-            // Check if the received byte is the start flag (0xFF)
-            if (incomingByte == startFlag) {
-                break;  // Exit the loop once the start flag is detected
-            }
+                // Check if the window matches the start flag
+                if (window[0] == START_FLAG[0] && window[1] == START_FLAG[1]) {
+                    break;  // Exit the loop once the start flag is detected
+                }
             }
         }
 

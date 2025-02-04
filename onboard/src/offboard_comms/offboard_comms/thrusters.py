@@ -44,7 +44,7 @@ class Thrusters(Node):
         (16.0, '16.csv'),
         (18.0, '18.csv'),
     ]
-    START_FLAG: bytearray = bytearray([0xFF])
+    START_FLAG: bytearray = bytearray([0xFF, 0xFF])
 
     def __init__(self) -> None:
         """Initialize the thruster node with all necessary components."""
