@@ -7,9 +7,6 @@
   <maintainer email="hello@duke-robotics.com">Duke Robotics</maintainer>
   <license>MIT</license>
 
-  <!--Used pip install depthai \-\-break-system-packages, please add to docker file?
-  -->
-
   <depend>sensor_msgs</depend>
   <depend>custom_msgs</depend>
   <depend>geometry_msgs</depend>

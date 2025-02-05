@@ -3,7 +3,6 @@ services:
     image: robosub-ros2:latest
     container_name: onboard2
     tty: true
-    network_mode: host
     volumes:
       - ./:/root/dev/robosub-ros2
     ports:
