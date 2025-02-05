@@ -13,14 +13,17 @@ RUN apt install -y --no-install-recommends clang
 RUN apt install -y --no-install-recommends clang-format
 RUN apt install -y --no-install-recommends gdb
 RUN apt install -y --no-install-recommends gdbserver
+RUN apt install -y --no-install-recommends iputils-ping
 RUN apt install -y --no-install-recommends libeigen3-dev
 RUN apt install -y --no-install-recommends libyaml-cpp-dev
 RUN apt install -y --no-install-recommends nano
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-jsonpickle
+RUN apt install -y --no-install-recommends python3-opencv
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-transforms3d
 RUN apt install -y --no-install-recommends python3-venv
+RUN apt install -y --no-install-recommends ros-jazzy-cv-bridge
 RUN apt install -y --no-install-recommends ros-jazzy-example-interfaces
 RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
 RUN apt install -y --no-install-recommends ros-jazzy-robot-localization
@@ -35,11 +38,14 @@ RUN apt install -y --no-install-recommends valgrind
 # Virtual enviornment inherits system packages to ensure compatibility with ROS
 # The commands are ordered alphabetically
 RUN python3 -m venv /root/dev/venv --system-site-packages
+RUN /root/dev/venv/bin/pip install depthai
 RUN /root/dev/venv/bin/pip install GitPython
 RUN /root/dev/venv/bin/pip install gputil
 RUN /root/dev/venv/bin/pip install pandas
 RUN /root/dev/venv/bin/pip install pyserial
+RUN /root/dev/venv/bin/pip install python3-nmap
 RUN /root/dev/venv/bin/pip install ruff
+RUN /root/dev/venv/bin/pip install scikit-learn
 RUN /root/dev/venv/bin/pip install sympy
 
 # Set no password for root user

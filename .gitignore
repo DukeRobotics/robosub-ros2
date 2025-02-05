@@ -15,6 +15,7 @@ __pycache__
 *.db3
 *.bag
 
+# Configuration files
 .config
 .env
 
