@@ -40,8 +40,6 @@ class Thrusters(Node):
     """
 
     CONTROLS_CONFIG_FILE_PATH = f'package://controls/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
-    VOLTAGE_MIN: float = 14.0
-    VOLTAGE_MAX: float = 18.0
     NUM_LOOKUP_ENTRIES: int = 201  # -1.0 to 1.0 in 0.01 increments
     VOLTAGE_FILES: ClassVar[list[tuple[int, str]]] = [
         (14.0, '14.csv'),
@@ -60,8 +58,10 @@ class Thrusters(Node):
             controls_config = yaml.safe_load(f)
             self.num_thrusters = len(controls_config['thrusters'])
 
-        # Initialize voltage and lookup tables
+        # Initialize voltage, voltage bounds, and lookup tables
         self.voltage: float = 15.5
+        self.voltage_min = min(v for v, _ in self.VOLTAGE_FILES)
+        self.voltage_max = max(v for v, _ in self.VOLTAGE_FILES)
         self.voltage_tables: list[VoltageTable] = []
 
         # Load lookup tables
@@ -137,10 +137,10 @@ class Thrusters(Node):
         Args:
             msg (Float64): Voltage message containing the current system voltage.
         """
-        self.voltage = min(max(msg.data, self.VOLTAGE_MIN), self.VOLTAGE_MAX)
+        self.voltage = min(max(msg.data, self.voltage_min), self.voltage_max)
         if self.voltage != msg.data:
             self.get_logger().warn(
-                f'Voltage {msg.data} out of bounds. Clamped to [{self.VOLTAGE_MIN}, {self.VOLTAGE_MAX}]',
+                f'Voltage {msg.data} out of bounds. Clamped to [{self.voltage_min}, {self.voltage_max}]',
             )
 
     def thruster_allocs_callback(self, msg: ThrusterAllocs) -> None:
@@ -191,14 +191,14 @@ class Thrusters(Node):
         # Find the voltage tables to interpolate between
         for i in range(len(self.voltage_tables) - 1):
             v1, v2 = self.voltage_tables[i], self.voltage_tables[i + 1]
-            if v1.voltage <= self.voltage <= v2.voltage:
+            if v1.voltage <= self.voltage < v2.voltage:
                 return int(self._interpolate(
                     v1.voltage, v1.table[index],
                     v2.voltage, v2.table[index],
                     self.voltage,
                 ))
 
-        # If we're exactly at the highest voltage, use that table
+        # If voltage is exactly at the highest level, use the last table
         return self.voltage_tables[-1].table[index]
 
     def _interpolate(self, x1: float, y1: int, x2: float, y2: int, x: float) -> float:
