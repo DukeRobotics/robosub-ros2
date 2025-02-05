@@ -52,7 +52,7 @@ class SerialNode(Node, ABC):
             self.run_timer.reset()
             self.get_logger().info(f'Connected to {self._name} at {self._serial_port}.')
         except StopIteration:
-            self.get_logger().error(f'Error in connecting to serial device in {self._node_name}, trying again in '
+            self.get_logger().error(f'Error in connecting to {self._name} over serial, trying again in '
                                     f'{self._connection_retry_period} seconds.')
 
     def readline_nonblocking(self, tout: int = 1) -> str:
