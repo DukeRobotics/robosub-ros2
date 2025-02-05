@@ -26,10 +26,14 @@ uint16_t* pwms;
 MultiplexedBasicESC* thrusters;
 
 void write_pwms() {
+    for (uint8_t i = 0; i < NUM_THRUSTERS; i++) {
+        if (pwms[i] < THRUSTER_PWM_MIN || pwms[i] > THRUSTER_PWM_MAX) {
+            return; // If any PWM value is out of range, return and don't write any PWMs
+        }
+    }
 
     for (uint8_t i = 0; i < NUM_THRUSTERS; i++) {
-        // Clamp the PWM values to be within the min and max PWM values and write them to the thrusters
-        thrusters[i].write(constrain(pwms[i], THRUSTER_PWM_MIN, THRUSTER_PWM_MAX) + THRUSTER_PWM_OFFSET);
+        thrusters[i].write(pwms[i] + THRUSTER_PWM_OFFSET);
     }
     last_cmd_ms_ts = millis();
 }
