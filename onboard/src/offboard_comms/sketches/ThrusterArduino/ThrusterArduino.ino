@@ -80,6 +80,14 @@ void setup() {
 }
 
 void loop() {
+    // If we haven't received a new command in a while, stop all thrusters
+    if (millis() - last_cmd_ms_ts > THRUSTER_TIMEOUT_MS) {
+        for (uint8_t i = 0; i < NUM_THRUSTERS; i++) {
+            pwms[i] = THRUSTER_STOP_PWM;
+        }
+        write_pwms();
+    }
+
     // Only send new thruster values if we recieve new data -- the thrusters store the last command
     if (Serial.available() >= NUM_THRUSTERS * sizeof(uint16_t) + 2) {
         uint16_t allocs[NUM_THRUSTERS];
@@ -117,14 +125,6 @@ void loop() {
             pwms[i] = incomingData[2 * i + 1] | (incomingData[2 * i] << 8);
         }
 
-        write_pwms();
-    }
-
-    // If we haven't received a new command in a while, stop all thrusters
-    if (millis() - last_cmd_ms_ts > THRUSTER_TIMEOUT_MS) {
-        for (uint8_t i = 0; i < NUM_THRUSTERS; i++) {
-            pwms[i] = THRUSTER_STOP_PWM;
-        }
         write_pwms();
     }
 }
