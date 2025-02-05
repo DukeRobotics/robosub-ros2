@@ -1,3 +1,0 @@
-<launch>
-	<node name="camera_test_connect" pkg="cv" type="camera_test_connect.py" output="screen"/>
-</launch>
