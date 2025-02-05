@@ -1,3 +1,0 @@
-<launch>
-	<node name="depthai_camera_connect" pkg="cv" type="depthai_camera_connect.py" output="screen"/>
-</launch>

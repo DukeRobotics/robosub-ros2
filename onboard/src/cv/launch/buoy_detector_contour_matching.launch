@@ -1,3 +1,0 @@
-<launch>
-	<node name="buoy_detector_contour_matching" pkg="cv" type="buoy_detector_contour_matching.py" output="screen"/>
-</launch>
