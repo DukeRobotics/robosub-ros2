@@ -60,21 +60,19 @@ void setup() {
     pwms = new uint16_t[NUM_THRUSTERS];
     thrusters = new MultiplexedBasicESC[NUM_THRUSTERS];
 
-    // Initialize the PWMs to stop
-    for (uint8_t i = 0; i < NUM_THRUSTERS; i++) {
-        pwms[i] = THRUSTER_STOP_PWM;
-    }
-
     pwm_multiplexer.begin();
     for (uint8_t i = 0; i < NUM_THRUSTERS; i++) {
         thrusters[i].initialize(&pwm_multiplexer);
         thrusters[i].attach(i);
     }
 
-    // Write the stop PWM to all thrusters to initialize them (proper beep sequence)
+    // Initialize the PWMs to stop
     for (uint8_t i = 0; i < NUM_THRUSTERS; i++) {
-        thrusters[i].write(THRUSTER_STOP_PWM + THRUSTER_PWM_OFFSET);
+        pwms[i] = THRUSTER_STOP_PWM;
     }
+
+    // Write the stop PWM to all thrusters to initialize them (proper beep sequence)
+    write_pwms();
 
     Serial.begin(BAUD_RATE);
 }
