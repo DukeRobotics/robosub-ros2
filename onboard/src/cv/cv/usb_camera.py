@@ -98,7 +98,7 @@ class USBCamera(Node):
                 # Read next image
                 success, img = cap.read()
                 # Sleep loop to maintain frame rate
-                rclpy.spin_once(self, timeout_sec=self.framerate)
+                rclpy.spin_once(self, timeout_sec=1/self.framerate)
         else:
             self.get_logger().error(f'{total_tries} attempts were made to connect to the USB camera. '
                          f'The camera was not found at device_path {self.device_path}. All attempts failed.')
