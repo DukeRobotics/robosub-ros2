@@ -119,14 +119,6 @@ where `<file_name>` refers to the file name one is trying to launch (for more de
 
 No further arugments are required in the command line -- additional parameters can be modified in the `.xml` files and `config.py`.
 
-* `enable_model_<camera>`
-  * Takes in the model name (string) and a boolean flag to specify whether to turn the model on or off
-  * Returns a boolean indicating whether the attempt was successful
-  * Type: custom_msgs/EnableModel
-  * E.g. `rosservice call enable_model_left buoy true` would enable the buoy model on the camera launched with `<camera>` set to `"left"`
-
-Once 1+ models are enabled for a specific node, they subscribe and publish to topics as described below.
-
 ## Topics
 
 ### Subscribed
