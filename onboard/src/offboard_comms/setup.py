@@ -21,7 +21,6 @@ setup(
          [str(file) for file in Path('./sketches/PeripheralArduino').glob('*')]),
         ('share/' + package_name + '/sketches/ThrusterArduino',
          [str(file) for file in Path('./sketches/ThrusterArduino').glob('*')]),
-
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -36,7 +35,6 @@ setup(
             'dvl_odom = offboard_comms.dvl_to_odom:main',
             'peripheral = offboard_comms.peripheral:main',
             'thrusters = offboard_comms.thrusters:main',
-
         ],
     },
 )
