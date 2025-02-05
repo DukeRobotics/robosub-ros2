@@ -1,0 +1,3 @@
+<launch>
+	<node name="usb_camera_connect" pkg="cv" exec="usb_camera_connect" output="screen"/>
+</launch>

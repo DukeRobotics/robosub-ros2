@@ -16,11 +16,12 @@ The `build.sh` script has several options to build and clean packages. The scrip
     ```
 - The script accepts an optional first argument that can be `core`, `onboard`, or the name of a specific package in the `onboard` workspace.
     ```bash
-    source build.sh [core|onboard|PACKAGE_NAME]
+    source build.sh [core|onboard|PACKAGE_NAME] [--debug]
     ```
     - If the first argument is `core`, the script builds all packages in the `core` workspace.
     - If the first argument is `onboard`, the script builds all packages in the `onboard` workspace.
     - If the first argument is the name of a specific package in `onboard`, the script builds only that package.
+    - If the `--debug` flag is specified, the script builds the package(s) with debug symbols. This applies only to packages built with CMake.
 - The first argument can also be `clean` to remove the `build`, `install`, and `log` directories from the `core` and `onboard` workspaces.
     ```bash
     source build.sh clean [core|onboard]
