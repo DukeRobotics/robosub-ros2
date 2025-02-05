@@ -117,7 +117,7 @@ void loop() {
     }
 
     // If we haven't received a new command in a while, stop all thrusters
-    else if (millis() - last_cmd_ms_ts > THRUSTER_TIMEOUT_MS) {
+    if (millis() - last_cmd_ms_ts > THRUSTER_TIMEOUT_MS) {
         for (uint8_t i = 0; i < NUM_THRUSTERS; i++) {
             pwms[i] = THRUSTER_STOP_PWM;
         }
