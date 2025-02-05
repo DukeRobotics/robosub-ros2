@@ -80,7 +80,7 @@ class SerialNode(Node, ABC):
         Args:
             data (bytes): data to write
         """
-        if self._serial:
+        if self._serial and self._serial.is_open:
             try:
                 self._serial.write(data)
             except serial.SerialException:
@@ -140,3 +140,9 @@ class SerialNode(Node, ABC):
             self._serial_port = None
             self.run_timer.cancel()
             self.connect_timer.reset()
+
+    def destroy_node(self) -> None:
+        """Clean up resources when node is destroyed."""
+        if self._serial and self._serial.is_open:
+            self._serial.close()
+        super().destroy_node()

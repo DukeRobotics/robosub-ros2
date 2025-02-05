@@ -155,10 +155,7 @@ class Thrusters(SerialNode):
         pwm_values = [self._lookup(force) for force in msg.allocs]
 
         # Send to serial if connection is available
-        if self.ser and self.ser.is_open:
-            self._write_pwms_to_serial(pwm_values)
-        else:
-            self.get_logger().warn('Serial connection not available. PWM values not sent.')
+        self._write_pwms_to_serial(pwm_values)
 
         # Create and publish PWM message
         pwm_msg = PWMAllocs()
@@ -239,12 +236,6 @@ class Thrusters(SerialNode):
 
         # Write to serial
         self.writebytes(bytes(data))
-
-    def destroy_node(self) -> None:
-        """Clean up resources when node is destroyed."""
-        if hasattr(self, 'ser') and self.ser and self.ser.is_open:
-            self.ser.close()
-        super().destroy_node()
 
 
 def main(args: list[str] | None = None) -> None:
