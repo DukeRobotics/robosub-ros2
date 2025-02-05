@@ -5,6 +5,20 @@ __pycache__
 **/install/*
 **/log/*
 
+# All playback subfolders
+**/bag_files/**
+
+# Robot playback file formats
+*.zip
+*.mcap
+*.db3
+*.bag
+
+# Configuration files
 .config
 .env
-.vscode
+
+# Ignore everything in .vscode except the following files
+.vscode/*
+!.vscode/c_cpp_properties.json
+!.vscode/launch.json

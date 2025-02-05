@@ -1,0 +1,3 @@
+<launch>
+	<node name="blue_rectangle_detector" pkg="cv" exec="blue_rectangle_detector" output="screen"/>
+</launch>

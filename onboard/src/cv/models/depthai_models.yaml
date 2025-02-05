@@ -36,6 +36,7 @@ yolov8n_2023_main:
 
 yolov7_tiny_2023_main:
   classes: ['buoy_abydos_serpenscaput','buoy_abydos_taurus','buoy_earth_auriga','buoy_earth_cetus','gate_abydos','gate_earth']
+  sizes: {"buoy_abydos_serpenscaput": [-1, -1], "buoy_abydos_taurus": [-1, -1], "buoy_earth_auriga": [-1, -1], "buoy_earth_cetus": [-1, -1], "gate_abydos": [-1, -1], "gate_earth": [-1, -1]} # for testing
   topic: cv/
   weights: yolov7-tiny-2023-main_openvino_2022.1_6shave.blob
   input_size: [416, 416]

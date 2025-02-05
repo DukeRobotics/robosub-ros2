@@ -107,7 +107,7 @@ Ensure that the robot's current [state](#state) is being published to the `/stat
 
 Launch the controls node by running:
 ```bash
-roslaunch controls controls.launch
+ros2 launch controls controls.launch
 ```
 
 To make the robot move to a [desired state](#desired-state), do the following in the given order and in quick succession:
@@ -117,14 +117,14 @@ To make the robot move to a [desired state](#desired-state), do the following in
     2. Publish desired velocity (if any) to the `/controls/desired_velocity` topic.
     3. Publish desired power (if any) to the `/controls/desired_power` topic.
 2. Call the `/controls/set_control_types` service to set the [control types](#control-types) for each axis, if they are different from current control types (as published to the `/controls/control_types` topic).
-3. If not already enabled, enable controls by publishing `true` to the `/controls/enabled` topic.
+3. If not already enabled, enable controls by calling the `/controls/enable` service with `data: true`.
 
 Controls will now publish the [thrust allocation vector](#thrust-allocation-vector) to the `/controls/thruster_allocs` topic, and the robot will move to the desired state.
 
 > [!IMPORTANT]
 > To check if the robot has moved to the desired state, check if the current state is close to the desired state. Do _not_ check the position or velocity errors published to the `/controls/position_error` and `/controls/velocity_error` topics, as there may be a delay between the time the desired state is published and the time the errors are updated.
 
-To stop the robot, disable controls by publishing `false` to the `/controls/enabled` topic.
+To stop the robot, disable controls by calling the `/controls/enable` service with `data: false`.
 
 If the new desired state is not significantly different from the current desired state, the PID loops do _not_ need to be reset. For example, if the robot is moving towards an object detected with CV, and the estimated position of the object changes slightly, the PID loops do _not_ need to be reset. However, if the robot is moving towards an object and then starts moving towards a different object, the PID loops _do_ need to be reset.
 
@@ -138,8 +138,8 @@ The `config` directory contains the [robot config files](#robot-config-file), wh
 #### Data
 The `data` directory contains [CSV files](#csv-files) for the [wrench matrices](#wrench-matrix) and the [wrench matrices' pseudoinverces](#wrench-matrix-pseudoinverse). These are used by the [thruster allocator](#thruster-allocator) to compute the [thrust allocation vector](#thrust-allocation-vector).
 
-#### Include
-The `include` directory contains C++ header files. These are used to define the classes and functions used in the system. See the [Code Structure](#code-structure) section for more details.
+#### Include/Controls
+The `include/controls` directory contains C++ header files. These are used to define the classes and functions used in the system. See the [Code Structure](#code-structure) section for more details.
 
 #### Launch
 The `launch` directory contains ROS launch files. These are used to start the system. See the [Launch Config](#launch-config) section for more details.
@@ -151,10 +151,10 @@ The `scripts` directory contains Python scripts. See the [Code Structure](#code-
 The `src` directory contains C++ source files. These are used to define the classes and functions used in the system. See the [Code Structure](#code-structure) section for more details.
 
 #### CMakeLists.txt
-The `CMakeLists.txt` file is used to define the build process for the system. It is used by the `catkin build` command to compile the system.
+The `CMakeLists.txt` file is used to define the build process for the system. It is used by the `colcon build` command to compile the system.
 
 #### Package.xml
-The `package.xml` file is used to define the package's dependencies and other metadata. It is used by the `catkin build` command to compile the system.
+The `package.xml` file is used to define the package's dependencies and other metadata. It is used by the `colcon build` command to compile the system.
 
 #### README.md
 The `README.md` file is used to provide documentation for the package. It is used by developers to understand how the package works.
@@ -163,42 +163,36 @@ The `README.md` file is used to provide documentation for the package. It is use
 ### Code Structure
 The code is split into the following files:
 
-#### controls_types.h
+#### controls_types.hpp
 This file defines varius enums, constants, and structs used throughout the system.
 
-#### drc_pid.h/drc_pid.cpp
+#### drc_pid.hpp/drc_pid.cpp
 This file defines the `PID` class, which implements a [PID controller](#pid-controller). It takes in the error between the [setpoint](#setpoint) and the robot's current [state](#state) and computes the [control effort](#control-effort).
 
-#### pid_manager.h/pid_manager.cpp
+#### pid_manager.hpp/pid_manager.cpp
 This file defines the `PIDManager` class, which implements a [PID loop](#pid-loop) containing six [PID controllers](#pid-controller). It takes in the difference between [desired state](#desired-state) and the robot's current [state](#state) and computes the [control effort](#control-effort) needed along each [axis](#axis) to move the robot to the desired state.
 
-#### thruster_allocator.h/thruster_allocator.cpp
+#### thruster_allocator.hpp/thruster_allocator.cpp
 This file defines the `ThrusterAllocator` class, which performs [thrust allocation](#thrust-allocation). It computes the amount of force each thruster needs to exert to achieve a given [set power](#set-power).
 
-#### controls_utils.h/controls_utils.cpp
+#### controls_utils.hpp/controls_utils.cpp
 This file defines the `ControlsUtils` namespace, which includes various helper functions used throughout the system.
 
-#### controls.h/controls.cpp
+#### controls.hpp/controls.cpp
 This file defines the `Controls` class, as well as the `main` function. It takes in the current [state](#state) and [desired state](#desired-state) and outputs a [thrust allocation vector](#thrust-allocation-vector) to achieve that state. It handles all interfaces with ROS, including publishing, subscribing, and advertising. It contains the code that drives the system, calling the other classes and functions as needed.
 
 > [!IMPORTANT]
 > The `Controls` class is the _only_ class that interfaces with ROS. Thus, this package creates only one node: `controls`.
 >
 > All other classes use pure C++ and do not depend on ROS, with the following exceptions:
-> - All classes use `ROS_ASSERT_MSG`, `ROS_ERROR`, and `ROS_WARN` to log errors and warnings and throw exceptions.
+> - All classes use `rcpputils::check_true`, `RCLCPP_ERROR`, and `RCLCPP_WARN` to log errors and warnings and throw exceptions.
 > - Some functions in `ControlsUtils` work with ROS messages.
-> - Some enums in `controls_types.h` get their values from ROS messages.
+> - Some enums in `controls_types.hpp` get their values from ROS messages.
 
 #### compute_wrench_matrix.py
 This is a Python script that computes the [wrench matrix](#wrench-matrix) and its [pseudoinverse](#wrench-matrix-pseudoinverse) for a given robot, given the thruster configuration in the [robot config file](#robot-config-file). It is used to generate the [CSV files](#csv-files) in the `data` directory.
 
 It performs all computations symbolically using the [SymPy](https://www.sympy.org) library, and only converts the results to numerical values at the end. This is done to ensure that the computations are as accurate as possible.
-
-#### comp_2023.py
-This is a Python script that contains the task planning code used at RoboSub 2023. _This file has been kept for reference purposes only and is not actively maintained._
-
-#### controls_utils.py
-This is a Python script that contains various helper functions used exclusively by the `comp_2023.py` script. _This file has been kept for reference purposes only and is not actively maintained._
 
 ## Config
 
@@ -293,11 +287,11 @@ The [`static_power_global`](#static-power-global) field contains the amount of p
 
 The [`power_scale_factor`](#power-scale-factor) field contains the factor by which the [set power unscaled](#set-power-unscaled) should be multiplied to get the [set power](#set-power). It is a scalar value.
 
-The `thrusters` field contains information about each thruster. From top to bottom, the thrusters in this file should be in the _same order that is expected by offboard comms,_ in the `allocs` part of the `custom_msgs/ThrusterAllocs` message. Each thruster config contains the following subfields:
+The `thrusters` field contains information about each thruster. From top to bottom, the thrusters in this file should be in the _same order that is expected by offboard comms,_ in the `allocs` part of the `custom_msgs/msg/ThrusterAllocs` message. Each thruster config contains the following subfields:
 - `name`: The uniquely identifying  name of the thruster. Not used by the system; included for human use only.
 - `type`: The thruster's model type, such as T200. Not used by the system; included for human use only.
 - `pos`: The position of the thruster in the `base_link` frame. In other words, the position of the thruster relative to the robot's center of mass. The x, y, and z coordinates are given in that order in meters.
-- `rpy`: The orientation of the thruster in the `base_link` frame, using extrinsic Euler angles. The rotations are performed specified in the order: roll, pitch, yaw. They are also given in that order in degrees. For example:
+- `rpy`: The orientation of the thruster in the `base_link` frame, using extrinsic Euler angles. The rotations are performed in the order: roll, pitch, yaw. They are also given in that order in degrees. For example:
     - An orientation of `[0, 0, 0]` means when the thruster is commanded to exert positive power, it will push the robot in the positive x direction.
     - An orientation of `[0, 0, 180]` means the thruster is rotated 180 degrees around the z axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative x direction.
     - An orientation of `[0, 90, 0]` means the thruster is rotated 90 degrees around the y axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative z direction.
@@ -307,7 +301,7 @@ The `thrusters` field contains information about each thruster. From top to bott
 > [!IMPORTANT]
 > This should be the _only_ place in the _entire codebase_ where flipped thrusters are accounted for.
 
-The `wrench_matrix_file_path` and `wrench_matrix_pseudoinverse_file_path` fields contain the paths to the [CSV files](#csv-files) containing the [wrench matrix](#wrench-matrix) and its [pseudoinverse](#wrench-matrix-pseudoinverse), respectively. These files are used by the [thruster allocator](#thruster-allocator) to compute the [thrust allocation vector](#thrust-allocation-vector). They should be unique for each robot. They should be specified relative to the directory of this package. They should not contain a leading `/`. For example, if the CSV files are in the `data` directory, the paths should be `data/wrench_matrix.csv` and `data/wrench_matrix_pseudoinverse.csv`.
+The `wrench_matrix_file_path` and `wrench_matrix_pseudoinverse_file_path` fields contain the paths to the [CSV files](#csv-files) containing the [wrench matrix](#wrench-matrix) and its [pseudoinverse](#wrench-matrix-pseudoinverse), respectively. These files are used by the [thruster allocator](#thruster-allocator) to compute the [thrust allocation vector](#thrust-allocation-vector). They should be unique for each robot. They should be specified relative to the directory of this package. They should **not** contain a leading `/`. For example, if the CSV files are in the `data` directory, the paths should be `data/wrench_matrix.csv` and `data/wrench_matrix_pseudoinverse.csv`.
 
 
 ### CSV Files
@@ -325,7 +319,7 @@ One pair of CSV files is required for each robot. They should be located in the 
 ### Launch Config
 The `launch` directory contains the following launch files:
 - `controls.launch`: Primary launch file for the system.
-- `controls_gdb.launch`: Launch file for debugging the system with GDB.
+- `controls_gdbserver.launch`: Launch file for debugging the system with GDB.
 - `controls_valgrind.launch`: Launch file for debugging the system with Valgrind.
 
 Each of these launch files contains the following parameters:
@@ -338,24 +332,25 @@ Each of these launch files contains the following parameters:
 
 ## Dependencies
 ### ROS
-- [resource_retriever](http://wiki.ros.org/resource_retriever): A ROS package that provides C++ and Python interfaces for retrieving data from URLs. It is used by the system to read and write the [robot config files](#robot-config-file) and [CSV files](#csv-files).
-- [roscpp](http://wiki.ros.org/roscpp): The C++ client library for ROS. It is used by the system to interface with ROS.
-- [roslib](http://wiki.ros.org/roslib): The core library for ROS. It is used by the system to interface with ROS.
-- [rospy](http://wiki.ros.org/rospy): The Python client library for ROS. It is used by the Python scripts to interface with ROS.
-- [tf](http://wiki.ros.org/tf): The first version of the ROS transformation library. It is used by the `comp_2023.py` script to transform between different frames.
-- [tf2_ros](http://wiki.ros.org/tf2): The second version of the ROS transformation library. It is used by the system to transform between different frames.
+- [ament_cmake](https://index.ros.org/p/ament_cmake): A ROS package that provides CMake functions for building ROS packages. It is used by the system to compile the code.
+- [ament_index_cpp](https://index.ros.org/p/ament_index_cpp/): A ROS package that provides C++ interfaces for querying the ament resource index, enabling packages to find each other. It is used by the system to find other ROS packages. It is used by the system to read and write the [robot config files](#robot-config-file) and [CSV files](#csv-files).
+- [rclcpp](https://index.ros.org/p/rclcpp): The C++ client library for ROS. It is used by the system to interface with ROS.
+- [resource_retriever](https://index.ros.org/p/resource_retriever): A ROS package that provides C++ and Python interfaces for retrieving data from URLs. It is used by the `compute_wrench_matrix.py` script to read and write the [robot config files](#robot-config-file) and [CSV files](#csv-files).
+- [tf2](https://index.ros.org/p/tf2) and [tf2_ros](https://index.ros.org/p/tf2_ros): The second version of the ROS transformation library. It is used by the system to transform between different frames.
+- [tf2_geometry_msgs](https://index.ros.org/p/tf2_geometry_msgs): Functions for conversion and transformation of `geometry_msgs` messages in `tf2`. It is used by the system to transform between different frames.
 
 ### ROS Messages
 - custom_msgs: Custom ROS messages used by the system. These are defined in the `custom_msgs` package in the `core` workspace.
-- [geometry_msgs](http://wiki.ros.org/geometry_msgs): ROS messages for geometric primitives such as points, vectors, and poses.
-- [nav_msgs](http://wiki.ros.org/nav_msgs): ROS messages for navigation-related data such as odometry, paths, and maps.
-- [std_msgs](http://wiki.ros.org/std_msgs): ROS messages for common data types such as strings, floats, and integers.
-- [std_srvs](http://wiki.ros.org/std_srvs): ROS services for common data types such as booleans and empty requests.
+- [geometry_msgs](https://index.ros.org/p/geometry_msgs): ROS messages for geometric primitives such as points, vectors, and poses.
+- [nav_msgs](https://index.ros.org/p/nav_msgs): ROS messages for navigation-related data such as odometry, paths, and maps.
+- [std_msgs](https://index.ros.org/p/std_msgs): ROS messages for common data types such as strings, floats, and integers.
+- [std_srvs](https://index.ros.org/p/std_srvs): ROS services for common data types such as booleans and empty requests.
 
 ### Non-ROS C++
 - [Eigen3](https://eigen.tuxfamily.org): A C++ library for linear algebra. It is used by the system to perform matrix operations.
+- [fmt](https://fmt.dev): A C++ library for formatting strings. It is used by the system to format messages printed to the console.
 - [OSQP](https://osqp.org): A C library for solving [quadratic programming](#quadratic-programming) problems. It is used by the [thruster allocator](#thruster-allocator) to compute the [thrust allocation vector](#thrust-allocation-vector).
-- [OSQP-Eigen](https://robotology.github.io/osqp-eigen): A C++ wrapper for OSQP. It is used by the system to interface with OSQP.
+- [OSQP-Eigen](https://robotology.github.io/osqp-eigen): A C++ wrapper for OSQP. It is used by the system to interface with OSQP via Eigen.
 - [yaml-cpp](https://github.com/jbeder/yaml-cpp): A C++ library for parsing YAML files. It is used by the system to parse the [robot config files](#robot-config-file).
 
 ### Non-ROS Python
@@ -586,7 +581,7 @@ The controls package advertises the following services:
 > [!NOTE]
 > When calling one of the services above to update the PID gains, static power global, or power scale factor, if the request is not valid, the system will not update the respective value(s), will return `false` in the response, and will continue operation.
 >
-> However, if the request is valid but an error occured in updating robot config file, a _fatal error will be thrown and the system will stop execution._
+> However, if the request is valid but an error occured in updating robot config file, a _fatal error will be thrown_ and the system will _stop execution._
 >
 > This is because if the robot config file could not be updated successfully, the updated value(s) may not be saved, any changes made to the file cannot be undone, and file corruption will interfere with the system's future operation. Thus, it is necessary to stop the system and fix the robot config file before continuing.
 
@@ -595,7 +590,7 @@ The controls package does not call any services.
 
 ## Development
 ### Modifying Dependencies
-If a new source file is added to the package, or if the package's dependencies are modified, the `CMakeLists.txt` and `package.xml` files must be updated to reflect these changes so that Catkin can compile the package.
+If a new source file is added to the package, or if the package's dependencies are modified, the `CMakeLists.txt` and `package.xml` files must be updated to reflect these changes so that Colcon can compile the package.
 
 #### Adding Source Files
 To add a new source file to the package, add the file to the `src` directory and add the file's name to `SOURCES` variable in the `CMakeLists.txt` file. For example, if the file is named `new_file.cpp`, add the following line to the `CMakeLists.txt` file:
@@ -608,16 +603,16 @@ set(SOURCES
 ```
 
 #### Adding ROS Dependencies
-To add a new ROS dependency to the package, add the dependency to the `find_package` and `catkin_package` calls in the `CMakeLists.txt` file. For example, to add the `new_dependency` dependency, add the following lines to the `CMakeLists.txt` file:
+To add a new ROS dependency to the package, add a new `find_package` call in the `CMakeLists.txt` file. For example, to add the `new_dependency` dependency, add the following lines to the `CMakeLists.txt` file:
 ```cmake
-find_package(catkin REQUIRED COMPONENTS
+find_package(new_dependency REQUIRED)
+```
+If any headers from that dependency are directly included in the code, then add the dependency to the `target_link_libraries` call in the `CMakeLists.txt` file.
+```cmake
+target_link_libraries(controls
     ...
-    new_dependency
+    ${new_dependency_TARGETS}
     ...
-)
-...
-catkin_package(
-    CATKIN_DEPENDS ... new_dependency ...
 )
 ```
 Also add the dependency to the `package.xml` file. For example, to add the `new_dependency` dependency, add the following line to the `package.xml` file:
@@ -626,11 +621,15 @@ Also add the dependency to the `package.xml` file. For example, to add the `new_
 ```
 
 #### Adding Non-ROS C++ Dependencies
-To add a new non-ROS C++ dependency to the package, add the dependency to the `target_link_libraries` call in the `CMakeLists.txt` file. For example, to add the `new_dependency` dependency, add the following line to the `CMakeLists.txt` file:
+To add a new non-ROS C++ dependency to the package, add a new `find_package` call in the `CMakeLists.txt file`. For example, to add the `new_dependency` dependency, add the following lines to the `CMakeLists.txt` file:
+```cmake
+find_package(new_dependency REQUIRED)
+```
+If any headers from that dependency are directly included in the code, then add a CMake target provided by the dependency to the `target_link_libraries` call in the `CMakeLists.txt` file. The dependency's documentation should specify the CMake target(s) it provides; most commonly, this is in the format `new_dependency::new_dependency`.
 ```cmake
 target_link_libraries(controls
     ...
-    new_dependency
+    new_dependency::new_dependency
     ...
 )
 ```
@@ -649,33 +648,99 @@ target_precompile_headers(controls
 ```
 
 ### Compiling
-When developing C++ code, first run
+When developing C++ code, source the `build.sh` script located at the repository root with `controls` as the first argument to compile only this package.
 ```bash
-cd onboard/catkin_ws
-```
-to change to the `onboard/catkin_ws` directory. Then, compile the package with:
-```bash
-catkin build controls
-```
-Then, run the package with the following command:
-```bash
-roslaunch controls controls.launch
+source build.sh controls
 ```
 
 > [!NOTE]
-> If only the controls package is modified, it is not necessary to recompile the entire workspace with `./build.sh`. Instead, only the controls package can be recompiled with the above command.
+> If you get an unusual error when compiling this package, especially one related to a "PCH file", then run `source build.sh clean onboard` to clean the build directories and try compiling again.
+
+Then, run the package with the following command:
+```bash
+ros2 launch controls controls.launch
+```
+
+> [!NOTE]
+> If only the controls package is modified, it is not necessary to recompile the entire workspace with `source build.sh`. Instead, only the controls package can be recompiled with the above command.
 >
-> However, if any compiled dependencies of the controls package are modified, then they must be recompiled. For example, if the `custom_msgs` package is modified, then the `core` workspace must be recompiled with `./build.sh` or with `catkin build` from the `core/catkin_ws` directory.
+> However, if any compiled dependencies of the controls package are modified, then they must be recompiled. For example, if the `custom_msgs` package is modified, then the `core` workspace must be recompiled with `source build.sh core`.
 
 ### Debugging
-When developing C++ code, it is often useful to debug the code with [GDB](https://sourceware.org/gdb) or [Valgrind](https://valgrind.org). The `controls` package provides launch files for debugging with GDB and Valgrind. Run them with the following commands:
+### GDB
+To debug with [GDB](https://sourceware.org/gdb), first compile this package with debug symbols:
 ```bash
-roslaunch controls controls_gdb.launch
+source build.sh controls --debug
 ```
+There are three ways to debug the system with GDB: through the [terminal](#terminal), through [VS Code with GDB Server](#vs-code-gdbserver), and through [VS Code with the compiled binary](#vs-code-compiled-binary).
+
+For more information on debugging with GDB, see the [GDB documentation](https://sourceware.org/gdb/current/onlinedocs/gdb/).
+
+For more information on debugging with VS Code, see the [VS Code documentation](https://code.visualstudio.com/docs/editor/debugging).
+
+#### Terminal
+Run the following launch file to start the node through GDBServer:
 ```bash
-roslaunch controls controls_valgrind.launch
+ros2 launch controls controls_gdbserver.launch
 ```
-To modify the options used to run GDB or Valgrind, modify the `launch-prefix` in the `node` tag in the `controls_gdb.launch` and `controls_valgrind.launch` files.
+This will start the server at `localhost:3000`. In a separate terminal, run the following command to attach GDB to the server:
+```bash
+gdb -ex "target remote localhost:3000"
+```
+
+#### VS Code (GDBServer)
+Run the following launch file to start the node through GDBServer:
+```bash
+ros2 launch controls controls_gdbserver.launch
+```
+This will start the server at `localhost:3000`. Then, attach the VS Code debugger to the server.
+1. Go to the `Run and Debug` tab in VS Code.
+2. In the dropdown at the top, select `controls-gdbserver`.
+
+3. Click the green play button.
+
+You can now use the GUI provided by VSCode to debug the system.
+
+> [!NOTE]
+> If you stop or restart the debugger, you must restart the node and GDB Server by running the launch file again.
+
+#### VS Code (Compiled Binary)
+You can also debug via VS Code by running the compiled binary directly through the VS Code debugger. You do **not** need to launch the node beforehand.
+1. Go to the `Run and Debug` tab in VS Code.
+2. In the dropdown at the top, select `controls-gdb`.
+3. Click the green play button.
+
+VS Code will run the compiled binary and use `gdb` to debug it.
+
+> [!NOTE]
+> This will run the node with the default values for the launch arguments. To specify different values:
+> 1. Open the `.vscode/launch.json` file.
+> 2. Find the `controls-gdb` configuration.
+> 3. Modify the `args` field in the following format:
+> ```json
+> {
+>   "name": "controls-gdb",
+>   ...
+>   "args": [
+>     "--ros-args",
+>     "-p", "param1:=value1",
+>     "-p", "param2:=value2",
+>     ...,
+>   ]
+>   ...
+> }
+> ```
+> 4. Save the file and run the debugger.
+>
+> Do **not** commit these changes to version control.
+
+### Valgrind
+To debug with [Valgrind](https://valgrind.org), run the following launch file:
+```bash
+ros2 launch controls controls_valgrind.launch
+```
+> [!NOTE]
+> To modify the options used to run GDB or Valgrind, modify the `launch-prefix` in the `node` tag in the `controls_gdbserver.launch` and `controls_valgrind.launch` files. If you're debugging with VS Code, modify `.vscode/launch.json`.
 
 ### Structural Principles
 The `controls` package is designed to be modular and extensible. It is divided into several classes, each of which is responsible for a specific aspect of the system. The classes are designed to be as independent as possible, so that they can be modified or replaced without affecting the rest of the system.
@@ -688,7 +753,7 @@ The `Controls` class is the main class of the system. It is responsible for init
 
 The `state_callback` function is called whenever a new [state](#state) message is received. It is responsible for updating the system's state, running the [PID loops](#pid-loop) and computing the [control efforts](#control-effort) needed to move the robot to the [desired state](#desired-state). It publishes the [control efforts](#control-effort) and other information computed by the PID loops. It also updates the [static power local](#static-power-local) based on the robot's current orientation and publishes it. All of this is done at the rate that the state messages are received, which is typically 30 Hz. These tasks are done in the `state_callback` function because their output is dependent primarily on the robot's current state.
 
-The `run` function is the main loop of the system, run at a fixed rate defined by the `THRUSTER_ALLOCS_RATE` constant. It is responsible for computing the [base power](#base-power), [set power unscaled](#set-power-unscaled), and [set power](#set-power). It calls the [thruster allocator](#thrust-allocation) to obtain the [thrust allocation vector](#thrust-allocation-vector). It publishes the thrust allocation vector, along with other values computed by the thruster allocator and current values of configurable system parameters. These functions are done in the `run` function because they must be performed at a fixed rate whenever controls is running, regardless of the robot's state.
+The `run` function is the main loop of the system, run at a fixed interval defined by the `THRUSTER_ALLOCS_INTERVAL` constant. It is responsible for computing the [base power](#base-power), [set power unscaled](#set-power-unscaled), and [set power](#set-power). It calls the [thruster allocator](#thrust-allocation) to obtain the [thrust allocation vector](#thrust-allocation-vector). It publishes the thrust allocation vector, along with other values computed by the thruster allocator and current values of configurable system parameters. These functions are done in the `run` function because they must be performed at a fixed rate whenever controls is running, regardless of the robot's state.
 
 Only the `Controls` class directly interfaces with ROS. This ensures that all inputs and outputs of the system flow through a single class, making it easier to understand and modify the system, especially in terms of where it fits into the robot software as a whole.
 
