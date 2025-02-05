@@ -32,7 +32,11 @@ setup(
     entry_points={
         'console_scripts': [
             'arduino = offboard_comms.arduino:main',
+            'dvl_raw = offboard_comms.dvl_raw:main',
+            'dvl_odom = offboard_comms.dvl_to_odom:main',
+            'peripheral = offboard_comms.peripheral:main',
             'thrusters = offboard_comms.thrusters:main',
+
         ],
     },
 )

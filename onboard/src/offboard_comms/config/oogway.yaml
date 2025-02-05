@@ -33,3 +33,10 @@ arduino:
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketches/ThrusterArduino
+dvl:
+  ftdi: 7006fIP
+  negate_x_vel: true
+  negate_y_vel: false
+  negate_z_vel: false
+ping1D:
+  ftdi: DP05ZD1V

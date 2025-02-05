@@ -9,7 +9,16 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <!-- TODO -->
+  <depend>std_msgs</depend>
+  <depend>custom_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>tf_transformations</depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>ros2launch</exec_depend>
+  <exec_depend>python-serial</exec_depend>
+  <exec_depend>python-numpy</exec_depend>
 
   <export>
     <build_type>ament_python</build_type>

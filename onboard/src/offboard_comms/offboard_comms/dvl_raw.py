@@ -3,14 +3,14 @@ import os
 import rclpy
 from custom_msgs.msg import DVLRaw
 
-from data_pub.serial_republisher_node import SerialRepublisherNode
+from offboard_comms.serial_republisher_node import SerialRepublisherNode
 
 
 class DVLRawPublisher(SerialRepublisherNode):
     """A class to read and publish raw DVL data from a serial port."""
 
     NAME = 'DVL'
-    CONFIG_FILE_PATH = f'package://data_pub/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
+    CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
 
     BAUDRATE = 115200
     NODE_NAME = 'dvl_raw_pub'

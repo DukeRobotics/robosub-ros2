@@ -5,14 +5,14 @@ from typing import ClassVar
 import rclpy
 from custom_msgs.srv import SetServo
 
-from data_pub.peripheral_sensors import (
+from offboard_comms.peripheral_sensors import (
     HumiditySensor,
     PeripheralSensor,
     PressureSensor,
     TemperatureSensor,
     VoltageSensor,
 )
-from data_pub.serial_republisher_node import SerialRepublisherNode
+from offboard_comms.serial_republisher_node import SerialRepublisherNode
 
 
 @dataclass
