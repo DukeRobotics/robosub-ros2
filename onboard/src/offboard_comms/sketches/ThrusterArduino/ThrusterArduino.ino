@@ -99,6 +99,13 @@ void loop() {
         while (bytesRead < sizeof(incomingData)) {
             incomingData[bytesRead] = Serial.read();
             bytesRead++;
+
+            // If start flag is detected in the incoming data, it means the data doesn't have the right number of bytes
+            // Maybe the data was corrupted, or the required number of bytes were not sent for all thrusters
+            // So, return to the start of loop() to read the next set of data or stop the thrusters
+            if (bytesRead >= 2 && incomingData[bytesRead - 2] == START_FLAG[0] && incomingData[bytesRead - 1] == START_FLAG[1]) {
+                return;
+            }
         }
 
         // Now unpack the data from the byte array into the pwms array (big-endian)

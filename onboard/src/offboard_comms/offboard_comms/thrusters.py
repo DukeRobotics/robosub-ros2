@@ -1,11 +1,14 @@
 import csv
+import os
 import struct
 from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar
 
 import rclpy
+import resource_retriever as rr
 import serial
+import yaml
 from ament_index_python.packages import get_package_share_directory
 from custom_msgs.msg import PWMAllocs, ThrusterAllocs
 from rclpy.node import Node
@@ -36,6 +39,7 @@ class Thrusters(Node):
     4. Publishing of PWM values
     """
 
+    CONTROLS_CONFIG_FILE_PATH = f'package://controls/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
     VOLTAGE_MIN: float = 14.0
     VOLTAGE_MAX: float = 18.0
     NUM_LOOKUP_ENTRIES: int = 201  # -1.0 to 1.0 in 0.01 increments
@@ -51,6 +55,10 @@ class Thrusters(Node):
         super().__init__('thrusters')
 
         self.serial_port = self.declare_parameter('serial_port', 'device not found').value
+
+        with Path(rr.get_filename(self.CONTROLS_CONFIG_FILE_PATH, use_protocol=False)).open() as f:
+            controls_config = yaml.safe_load(f)
+            self.num_thrusters = len(controls_config['thrusters'])
 
         # Initialize voltage and lookup tables
         self.voltage: float = 15.5
@@ -142,6 +150,12 @@ class Thrusters(Node):
         Args:
             msg (ThrusterAllocs): Thruster allocations message containing desired thrust values.
         """
+        if len(msg.allocs) != self.num_thrusters:
+            self.get_logger().error(
+                f'Incorrect number of thruster allocations. Expected {self.num_thrusters}, got {len(msg.allocs)}.',
+            )
+            return
+
         # Convert allocations to PWM values
         pwm_values = [self._lookup(force) for force in msg.allocs]
 
