@@ -103,14 +103,16 @@ class SerialNode(Node, ABC):
         """
         self.writebytes((line + '\r\n').encode('utf-8'))
 
-    @abstractmethod
-    def process_line(self, line: str) -> None:
+    def process_line(self, _: str) -> None:
         """
-        Abstract method to implement how serial input is formatted.
+        Process line read from serial.
 
         Args:
             line (str): line to process
         """
+        if self._read_from_serial:
+            error_msg = 'Subclasses must implement this method if read_from_serial is True.'
+            raise NotImplementedError(error_msg)
 
     def run(self) -> None:
         """

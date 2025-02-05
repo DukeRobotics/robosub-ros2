@@ -7,11 +7,9 @@ from typing import ClassVar
 
 import rclpy
 import resource_retriever as rr
-import serial
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from custom_msgs.msg import PWMAllocs, ThrusterAllocs
-from serial.tools import list_ports
 from std_msgs.msg import Float64
 
 from offboard_comms.serial_node import SerialNode
