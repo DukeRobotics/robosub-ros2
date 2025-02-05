@@ -52,6 +52,23 @@ class PeripheralSensor(ABC):
     def _publish_current_value(self) -> None:
         """Publish current sensor value."""
 
+class VoltageSensor(PeripheralSensor):
+    """Voltage sensor class."""
+
+    MIN_VALUE = 0
+    MAX_VALUE = 30
+    MEDIAN_FILTER_SIZE = 0
+
+    def __init__(self, node: Node, tag: str, topic: str) -> None:
+        super().__init__(node, tag, topic, self.MIN_VALUE, self.MAX_VALUE, self.MEDIAN_FILTER_SIZE)
+
+        self._current_voltage_msg = Float64()
+        self._publisher = self.node.create_publisher(Float64, self.topic, 10)
+
+    def _publish_current_value(self) -> None:
+        """Publish current voltage."""
+        self._current_voltage_msg.data = self._value
+        self._publisher.publish(self._current_voltage_msg)
 
 class PressureSensor(PeripheralSensor):
     """Pressure sensor class."""
@@ -80,24 +97,6 @@ class PressureSensor(PeripheralSensor):
         self._current_pressure_msg.header.stamp = self.node.get_clock().now().to_msg()
         self._current_pressure_msg.pose.pose.position.z = -1 * float(self._value)
         self._publisher.publish(self._current_pressure_msg)
-
-class VoltageSensor(PeripheralSensor):
-    """Voltage sensor class."""
-
-    MIN_VALUE = 0
-    MAX_VALUE = 30
-    MEDIAN_FILTER_SIZE = 0
-
-    def __init__(self, node: Node, tag: str, topic: str) -> None:
-        super().__init__(node, tag, topic, self.MIN_VALUE, self.MAX_VALUE, self.MEDIAN_FILTER_SIZE)
-
-        self._current_voltage_msg = Float64()
-        self._publisher = self.node.create_publisher(Float64, self.topic, 10)
-
-    def _publish_current_value(self) -> None:
-        """Publish current voltage."""
-        self._current_voltage_msg.data = self._value
-        self._publisher.publish(self._current_voltage_msg)
 
 class TemperatureSensor(PeripheralSensor):
     """Temperature sensor class."""
