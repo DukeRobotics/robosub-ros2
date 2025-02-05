@@ -11,8 +11,8 @@ from rclpy.node import Node
 from serial.tools import list_ports
 
 
-class SerialRepublisherNode(Node, ABC):
-    """Abstract serial publisher for a ROS node."""
+class SerialNode(Node, ABC):
+    """Abstract ROS node to read and write to serial."""
 
     def __init__(self, node_name: str, baudrate: int, config_file_path: str, name: str,
                  connection_retry_period: int=1, loop_rate: int=10, use_nonblocking: bool = False) -> None:

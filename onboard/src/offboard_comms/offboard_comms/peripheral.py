@@ -12,7 +12,7 @@ from offboard_comms.peripheral_sensors import (
     TemperatureSensor,
     VoltageSensor,
 )
-from offboard_comms.serial_republisher_node import SerialRepublisherNode
+from offboard_comms.serial_node import SerialNode
 
 
 @dataclass
@@ -32,7 +32,7 @@ class PeripheralServo:
     max_pwm: int
 
 
-class PeripheralPublisher(SerialRepublisherNode):
+class PeripheralPublisher(SerialNode):
     """Serial publisher to publish data from peripheral arduino and send servo commands."""
 
     NAME = 'peripheral arduino'

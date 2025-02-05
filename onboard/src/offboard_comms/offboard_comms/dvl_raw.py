@@ -3,10 +3,10 @@ import os
 import rclpy
 from custom_msgs.msg import DVLRaw
 
-from offboard_comms.serial_republisher_node import SerialRepublisherNode
+from offboard_comms.serial_node import SerialNode
 
 
-class DVLRawPublisher(SerialRepublisherNode):
+class DVLRawPublisher(SerialNode):
     """A class to read and publish raw DVL data from a serial port."""
 
     NAME = 'DVL'
