@@ -14,7 +14,7 @@ class Voltage {
 
         void callVoltage() {
             voltage = analogRead(pinNum);
-            voltage = voltage*onboardVoltage/1023*5; // from datasheet, for analog to digital conversion
+            voltage = voltage*onboardVoltage/1023*5; // From datasheet, for analog to digital conversion
             String printVoltage = this->voltageTag + String(voltage);
             Serial.println(printVoltage);
         }

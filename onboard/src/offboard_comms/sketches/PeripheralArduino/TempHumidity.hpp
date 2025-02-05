@@ -6,19 +6,15 @@ class TempHumidity {
         int pinNum;
         String humidityTag;
         String tempTag;
-        DHT11* dht11; // Use a pointer instead of a direct instance
+        DHT11* dht11;
 
     public:
         TempHumidity(int pinNum, String tagSuffix) : pinNum(pinNum) {
             humidityTag = "H" + tagSuffix + ":";
             tempTag = "T" + tagSuffix + ":";
 
-            dht11 = new DHT11(pinNum); // Dynamically allocate the DHT11 object
+            dht11 = new DHT11(pinNum);
             dht11->setDelay(0);
-        }
-
-        ~TempHumidity() {
-            delete dht11; // Free allocated memory
         }
 
         void callTempHumidity() {
@@ -26,11 +22,12 @@ class TempHumidity {
             int humidity = 0;
             int result = dht11->readTemperatureHumidity(temperature, humidity);
 
+            // If result is 0, then the read was successful
             if (result == 0) {
                 String printHumidity = this->humidityTag + String((float)humidity);
                 Serial.println(printHumidity);
 
-                String printTemp = this->tempTag + String((float)temperature * 1.8 + 32); // convert Celsius to Fahrenheit
+                String printTemp = this->tempTag + String((float)temperature * 1.8 + 32); // Convert Celsius to Fahrenheit
                 Serial.println(printTemp);
             }
         }

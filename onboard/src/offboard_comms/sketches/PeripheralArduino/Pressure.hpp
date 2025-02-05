@@ -10,7 +10,6 @@ class Pressure {
     public:
         Pressure(String tagSuffix) {
             pressureTag = "P" + tagSuffix + ":";
-
             pressureConnected = false;
             initPressure();
         }
@@ -23,7 +22,6 @@ class Pressure {
             sensor.setFluidDensity(997); // kg/m^3 (freshwater, 1029 for seawater)
 
             pressureConnected = sensor.init();
-
             if (pressureConnected) {
                 sensor.setModel(MS5837::MS5837_02BA);
             }

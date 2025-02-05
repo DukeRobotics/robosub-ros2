@@ -105,11 +105,13 @@ class Robot {
                     String input = Serial.readString();
                     int colonIndex = input.indexOf(":");
 
+                    // Make sure colon exists in input
                     if (colonIndex != -1) {
-                        String id = input.substring(0, colonIndex);
+                        String tag = input.substring(0, colonIndex);
                         String pwmString = input.substring(colonIndex + 1);
                         bool isValidPwm = true;
 
+                        // Make sure pwmString is a number
                         for (int i = 0; i < pwmString.length(); i++) {
                             if (!isDigit(pwmString.charAt(i))) {
                                 isValidPwm = false;
@@ -117,10 +119,11 @@ class Robot {
                             }
                         }
 
+                        // If valid pwm, find servo with matching id and call it
                         if (isValidPwm) {
                             int pwm = pwmString.toInt();
                             for (int i = 0; i < numServos; ++i) {
-                                if (servoList[i]->getTag() == id) {
+                                if (servoList[i]->getTag() == tag) {
                                     servoList[i]->callServo(pwm);
                                     break;
                                 }
