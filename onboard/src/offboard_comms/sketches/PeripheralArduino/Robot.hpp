@@ -104,13 +104,27 @@ class Robot {
                 if (Serial.available() > 0) {
                     String input = Serial.readString();
                     int colonIndex = input.indexOf(":");
-                    String id = input.substring(0, colonIndex);
-                    int pwm = input.substring(colonIndex + 1).toInt();
 
-                    for (int i = 0; i < numServos; ++i) {
-                        if (servoList[i]->getTag() == id) {
-                            servoList[i]->callServo(pwm);
-                            break;
+                    if (colonIndex != -1) {
+                        String id = input.substring(0, colonIndex);
+                        String pwmString = input.substring(colonIndex + 1);
+                        bool isValidPwm = true;
+
+                        for (int i = 0; i < pwmString.length(); i++) {
+                            if (!isDigit(pwmString.charAt(i))) {
+                                isValidPwm = false;
+                                break;
+                            }
+                        }
+
+                        if (isValidPwm) {
+                            int pwm = pwmString.toInt();
+                            for (int i = 0; i < numServos; ++i) {
+                                if (servoList[i]->getTag() == id) {
+                                    servoList[i]->callServo(pwm);
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
