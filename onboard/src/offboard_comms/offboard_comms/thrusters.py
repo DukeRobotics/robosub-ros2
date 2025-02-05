@@ -11,9 +11,10 @@ import serial
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from custom_msgs.msg import PWMAllocs, ThrusterAllocs
-from rclpy.node import Node
 from serial.tools import list_ports
 from std_msgs.msg import Float64
+
+from offboard_comms.serial_node import SerialNode
 
 
 @dataclass
@@ -29,7 +30,7 @@ class VoltageTable:
     table: list[int]
 
 
-class Thrusters(Node):
+class Thrusters(SerialNode):
     """
     ROS2 node for thruster control with voltage-based PWM allocation and serial communication.
 
@@ -39,6 +40,10 @@ class Thrusters(Node):
     3. Subscription to thruster allocations and voltage
     4. Publishing of PWM values
     """
+    NODE_NAME = 'thrusters'
+    BAUDERATE = 57600
+    NAME = 'thruster arduino'
+    CONNECTION_RETRY_PERIOD = 1.0  # seconds
 
     CONTROLS_CONFIG_FILE_PATH = f'package://controls/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
     OFFBOARD_COMMS_CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
@@ -53,15 +58,12 @@ class Thrusters(Node):
 
     def __init__(self) -> None:
         """Initialize the thruster node with all necessary components."""
-        super().__init__('thrusters')
+        super().__init__(self.NODE_NAME, self.BAUDERATE, self.OFFBOARD_COMMS_CONFIG_FILE_PATH, self.NAME, False,
+                         self.CONNECTION_RETRY_PERIOD)
 
         with Path(rr.get_filename(self.CONTROLS_CONFIG_FILE_PATH, use_protocol=False)).open() as f:
             controls_config = yaml.safe_load(f)
             self.num_thrusters = len(controls_config['thrusters'])
-
-        with Path(rr.get_filename(self.OFFBOARD_COMMS_CONFIG_FILE_PATH, use_protocol=False)).open() as f:
-            offboard_comms_config = yaml.safe_load(f)
-            self.arduino_ftdi = offboard_comms_config['arduino'][self.ARDUINO_NAME]['ftdi']
 
         # Initialize voltage, voltage bounds, and lookup tables
         self.voltage: float = 15.5
@@ -72,9 +74,6 @@ class Thrusters(Node):
         # Load lookup tables
         self.load_lookup_tables()
 
-        # Initialize serial connection
-        self.setup_serial_connection()
-
         # Create subscribers
         self.create_subscription(Float64, '/sensors/voltage', self.voltage_callback, 1)
 
@@ -82,6 +81,10 @@ class Thrusters(Node):
 
         # Create publisher
         self.pwm_publisher = self.create_publisher(PWMAllocs, '/offboard/pwm', 1)
+
+    def get_ftdi_string(self) -> str:
+        """Get the FTDI string for the serial device."""
+        return self._config['arduino'][self.ARDUINO_NAME]['ftdi']
 
     def load_lookup_tables(self) -> None:
         """Load voltage-based PWM lookup tables from CSV files."""
@@ -98,22 +101,6 @@ class Thrusters(Node):
 
         except Exception as e:
             self.get_logger().error(f'Failed to load lookup tables: {e}')
-            raise
-
-    def setup_serial_connection(self) -> None:
-        """Set up the serial connection with the thruster hardware."""
-        try:
-            self.serial_port = next(list_ports.grep(self.arduino_ftdi)).device.strip()
-        except StopIteration:
-            self.get_logger().error(f'Failed to find serial port for {self.ARDUINO_NAME} arduino.')
-            raise
-
-        try:
-            self.ser = serial.Serial(port=self.serial_port, baudrate=57600, timeout=1.0)
-            self.get_logger().info(f'Connected to thruster arduino at {self.serial_port}.')
-        except serial.SerialException as e:
-            self.get_logger().error(f'Failed to initialize serial connection: {e}')
-            self.ser = None
             raise
 
     def _read_lookup_table_csv(self, filepath: Path) -> list[int]:
@@ -171,7 +158,7 @@ class Thrusters(Node):
 
         # Send to serial if connection is available
         if self.ser and self.ser.is_open:
-            self._write_to_serial(pwm_values)
+            self._write_pwms_to_serial(pwm_values)
         else:
             self.get_logger().warn('Serial connection not available. PWM values not sent.')
 
@@ -239,25 +226,21 @@ class Thrusters(Node):
         """
         return int(round(num * 100) + 100)
 
-    def _write_to_serial(self, pwm_values: list[int]) -> None:
+    def _write_pwms_to_serial(self, pwm_values: list[int]) -> None:
         """
         Write PWM values to serial port with checksum.
 
         Args:
             pwm_values (list[int]): Array of PWM values to write
         """
-        try:
-            # Start flag
-            data = self.START_FLAG.copy()
+        # Start flag
+        data = self.START_FLAG.copy()
 
-            # Add PWM values in big-endian format
-            data.extend(struct.pack(f'>{len(pwm_values)}H', *pwm_values))
+        # Add PWM values in big-endian format
+        data.extend(struct.pack(f'>{len(pwm_values)}H', *pwm_values))
 
-            # Write to serial
-            self.ser.write(data)
-
-        except Exception as e:  # noqa: BLE001
-            self.get_logger().error(f'Error writing to serial: {e}')
+        # Write to serial
+        self.writebytes(bytes(data))
 
     def destroy_node(self) -> None:
         """Clean up resources when node is destroyed."""

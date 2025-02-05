@@ -52,7 +52,7 @@ class PeripheralPublisher(SerialNode):
     }
 
     def __init__(self) -> None:
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.NAME,
+        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.NAME, True,
                          self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE, use_nonblocking=True)
 
         self.sensors: dict[str, PeripheralSensor] = {}

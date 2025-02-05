@@ -14,11 +14,12 @@ from serial.tools import list_ports
 class SerialNode(Node, ABC):
     """Abstract ROS node to read and write to serial."""
 
-    def __init__(self, node_name: str, baudrate: int, config_file_path: str, name: str,
+    def __init__(self, node_name: str, baudrate: int, config_file_path: str, name: str, read_from_serial: bool,
                  connection_retry_period: int=1, loop_rate: int=10, use_nonblocking: bool = False) -> None:
         self._node_name = node_name
         self._baud = baudrate
         self._name = name
+        self._read_from_serial = read_from_serial
         self._connection_retry_period = connection_retry_period
         self._loop_rate = loop_rate
         self._use_nonblocking = use_nonblocking
@@ -72,6 +73,27 @@ class SerialNode(Node, ABC):
 
         return buff.decode('utf-8', errors='ignore')
 
+    def writebytes(self, data: bytes) -> None:
+        """
+        Write bytes to serial port.
+
+        Args:
+            data (bytes): data to write
+        """
+        if self._serial:
+            try:
+                self._serial.write(data)
+            except serial.SerialException:
+                self.get_logger().error(f'Error in writing to {self._name} serial port, trying to reconnect.')
+                self.get_logger().error(traceback.format_exc())
+                self._serial.close()
+                self._serial = None
+                self._serial_port = None
+                self.run_timer.cancel()
+                self.connect_timer.reset()
+        else:
+            self.get_logger().error(f'Error in writing to {self._name} serial port; not connected.')
+
     def writeline(self, line: str) -> None:
         """
         Write line to serial port.
@@ -79,7 +101,7 @@ class SerialNode(Node, ABC):
         Args:
             line (str): line to write
         """
-        self._serial.write(line.encode('utf-8') + b'\r\n')
+        self.writebytes((line + '\r\n').encode('utf-8'))
 
     @abstractmethod
     def process_line(self, line: str) -> None:
@@ -99,16 +121,17 @@ class SerialNode(Node, ABC):
         Processes and publishes the serial data to ROS
         """
         try:
-            if self._use_nonblocking:
-                line = self.readline_nonblocking().strip()
-            else:
-                line = self._serial.readline().decode('utf-8').strip()
+            if self._read_from_serial:
+                if self._use_nonblocking:
+                    line = self.readline_nonblocking().strip()
+                else:
+                    line = self._serial.readline().decode('utf-8').strip()
 
-            if line:
-                self.process_line(line)
+                if line:
+                    self.process_line(line)
 
-        except Exception: # noqa: BLE001
-            self.get_logger().error(f'Error in reading {self._name} from serial, trying again in 1 second.')
+        except serial.SerialException:
+            self.get_logger().error(f'Error in reading {self._name} from serial, trying to reconnect.')
             self.get_logger().error(traceback.format_exc())
             self._serial.close()
             self._serial = None

@@ -22,8 +22,8 @@ class DVLRawPublisher(SerialNode):
 
     def __init__(self) -> None:
 
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.NAME, self.CONNECTION_RETRY_PERIOD,
-                         self.LOOP_RATE)
+        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.NAME, True,
+                         self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE)
 
         self._dvl_line_parsers = {
             'SA': self._parse_SA,
