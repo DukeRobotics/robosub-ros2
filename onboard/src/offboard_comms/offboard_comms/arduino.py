@@ -17,9 +17,7 @@ ROBOT_NAME = os.getenv('ROBOT_NAME', 'oogway')
 OFFBOARD_COMMS_PATH_TEMPLATE = 'package://offboard_comms/{subpath}'
 
 # Path to the config YAML file
-CONFIG_YAML_PATH = OFFBOARD_COMMS_PATH_TEMPLATE.format(
-    subpath=f'config/{ROBOT_NAME}.yaml',
-)
+CONFIG_YAML_PATH = OFFBOARD_COMMS_PATH_TEMPLATE.format(subpath=f'config/{ROBOT_NAME}.yaml')
 
 # Command templates for Arduino CLI
 ARDUINO_CORE_INSTALL_COMMAND_TEMPLATE = 'arduino-cli core install {core}'
@@ -55,8 +53,8 @@ except yaml.YAMLError as e:
     if hasattr(e, 'problem_mark'):
         mark = e.problem_mark
         print(
-            f'{OUTPUT_PREFIX}: FATAL ERROR: Config YAML file is not in valid YAML format at line {mark.line + 1} '
-            f'and column {mark.column + 1}.',
+            f'{OUTPUT_PREFIX}: FATAL ERROR: Config YAML file is not in valid YAML format at line {mark.line + 1} and '
+            f'column {mark.column + 1}.',
         )
 
     print(
@@ -108,16 +106,11 @@ def run_command(
         for key, value in env_updates.items():
             env[key] = str(value)
 
+    stdout = None if print_output else subprocess.DEVNULL
+
     print(f'{OUTPUT_PREFIX}: CMD: {command}')
-    subprocess.run(
-        command,
-        shell=True,
-        check=True,
-        stdout=subprocess.DEVNULL if not print_output else None,
-        stderr=subprocess.STDOUT,
-        env=env,
-        cwd=path_to_run_at,
-    )
+    subprocess.run(command, shell=True, check=True, stdout=stdout, stderr=subprocess.STDOUT, env=env,
+                   cwd=path_to_run_at)
 
 
 def run_commands(
@@ -141,12 +134,7 @@ def run_commands(
         subprocess.CalledProcessError: If command returns non-zero exit code.
     """
     for command in commands:
-        run_command(
-            command,
-            print_output,
-            env_updates=env_updates,
-            path_to_run_at=path_to_run_at,
-        )
+        run_command(command, print_output, env_updates=env_updates, path_to_run_at=path_to_run_at)
 
 
 def get_arduino_cores(arduino_names: list[str]) -> list[str]:
@@ -202,10 +190,7 @@ def get_arduino_sketch_path_absolute(arduino_name: str) -> str:
         str: Absolute path of the Arduino sketch.
     """
     sketch_path_relative = ARDUINO_DATA[arduino_name]['sketch']
-    return rr.get_filename(
-        OFFBOARD_COMMS_PATH_TEMPLATE.format(subpath=sketch_path_relative),
-        use_protocol=False,
-    )
+    return rr.get_filename(OFFBOARD_COMMS_PATH_TEMPLATE.format(subpath=sketch_path_relative), use_protocol=False)
 
 
 # ======================================================================================================================
@@ -223,9 +208,7 @@ def check_if_arduino_cores_installed(arduino_cores: list[str]) -> bool:
         bool: True if all cores are installed, False otherwise.
     """
     try:
-        installed_cores = subprocess.check_output(
-            ARDUINO_GET_INSTALLED_CORES, shell=True, text=True,
-        )
+        installed_cores = subprocess.check_output(ARDUINO_GET_INSTALLED_CORES, shell=True, text=True)
         return all(core in installed_cores for core in arduino_cores)
     except subprocess.CalledProcessError:
         return False
@@ -242,9 +225,7 @@ def check_if_arduino_libs_installed(arduino_libs: list[str]) -> bool:
         bool: True if all libraries are installed, False otherwise.
     """
     try:
-        installed_libs = subprocess.check_output(
-            ARDUINO_GET_INSTALLED_LIBS, shell=True, text=True,
-        ).lower()
+        installed_libs = subprocess.check_output(ARDUINO_GET_INSTALLED_LIBS, shell=True, text=True).lower()
         return all(lib.lower() in installed_libs for lib in arduino_libs)
     except subprocess.CalledProcessError:
         return False
@@ -258,20 +239,13 @@ def install_libs(arduino_names: list[str], print_output: bool) -> None:
         arduino_names (list[str]): List of Arduino names.
         print_output (bool): Whether to allow the commands to print to stdout.
     """
-    # Get the list of unique Arduino cores that need to be installed and the list of commands to install the cores
+    # Get the list of unique Arduino cores that need to be installed and the list of commands to install them
     arduino_cores = get_arduino_cores(arduino_names)
-    core_install_commands = [
-        ARDUINO_CORE_INSTALL_COMMAND_TEMPLATE.format(core=core)
-        for core in arduino_cores
-    ]
+    core_install_commands = [ARDUINO_CORE_INSTALL_COMMAND_TEMPLATE.format(core=core) for core in arduino_cores]
 
-    # Get the list of unique Arduino libraries that need to be installed and the list of commands to install the
-    # libraries
+    # Get the list of unique Arduino libraries that need to be installed and the list of commands to install them
     arduino_libs = get_arduino_libs(arduino_names)
-    lib_install_commands = [
-        ARDUINO_LIBRARY_INSTALL_COMMAND_TEMPLATE.format(library=lib)
-        for lib in arduino_libs
-    ]
+    lib_install_commands = [ARDUINO_LIBRARY_INSTALL_COMMAND_TEMPLATE.format(library=lib) for lib in arduino_libs]
 
     # Print a linebreak
     print()
@@ -279,9 +253,7 @@ def install_libs(arduino_names: list[str], print_output: bool) -> None:
     # Install the Arduino cores
     if core_install_commands:
         if check_if_arduino_cores_installed(arduino_cores):
-            print(
-                f'{OUTPUT_PREFIX}: Skipped installing arduino cores because they are already installed.',
-            )
+            print(f'{OUTPUT_PREFIX}: Skipped installing arduino cores because they are already installed.')
         else:
             print(f'{OUTPUT_PREFIX}: Installing arduino cores...')
             run_commands(core_install_commands, print_output)
@@ -298,9 +270,7 @@ def install_libs(arduino_names: list[str], print_output: bool) -> None:
     # Install the Arduino libraries
     if lib_install_commands:
         if check_if_arduino_libs_installed(arduino_libs):
-            print(
-                f'{OUTPUT_PREFIX}: Skipped installing arduino libraries because they are already installed.',
-            )
+            print(f'{OUTPUT_PREFIX}: Skipped installing arduino libraries because they are already installed.')
         else:
             print(f'{OUTPUT_PREFIX}: Installing arduino libraries...')
             run_commands(lib_install_commands, print_output)
@@ -360,20 +330,13 @@ def compile_sketches(arduino_names: list[str], print_output: bool) -> None:
             run_command(ARDUINO_DATA[arduino_name]['pre_compile'], print_output)
 
         # Compile the sketch
-        run_command(
-            ARDUINO_COMPILE_COMMAND_TEMPLATE.format(
-                fqbn=fqbn, sketch_path=sketch_path_absolute,
-            ),
-            print_output,
-        )
+        run_command(ARDUINO_COMPILE_COMMAND_TEMPLATE.format(fqbn=fqbn, sketch_path=sketch_path_absolute), print_output)
 
         # Run post-compile command, if it exists
         if ARDUINO_DATA[arduino_name].get('post_compile'):
             run_command(ARDUINO_DATA[arduino_name]['post_compile'], print_output)
 
-        print(
-            f'{OUTPUT_PREFIX}: Compilation of {arduino_name} arduino sketch complete.',
-        )
+        print(f'{OUTPUT_PREFIX}: Compilation of {arduino_name} arduino sketch complete.')
 
         # Print a linebreak between arduino compilations
         if index < len(arduino_names) - 1:
@@ -402,19 +365,15 @@ def upload(arduino_names: list[str], print_output: bool) -> None:
     for arduino_name in arduino_names:
         try:
             ports[arduino_name] = get_arduino_port(arduino_name)
-            print(
-                f'{OUTPUT_PREFIX}: {arduino_name.capitalize()}: {ports[arduino_name]}',
-            )
+            print(f'{OUTPUT_PREFIX}: {arduino_name.capitalize()}: {ports[arduino_name]}')
         except StopIteration:
             error = True
-            print(
-                f'{OUTPUT_PREFIX}: FATAL ERROR: Could not find port of {arduino_name} arduino.',
-            )
+            print(f'{OUTPUT_PREFIX}: FATAL ERROR: Could not find port of {arduino_name} arduino.')
 
     if error:
         print(
-            f'{OUTPUT_PREFIX}: FATAL ERROR: Could not upload sketches to arduinos due to errors in finding ports '
-            'of given arduinos.',
+            f'{OUTPUT_PREFIX}: FATAL ERROR: Could not upload sketches to arduinos due to errors in finding ports of '
+            'given arduinos.',
         )
         return
 
@@ -432,12 +391,8 @@ def upload(arduino_names: list[str], print_output: bool) -> None:
         port = ports[arduino_name]
 
         # Upload the sketch
-        run_command(
-            ARDUINO_UPLOAD_COMMAND_TEMPLATE.format(
-                fqbn=fqbn, port=port, sketch_path=sketch_path_absolute,
-            ),
-            print_output,
-        )
+        run_command(ARDUINO_UPLOAD_COMMAND_TEMPLATE.format(fqbn=fqbn, port=port, sketch_path=sketch_path_absolute),
+                    print_output)
 
         print(f'{OUTPUT_PREFIX}: Upload to {arduino_name} arduino complete.')
 
@@ -460,8 +415,7 @@ def main(args: list[str] | None = None) -> None:
 
     # Create argparse parser
     parser = argparse.ArgumentParser(
-        description='CLI for installing libraries, finding ports, compiling, and '
-        'uploading sketches to Arduinos.',
+        description='CLI for installing libraries, finding ports, compiling, and uploading sketches to Arduinos.',
     )
 
     # Subparsers for different commands
@@ -476,7 +430,6 @@ def main(args: list[str] | None = None) -> None:
         'arduino_names',
         nargs='+',
         choices=arduino_names_with_all,
-        metavar='Arduino Names',
         help='Names of Arduinos to install cores and libraries for. Use "all" to install libraries for all Arduinos.',
     )
     install_libs_parser.add_argument(
@@ -491,9 +444,7 @@ def main(args: list[str] | None = None) -> None:
         'arduino_names',
         nargs='+',
         choices=arduino_names_with_all,
-        metavar='Arduino Names',
-        help='Names of Arduinos whose ports to find. Use "all" to find ports of all'
-        'Arduinos.',
+        help='Names of Arduinos whose ports to find. Use "all" to find ports of all Arduinos.',
     )
     find_ports_parser.add_argument(
         '--nl',
@@ -504,15 +455,13 @@ def main(args: list[str] | None = None) -> None:
 
     # Subparser for compile command
     compile_parser = subparsers.add_parser(
-        'compile', help='Install required libraries and compile Arduino sketches.',
+        'compile', help='Install required cores & libraries and compile Arduino sketches.',
     )
     compile_parser.add_argument(
         'arduino_names',
         nargs='+',
         choices=arduino_names_with_all,
-        metavar='Arduino Names',
-        help='Names of Arduinos whose sketches to compile. Use "all" to compile sketches of '
-        'all Arduinos.',
+        help='Names of Arduinos whose sketches to compile. Use "all" to compile sketches of all Arduinos.',
     )
     compile_parser.add_argument(
         '-p', '--print-output', action='store_true', help='Print output of subcommands.',
@@ -521,15 +470,13 @@ def main(args: list[str] | None = None) -> None:
     # Subparser for upload command
     upload_parser = subparsers.add_parser(
         'upload',
-        help='Install required libraries, compile, and upload sketches to Arduinos.',
+        help='Install required cores & libraries, compile, and upload sketches to Arduinos.',
     )
     upload_parser.add_argument(
         'arduino_names',
         nargs='+',
         choices=arduino_names_with_all,
-        metavar='Arduino Names',
-        help='Names of Arduinos whose sketches to compile and upload. Use "all" to upload '
-        'sketches of all Arduinos.',
+        help='Names of Arduinos whose sketches to compile and upload. Use "all" to upload sketches of all Arduinos.',
     )
     upload_parser.add_argument(
         '-p', '--print-output', action='store_true', help='Print output subcommands.',
