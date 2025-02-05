@@ -12,6 +12,7 @@ import yaml
 from ament_index_python.packages import get_package_share_directory
 from custom_msgs.msg import PWMAllocs, ThrusterAllocs
 from rclpy.node import Node
+from serial.tools import list_ports
 from std_msgs.msg import Float64
 
 
@@ -40,6 +41,8 @@ class Thrusters(Node):
     """
 
     CONTROLS_CONFIG_FILE_PATH = f'package://controls/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
+    OFFBOARD_COMMS_CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
+    ARDUINO_NAME = 'thruster'
     NUM_LOOKUP_ENTRIES: int = 201  # -1.0 to 1.0 in 0.01 increments
     VOLTAGE_FILES: ClassVar[list[tuple[int, str]]] = [
         (14.0, '14.csv'),
@@ -52,11 +55,13 @@ class Thrusters(Node):
         """Initialize the thruster node with all necessary components."""
         super().__init__('thrusters')
 
-        self.serial_port = self.declare_parameter('serial_port', 'device not found').value
-
         with Path(rr.get_filename(self.CONTROLS_CONFIG_FILE_PATH, use_protocol=False)).open() as f:
             controls_config = yaml.safe_load(f)
             self.num_thrusters = len(controls_config['thrusters'])
+
+        with Path(rr.get_filename(self.OFFBOARD_COMMS_CONFIG_FILE_PATH, use_protocol=False)).open() as f:
+            offboard_comms_config = yaml.safe_load(f)
+            self.arduino_ftdi = offboard_comms_config['arduino'][self.ARDUINO_NAME]['ftdi']
 
         # Initialize voltage, voltage bounds, and lookup tables
         self.voltage: float = 15.5
@@ -98,9 +103,14 @@ class Thrusters(Node):
     def setup_serial_connection(self) -> None:
         """Set up the serial connection with the thruster hardware."""
         try:
-            device = self.declare_parameter('device', self.serial_port).value
-            self.ser = serial.Serial(port=device, baudrate=57600, timeout=1.0)
-            self.get_logger().info(f'Connected to thruster arduino at {device}.')
+            self.serial_port = next(list_ports.grep(self.arduino_ftdi)).device.strip()
+        except StopIteration:
+            self.get_logger().error(f'Failed to find serial port for {self.ARDUINO_NAME} arduino.')
+            raise
+
+        try:
+            self.ser = serial.Serial(port=self.serial_port, baudrate=57600, timeout=1.0)
+            self.get_logger().info(f'Connected to thruster arduino at {self.serial_port}.')
         except serial.SerialException as e:
             self.get_logger().error(f'Failed to initialize serial connection: {e}')
             self.ser = None
