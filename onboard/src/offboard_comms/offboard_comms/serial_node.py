@@ -108,7 +108,7 @@ class SerialNode(Node, ABC):
         Process line read from serial.
 
         Args:
-            line (str): line to process
+            _ (str): line to process
         """
         if self._read_from_serial:
             error_msg = 'Subclasses must implement this method if read_from_serial is True.'
