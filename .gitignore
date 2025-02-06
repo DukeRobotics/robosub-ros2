@@ -4,7 +4,6 @@ __pycache__
 **/build/*
 **/install/*
 **/log/*
-**/dist/*
 
 # All playback subfolders
 **/bag_files/**
