@@ -25,6 +25,8 @@ uint16_t* pwms;
 
 MultiplexedBasicESC* thrusters;
 
+bool startFlagDetected = false;
+
 void write_pwms() {
     for (uint8_t i = 0; i < NUM_THRUSTERS; i++) {
         if (pwms[i] < THRUSTER_PWM_MIN || pwms[i] > THRUSTER_PWM_MAX) {
@@ -86,43 +88,46 @@ void loop() {
         write_pwms();
     }
 
-    // Only send new thruster values if we recieve new data -- the thrusters store the last command
-    if (Serial.available() >= NUM_THRUSTERS * sizeof(uint16_t) + 2) {
-        uint16_t allocs[NUM_THRUSTERS];
-        byte incomingData[NUM_THRUSTERS * 2];
-
-        byte window[2] = {0x00, 0x00};
-        while (true) {
-            if (Serial.available() > 0) {
-                window[0] = window[1];
-                window[1] = Serial.read();
-
-                // Check if the window matches the start flag
-                if (window[0] == START_FLAG[0] && window[1] == START_FLAG[1]) {
-                    break;  // Exit the loop once the start flag is detected
-                }
-            }
+    // Read bytes from serial until we find the start flag, until we run out of serial data, or until we read 2 * NUM_THRUSTERS + 2 bytes
+    byte window[2] = {0x00, 0x00};
+    size_t bytesRead = 0;
+    while (Serial.available() > 0 && bytesRead < (2 * NUM_THRUSTERS + 2) && !startFlagDetected) {
+        window[0] = window[1];
+        window[1] = Serial.read();
+        if (window[0] == START_FLAG[0] && window[1] == START_FLAG[1]) {
+            startFlagDetected = true;
         }
+        bytesRead++;
+    }
 
-        // Read the incoming data from the serial buffer (example: NUM_THRUSTERS * 2 bytes)
-        size_t bytesRead = 0;
-        while (bytesRead < sizeof(incomingData)) {
-            incomingData[bytesRead] = Serial.read();
-            bytesRead++;
+    // If the start flag is not detected, return to the start of loop() to read the next set of data or stop the thrusters
+    if (!startFlagDetected) {
+        return;
+    }
 
-            // If start flag is detected in the incoming data, it means the data doesn't have the right number of bytes
-            // Maybe the data was corrupted, or the required number of bytes were not sent for all thrusters
-            // So, return to the start of loop() to read the next set of data or stop the thrusters
-            if (bytesRead >= 2 && incomingData[bytesRead - 2] == START_FLAG[0] && incomingData[bytesRead - 1] == START_FLAG[1]) {
-                return;
-            }
+    // Reset the flag for the next iteration
+    startFlagDetected = false;
+
+    // The start flag was detected, so read the PWM values for the thrusters, which should be NUM_THRUSTERS * 2 bytes
+    byte incomingData[NUM_THRUSTERS * 2];
+    bytesRead = 0;
+    while (Serial.available() > 0 && bytesRead < sizeof(incomingData)) {
+        incomingData[bytesRead] = Serial.read();
+        bytesRead++;
+
+        // If start flag is detected in the incoming data, it means the data doesn't have enough PWM values for all thrusters
+        // So, return to the start of loop(), skip the previous while loop (since startFlagDetected = true), and read the PWM values
+        if (bytesRead >= 2 && incomingData[bytesRead - 2] == START_FLAG[0] && incomingData[bytesRead - 1] == START_FLAG[1]) {
+            startFlagDetected = true;
+            return;
         }
+    }
 
-        // Now unpack the data from the byte array into the pwms array (big-endian)
+    // If we read the correct number of bytes, unpack the data into the pwms array (big-endian)
+    if (bytesRead == sizeof(incomingData)) {
         for (size_t i = 0; i < NUM_THRUSTERS; i++) {
             pwms[i] = incomingData[2 * i + 1] | (incomingData[2 * i] << 8);
         }
-
         write_pwms();
     }
 }
