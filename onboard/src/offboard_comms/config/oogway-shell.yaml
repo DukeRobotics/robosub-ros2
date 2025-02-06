@@ -3,7 +3,7 @@ arduino:
     ftdi: B0005AVT
     fqbn: arduino:avr:nano
     core: arduino:avr
-    sketch: sketches/PeripheralArduino
+    sketch: sketches/peripheral
     libraries:
       - servo
     sensors:
@@ -32,7 +32,7 @@ arduino:
     ftdi: 02AB8D8451544E5450202020FF0D334A
     fqbn: arduino:megaavr:nano
     core: arduino:megaavr
-    sketch: sketches/ThrusterArduino
+    sketch: sketches/thruster
 dvl:
   ftdi: D309SFWS
   negate_x_vel: false
