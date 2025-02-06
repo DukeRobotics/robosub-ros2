@@ -25,5 +25,6 @@ export _colcon_cd_root=/opt/ros/jazzy
 # Alias to start foxglove bridge
 alias fg-ws="ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=28765"
 alias thruster-test="ros2 topic pub -r 20 /controls/thruster_allocs custom_msgs/msg/ThrusterAllocs 'allocs: [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]'"
+alias arduino="ros2 run offboard_comms arduino"
 
 source /root/dev/robosub-ros2/venv.sh activate
