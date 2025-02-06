@@ -31,7 +31,7 @@ class PeripheralSensor(ABC):
             new_reading (float): New sensor value recieved.
         """
         # Don't update value when new reading is too large
-        if self.min_value < new_reading < self.max_value:
+        if self.min_value <= new_reading <= self.max_value:
             if self.median_filter_size > 0:
                 # First reading
                 if self._value is None:
@@ -46,7 +46,8 @@ class PeripheralSensor(ABC):
             else:
                 self._value = new_reading
 
-        self._publish_current_value()
+        if self._value is not None:
+            self._publish_current_value()
 
     @abstractmethod
     def _publish_current_value(self) -> None:
