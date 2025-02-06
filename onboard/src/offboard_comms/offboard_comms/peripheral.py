@@ -35,7 +35,7 @@ class PeripheralServo:
 class PeripheralPublisher(SerialNode):
     """Serial publisher to publish data from peripheral arduino and send servo commands."""
 
-    NAME = 'peripheral arduino'
+    SERIAL_DEVICE_NAME = 'peripheral arduino'
     CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
 
     BAUDRATE = 9600
@@ -52,7 +52,7 @@ class PeripheralPublisher(SerialNode):
     }
 
     def __init__(self) -> None:
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.NAME, True,
+        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME, True,
                          self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE, use_nonblocking=True)
 
         self.sensors: dict[str, PeripheralSensor] = {}

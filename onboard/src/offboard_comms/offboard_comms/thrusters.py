@@ -40,7 +40,7 @@ class Thrusters(SerialNode):
     """
     NODE_NAME = 'thrusters'
     BAUDERATE = 57600
-    NAME = 'thruster arduino'
+    SERIAL_DEVICE_NAME = 'thruster arduino'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
 
     CONTROLS_CONFIG_FILE_PATH = f'package://controls/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
@@ -56,8 +56,8 @@ class Thrusters(SerialNode):
 
     def __init__(self) -> None:
         """Initialize the thruster node with all necessary components."""
-        super().__init__(self.NODE_NAME, self.BAUDERATE, self.OFFBOARD_COMMS_CONFIG_FILE_PATH, self.NAME, False,
-                         self.CONNECTION_RETRY_PERIOD)
+        super().__init__(self.NODE_NAME, self.BAUDERATE, self.OFFBOARD_COMMS_CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
+                         False, self.CONNECTION_RETRY_PERIOD)
 
         with Path(rr.get_filename(self.CONTROLS_CONFIG_FILE_PATH, use_protocol=False)).open() as f:
             controls_config = yaml.safe_load(f)

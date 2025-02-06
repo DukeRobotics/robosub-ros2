@@ -14,11 +14,12 @@ from serial.tools import list_ports
 class SerialNode(Node, ABC):
     """Abstract ROS node to read and write to serial."""
 
-    def __init__(self, node_name: str, baudrate: int, config_file_path: str, name: str, read_from_serial: bool,
-                 connection_retry_period: int=1, loop_rate: int=10, use_nonblocking: bool = False) -> None:
+    def __init__(self, node_name: str, baudrate: int, config_file_path: str, serial_device_name: str,
+                 read_from_serial: bool, connection_retry_period: int=1, loop_rate: int=10,
+                 use_nonblocking: bool = False) -> None:
         self._node_name = node_name
         self._baud = baudrate
-        self._name = name
+        self._serial_device_name = serial_device_name
         self._read_from_serial = read_from_serial
         self._connection_retry_period = connection_retry_period
         self._loop_rate = loop_rate
@@ -50,9 +51,9 @@ class SerialNode(Node, ABC):
                                             stopbits=serial.STOPBITS_ONE)
             self.connect_timer.cancel()
             self.run_timer.reset()
-            self.get_logger().info(f'Connected to {self._name} at {self._serial_port}.')
+            self.get_logger().info(f'Connected to {self._serial_device_name} at {self._serial_port}.')
         except StopIteration:
-            self.get_logger().error(f'Error in connecting to {self._name} over serial, trying again in '
+            self.get_logger().error(f'Error in connecting to {self._serial_device_name} over serial, trying again in '
                                     f'{self._connection_retry_period} seconds.')
 
     def readline_nonblocking(self, tout: int = 1) -> str:
@@ -84,7 +85,7 @@ class SerialNode(Node, ABC):
             try:
                 self._serial.write(data)
             except serial.SerialException:
-                self.get_logger().error(f'Error in writing to {self._name} serial port, trying to reconnect.')
+                self.get_logger().error(f'Error in writing to {self._serial_device_name} serial port, trying to reconnect.')
                 self.get_logger().error(traceback.format_exc())
                 self._serial.close()
                 self._serial = None
@@ -92,7 +93,7 @@ class SerialNode(Node, ABC):
                 self.run_timer.cancel()
                 self.connect_timer.reset()
         else:
-            self.get_logger().error(f'Error in writing to {self._name} serial port; not connected.')
+            self.get_logger().error(f'Error in writing to {self._serial_device_name} serial port; not connected.')
 
     def writeline(self, line: str) -> None:
         """
@@ -133,7 +134,7 @@ class SerialNode(Node, ABC):
                     self.process_line(line)
 
         except serial.SerialException:
-            self.get_logger().error(f'Error in reading {self._name} from serial, trying to reconnect.')
+            self.get_logger().error(f'Error in reading {self._serial_device_name} from serial, trying to reconnect.')
             self.get_logger().error(traceback.format_exc())
             self._serial.close()
             self._serial = None

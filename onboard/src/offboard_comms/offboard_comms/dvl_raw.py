@@ -9,7 +9,7 @@ from offboard_comms.serial_node import SerialNode
 class DVLRawPublisher(SerialNode):
     """A class to read and publish raw DVL data from a serial port."""
 
-    NAME = 'DVL'
+    SERIAL_DEVICE_NAME = 'DVL'
     CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
 
     BAUDRATE = 115200
@@ -22,7 +22,7 @@ class DVLRawPublisher(SerialNode):
 
     def __init__(self) -> None:
 
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.NAME, True,
+        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME, True,
                          self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE)
 
         self._dvl_line_parsers = {
