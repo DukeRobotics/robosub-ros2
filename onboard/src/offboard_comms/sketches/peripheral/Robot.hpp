@@ -108,25 +108,11 @@ class Robot {
                     // Make sure colon exists in input
                     if (colonIndex != -1) {
                         String tag = input.substring(0, colonIndex);
-                        String pwmString = input.substring(colonIndex + 1);
-                        bool isValidPwm = true;
-
-                        // Make sure pwmString is a number
-                        for (int i = 0; i < pwmString.length(); i++) {
-                            if (!isDigit(pwmString.charAt(i))) {
-                                isValidPwm = false;
+                        int pwm = input.substring(colonIndex + 1).toInt(); // If the string after the colon is not a number, it will return 0
+                        for (int i = 0; i < numServos; ++i) {
+                            if (servoList[i]->getTag() == tag) {
+                                servoList[i]->callServo(pwm);
                                 break;
-                            }
-                        }
-
-                        // If valid pwm, find servo with matching id and call it
-                        if (isValidPwm) {
-                            int pwm = pwmString.toInt();
-                            for (int i = 0; i < numServos; ++i) {
-                                if (servoList[i]->getTag() == tag) {
-                                    servoList[i]->callServo(pwm);
-                                    break;
-                                }
                             }
                         }
                     }
