@@ -85,7 +85,8 @@ class SerialNode(Node, ABC):
             try:
                 self._serial.write(data)
             except serial.SerialException:
-                self.get_logger().error(f'Error in writing to {self._serial_device_name} serial port, trying to reconnect.')
+                self.get_logger().error(f'Error in writing to {self._serial_device_name} serial port, trying to '
+                                        'reconnect.')
                 self.get_logger().error(traceback.format_exc())
                 self._serial.close()
                 self._serial = None
