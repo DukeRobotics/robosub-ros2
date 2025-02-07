@@ -22,7 +22,7 @@ Setting up the repository and development enviornment is an involved process. Th
 See [SCRIPTS.md](SCRIPTS.md) for more information about how to use `build.sh` and other scripts at the root of the repository.
 
 ## Foxglove
-We use [Foxglove Studio](https://foxglove.dev) for visualizing and debugging our code. Foxglove Studio is a web-based tool that allows you to visualize ROS 2 topics and services in real-time.
+We use [Foxglove Studio](https://foxglove.dev) for visualizing and debugging our code. Foxglove Studio is a web-based tool that allows us to visualize received data and send data in real time to ROS 2 topics and services.
 
 To use Foxglove Studio:
 1. Open a terminal in the Docker container.
