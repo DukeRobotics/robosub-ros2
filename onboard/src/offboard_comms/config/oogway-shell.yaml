@@ -22,8 +22,8 @@ arduino:
     servos:
       - name: marker dropper
         tag: M
-        min_pwm: 1100
-        max_pwm: 1900
+        min_pwm: 500
+        max_pwm: 2500
       - name: torpedoes
         tag: T
         min_pwm: 700
