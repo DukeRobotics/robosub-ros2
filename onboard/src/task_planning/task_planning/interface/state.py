@@ -7,7 +7,7 @@ from sensor_msgs.msg import Imu
 from task_planning.utils.other_utils import singleton
 from tf2_ros.buffer import Buffer
 
-logger = get_logger('state')
+logger = get_logger('state_interface')
 
 @singleton
 class State:

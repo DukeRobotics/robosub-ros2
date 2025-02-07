@@ -11,7 +11,7 @@ from rclpy.node import Node
 from std_srvs.srv import SetBool, Trigger
 from task_planning.utils.other_utils import singleton
 
-logger = get_logger('controls')
+logger = get_logger('controls_interface')
 
 @singleton
 class Controls:

@@ -4,7 +4,7 @@ from rclpy.node import Node
 from rclpy.task import Future
 from task_planning.utils.other_utils import singleton
 
-logger = get_logger('marker_dropper')
+logger = get_logger('marker_dropper_interface')
 
 @singleton
 class MarkerDropper:

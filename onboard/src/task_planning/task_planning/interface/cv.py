@@ -11,6 +11,7 @@ from std_msgs.msg import Float64
 from task_planning.utils.other_utils import singleton
 from vision_msgs.msg import Detection2DArray
 
+logger = get_logger('cv_interface')
 
 @singleton
 class CV:
