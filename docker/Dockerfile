@@ -40,7 +40,7 @@ RUN /root/dev/venv/bin/pip install GitPython
 RUN /root/dev/venv/bin/pip install gputil
 RUN /root/dev/venv/bin/pip install pandas
 RUN /root/dev/venv/bin/pip install pyserial
-RUN /root/dev/venv/bin/pip install python3-nmap
+RUN /root/dev/venv/bin/pip install python-nmap
 RUN /root/dev/venv/bin/pip install ruff
 RUN /root/dev/venv/bin/pip install scikit-learn
 RUN /root/dev/venv/bin/pip install sympy
