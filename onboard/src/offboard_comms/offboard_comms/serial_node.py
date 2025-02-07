@@ -14,6 +14,8 @@ from serial.tools import list_ports
 class SerialNode(Node, ABC):
     """Abstract ROS node to read and write to serial."""
 
+    MAX_NUM_EMPTY_LINES = 5
+
     def __init__(self, node_name: str, baudrate: int, config_file_path: str, serial_device_name: str,
                  read_from_serial: bool, connection_retry_period: int=1, loop_rate: int=10,
                  use_nonblocking: bool = False) -> None:
@@ -36,6 +38,7 @@ class SerialNode(Node, ABC):
 
         self._serial_port = None
         self._serial = None
+        self._num_consecutive_empty_lines = 0
 
     @abstractmethod
     def get_ftdi_string(self) -> str:
@@ -88,11 +91,7 @@ class SerialNode(Node, ABC):
                 self.get_logger().error(f'Error in writing to {self._serial_device_name} serial port, trying to '
                                         'reconnect.')
                 self.get_logger().error(traceback.format_exc())
-                self._serial.close()
-                self._serial = None
-                self._serial_port = None
-                self.run_timer.cancel()
-                self.connect_timer.reset()
+                self.reset_serial()
         else:
             self.get_logger().error(f'Error in writing to {self._serial_device_name} serial port; not connected.')
 
@@ -116,6 +115,14 @@ class SerialNode(Node, ABC):
             error_msg = 'Subclasses must implement this method if read_from_serial is True.'
             raise NotImplementedError(error_msg)
 
+    def reset_serial(self) -> None:
+        """Reset the serial connection."""
+        self._serial.close()
+        self._serial = None
+        self._serial_port = None
+        self.run_timer.cancel()
+        self.connect_timer.reset()
+
     def run(self) -> None:
         """
         Run the serial publisher.
@@ -132,16 +139,21 @@ class SerialNode(Node, ABC):
                     line = self._serial.readline().decode('utf-8').strip()
 
                 if line:
+                    self._num_consecutive_empty_lines = 0
                     self.process_line(line)
+                else:
+                    self.get_logger().info(f'Empty line read from {self._serial_device_name}.')
+                    self._num_consecutive_empty_lines += 1
+                    if self._num_consecutive_empty_lines >= self.MAX_NUM_EMPTY_LINES:
+                        self.get_logger().error(f'{self._num_consecutive_empty_lines} consecutive empty lines read from'
+                                                f' {self._serial_device_name}. Resetting serial connection.')
+                        self._num_consecutive_empty_lines = 0
+                        self.reset_serial()
 
         except serial.SerialException:
             self.get_logger().error(f'Error in reading {self._serial_device_name} from serial, trying to reconnect.')
             self.get_logger().error(traceback.format_exc())
-            self._serial.close()
-            self._serial = None
-            self._serial_port = None
-            self.run_timer.cancel()
-            self.connect_timer.reset()
+            self.reset_serial()
 
     def destroy_node(self) -> None:
         """Clean up resources when node is destroyed."""
