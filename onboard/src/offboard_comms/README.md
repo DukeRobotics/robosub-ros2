@@ -1,4 +1,4 @@
-# Offboard Communications Package
+# Offboard Communications
 This package provides communications and functionality for serial devices to be integrated with our main ROS system. The Thruster Arduino handles thruster controls. The Peripheral Arduino provides voltage, pressure (depth), temperature, and humidity readings, and also enables control of servos. The DVL (Doppler Velocity Log) provides velocity measurements.
 
 Each serial device is paired with a ROS node that interfaces with it. The nodes are responsible for parsing the data from the serial device and publishing it to ROS topics. The nodes also subscribe to ROS topics and/or advertise ROS services to receive commands, which they then send to the serial device.
@@ -76,8 +76,8 @@ dvl:
     - `arduino_1`, `arduino_2`, etc. are the names of the Arduinos. These names are used to refer to the Arduinos in the [CLI](#command-line-interface) and in other files. They can be any string, but should be descriptive of the Arduino. They must be unique. `all` is a special name used by the CLI to refer to all Arduinos; do **_not_** use it as an Arduino name in this file. The names do not necessarily correspond to any names recognized by the Arduino CLI or operating system.
     - `ftdi` is the FTDI string of the Arduino. This is a unique identifier for the Arduino and is used to find the port that the Arduino is connected to. To find the FTDI string, see the [Obtain FTDI String](#obtain-ftdi-string) section.
     - `fqbn` is the fully qualified board name of the Arduino. This is used when compiling and uploading the Arduino code. It is the string that appears in the output of `arduino-cli board list` under the FQBN column.
-    > [!NOTE]
-    > Not all Arduino devices are returned by the `arduino-cli board list` command (see the [Arduino CLI FAQ](https://arduino.github.io/arduino-cli/latest/FAQ)). In that case, first install the core for the Arduino device using `arduino-cli core install <core_name>`. Then, you can run `arduino-cli board listall` to get a list of all boards supported by the core(s) installed and find the FQBN for your board.
+      > [!NOTE]
+      > Not all Arduino devices are returned by the `arduino-cli board list` command (see the [Arduino CLI FAQ](https://arduino.github.io/arduino-cli/latest/FAQ)). In that case, first install the core for the Arduino device using `arduino-cli core install <core_name>`. Then, you can run `arduino-cli board listall` to get a list of all boards supported by the core(s) installed and find the FQBN for your board.
     - `core` is the name of the Arduino core that the Arduino uses; the core library will be installed before compiling and uploading code. It is the string that appears in the output of `arduino-cli board list` under the core column.
     - `sketch` is the path to the directory containing the Arduino sketch, relative to the `offboard_comms` package. The specified directory must contain a `.ino` file. This is the sketch that is compiled and uploaded to the Arduino. It must **_not_** include a leading `/` or `./`.
     - `libraries` is an optional list of libraries that the Arduino requires that are installed through the Arduino CLI. These libraries will be installed before compiling the Arduino code. If an Arduino does not require any libraries, this key must **_not_** be present under the Arduino's dictionary.
@@ -89,7 +89,7 @@ dvl:
         - `topic` is the ROS topic to publish the sensor data to.
     - `servos` is an optional list of servos that the Arduino supports. Each servo is a dictionary with the following keys:
         - `name` is a human-readable name for the servo. This is used to idenfity the servo in messages and logs.
-        - `tag` is the tag that the servo uses to identify its data. The servo commands are sent in the form `tag:pwm`. It is used by the Arduino to identify the servo that the command is intended for.
+        - `tag` is the tag that uniquely identifies the servo. The servo commands are sent in the form `tag:pwm`. It is used by the Arduino to identify the servo that the command is intended for.
         - `min_pwm` is the minimum PWM value that the servo accepts.
         - `max_pwm` is the maximum PWM value that the servo accepts.
 - `dvl`
@@ -212,11 +212,11 @@ First start the `thrusters.py` ROS node:
 ```
 ros2 launch offboard_comms thrusters.xml
 ```
-Now to test, use the `test_thrusters.py` script. This script starts a ROS node that publishes thruster allocations to the `/controls/thruster_allocs` topic. To run this script you can use `ros2 run offboard_comms test_thrusters.py` or its alias `test-thrusters`.
+Now to test, use the `test_thrusters.py` script. This script starts a ROS node that publishes thruster allocations to the `/controls/thruster_allocs` topic. To run this script you can use `ros2 run offboard_comms test_thrusters` or its alias `test-thrusters`.
 
 The script provides the following CLI:
 ```bash
-test_thrusters [-s SPEED] [-r RATE] [--no-log-allocs]
+test-thrusters [-s SPEED] [-r RATE] [--no-log-allocs]
 ```
 - `-s`, `--speed`: The speed at which the thrusters should spin. This is a float in the range [-1, 1]. The default is 0.05.
 - `-r`, `--rate`: The rate at which the thruster allocations should be published. This is a float in Hz. The default is 20.
@@ -224,7 +224,7 @@ test_thrusters [-s SPEED] [-r RATE] [--no-log-allocs]
 
 For example, to test the thrusters at a speed of 0.1 and a rate of 10 Hz, run:
 ```bash
-test_thrusters -s 0.1 -r 10
+test-thrusters -s 0.1 -r 10
 ```
 
 ## DVL
@@ -232,7 +232,7 @@ We use the [Teledyne Pathfinder DVL](https://www.teledynemarine.com/brands/rdi/p
 
 The `dvl_raw` script publishes the raw DVL data to the `/sensors/dvl/raw` topic with type `custom_msgs/msg/DVLRaw`. It obtains the DVL's FTDI string from the [robot config file](#robot-config-file) and uses it to find the DVL's serial port.
 
-The `dvl_to_odom` script converts the raw DVL data and publishes it to `/sensors/dvl/odom` with type `nav_msgs/msg/Odometry` for use in `sensor_fusion`. It obtains the DVL's negation values from the [robot config file](#robot-config-file) and uses them to negate the DVL's X, Y, and Z velocities before publishing the odometry message.
+The `dvl_to_odom` script converts the raw DVL data and publishes it to `/sensors/dvl/odom` with type `nav_msgs/msg/Odometry` for use in `sensor_fusion`. It obtains the DVL's negation values from the [robot config file](#robot-config-file) and uses them to negate the velocity readings if necessary.
 
 You can launch both scripts using the `dvl.xml` launch file.
 
@@ -259,7 +259,7 @@ The `Robot` class is subclassed by classes for each robot, which initialize the 
 ### Voltage
 The Peripheral Arduino publishes voltage at 10 Hz.
 
-The votage is calibrated based on the Peripheral Arduino's voltage. This is important as the generic voltage sensor we use uses a voltage divider to measure the voltage, so it requires knowledge of its input voltage to provide an accurate reading.
+The votage is calibrated based on the Peripheral Arduino's voltage. This is important as the generic voltage sensor uses a voltage divider to measure the voltage, so it requires knowledge of its input voltage to provide an accurate reading.
 
 ### Pressure
 The Peripheral Arduino interprets the Blue Robotics Pressure Sensor using the MS5837 library. It sends the data over serial each time the sensor gets a new reading, so the rate is not defined other than "as fast as possible."
