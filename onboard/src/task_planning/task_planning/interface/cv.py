@@ -14,7 +14,7 @@ from vision_msgs.msg import Detection2DArray
 @singleton
 class CV:
     """
-    Interface for the CV.
+    Interface for the computer vision subsystem.
 
     Attributes:
         _instance: The singleton instance of this class. Is a static attribute.
@@ -62,7 +62,7 @@ class CV:
             '/cv/bottom/lane_marker_angle',
             self._on_receive_lane_marker_angle,
             10,
-            )
+        )
         self.lane_marker_angles = []
 
         node.create_subscription(
@@ -70,7 +70,7 @@ class CV:
             '/cv/bottom/lane_marker_dist',
             self._on_receive_lane_marker_dist,
             10,
-            )
+        )
         self.lane_marker_dists = []
 
         node.create_subscription(
@@ -78,77 +78,77 @@ class CV:
             '/cv/bottom/lane_marker',
             self._on_receive_lane_marker_info,
             10,
-            )
+        )
         self.lane_marker_heights = []
 
         self.lane_marker_angle_publisher = node.create_publisher(
             Float64,
             '/task_planning/cv/bottom/lane_marker_angle',
             1,
-            )
+        )
 
         node.create_subscription(
             CVObject,
             '/cv/front_usb/buoy/bounding_box',
             lambda msg: self._on_receive_cv_data(msg, 'buoy'),
             10,
-            )
+        )
 
         node.create_subscription(
             CVObject,
             '/cv/front/gate_red_cw',
             lambda msg: self._on_receive_cv_data(msg, 'gate_red_cw'),
             10,
-            )
+        )
 
         node.create_subscription(
             CVObject,
             '/cv/front/gate_whole',
             lambda msg: self._on_receive_cv_data(msg, 'gate_whole'),
             10,
-            )
+        )
 
         node.create_subscription(
             CVObject,
             '/cv/bottom/bin_blue/bounding_box',
             lambda msg: self._on_receive_cv_data(msg, 'bin_blue'),
             10,
-            )
+        )
 
         node.create_subscription(
             CVObject,
             '/cv/bottom/bin_red/bounding_box',
             lambda msg: self._on_receive_cv_data(msg, 'bin_red'),
             10,
-            )
+        )
 
         node.create_subscription(
             CVObject,
             '/cv/bottom/bin_center/bounding_box',
             lambda msg: self._on_receive_cv_data(msg, 'bin_center'),
             10,
-            )
+        )
 
         node.create_subscription(
             Point,
             '/cv/bottom/bin_blue/distance',
             lambda msg: self._on_receive_distance_data(msg, 'bin_blue'),
             10,
-            )
+        )
 
         node.create_subscription(
             Point,
             '/cv/bottom/bin_red/distance',
             lambda msg: self._on_receive_distance_data(msg, 'bin_red'),
             10,
-            )
+        )
 
         node.create_subscription(
             Point,
             '/cv/bottom/bin_center/distance',
             lambda msg: self._on_receive_distance_data(msg, 'bin_center'),
             10,
-            )
+        )
 
         self.bin_distances = {object_type: {'x': [], 'y': []} for object_type in ['bin_red', 'bin_blue']}
 
@@ -157,29 +157,28 @@ class CV:
             '/cv/bottom/path_marker/bounding_box',
             lambda msg: self._on_receive_cv_data(msg, 'path_marker'),
             10,
-            )
+        )
 
         node.create_subscription(
             Point,
             '/cv/bottom/path_marker/distance',
             lambda msg: self._on_receive_distance_data(msg, 'path_marker'),
             10,
-            )
+        )
 
         node.create_subscription(
             CVObject,
             '/cv/front/pink_bins/bounding_box',
             lambda msg: self._on_receive_cv_data(msg, 'bin_pink_front'),
             10,
-            )
+        )
 
         node.create_subscription(
             CVObject,
             '/cv/bottom/pink_bins/bounding_box',
             lambda msg: self._on_receive_cv_data(msg, 'bin_pink_bottom'),
             10,
-            )
-
+        )
 
     def _on_receive_cv_data(self, cv_data: CVObject, object_type: str) -> None:
         """
@@ -191,7 +190,7 @@ class CV:
         """
         self.cv_data[object_type] = cv_data
 
-    def _on_receive_distance_data(self, distance_data: Point, object_type: str, filter_len: int=10) -> None:
+    def _on_receive_distance_data(self, distance_data: Point, object_type: str, filter_len: int = 10) -> None:
         """
         Parse the received distance data and store it.
 
@@ -201,9 +200,9 @@ class CV:
             filter_len (int, optional): The maximum number of distance data points to retain
                 for the moving average filter. Defaults to 10.
         """
-        # TODO: migrate all self.{object}_distances type objects into a single self.distances dictionary
-        # TODO: implement a generic moving average filter
-        # TODO: integrate _on_receive_lane_marker_dist
+        # TODO: Migrate all self.{object}_distances type objects into a single self.distances dictionary
+        # TODO: Implement a generic moving average filter
+        # TODO: Integrate _on_receive_lane_marker_dist
         if object_type == 'path_marker':
             self.cv_data['path_marker_distance'] = distance_data
             return
@@ -239,7 +238,7 @@ class CV:
             center_blue_x = self.FRAME_WIDTH / 2 - blue_x
             center_blue_y = self.FRAME_HEIGHT / 2 - blue_y
 
-            # TODO: do some mathy stuff to make this cleaner
+            # TODO: Clean this up with more elegant math formulas
             angle = np.arctan2(center_red_y - center_blue_y, center_red_x - center_blue_x)
             if angle > np.pi:
                 angle -= 2 * np.pi
@@ -271,13 +270,13 @@ class CV:
         self.cv_data['lane_marker_angle'] = lane_marker_angle
         self.lane_marker_angle_publisher.publish(self.cv_data['lane_marker_angle'])
 
-    # TODO: remove this and integrate into _on_receive_distance_data
+    # TODO: Remove this and integrate into _on_receive_distance_data
     def _on_receive_lane_marker_dist(self, dist: Float64) -> None:
         """
-        Parse the received dist of the lane marker and store it.
+        Parse the received distance of the lane marker and store it.
 
         Args:
-            dist: The received dist of the lane marker in pixels
+            dist: The received distance of the lane marker in pixels
         """
         filter_len = 10
         skip = 0
@@ -371,7 +370,7 @@ class CV:
             self.cv_data['gate_red_cw_bbox'] = best_bbox_red
             self.compute_gate_properties('gate_red_cw')
 
-    def compute_gate_properties(self, gate_class : str) -> None:
+    def compute_gate_properties(self, gate_class: str) -> None:
         """
         Compute properties of a specified gate.
 
