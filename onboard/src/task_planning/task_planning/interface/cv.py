@@ -5,6 +5,7 @@ import resource_retriever as rr
 import yaml
 from custom_msgs.msg import CVObject, RectInfo
 from geometry_msgs.msg import Point, Pose
+from rclpy.logging import get_logger
 from rclpy.node import Node
 from std_msgs.msg import Float64
 from task_planning.utils.other_utils import singleton
@@ -381,7 +382,7 @@ class CV:
             Warning: Logs a warning if no bounding box data is available for the specified gate class.
         """
         if gate_class + '_bbox' not in self.cv_data or self.cv_data[gate_class + '_bbox'] is None:
-            self.get_logger().warn(f'No bounding box data available for {gate_class}')
+            logger.warning(f'No bounding box data available for {gate_class}')
             return
 
         bbox = self.cv_data[gate_class + '_bbox']
