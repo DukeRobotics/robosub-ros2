@@ -46,13 +46,16 @@ class Thrusters(SerialNode):
     CONTROLS_CONFIG_FILE_PATH = f'package://controls/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
     OFFBOARD_COMMS_CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
     ARDUINO_NAME = 'thruster'
-    NUM_LOOKUP_ENTRIES: int = 201  # -1.0 to 1.0 in 0.01 increments
+    NUM_LOOKUP_ENTRIES = 201  # -1.0 to 1.0 in 0.01 increments
     VOLTAGE_FILES: ClassVar[list[tuple[int, str]]] = [
         (14.0, '14.csv'),
         (16.0, '16.csv'),
         (18.0, '18.csv'),
     ]
-    START_FLAG: bytearray = bytearray([0xFF, 0xFF])
+    START_FLAG = bytearray([0xFF, 0xFF])
+    MIN_ALLOC = -1.0
+    MAX_ALLOC = 1.0
+    STOP_PWM = 1500
 
     def __init__(self) -> None:
         """Initialize the thruster node with all necessary components."""
@@ -152,7 +155,7 @@ class Thrusters(SerialNode):
             return
 
         # Convert allocations to PWM values
-        pwm_values = [self._lookup(force) for force in msg.allocs]
+        pwm_values = [self._lookup(alloc) for alloc in msg.allocs]
 
         # Send to serial if connection is available
         self._write_pwms_to_serial(pwm_values)
@@ -163,22 +166,22 @@ class Thrusters(SerialNode):
         pwm_msg.allocs = pwm_values
         self.pwm_publisher.publish(pwm_msg)
 
-    def _lookup(self, force: float) -> int:
+    def _lookup(self, alloc: float) -> int:
         """
-        Look up PWM value for a given force and current voltage.
+        Look up PWM value for a given thruster allocation and current voltage.
 
         Args:
-            force (float): Desired force value in range [-1.0, 1.0].
+            alloc (float): Thruster allocation value.
 
         Returns:
             int: Interpolated PWM value.
         """
-        if not (-1.0 <= force <= 1.0):
-            self.get_logger().error(f'Force {force} out of bounds [-1.0, 1.0]')
-            return 1500  # Safe middle value
+        if not (self.MIN_ALLOC <= alloc <= self.MAX_ALLOC):
+            self.get_logger().error(f'Thruster allocation {alloc} out of bounds [{self.MIN_ALLOC}, {self.MAX_ALLOC}]')
+            return self.STOP_PWM  # Stop thruster if alloc is out of bounds
 
         # Ensure index is within bounds
-        index = min(max(self._round_to_two_decimals(force), 0), self.NUM_LOOKUP_ENTRIES - 1)
+        index = min(max(self._round_to_two_decimals(alloc), 0), self.NUM_LOOKUP_ENTRIES - 1)
 
         # Find the voltage tables to interpolate between
         for i in range(len(self.voltage_tables) - 1):
