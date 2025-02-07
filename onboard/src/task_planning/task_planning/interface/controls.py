@@ -128,14 +128,14 @@ class Controls:
         # TODO: what if this doesn't return success?
         if not self.bypass:
             self._set_control_types(ControlTypes(
-                x=type,
-                y=type,
-                z=type,
-                roll=type,
-                pitch=type,
-                yaw=type,
+                x=control_type,
+                y=control_type,
+                z=control_type,
+                roll=control_type,
+                pitch=control_type,
+                yaw=control_type,
             ))
-        self._all_axes_control_type = type
+        self._all_axes_control_type = control_type
         self.start_new_move()
 
     def set_axis_control_type(self, x: ControlTypes | None, y: ControlTypes | None,
@@ -236,12 +236,10 @@ class Controls:
 
             if kwarg_value > 1 or kwarg_value < -1:
                 msg = (
-                    f'Received {kwarg_value} for thruster {kwarg_name}. Thruster alloc must be between '
-                    '-1 and 1 inclusive.'
+                    f'Received {kwarg_value} for thruster {kwarg_name}. Thruster alloc must be between -1 and 1 '
+                    'inclusive.'
                 )
-                raise ValueError(
-                    msg,
-                )
+                raise ValueError(msg)
 
             thruster_allocs[self.thruster_dict[kwarg_name]] = kwarg_value
 
