@@ -178,7 +178,7 @@ class Controls:
             self._reset_pid_loops()
 
     # In global coordinates
-    def publish_desired_position(self, pose: Pose, set_control_types : bool = True) -> None:
+    def publish_desired_position(self, pose: Pose, set_control_types: bool = True) -> None:
         """
         Publish the desired position.
 
@@ -191,19 +191,19 @@ class Controls:
         self._desired_position_pub.publish(pose)
 
     # In local coordinates
-    def publish_desired_velocity(self, twist: Twist, set_control_types : bool = True) -> None:
+    def publish_desired_velocity(self, twist: Twist, set_control_types: bool = True) -> None:
         """
         Publish the desired velocity.
 
         Args:
             twist: The desired velocity
-            set_control_types: Whether all axes should be set to DESIRED_TWIST
+            set_control_types: Whether all axes should be set to DESIRED_VELOCITY
         """
         if set_control_types:
-            self._set_all_axes_control_type(ControlTypes.DESIRED_TWIST)
+            self._set_all_axes_control_type(ControlTypes.DESIRED_VELOCITY)
         self._desired_velocity_pub.publish(twist)
 
-    def publish_desired_power(self, power: Twist, set_control_types : bool = True) -> None:
+    def publish_desired_power(self, power: Twist, set_control_types: bool = True) -> None:
         """
         Publish the desired power.
 
