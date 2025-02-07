@@ -81,7 +81,7 @@ class Controls:
         self._thruster_pub = node.create_publisher(ThrusterAllocs, self.THRUSTER_ALLOCS_TOPIC, 1)
         self.bypass = bypass
 
-    def _update_control_types(self, control_types : ControlTypes) -> None:
+    def _update_control_types(self, control_types: ControlTypes) -> None:
         self.control_types = control_types
 
     def get_thruster_dict(self) -> None:
