@@ -107,11 +107,18 @@ class PeripheralPublisher(SerialNode):
         """
         tag, data = line.split(':', 1)
         if data == '':
+            self.get_logger().error(f'Empty data for tag: "{tag}"')
             return
         if tag in self.sensors:
-            self.sensors[tag].update_and_publish_value(float(data))
+            try:
+                data_float = float(data)
+            except ValueError:
+                self.get_logger().error(f'Could not convert data to float: "{data}" for tag "{tag}"')
+                return
+
+            self.sensors[tag].update_and_publish_value(data_float)
         else:
-            self.get_logger().error(f'Invalid tag: {tag}')
+            self.get_logger().error(f'Invalid tag: "{tag}"')
 
     def servo_control(self, request: SetServo.Request, response: SetServo.Response) -> SetServo.Response:
         """
