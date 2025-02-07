@@ -86,21 +86,7 @@ class PeripheralPublisher(SerialNode):
         """
         Read and publish individual lines of data from the serial port.
 
-        Assumes data comes in the following format:
-            P:0.22
-            P:0.23
-            P:0.22
-            P:0.22
-            V:15.85
-            P:0.24
-            T:69.1
-            H:30.1
-            T:69.2
-            H:27.8
-            T:69.1
-            H:27.8
-            T:69.8
-            ...
+        Requires lines to come in the format 'tag:data', with one data point per line, where data is a float.
 
         Args:
             line (str): A line of data from the serial port
