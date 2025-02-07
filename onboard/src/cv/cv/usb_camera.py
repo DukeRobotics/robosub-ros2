@@ -14,7 +14,7 @@ class USBCamera(Node):
 
     Currently used for the deepwater exploration usb mono cameras.
 
-    Launch using: roslaunch cv usb_camera.launch.
+    Launch using: ros2 launch cv usb_camera.xml
     :param topic: rostopic to publish the image feed to; default is set to camera/usb_camera/compressed
     :param device_path: path to device to read the stream from (e.g., /dev/video0); can be a symlinked path
     :param framerate: custom framerate to stream the camera at; default is set to device default
