@@ -1,57 +1,45 @@
 # Offboard Communications Package
 
-This package provides communications and functionality for Arduinos to be integrated with our main ROS system. The Arduinos handle thruster controls, pressure (depth), and voltage readings.
+This package provides communications and functionality for serial devices to be integrated with our main ROS system. The thruster Arduino handles thruster controls. The peripheral Arduino provides pressure (depth), voltage, temperature, and humidity readings, and also enables control of servos. The DVL (Doppler Velocity Log) provides velocity measurements.
 
-There are two Arduinos handled by the package, one for thrusters and one for the pressure sensor. The thruster Arduino runs a ROS node while the pressure Arduino dumps data over serial to the main computer, from which the `data_pub` package publishes the data to ROS. Supporting the thruster Arduino is `thrusters.cpp`, which maps thruster allocations to pulse widths sent to the thruster Arduino.
+Each serial device is paired with a ROS node that interfaces with it. The nodes are responsible for parsing the data from the serial device and publishing it to ROS topics. The nodes also subscribe to ROS topics and/or advertise ROS services to receive commands, which they then send to the serial device.
 
-`offboard_comms` supports functionality for both a single Arduino and multiple Arduinos. Multiple Arduinos serve to support hardware that require different serial baud rates. This was necessitated by thruster publishers requiring the default 57600 baud while the pressure sensor is factory-optimized for 9600 baud.
+Multiple Arduinos serve to support hardware that require different serial baud rates. This was necessitated by the thruster Arduino requiring 57600 baud while the pressure sensor is factory-optimized for 9600 baud.
 
-Multiple software serial ports is supported on some Arduinos, but launching both of these nodes independently is not feasable. Only one ROS node is currently being run as to avoid issue where the master ROS node loses sync with one or both of the Arduinos. Migration to a RP2040 (Pico) was attempted, but proved cumbersome for programming purposes, so it was reverted to a Nano Every.
+## Structure
+### Directory Structure
+The directory structure of the offboard_comms package is as follows:
 
-Oogway is currently configured to use two Arduinos, one for thrusters and one for the pressure and voltage sensors. However, functionality is still included for a single Arduino, as described below.
+#### Config
+The `config` directory contains the [robot config files](#robot-config-file), which are YAML files that contain configuration information for this system that is unique for each robot.
 
-## Directory Structure
+#### Data
+The `data` directory contains CSV files that are used to store lookup tables for the thrusters. These tables are used to convert thruster allocations to PWM signals, given the current system voltage.
 
-The notable files and folders in this package are as follows. Note how this specific directory structure is required per the upload scripts.
+#### Launch
+The `launch` directory contains the ROS launch files for the offboard_comms package. These are used to start the ROS nodes for the thruster Arduino and the peripheral Arduino. See the [Launch Files](#launch-config) section for more information.
 
-```
-offboard_comms
-├── Arduino Sketchbooks
-│   ├── PressureArduino
-│   │   ├── PressureArduino.ino  # Arduino code for pressure and voltage sensors
-│   │   ├── ... Libraries for pressure sensor
-│   ├── ThrusterArduino
-│   │   ├── ThrusterArduino.ino  # Arduino code for thrusters
-│   │   ├── ... Libraries for thrusters
-│   ├── cthulhuThrusterOffset.h  # PWM offset for Cthulhu thrusters
-│   ├── oogwayThrusterOffset.h  # PWM offset for Oogway thrusters
-├── config
-│   ├── arduino.yaml # Arduino config file
-├── data
-│   ├── ... Thruster lookup tables
-├── include
-│   ├── thrusters.h
-├── launch
-│   ├── offboard_comms.launch  # Primary launch file; includes serial.launch and thrusters.launch
-│   ├── serial.launch  # Start thruster Arduino ROS node
-│   ├── thrusters.launch  # Start thruster allocs to PWM conversion node
-├── scripts
-│   ├── arduino.py  # CLI to install libraries, find ports, compile, and upload Arduino code
-│   ├── copy_offset.sh  # Bash script to copy the correct PWM offset file to the Thruster Arduino sketchbook
-│   ├── servo_wrapper.py  # ROS node to publish requests from ROS service calls to a ROS topic
-├── src
-│   ├── thrusters.cpp  # ROS node to convert thruster allocations to PWMs
-├── CMakeLists.txt
-├── package.xml
-├── README.md
-```
+#### Offboard_comms
+The `offboard_comms` directory contains the source code for the ROS nodes that interface with the serial devices.
 
-## Arduino Config
+#### Resource
+The `resource` directory contains an empty file that is used to register the package with the ament_index system, allowing ROS tools to discover and locate the package.
 
-Each robot has its own `config/<ROBOT_NAME>.yaml` file, where `<ROBOT_NAME>` is the value of the `ROBOT_NAME` environment variable associated with that robot. The CLI will use the value of the `ROBOT_NAME` enviornment variable in the Docker container it is run in to select the config file to use.
+#### Sketches
+The `sketches` directory contains the Arduino sketches – the code that runs on the Arduinos. The `peripheral` directory contains the code for the peripheral Arduino, and `thruster` directory contains the code for the thruster Arduino.
 
-Config files for all robots have the same structure. They contain a single top-level key: `arduino`. Under that top-level key, they contain a set of Arduino names, each with a dictionary of properties. The properties are used to find the port that the Arduino is connected to, install the required libraries, compile the Arduino code, and upload the code to the Arduino. The files are structured as follows:
+#### Package.xml, Setup.cfg, and Setup.py
+The `package.xml`, `setup.cfg`, and `setup.py` files are used to define the package's dependencies and other metadata. They are used by the `colcon build` command to build the package.
 
+#### README.md
+The `README.md` file contains the documentation for the offboard_comms package.
+
+## Config
+
+### Robot Config File
+The robot config file is a YAML file that contains configuration information for this system that is unique for each robot. One config file is required for each robot. They are located in the `config` directory. They should be named `<robot_name>.yaml`, where `<robot_name>` is the value of the `$ROBOT_NAME` environment variable associated with the robot.
+
+The robot config file contains the following fields
 ```yaml
 arduino:
     arduino_name_1:
@@ -59,76 +47,98 @@ arduino:
         fqbn: arduino_1_fqbn
         core: arduino_1_core
         sketch: arduino_1/path_to_sketch/relative_to_offboard_comms
-        requires_ros_lib: true or false
-        (optional) libraries:
+        libraries (optional):
             - library_1
             - library_2
             - ...
-        (optional) pre_compile: arduino_1 pre_compile command
-        (optional) post_compile: arduino_1 post_compile command
+        pre_compile (optional): arduino_1 pre_compile command
+        post_compile (optional): arduino_1 post_compile command
     arduino_name_2:
         ...
+dvl:
+  ftdi: DVL_FTDI_string
+  negate_x_vel: true or false
+  negate_y_vel: true or false
+  negate_z_vel: true or false
+ping1D:
+  ftdi: Ping1D_FTDI_string
 ```
-The structure shown for `arduino_name_1` is repeated for all Arduinos.
+- `arduino`
+    - `arduino_name_1`, `arduino_name_2`, etc. are the names of the Arduinos. These names are used to refer to the Arduinos in the [CLI](#command-line-interface) and in other files. They can be any string, but should be descriptive of the Arduino. They must be unique. `all` is a special name used by the CLI to refer to all Arduinos; do **_not_** use it as an Arduino name in this file. The names do not necessarily correspond to any names recognized by the Arduino CLI or operating system.
+    - `ftdi` is the FTDI string of the Arduino. This is a unique identifier for the Arduino and is used to find the port that the Arduino is connected to. To find the FTDI string, see the [Obtain FTDI String](#obtain-ftdi-string) section.
+    - `fqbn` is the fully qualified board name of the Arduino. This is used when compiling and uploading the Arduino code. It is the string that appears in the output of `arduino-cli board list` under the FQBN column.
+    > [!NOTE]
+    > Not all Arduino devices are returned by the `arduino-cli board list` command (see the [Arduino CLI FAQ](https://arduino.github.io/arduino-cli/latest/FAQ)). In that case, first install the core for the Arduino device using `arduino-cli core install <core_name>`. Then, you can run `arduino-cli board listall` to get a list of all boards supported by the core(s) installed and find the FQBN for your board.
+    - `core` is the name of the Arduino core that the Arduino uses; the core library will be installed before compiling and uploading code. It is the string that appears in the output of `arduino-cli board list` under the core column.
+    - `sketch` is the path to the directory containing the Arduino sketch, relative to the `offboard_comms` package. The specified directory must contain a `.ino` file. This is the sketch that is compiled and uploaded to the Arduino. It must **_not_** include a leading `/` or `./`.
+    - `libraries` is an optional list of libraries that the Arduino requires that are installed through the Arduino CLI. These libraries will be installed before compiling the Arduino code. If an Arduino does not require any libraries, this key must **_not_** be present under the Arduino's dictionary.
+    - `pre_compile` is an optional bash command to run _immediately before_ compiling the Arduino code. It is useful for installing libraries or modifying files that will affect the compilation. If an Arduino does not require a pre compile command, this key must **_not_** be present under the Arduino's dictionary.
+    - `post_compile` is an optional bash command to run _immediately after_ compiling the Arduino code. It is useful for deleting temporary files or performing any other cleanup after compilation. If an Arduino does not require a post compile command, this key must **_not_** be present under the Arduino's dictionary.
+- `dvl`
+    - `ftdi` is the FTDI string of the DVL. This is a unique identifier for the DVL and is used to find the port that the DVL is connected to. To find the FTDI string, see the [Obtain FTDI String](#obtain-ftdi-string) section.
+    - `negate_x_vel`, `negate_y_vel`, and `negate_z_vel` are boolean values that determine whether the DVL's velocity readings should be negated. These values are used to correct for the orientation of the DVL on the robot. If the DVL is mounted in a way that causes the velocity readings along one or more axes to have an incorrect sign, set the corresponding value(s) to `true`. Otherwise, set them to `false`.
 
-Below are more details on the keys in the dictionary:
-- `arduino_name_1`, `arduino_name_2`, etc. are the names of the Arduinos. These names are used to refer to the Arduinos in the [CLI](#command-line-interface) and in other files. They can be any string, but should be descriptive of the Arduino. They must be unique. `all` is a special name used by the CLI to refer to all Arduinos; do **_not_** use it as an Arduino name in this file. The names do not necessarily correspond to any names recognized by the Arduino CLI or operating system.
-- `ftdi` is the FTDI string of the Arduino. This is a unique identifier for the Arduino and is used to find the port that the Arduino is connected to. To obtain the FTDI string, run
-    ```bash
-    ls /dev/serial/by-id
-    ```
-    and find the string corresponding to the desired Arduino. The FTDI string is the set of characters after the last underscore `_` but before the hyphen `-`. For example, in the following output,
-    ```
-    usb-Arduino_LLC_Arduino_Nano_Every_E49AFA8B51514C4B39202020FF024242-if00
-    ```
-    the FTDI string is `E49AFA8B51514C4B39202020FF024242`.
-- `fqbn` is the fully qualified board name of the Arduino. This is used when compiling and uploading the Arduino code. It is the string that appears in the output of `arduino-cli board list` under the FQBN column.
-- `core` is the name of the Arduino core that the Arduino uses; the core library will be installed before compiling and uploading code. It is the string that appears in the output of `arduino-cli board list` under the core column.
-- `sketch` is the path to the directory containing the Arduino sketch, relative to the `offboard_comms` package. The specified directory must contain a `.ino` file. This is the sketch that is compiled and uploaded to the Arduino. It must **_not_** include a leading `/` or `./`.
-- `requires_ros_lib` is a boolean that specifies whether the Arduino requires the ROS library. If `true`, the ROS library will be installed using the Arduino CLI before compiling code. If `false`, it will not be installed. The ROS library is required for the Arduino to communicate with ROS. If the Arduino does not communicate with ROS, this should be `false`.
-- `libraries` is an optional list of libraries that the Arduino requires that are installed through the Arduino CLI. These libraries will be installed before compiling the Arduino code. If an Arduino does not require any libraries, this key must **_not_** be present under the Arduino's dictionary.
-- `pre_compile` is an optional bash command to run _immediately before_ compiling the Arduino code. It is useful for installing libraries or modifying files that will affect the compilation. If an Arduino does not require a pre compile command, this key must **_not_** be present under the Arduino's dictionary.
-- `post_compile` is an optional bash command to run _immediately after_ compiling the Arduino code. It is useful for deleting temporary files or performing any other cleanup after compilation. If an Arduino does not require a post compile command, this key must **_not_** be present under the Arduino's dictionary.
+### CSV Files
+The `data` directory contains CSV files that are used to store lookup tables for the thrusters. These tables are used to convert thruster allocations to PWM signals, given the current system voltage. They contain two columns: `force` and `pwm`. The `force` column has values ranging from `-1.00` to `1.00` in increments of `0.01`, and the `pwm` column has the corresponding PWM values needed to exert the given force at the given voltage. The CSV files are named `<voltage>.csv`, where `<voltage>` is the voltage the thrusters need to receive for the table to be accurate. The tables are generated using the Blue Robotics T200 Thruster performance data, found on [this page](https://bluerobotics.com/store/thrusters/t100-t200-thrusters/t200-thruster-r2-rp/) under "Technical Details".
+
+### Launch Config
+The `launch` directory contains the following launch files:
+- `dvl.xml`: Launches the `dvl_raw` node that interfaces with the DVL and the `dvl_odom` node that converts the DVL velocity readings to odometry messages.
+- `offboard_comms.launch`: Launches the `dvl_raw`, `dvl_odom`, `thrusters`, and `peripheral` nodes. This is the primary launch file for the offboard_comms package.
+- `peripheral.xml`: Launches the `peripheral` node that interfaces with the peripheral Arduino.
+- `thrusters.xml`: Launches the `thrusters` node that interfaces with the thruster Arduino.
+
+### Obtain FTDI String
+To obtain the FTDI string of a serial device, run
+```bash
+ls /dev/serial/by-id
+```
+and find the string corresponding to the desired device. The FTDI string is the set of characters after the last underscore `_` but before the hyphen `-`. For example, in the following output,
+```
+usb-FTDI_FT232R_USB_UART_B0004VDI-if00-port0
+```
+the FTDI string is `B0004VDI`.
+
+If it's not obvious which FTDI string corresponds with which device, unplug the device, run the command, and note which string disappears. Then plug the device back in and run the command again to find the string that reappears. That string corresponds to the device.
 
 
-## Arduino Compile and Upload
+## Arduino CLI
+On Linux hosts, with the container running in privileged mode, use the CLI provided by `arduino.py` to install libraries, find ports, compile, and upload Arduino code. The CLI is a wrapper around the Arduino CLI and other commands, and is used to simplify the process of uploading code to the Arduino.
 
-### Command Line Interface
-
-On Linux hosts, with the container running in privileged mode, use the CLI provided by `arduino.py` to install libraries, find ports, compile, and upload Arduino code. The CLI is a wrapper around the Arduino CLI and other commands, and is used to simplify the process of uploading code to the Arduino. The CLI _requires_ a properly formatted `config/arduino.yaml` file to run properly (see [Arduino Config](#arduino-config)).
+To run the CLI, first make sure the offboard_comms package is built with `build.sh`. To run the CLI you can use `ros2 run offboard_comms arduino` or its alias `arduino` (declared in `ros_bashrc.sh`).
 
 The CLI is run as follows:
 ```
-rosrun offboard_comms arduino.py <COMMAND> <ARDUINO_NAME_1> <ARDUINO_NAME_2> ... <OPTIONAL_FLAGS>
+arduino <COMMAND> <ARDUINO_NAME_1> <ARDUINO_NAME_2> ... <OPTIONAL_FLAGS>
 ```
 
 `<COMMAND>` must be one of the following:
-- `install-libs`: Install the Arduino core libraries and for the specified Arduino(s). Also installs the ROS library if required by one or more of the specified Arduino(s).
-- `find-ports`: Find the ACM port(s) for the specified Arduino(s).
-- `compile`: Install all required libraries and compile the sketch(es) for the specified Arduino(s).
-- `upload`: Install all required libraries, compile the sketch(es), and upload the sketch(es) to the specified Arduino(s).
+- `install-libs`: Install the Arduino cores & libraries for the specified Arduino(s).
+- `find-ports`: Find the serial port(s) for the specified Arduino(s).
+- `compile`: Install all required cores & libraries and compile the sketch(es) for the specified Arduino(s).
+- `upload`: Install all required cores & libraries, compile the sketch(es), and upload the sketch(es) to the specified Arduino(s).
 
 Each `<ARDUINO_NAME>` must be a top-level key in `config/arduino.yaml`, or `all`. If `all` is specified, the command will be run on all Arduinos in `config/arduino.yaml`.
 
 The following optional flags can be added to the end of the command:
-- `-p`, `--print-output`: Print the output of the commands being run by the CLI. This is useful for debugging. It is available with the `install-libs`, `compile`, and `upload` commands.
-- `-nl`, `--no-linebreaks`: Do not print any line breaks, labels, or prefixes; only print the port(s) found. This is available with the `find-ports` command. It is useful for running the command in a script or for piping the output to another command.
+- `-p`, `--print-output`: Print the output of the commands being run by the CLI. This is useful for debugging if the script throws an error. It is available with the `install-libs`, `compile`, and `upload` commands.
+- `-nl`, `--no-linebreaks`: Do not print any line breaks, labels, or prefixes; only print the port(s) found. This is available _only_ with the `find-ports` command. It is useful for running the command in a script or for piping the output to another command.
 
 For example, to upload the sketches for all Arduinos, run:
 ```bash
-rosrun offboard_comms arduino.py upload all
+arduino upload all
 ```
 To find the ports for all Arduinos, run:
 ```bash
-rosrun offboard_comms arduino.py find-ports all
+arduino find-ports all
 ```
 To install the libraries for `arduino_name_1` and `arduino_name_2`, run:
 ```bash
-rosrun offboard_comms arduino.py install-libs arduino_name_1 arduino_name_2
+arduino install-libs arduino_name_1 arduino_name_2
 ```
 To compile the sketch for `arduino_name_1` and print output run:
 ```bash
-rosrun offboard_comms arduino.py compile arduino_name_1 -p
+arduino compile arduino_name_1 -p
 ```
 
 Note that uploading to the Arduino might require restarting the Docker container, especially when one or more Arduinos have been disconnected and reconnected since the Docker container was started.
@@ -139,54 +149,45 @@ Additionally, the CLI also prints all commands being run to the console. These c
 
 If an error occurs, it is recommended to run the command with the `-p` flag to print the output of the subcommands being run. This will help to identify the cause of the error.
 
-### Manual Upload
-
-It is strongly suggested to use the CLI mentioned in the previous section, but instructions for manual upload are below if that is preferred or required.
-
-#### Generating ROS Arduino libraries
-
-In order to access some manner of ROS functionality inside the Arduino code, we first need to generate libraries that the Arduino can use. This includes both the ability to receive and publish messages and the format of those messages themselves. To do this run the command:
-```
-rosrun rosserial_arduino make_libraries.py .
-```
-This command will create a new `ros_lib` directory in your current directory that contains all of the code needed for the Arduino to talk to ROS. Adding the package name `offboard_comms` at the end tells rosserial to specifically also build the messages for the `offboard_comms` package (i.e. this package).
-
-Whenever you make an update to the message types, you will need to re-run this command to regenerate the messages for Arduino.
-
-#### Installing the ROS Arduino libraries
-To actually get the code onto the Arduino, you need to install the newly generated `ros_lib` folder in your Arduino Libraries. To do this, go to your Arduino "sketchbook" folder (you can find this in preferences) and add `ros_lib` to the subfolder "libraries". More details at https://www.arduino.cc/reference/en/libraries/.
-
-You can then use the ROS message types in Arduino code.
-
-#### Compiling and Uploading
-To compile and upload the Arduino code, you can use the [Arduino CLI](https://arduino.github.io/arduino-cli/0.35/) or the Arduino IDE installed on the robot.
+> [!IMPORTANT]
+> When compiling the Arduino sketches, the CLI includes a `--build-property` flag that defines the `ROBOT_NAME` preprocessor directive. The value of this directive is the value of the `ROBOT_NAME` environment variable, with all letters capitalized, referring to the preprocessor directive for the current robot.
+>
+> For example, if the sketches are compiled on Oogway, the `ROBOT_NAME` enviornment variable would be `oogway`, and the inclusion of the build property by the CLI is equivalent to adding the following statement to the top of the `.ino` files:
+> ```cpp
+> #define ROBOT_NAME OOGWAY
+> ```
+> In this case, `OOGWAY` refers to another preprocessor directive. Thus, all Arduino sketches must include preprocessor derectives that define values for all possible robot names. For example, the preprocessor directives
+> ```cpp
+> #define OOGWAY 0
+> #define OOGWAY_SHELL 1
+> #define CRUSH 2
+> ```
+> define the values for the `oogway`, `oogway_shell`, and `crush` robot names. The `ROBOT_NAME` preprocessor directive is used in the Arduino sketches to modify their behavior based on the capabilities of the robot.
 
 ## Thruster Allocations to PWMs
-The node `thrusters.cpp` subscribes to `/controls/thruster_allocs` of type `custom_msgs/ThrusterAllocs`. This is an array of 64-bit floats, and they must be in range [-1, 1]. It also subscribes to `/sensors/voltage` of type `std_msgs/Float64`. This is a 64-bit float that is clamped to the range [14.0, 18.0].
+The node `thrusters.py` subscribes to `/controls/thruster_allocs` of type `custom_msgs/msg/ThrusterAllocs`. This is an array of 64-bit floats, and they must be in range [-1, 1]. It also subscribes to `/sensors/voltage` of type `std_msgs/msg/Float64`. This is a 64-bit float that is clamped to the range [14.0, 18.0].
 
 The node maps the thruster allocations to pulse widths, accounting for the current system voltage, and sends them to the thruster Arduino. Note that this node runs _on the robot computer_, not the Arduino.
 
-The node first loads 3 lookup tables containing pre-calculated information on the relation between force (given between the interval -1.0, 1.0), voltage (fixed by the lookup table, either 14.0v, 16.0v, or 18.0v), and PWM outputs. The tables are indexed by force, which is rounded to 2 decimal precision. These tables were computed from the Blue Robotics T200 Thruster performance data, found on [this page](https://bluerobotics.com/store/thrusters/t100-t200-thrusters/t200-thruster-r2-rp/) under "Technical Details".
+The node first loads the [CSV Files](#csv-files) that relate force (in range [-1.0, 1.0]) to PWM outputs at a given voltage (fixed by the lookup table, either 14.0v, 16.0v, or 18.0v).
 
-For each recieved thruster allocation (force), the node first finds the closest force value (rounded to 2 decimal precision) in the lookup tables for the two voltages that bound the current voltage reading. Then, it performs linear interpolation between those two values using the current voltage to find the PWM that will result in the thruster exerting the desired force at the current voltage.
+For each `ThrusterAllocs` message it receives, the node first validates the message by checking that the number of thruster allocations is equal to the number of thrusters. If the message is invalid, the node does not send any PWMs to the thruster Arduino and prints an error message to the console, but it will process the next message. If the message is valid, the node computes the PWMs for each thruster.
 
-The PWMs are published to `/offboard/pwm` of type `custom_msgs/PWMAllocs`.
+To compute the PWMs, the node first finds the closest force value (rounded to 2 decimal precision) in the lookup tables for the two voltages that bound the current voltage reading. Then, it performs linear interpolation between those two values using the current voltage to find the PWM that will result in the thruster exerting the desired force at the current voltage.
+
+The PWMs are then sent to the thruster Arduino via serial. See the [thruster Arduino](#thruster-arduino) section for more information on the serial communication format. The PWMs are also published to `/offboard/pwm` of type `custom_msgs/msg/PWMAllocs`; this is for debugging purposes only.
 
 ## Thruster Arduino
-The thruster arduino subscribes to `/offboard/pwm` of type `custom_msgs/PWMAllocs`. This is an array of 16-bit unsigned integers specifying the pulse widths to use for each thruster's PWM. All messages must satisfy the following two conditions:
-- The length of the array must match the number of thrusters on the robot
-- Each value must be in range [1100, 1900]
+The thruster Arduino reads the PWM values sent by `thrusters.py` over serial. It expects values to be in the following format: a start flag of two bytes `0xFFFF` followed by pairs of bytes representing the PWM values in big-endian format. The Arduino treats each PWM value as a 16-bit unsigned integer. The Arduino validates the data by making sure that the number of PWM values received matches the number of thrusters, and that each value is within the range [1100, 1900]. If the data are valid, the Arduino sets the PWM values for the thrusters. If the data are invalid, the Arduino does not change the PWM values; the last valid values are retained.
 
-Messages with incorrect length will be ignored. If any value is out of range, that thruster will be stopped. In both cases, an error message will be printed to the console.
-
-Additionally, if it has been over 500 miliseconds since the last message was recieved, the thruster Arduino will stop all thrusters. This is to prevent the robot from continuing to move if controls is disabled or if the connection to the main computer is lost.
+If it has been over 500 miliseconds since the last message was recieved, the thruster Arduino will stop all thrusters. This is to prevent the robot from continuing to move if controls is disabled or if the connection to the main computer is lost.
 
 ### ESC Offset
-Note that an inaccuracy in the ESCs required adding a 31 microsecond offset to the PWM signal for Oogway. This correction was determined to be a hardware defect with Oogway's Blue Robotics Basic ESCs. When sending a stop/configuration PWM signal of 1500 microseconds, the thrusters would interpret the command as a spin command. The introduced offset corrects for this issue.
+The Blue Robotics Basic ESCs are designed to accept PWM values in the range of [1100, 1900], with a stop signal occurring within a range of values centered around 1500. While 1500 is the intended midpoint for stopping, the exact range of stop values varies depending on the supplied voltage.
 
-This offset is set in a header file corresponding to each robot, with file name `<ROBOT_NAME>ThrusterOffset.h` where `<ROBOT_NAME>` is the value of the `ROBOT_NAME` enviornment variable. The offset is added to the PWM signal in the Arduino code.
+Some Blue Robotics Basic ESCs have a defect where the midpoint of their stop range is offset by a certain amount, causing their entire PWM range to shift accordingly. To determine the offset, identify the endpoints of the stop range — the largest and smallest PWM values at which the thrusters stop spinning. The higher endpoint is the value where a slight increase in PWM causes the thrusters to start spinning, and the lower endpoint is where a slight decrease in PWM causes the thrusters to start spinning. Once these two values are found, calculate their midpoint and subtract 1500 from it to determine the offset.
 
-Before compiling the thruster Arduino sketch, the `copy_offset.sh` script copies the correct header to the thruster Arduino sketchbook and renames it to `offset.h`. After compilation is complete, the `copy_offset.sh` script deletes `offset.h` from the sketchbook.
+In the thruster Arduino code, the `THRUSTER_PWM_OFFSET` constant is set to the calculated offset value. This offset is then added to the PWM signals sent to the ESCs to compensate for the shifted range.
 
 ## Testing Thrusters
 First start the ROS nodes for the thruster Arduino and thruster allocs to PWMs:
@@ -195,11 +196,11 @@ roslaunch offboard_comms offboard_comms.launch
 ```
 Now to test, start sending thruster allocs messages. For instance, to set 0 allocs for all thrusters:
 ```
-rostopic pub -r 20 /controls/thruster_allocs custom_msgs/ThrusterAllocs '{allocs: [0,0,0,0,0,0,0,0]}'
+ros2 topic pub -r 20 /controls/thruster_allocs custom_msgs/msg/ThrusterAllocs 'allocs: [0, 0, 0, 0, 0, 0, 0, 0]'
 ```
 For testing on land, it is recommended to set 0.05 allocs for all thrusters:
 ```
-rostopic pub -r 20 /controls/thruster_allocs custom_msgs/ThrusterAllocs '{allocs: [0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.05]}'
+ros2 topic pub -r 20 /controls/thruster_allocs custom_msgs/msg/ThrusterAllocs 'allocs: [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]'
 ```
 
 ## Pressure Arduino
