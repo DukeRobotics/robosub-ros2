@@ -27,7 +27,7 @@ public:
         pressure_sensor = new Pressure("");
         temp_humidity_sensor = new TempHumidity(TH_PIN, "");
         servo_marker = new RobotServo(SERVO_MARKER, 1100, 1500, 1900, "M");
-        servo_torpedo = new RobotServo(SERVO_TORPEDO, 1100, 1500, 1900, "T");
+        servo_torpedo = new RobotServo(SERVO_TORPEDO, 700, 1500, 2300, "T");
 
         addVoltageSensor(voltage_sensor);
         addPressureSensor(pressure_sensor);

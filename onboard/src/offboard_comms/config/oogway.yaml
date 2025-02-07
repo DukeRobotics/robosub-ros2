@@ -26,8 +26,8 @@ arduino:
         max_pwm: 1900
       - name: torpedoes
         tag: T
-        min_pwm: 1100
-        max_pwm: 1900
+        min_pwm: 700
+        max_pwm: 2300
   thruster:
     ftdi: B0004VDI
     fqbn: arduino:avr:nano
