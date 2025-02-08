@@ -12,6 +12,8 @@ For initial setup instructions, follow the root [SETUP.md](../SETUP.md#set-up-fo
 
 The [`foxglove.py`](foxglove.py) CLI provides a unified interface to manage our custom extensions. It integrates commands from the [`foxglove`](https://github.com/foxglove/foxglove-cli), [`foxglove-extension`](https://github.com/foxglove/create-foxglove-extension/blob/main/src/bin/foxglove-extension.ts), and [`npm`](https://docs.npmjs.com/cli/v11/commands) CLIs. Extensions can be installed locally or published to our organization.
 
+To run the CLI you can use `python3 foxglove.py` (inside of the `foxglove` directory) or its alias `fox` (declared in `ros_bashrc.sh`).
+
 
 ### Quick Start
 There are two steps in the installation process:
@@ -21,22 +23,20 @@ There are two steps in the installation process:
 
 Therefore, to install all extensions, run:
 ```bash
-cd foxglove
-./foxglove.py build
-./foxglove.py install
+fox build
+fox install
 ```
 
 To clean up the Foxglove monorepo and uninstall local extensions, run:
 ```bash
-cd foxglove
-./foxglove.py clean
-./foxglove.py uninstall
+fox clean
+fox uninstall
 ```
 *Clean* and *uninstall* will revert the changes made by *build* and *install* respectively.
 
 ### User Guide
 ```bash
-./foxglove.py [SUBCOMMAND]
+fox [SUBCOMMAND]
 ```
 - [`b, build`](#build) - Prepare an extension for installation or publishing.
 - [`i, install`](#install) - Install an extension locally.
@@ -46,7 +46,7 @@ cd foxglove
 - [`u, uninstall`](#uninstall) - Uninstall a locally installed extension.
 - [`d, doctor`](#doctor) - Troubleshoot the Foxglove development environment.
 
-You can also run `./foxglove.py [SUBCOMMAND] -h` to view a help message.
+You can also run `fox [SUBCOMMAND] -h` to view a help message.
 
 #### Build
 > [!IMPORTANT]
@@ -54,11 +54,11 @@ You can also run `./foxglove.py [SUBCOMMAND] -h` to view a help message.
 
 To build, run:
 ```
-./foxglove.py build [OPTIONS]
+fox build [OPTIONS]
 ```
 - `--skip-ci`: Use existing node_modules instead of clean installing external dependencies.
 
-By default, `./foxglove.py build` does several things:
+By default, `fox build` does several things:
 1. Install external dependencies to `node_modules` using `npm ci`.
 2. Patch external dependencies using `patch-package`.
 3. Build local dependencies in `foxglove/shared/`.
@@ -70,7 +70,7 @@ By default, `./foxglove.py build` does several things:
 #### Install
 To perform a local install, run:
 ```
-./foxglove.py install [extensions ...]
+fox install [extensions ...]
 ```
 - `extensions`: A list of extensions to install. If no extensions are given, all extensions are installed.
 
@@ -82,7 +82,7 @@ This will execute the command `npm run local-install` for each extension specifi
 #### Watch
 To watch an extension for changes, run:
 ```bash
-./foxglove.py watch extension
+fox watch extension
 ```
 This will automatically execute `npm run local-install` upon `.ts` or `.tsx` file changes in the `src` directory.
 
@@ -92,7 +92,7 @@ This will automatically execute `npm run local-install` upon `.ts` or `.tsx` fil
 
 When you are ready to publish custom extensions to your organization, run:
 ```
-./foxglove.py publish [extensions ...]
+fox publish [extensions ...]
 ```
 - `extensions`: A list of extensions to install. If no extensions are given, all extensions are installed.
 - `-v, --version`: Version to publish extensions under. If no version is given, the short (length 7) HEAD commit hash is used. A version is required if the `robosub-ros2` git reposititory is dirty.
@@ -100,22 +100,22 @@ When you are ready to publish custom extensions to your organization, run:
 #### Clean
 To clean up the Foxglove monorepo, run:
 ```
-./foxglove.py clean
+fox clean
 ```
-This launches an interactive session where you can remove files generated during `./foxglove.py build`.
+This launches an interactive session where you can remove files generated during `fox build`.
 
 #### Uninstall
 To uninstall all Duke Robotics extensions, run:
 ```bash
-./foxglove.py uninstall
+fox uninstall
 ```
 
-This removes all files generated during `./foxglove.py install`.
+This removes all files generated during `fox install`.
 
 #### Doctor
 To troubleshoot the Foxglove development environment, run:
 ```
-./foxglove.py doctor
+fox doctor
 ```
 This command will exit with a non-zero status if any potential problems are found.
 
@@ -159,7 +159,7 @@ Local dependencies are located in the `shared/` directory.
 
 ### Patches
 Patches to external node modules are located in the `patches/` directory.
-Running `./foxglove.py build` will automatically apply these patches.
+Running `fox build` will automatically apply these patches.
 - [`create-foxglove-extension+1.0.4.patch`](patches/create-foxglove-extension+1.0.4.patch)
   - No longer require `README.md` or `CHANGELOG.md` when installing an extension
   - Before installing an extension, only remove `dist/extension.js` (instead of cleaning the entire `dist` directory)

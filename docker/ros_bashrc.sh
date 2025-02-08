@@ -31,6 +31,9 @@ alias test-thrusters="ros2 run offboard_comms test_thrusters"
 # Alias to run arduino CLI in offboard comms
 alias arduino="ros2 run offboard_comms arduino"
 
+# Alias for foxglove.py CLI
+alias fox="python3 /root/dev/robosub-ros2/foxglove/foxglove.py"
+
 # Source nvm and use version jod
 source /root/.nvm/nvm.sh
 nvm use lts/jod

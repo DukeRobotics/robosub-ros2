@@ -245,7 +245,7 @@ def clean() -> None:
 
 def main() -> None:
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(description='Manage custom extensions for Foxglove Studio.')
+    parser = argparse.ArgumentParser(prog='fox', description='Manage custom extensions for Foxglove Studio.')
     subparsers = parser.add_subparsers(dest='action')
 
     build_parser = subparsers.add_parser(
