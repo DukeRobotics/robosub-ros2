@@ -44,7 +44,6 @@ void loop() {
     // Run all functions
     robot->process();
   } else {
-    // Continuously print error message
     Serial.println("Error: Invalid ROBOT_NAME: " + String(ROBOT_NAME));
     delay(500); // Delay to avoid flooding the serial output
   }
