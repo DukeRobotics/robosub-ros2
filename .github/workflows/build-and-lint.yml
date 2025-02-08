@@ -40,3 +40,8 @@ jobs:
         if: always() && steps.run-docker.outcome == 'success'
         run: |
           docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build.sh
+
+      - name: Compile Arduino Sketches
+        if: always() && steps.run-docker.outcome == 'success'
+        run: |
+          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/compile-arduino-sketches.sh
