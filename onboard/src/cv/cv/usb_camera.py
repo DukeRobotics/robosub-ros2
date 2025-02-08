@@ -14,13 +14,18 @@ class USBCamera(Node):
 
     Currently used for the deepwater exploration usb mono cameras.
 
-    Launch using: roslaunch cv usb_camera.launch.
-    :param topic: rostopic to publish the image feed to; default is set to camera/usb_camera/compressed
-    :param device_path: path to device to read the stream from (e.g., /dev/video0); can be a symlinked path
-    :param framerate: custom framerate to stream the camera at; default is set to device default
+    Launch using: ros2 launch cv usb_camera.xml
     """
 
     def __init__(self, topic: str | None = None, device_path: str | None = None, framerate: int | None = None) -> None:
+        """
+        Initialize USB camera node.
+
+        Args:
+            topic (str): rostopic to publish the image feed to; default is set to camera/usb_camera/compressed.
+            device_path (str): Path to device to read the stream from (e.g., /dev/video0); can be a symlinked path.
+            framerate (int): Custom framerate to stream the camera at; default is set to device default.
+        """
         # Instantiate new USB camera node
         super().__init__(f'usb_camera_{topic}')
 
@@ -98,7 +103,7 @@ class USBCamera(Node):
                 # Read next image
                 success, img = cap.read()
                 # Sleep loop to maintain frame rate
-                rclpy.spin_once(self, timeout_sec=self.framerate)
+                rclpy.spin_once(self, timeout_sec=1/self.framerate)
         else:
             self.get_logger().error(f'{total_tries} attempts were made to connect to the USB camera. '
                          f'The camera was not found at device_path {self.device_path}. All attempts failed.')

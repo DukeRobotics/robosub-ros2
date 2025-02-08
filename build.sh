@@ -8,11 +8,32 @@ original_cwd=$(pwd)
 CORE_WS="/root/dev/robosub-ros2/core"
 ONBOARD_WS="/root/dev/robosub-ros2/onboard"
 
+# Function to remove paths from an environment variable
+remove_paths_from_env_var() {
+    env_var_name=$1
+    workspace_dir=$2
+
+    # Get the value of the environment variable
+    env_var_value=$(eval echo \$"$env_var_name")
+
+    if [ -n "$env_var_value" ]; then
+        new_env_var_value=$(echo "$env_var_value" | tr ':' '\n' | grep -v "$workspace_dir" | tr '\n' ':')
+        # Remove trailing colon
+        new_env_var_value=${new_env_var_value%:}
+        export "$env_var_name"="$new_env_var_value"
+    fi
+}
+
 # Function to clean workspace (build, install, log)
 clean_workspace() {
     workspace_dir=$1
     echo "Cleaning workspace: $workspace_dir"
     rm -rf "$workspace_dir/build" "$workspace_dir/install" "$workspace_dir/log"
+
+    # Remove paths from env variables used by colcon that include the workspace_dir
+    remove_paths_from_env_var "AMENT_PREFIX_PATH" "$workspace_dir"
+    remove_paths_from_env_var "CMAKE_PREFIX_PATH" "$workspace_dir"
+    remove_paths_from_env_var "COLCON_PREFIX_PATH" "$workspace_dir"
 }
 
 # Function to build workspace or package

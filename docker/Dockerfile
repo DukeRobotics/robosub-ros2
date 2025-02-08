@@ -19,6 +19,7 @@ RUN apt install -y --no-install-recommends libeigen3-dev
 RUN apt install -y --no-install-recommends libyaml-cpp-dev
 RUN apt install -y --no-install-recommends nano
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
+RUN apt install -y --no-install-recommends python3-jsonpickle
 RUN apt install -y --no-install-recommends python3-opencv
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-transforms3d
@@ -27,6 +28,7 @@ RUN apt install -y --no-install-recommends ros-jazzy-cv-bridge
 RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
 RUN apt install -y --no-install-recommends ros-jazzy-robot-localization
 RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
+RUN apt install -y --no-install-recommends ros-jazzy-vision-msgs
 RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends tini
@@ -41,7 +43,7 @@ RUN /root/dev/venv/bin/pip install GitPython
 RUN /root/dev/venv/bin/pip install gputil
 RUN /root/dev/venv/bin/pip install pandas
 RUN /root/dev/venv/bin/pip install pyserial
-RUN /root/dev/venv/bin/pip install python3-nmap
+RUN /root/dev/venv/bin/pip install python-nmap
 RUN /root/dev/venv/bin/pip install ruff
 RUN /root/dev/venv/bin/pip install scikit-learn
 RUN /root/dev/venv/bin/pip install sympy
@@ -92,6 +94,9 @@ RUN git clone --depth=1 --single-branch --branch=main https://github.com/foxglov
 
 # Copy .gdbinit file into container
 COPY .gdbinit /root/.gdbinit
+
+# Install Arduino CLI
+RUN curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
 
 # Create development directory
 RUN mkdir -p /root/dev/robosub-ros2
