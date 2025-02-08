@@ -56,8 +56,12 @@ def compute_angle_from_x_offset(x_offset: float, camera_pixel_width: float) -> f
     See: https://math.stackexchange.com/questions/1320285/convert-a-pixel-displacement-to-angular-rotation
     for implementation details.
 
-    :param x_offset: x pixels from center of image
-    :return: angle in degrees
+    Args:
+        x_offset (int): x pixels from center of image.
+        camera_pixel_width (int): Width of the camera in pixels.
+
+    Returns:
+        float: Angle in degrees.
     """
     image_center_x = camera_pixel_width / 2.0
     return math.degrees(math.atan((x_offset - image_center_x) * 0.005246675486))
@@ -68,13 +72,16 @@ def calculate_relative_pose(bbox_bounds: object, input_size: list[float], label_
     """
     Return relative pose, to be used as a part of the CVObject.
 
-    Parameters:
-        bbox_bounds: the detection object
-        input_size: array wrt input size ([0] is width, [1] is height)
-        label_shape: the label shape ([0] is width --> only this is accessed, [1] is height)
-        focal_length: the distance between the lens and the image sensor when the lens is focused on a subject
-        sensor_size: The physical size of the camera's image sensor
-        adjustment_factor: 1 if mono 2 if depthai
+    Args:
+        bbox_bounds (object): The detection object.
+        input_size (list[float]): Array with input size, where [0] is width and [1] is height.
+        label_shape (list[float]): The label shape, where [0] is width (only this is accessed) and [1] is height.
+        focal_length (float): The distance between the lens and the image sensor when the lens is focused on a subject.
+        sensor_size (float): The physical size of the camera's image sensor.
+        adjustment_factor (int): 1 if mono, 2 if depthai.
+
+    Returns:
+        list[float]: The relative pose of the object.
     """
     xmin, ymin, xmax, ymax = bbox_bounds
 
@@ -102,6 +109,9 @@ def compute_bbox_dimensions(polygon: object) -> CVObject:
 
     Args:
         polygon: Polygon object
+
+    Returns:
+        CVObject: The CVObject message.
     """
     # Ensure there are points in the polygon
     max_points = 4

@@ -18,9 +18,14 @@ def connect(pipeline: dai.Pipeline) -> dai.Device:
     just temporarily unavailable). In each try, it attempts to connect first using custom autodiscovery, then using
     DepthAI autodiscovery, then finally using static IP address specification.
 
-    :param pipeline: The DepthAI pipeline to upload to the camera.
-    :return: depthai.Device object
-    :raises RuntimeError: if a successful connection to the camera could not be made
+    Args:
+        pipeline (depthai.Pipeline): The DepthAI pipeline to upload to the camera.
+
+    Returns:
+        depthai.Device: DepthAI.Device object.
+
+    Raises:
+        RuntimeError: If a successful connection to the camera could not be made.
     """
     # Number of attempts that will be made to connect to the camera
     total_tries = 5
@@ -58,8 +63,11 @@ def custom_autodiscovery() -> str:
     """
     Scan all IP addresses from 192.168.1.0 to 192.168.1.255 looking for the DepthAI camera's MAC address.
 
-    :return: DepthAI IP address string
-    :raises RuntimeError: if the camera's IP address could not be found
+    Returns:
+        str: DepthAI IP address.
+
+    Raises:
+        RuntimeError: If the camera's IP address could not be found.
     """
     mac_address = '44:A9:2C:3C:0A:90'  # DepthAI camera MAC address
     ip_range = '169.254.1.222'  # 192.168.1.0 to 192.168.1.255
