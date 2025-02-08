@@ -42,7 +42,7 @@ RUN /root/dev/venv/bin/pip install GitPython
 RUN /root/dev/venv/bin/pip install gputil
 RUN /root/dev/venv/bin/pip install pandas
 RUN /root/dev/venv/bin/pip install pyserial
-RUN /root/dev/venv/bin/pip install python3-nmap
+RUN /root/dev/venv/bin/pip install python-nmap
 RUN /root/dev/venv/bin/pip install ruff
 RUN /root/dev/venv/bin/pip install scikit-learn
 RUN /root/dev/venv/bin/pip install sympy
@@ -80,6 +80,9 @@ RUN git clone https://github.com/robotology/osqp-eigen.git && \
 
 # Copy .gdbinit file into container
 COPY .gdbinit /root/.gdbinit
+
+# Install Arduino CLI
+RUN curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
 
 # Create development directory
 RUN mkdir -p /root/dev/robosub-ros2

@@ -1,0 +1,40 @@
+arduino:
+  peripheral:
+    ftdi: B0004Z2N
+    fqbn: arduino:avr:nano
+    core: arduino:avr
+    sketch: sketches/peripheral
+    libraries:
+      - servo
+    sensors:
+      - type: voltage
+        tag: V
+        topic: /sensors/voltage
+      - type: pressure
+        tag: P
+        topic: /sensors/depth
+      - type: temperature
+        tag: T
+        topic: /sensors/temperature
+      - type: humidity
+        tag: H
+        topic: /sensors/humidity
+    servos:
+      - name: marker dropper
+        tag: M
+        min_pwm: 500
+        max_pwm: 2500
+      - name: torpedoes
+        tag: T
+        min_pwm: 700
+        max_pwm: 2300
+  thruster:
+    ftdi: B0004VDI
+    fqbn: arduino:avr:nano
+    core: arduino:avr
+    sketch: sketches/thruster
+dvl:
+  ftdi: D309SFWS
+  negate_x_vel: false
+  negate_y_vel: false
+  negate_z_vel: false

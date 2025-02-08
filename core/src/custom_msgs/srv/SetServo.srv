@@ -1,10 +1,5 @@
-# This service type contains data on changing servo angles
-
-# The index of the servo to change (zero-indexed)
-uint8 num
-
-# The new angle of the servo
-uint8 angle
+string tag
+uint16 pwm
 ---
-# Indicates whether the new angle was successful
 bool success
+string message
