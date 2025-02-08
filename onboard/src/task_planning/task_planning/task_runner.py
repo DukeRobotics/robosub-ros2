@@ -7,7 +7,7 @@ from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.node import Node
 
-from task_planning import test_tasks
+from task_planning import test_tasks, comp_tasks, move_tasks, prequal_tasks
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.marker_dropper import MarkerDropper
@@ -71,11 +71,17 @@ class TaskPlanning(Node):
         try:
             # Tasks to run
             tasks = [
-                test_tasks.wait_for_seconds(1, parent=Task.MAIN_ID),
-                test_tasks.print_task(parent=Task.MAIN_ID),
-                test_tasks.wait_then_print(parent=Task.MAIN_ID),
-                test_tasks.print_task('Finished!', parent=Task.MAIN_ID),
+                # test_tasks.wait_for_seconds(1, parent=Task.MAIN_ID),
+                # test_tasks.print_task(parent=Task.MAIN_ID),
+                # test_tasks.wait_then_print(parent=Task.MAIN_ID),
+                # test_tasks.print_task('Finished!', parent=Task.MAIN_ID),
                 # comp_tasks.initial_submerge(-0.7, parent=Task.MAIN_ID),
+                # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=Task.MAIN_ID),
+
+                prequal_tasks.prequal_task(parent=Task.MAIN_ID),
+
+                # prequal_tasks.prequal_task(parent=Task.MAIN_ID),
+
                 # comp_tasks.coin_flip(parent=Task.MAIN_ID),
                 # comp_tasks.yaw_to_cv_object('gate_red_cw', direction=1, yaw_threshold=math.radians(10),
                 #                             latency_threshold=1, depth_level=0.7, parent=Task.MAIN_ID),

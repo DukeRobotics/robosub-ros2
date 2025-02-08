@@ -22,7 +22,7 @@ class MarkerDropper:
         drop_marker_client (Client): A client for the `SetBool` service to control the servo.
     """
 
-    SERVO_CONTROL_SERVICE = 'marker_dropper/servo_control'
+    SERVO_CONTROL_SERVICE = '/servo_control'
 
     def __init__(self, node: Node, bypass: bool = False) -> None:
         self.node = node
