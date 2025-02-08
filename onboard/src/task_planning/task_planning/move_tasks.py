@@ -161,15 +161,15 @@ async def depth_correction(self: Task, desired_depth: float) -> Task[None, None,
     Returns:
         Task[None, None, None]: An asynchronous task indicating the depth correction process.
     """
-    logger.info('State().depth: %s', State().depth)
+    logger.info(f'State().depth: {State().depth}')
     depth_delta = desired_depth - State().depth
-    logger.info('depth_delta: %s', depth_delta)
+    logger.info(f'depth_delta: {depth_delta}')
 
-    logger.info('Started depth correction %s', depth_delta)
+    logger.info(f'Started depth correction {depth_delta}')
     await move_to_pose_local(
         geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0),
         parent=self)
-    logger.info('Finished depth correction %s', depth_delta)
+    logger.info(f'Finished depth correction {depth_delta}')
 
 @task
 async def correct_depth(self: Task, desired_depth: float) -> None:
@@ -202,7 +202,7 @@ async def move_x(self: Task, step: float = 1.0) -> None:
         None
     """
     await move_to_pose_local(geometry_utils.create_pose(step, 0, 0, 0, 0, 0), parent=self)
-    logger.info('Moved x %s', step)
+    logger.info(f'Moved x {step}')
 
 
 @task
@@ -220,7 +220,7 @@ async def move_y(self: Task, step: float = 1.0) -> None:
         None
     """
     await move_to_pose_local(geometry_utils.create_pose(0, step, 0, 0, 0, 0), parent=self)
-    logger.info('Moved y %s', step)
+    logger.info(f'Moved y {step}')
 
 
 Direction = tuple[float, float, float] | tuple[float, float, float, float, float, float]
@@ -261,7 +261,7 @@ async def move_with_directions(self: Task,
         await move_to_pose_local(
             geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
             parent=self)
-        logger.info('Moved to %s', direction)
+        logger.info(f'Moved to {direction}')
 
         if correct_yaw:
             await self.parent.correct_yaw()

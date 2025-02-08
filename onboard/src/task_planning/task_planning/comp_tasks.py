@@ -588,8 +588,8 @@ async def yaw_to_cv_object(self: Task, cv_object: str, direction=1,
     # Center detected object in camera frame
     cv_object_yaw = CV().cv_data[cv_object].yaw
     await correct_depth()
-    logger.info('abs(cv_object_yaw)='+str(abs(cv_object_yaw)))
-    logger.info('yaw_threshold='+str(yaw_threshold))
+    logger.info(f'abs(cv_object_yaw): {abs(cv_object_yaw)}')
+    logger.info(f'yaw_threshold: {yaw_threshold}')
     while abs(cv_object_yaw) > yaw_threshold:
         sign_cv_object_yaw = np.sign(cv_object_yaw)
         correction = get_step_size(cv_object_yaw)
@@ -1129,7 +1129,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
     async def correct_yaw():
         yaw_correction = CV().cv_data['bin_pink_front'].yaw
-        logger.info('Yaw correction: %d', yaw_correction)
+        logger.info(f'Yaw correction: {yaw_correction}')
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction * 0.7),
             keep_level=True,
@@ -1202,7 +1202,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             await move_x(step=step)
             last_step_size = step
 
-            logger.info('Bin pink front score: %s', CV().cv_data['bin_pink_front'].score)
+            logger.info(f'Bin pink front score: {CV().cv_data['bin_pink_front'].score}')
 
             score_threshold = 4000
             if CV().cv_data['bin_pink_front'].score > score_threshold and not moved_above:
@@ -1215,7 +1215,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
             count += 1
 
-            logger.info('Receiving pink bin data: %s', is_receiving_pink_bin_data(latest_detection_time))
+            logger.info(f'Receiving pink bin data: {is_receiving_pink_bin_data(latest_detection_time)}')
 
         if moved_above:
             await move_tasks.move_with_directions([(1.5, 0, 0)], parent=self)

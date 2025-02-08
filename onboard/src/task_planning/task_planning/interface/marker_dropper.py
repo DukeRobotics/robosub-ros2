@@ -31,7 +31,7 @@ class MarkerDropper:
 
         if not bypass:
             while not self.drop_marker_client.wait_for_service(timeout_sec=1.0):
-                logger.info('%s not ready, waiting...', self.SERVO_CONTROL_SERVICE)
+                logger.info(f'{self.SERVO_CONTROL_SERVICE} not ready, waiting...')
 
     def drop_marker(self, data: bool) -> Future:
         """

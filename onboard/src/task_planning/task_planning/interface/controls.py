@@ -64,7 +64,7 @@ class Controls:
         self._reset_pid_loops = node.create_client(Trigger, self.RESET_PID_LOOPS_SERVICE)
         if not bypass:
             while not self._reset_pid_loops.wait_for_service(timeout_sec=1.0):
-                logger.info('%s not ready, waiting...', self.RESET_PID_LOOPS_SERVICE)
+                logger.info(f'{self.RESET_PID_LOOPS_SERVICE} not ready, waiting...')
 
         self._enable_controls = node.create_client(SetBool, self.ENABLE_CONTROLS_SERVICE)
 
@@ -91,8 +91,8 @@ class Controls:
         Returns:
             The thruster dictionary
         """
-        config_file_path = 'package://controls/config/%s.yaml'
-        filename = Path(rr.get_filename(config_file_path % os.getenv('ROBOT_NAME', 'oogway'), use_protocol=False))
+        config_file_path = f'package://controls/config/{os.getenv('ROBOT_NAME', 'oogway')}.yaml'
+        filename = Path(rr.get_filename(config_file_path, use_protocol=False))
         with filename.open() as f:
             full_thruster_dict = yaml.safe_load(f)
 
