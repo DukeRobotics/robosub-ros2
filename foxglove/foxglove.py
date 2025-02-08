@@ -251,7 +251,7 @@ def main() -> None:
     build_parser = subparsers.add_parser(
         'build',
         aliases=['b'],
-        help='Build all necessary dependencies for Foxglove. This is automatically run when installing extensions.',
+        help='Build all necessary dependencies for Foxglove.',
     )
     build_parser.add_argument(
         '--skip-ci',
