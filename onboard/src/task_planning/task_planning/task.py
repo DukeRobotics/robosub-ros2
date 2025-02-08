@@ -174,7 +174,8 @@ class Task(Generic[YieldType, SendType, ReturnType]):
             self.parent = parent
             self._parent_id = parent.id
         else:
-            raise ValueError('Task parent must be a Task or MAIN_ID. Instead got ' + str(parent))
+            msg = f'Task parent must be a Task or MAIN_ID. Instead got {parent}'
+            raise ValueError(msg)
 
         # Ensure coroutine is a native coroutine
         assert inspect.iscoroutinefunction(coroutine), 'Coroutine must be a native coroutine'
