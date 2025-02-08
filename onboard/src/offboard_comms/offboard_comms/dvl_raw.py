@@ -3,13 +3,14 @@ import os
 import rclpy
 from custom_msgs.msg import DVLRaw
 
-from data_pub.serial_republisher_node import SerialRepublisherNode
+from offboard_comms.serial_node import SerialNode
 
 
-class DVLRawPublisher(SerialRepublisherNode):
+class DVLRawPublisher(SerialNode):
     """A class to read and publish raw DVL data from a serial port."""
 
-    CONFIG_FILE_PATH = f'package://data_pub/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
+    SERIAL_DEVICE_NAME = 'DVL'
+    CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
 
     BAUDRATE = 115200
     NODE_NAME = 'dvl_raw_pub'
@@ -21,8 +22,8 @@ class DVLRawPublisher(SerialRepublisherNode):
 
     def __init__(self) -> None:
 
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, 'dvl', self.CONNECTION_RETRY_PERIOD,
-                         self.LOOP_RATE)
+        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME, True,
+                         self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE)
 
         self._dvl_line_parsers = {
             'SA': self._parse_SA,
@@ -38,6 +39,10 @@ class DVLRawPublisher(SerialRepublisherNode):
 
         self._current_msg = DVLRaw()
 
+    def get_ftdi_string(self) -> str:
+        """Get the FTDI string for the DVL."""
+        return self._config['dvl']['ftdi']
+
     def _extract_floats(self, num_string: str, start: int, stop: int) -> list[float]:
         """Return a list of floats from a given string, using LINE_DELIM and going from start to stop."""
         return [float(num) for num in num_string.split(self.LINE_DELIM)[start:stop]]
@@ -50,7 +55,10 @@ class DVLRawPublisher(SerialRepublisherNode):
             line (str): line to process
         """
         data_type = line[1:3]
-        self._dvl_line_parsers[data_type](self._clean_line(line))
+        if data_type in self._dvl_line_parsers:
+            self._dvl_line_parsers[data_type](self._clean_line(line))
+        else:
+            self.get_logger().warn(f'Unknown data type: {data_type}')
 
     def _clean_line(self, line: str) -> str:
         """

@@ -1,0 +1,32 @@
+arduino:
+  peripheral:
+    ftdi: B0015XL0
+    fqbn: arduino:avr:nano
+    core: arduino:avr
+    sketch: sketches/peripheral
+    libraries:
+      - servo
+    sensors:
+      - type: pressure
+        tag: P
+        topic: /sensors/depth
+      - type: voltage
+        tag: V
+        topic: /sensors/voltage
+      - type: temperature
+        tag: TC
+        topic: /sensors/temperature/computer
+      - type: temperature
+        tag: TB
+        topic: /sensors/temperature/battery
+      - type: humidity
+        tag: HC
+        topic: /sensors/humidity/computer
+      - type: humidity
+        tag: HB
+        topic: /sensors/humidity/battery
+  thruster:
+    ftdi: B0004VDI
+    fqbn: arduino:avr:nano
+    core: arduino:avr
+    sketch: sketches/thruster

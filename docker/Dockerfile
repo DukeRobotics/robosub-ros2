@@ -79,6 +79,9 @@ RUN git clone https://github.com/robotology/osqp-eigen.git && \
 # Copy .gdbinit file into container
 COPY .gdbinit /root/.gdbinit
 
+# Install Arduino CLI
+RUN curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
+
 # Create development directory
 RUN mkdir -p /root/dev/robosub-ros2
 
