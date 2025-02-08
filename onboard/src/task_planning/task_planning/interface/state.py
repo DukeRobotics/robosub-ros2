@@ -73,7 +73,7 @@ class State:
 
     @property
     def orig_depth(self) -> float:
-        """The depth from the pressure sensor."""
+        """The first depth message received from the pressure sensor."""
         return self._orig_depth
 
     @property
@@ -91,21 +91,21 @@ class State:
         """The transform buffer."""
         return self._tf_buffer
 
-    def _on_receive_state(self, state : Odometry) -> None:
+    def _on_receive_state(self, state: Odometry) -> None:
         self._state = state
 
         if not self.received_state:
             self._orig_state = state
             self.received_state = True
 
-    def _on_receive_depth(self, depth_msg : PoseWithCovarianceStamped) -> None:
+    def _on_receive_depth(self, depth_msg: PoseWithCovarianceStamped) -> None:
         self._depth = depth_msg.pose.pose.position.z
 
         if not self.received_depth:
             self._orig_depth = depth_msg.pose.pose.position.z
             self.received_depth = True
 
-    def _on_receive_imu(self, imu_msg : Imu) -> None:
+    def _on_receive_imu(self, imu_msg: Imu) -> None:
         self._imu = imu_msg
 
         if not self.received_imu:

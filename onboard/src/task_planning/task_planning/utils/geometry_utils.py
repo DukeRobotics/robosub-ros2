@@ -151,7 +151,7 @@ def at_pose(current_pose: Pose, desired_pose: Pose, linear_tol: float = 0.15, ro
 
 def at_vel(current_twist: Twist, desired_twist: Twist, linear_tol: float = 0.02, angular_tol: float = 0.02) -> bool:
     """
-    Check if current twist within tolerance of a desired twist (linear and angular velocities).
+    Check if current twist is within tolerance of a desired twist (linear and angular velocities).
 
     Args:
         current_twist: The current twist.

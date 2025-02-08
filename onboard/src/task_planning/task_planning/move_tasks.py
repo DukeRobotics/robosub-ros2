@@ -1,8 +1,8 @@
 import copy
 
-import rclpy
 from geometry_msgs.msg import Pose, Twist
 from rclpy.clock import Clock
+from rclpy.logging import get_logger
 from transforms3d.euler import euler2quat, quat2euler
 
 from task_planning.interface.controls import Controls
@@ -10,7 +10,7 @@ from task_planning.interface.state import State
 from task_planning.task import Task, Yield, task
 from task_planning.utils import coroutine_utils, geometry_utils
 
-logger = rclpy.logging.get_logger('move_tasks')
+logger = get_logger('move_tasks')
 
 @task
 async def move_to_pose_global(_self: Task, pose: Pose, timeout: int = 30) -> Task[None, Pose | None, None]:
@@ -52,7 +52,7 @@ async def move_to_pose_global(_self: Task, pose: Pose, timeout: int = 30) -> Tas
 
 
 @task
-async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool=False,
+async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False,
                              time_limit: int = 30) -> Task[None, Pose | None, None]:
     """
     Move to a local pose in the "base_link" frame.
@@ -234,9 +234,9 @@ async def move_with_directions(self: Task,
                                correct_depth: bool = False,
                                ) -> None:
     """
-    Move the task to multiple poses defined by the provided directions.
+    Move the robot to multiple poses defined by the provided directions.
 
-    This method iterates over a list of directions, moving the task to each specified pose in local coordinates.
+    This method iterates over a list of directions, moving the robot to each specified pose in local coordinates.
     Each direction must be a tuple of length 3 or 6. Optionally, it can correct the yaw and/or depth after each
     movement.
 

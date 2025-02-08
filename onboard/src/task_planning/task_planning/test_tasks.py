@@ -9,11 +9,12 @@ logger = get_logger('test_tasks')
 
 
 @task
-async def wait_for_seconds(_self: Task, wait_time : float = 1) -> Task[None, None, None]:
+async def wait_for_seconds(_self: Task, wait_time: float = 1) -> Task[None, None, None]:
     """Wait for a number of seconds."""
     logger.info('Started wait_for_seconds task')
     await sleep(wait_time)
     logger.info('Completed wait_for_seconds task')
+
 
 @task
 async def print_task(_self: Task, data: str = 'data') -> Task[None, None, None]:
@@ -26,7 +27,7 @@ async def print_task(_self: Task, data: str = 'data') -> Task[None, None, None]:
 
 
 @task
-async def wait_then_print(self: Task, wait_time : float = 1) -> Task[None, None, None]:
+async def wait_then_print(self: Task, wait_time: float = 1) -> Task[None, None, None]:
     """Execute a wait_for_seconds task and then a print_task task."""
     await wait_for_seconds(wait_time, parent=self)
     await print_task(parent=self)

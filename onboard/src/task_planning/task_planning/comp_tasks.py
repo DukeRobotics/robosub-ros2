@@ -1123,7 +1123,6 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.6
     LATENCY_THRESHOLD = 2
     CONTOUR_SCORE_THRESHOLD = 1000
-    CONTOUR_SCORE_THRESHOLD = 1000
 
     async def correct_depth(desired_depth):
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
@@ -1157,7 +1156,6 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     def stabilize() -> None:
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
-
 
     async def sleep(secs) -> None:
         duration = Duration(seconds=secs)

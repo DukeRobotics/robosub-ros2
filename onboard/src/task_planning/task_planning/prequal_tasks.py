@@ -1,16 +1,16 @@
 # ruff: noqa
 import math
 import time
-
 import move_tasks
-import rclpy
+
+from rclpy.logging import get_logger
 from interface.controls import Controls
 from interface.cv import CV
 from interface.state import State
 from task import Task, Yield, task
 from utils import geometry_utils
 
-logger = rclpy.logging.get_logger('prequal_tasks')
+logger = get_logger('prequal_tasks')
 
 RECT_HEIGHT_METERS = 0.3048
 
@@ -19,7 +19,7 @@ RECT_HEIGHT_METERS = 0.3048
 async def prequal_task(self: Task) -> Task[None, None, None]:
     """
     Complete the prequalification task by moving to a series of local poses. Returns when the robot is at the final pose
-    with zero velocity, within a small tolerance, completing the prequalifiacation task.
+    with zero velocity, within a small tolerance, completing the prequalification task.
     """
     countdown_length = 10
     for i in range(countdown_length):
