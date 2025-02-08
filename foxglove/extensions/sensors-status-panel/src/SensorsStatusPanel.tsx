@@ -11,7 +11,8 @@ const TOPICS_MAP = {
   IMU: "/vectornav/imu",
   Pressure: "/sensors/depth",
   "Front Camera": "/camera/front/rgb/preview/compressed",
-  Mono: "/camera/usb_camera/compressed",
+  "Front Mono": "/camera/usb/front/compressed",
+  "Bottom Mono": "/camera/usb/bottom/compressed",
   Sonar: "/sonar/status",
 };
 
