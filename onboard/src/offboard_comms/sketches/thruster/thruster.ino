@@ -12,6 +12,8 @@
 #define THRUSTER_PWM_MIN 1100
 #define THRUSTER_PWM_MAX 1900
 
+bool valid_robot = true;
+
 Adafruit_PWMServoDriver pwm_multiplexer(0x40);
 
 int NUM_THRUSTERS;
@@ -55,8 +57,8 @@ void setup() {
             THRUSTER_PWM_OFFSET = 0;
             break;
         default:
-            NUM_THRUSTERS = 8;
-            THRUSTER_PWM_OFFSET = 0;
+            valid_robot = false;
+            return;
     }
 
     pwms = new uint16_t[NUM_THRUSTERS];
@@ -80,6 +82,13 @@ void setup() {
 }
 
 void loop() {
+    // If the robot name is invalid, print an error message and return
+    if (!valid_robot) {
+        Serial.println("Error: Invalid ROBOT_NAME: " + String(ROBOT_NAME));
+        delay(500); // Delay to avoid flooding the serial output
+        return;
+    }
+
     // If we haven't received a new command in a while, stop all thrusters
     if (millis() - last_cmd_ms_ts > THRUSTER_TIMEOUT_MS) {
         for (uint8_t i = 0; i < NUM_THRUSTERS; i++) {
