@@ -1,3 +1,5 @@
+# TODO: Update marker_dropper interface (see ROS 2 offboard_comms package)
+
 from example_interfaces.srv import SetBool
 from rclpy.logging import get_logger
 from rclpy.node import Node
