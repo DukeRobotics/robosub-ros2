@@ -29,7 +29,7 @@ class CV:
     CV_MODEL = 'yolov7_tiny_2023_main'
 
     FRAME_WIDTH = 640
-    FRAME_HEIGHT = 320
+    FRAME_HEIGHT = 480
 
     BIN_WIDTH = 0.3048  # Width of single bin in meters
     BUOY_WIDTH = 0.2032  # Width of buoy in meters
@@ -301,7 +301,7 @@ class CV:
         skip = 0
 
         top = 0
-        bottom = 480
+        bottom = self.FRAME_HEIGHT
 
         if len(self.lane_marker_heights) == filter_len:
             self.lane_marker_heights.pop(0)
