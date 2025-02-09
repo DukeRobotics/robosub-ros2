@@ -46,6 +46,8 @@ class ThrusterTester(Node):
         self.num_thrusters = self.get_thruster_count()
         self.thrust_speed = speed
         self.allocs = [self.thrust_speed] * self.num_thrusters
+        self.msg = ThrusterAllocs()
+        self.msg.allocs = self.allocs
         self.no_log_allocs = no_log_allocs
         self.timer = self.create_timer(1.0 / rate, self.publish_allocs)
         self.get_logger().info(f'Publishing {self.num_thrusters} thrusters at speed {self.thrust_speed} with rate '
@@ -64,10 +66,8 @@ class ThrusterTester(Node):
 
     def publish_allocs(self) -> None:
         """Publish the thruster allocations."""
-        msg = ThrusterAllocs()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.allocs = self.allocs
-        self.publisher_.publish(msg)
+        self.msg.header.stamp = self.get_clock().now().to_msg()
+        self.publisher_.publish(self.msg)
         if not self.no_log_allocs:
             self.get_logger().info(f'Published thruster allocs: {self.allocs}')
 
