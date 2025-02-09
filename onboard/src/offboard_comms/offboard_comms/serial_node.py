@@ -57,7 +57,7 @@ class SerialNode(Node, ABC):
         Get the FTDI string for the serial device.
 
         Returns:
-            str: FTDI string for the serial device
+            str: FTDI string for the serial device.
         """
 
     def connect(self) -> None:
@@ -88,7 +88,7 @@ class SerialNode(Node, ABC):
             tout (int): timeout in seconds
 
         Returns:
-            str: the line read from the serial port
+            str: The line read from the serial port.
         """
         start = time.time()
         buff = b''
@@ -103,7 +103,7 @@ class SerialNode(Node, ABC):
         Write bytes to serial port.
 
         Args:
-            data (bytes): data to write
+            data (bytes): Data to write.
         """
         if self._serial and self._serial.is_open:
             try:
@@ -120,7 +120,7 @@ class SerialNode(Node, ABC):
         Write line to serial port.
 
         Args:
-            line (str): line to write
+            line (str): Line to write.
         """
         self.writebytes((line + '\r\n').encode('utf-8'))
 
@@ -129,7 +129,7 @@ class SerialNode(Node, ABC):
         Process line read from serial.
 
         Args:
-            _ (str): line to process
+            _ (str): Line to process.
         """
         if self._read_from_serial:
             error_msg = 'Subclasses must implement this method if read_from_serial is True.'

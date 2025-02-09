@@ -65,7 +65,12 @@ class PeripheralPublisher(SerialNode):
             self._servo_service = self.create_service(SetServo, self.SERVO_SERVICE, self.servo_control)
 
     def get_ftdi_string(self) -> str:
-        """Get the FTDI string for the Peripheral Arduino."""
+        """
+        Get the FTDI string for the Peripheral Arduino.
+
+        Returns:
+            str: FTDI string for the Peripheral Arduino.
+        """
         return self._config['arduino'][self.ARDUINO_NAME]['ftdi']
 
     def setup_sensors(self) -> None:
@@ -89,7 +94,7 @@ class PeripheralPublisher(SerialNode):
         Requires lines to come in the format 'tag:data', with one data point per line, where data is a float.
 
         Args:
-            line (str): A line of data from the serial port
+            line (str): A line of data from the serial port.
         """
         tag, data = line.split(':', 1)
         if data == '':
