@@ -1,6 +1,8 @@
 /**
  * DHT11.cpp
  * Library for reading temperature and humidity from the DHT11 sensor.
+ * 
+ * Obtained from https://github.com/dhrubasaha08/DHT11
  *
  * Author: Dhruba Saha
  * Version: 2.1.0
