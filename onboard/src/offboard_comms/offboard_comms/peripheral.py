@@ -75,7 +75,7 @@ class PeripheralPublisher(SerialNode):
 
     def setup_sensors(self) -> None:
         """Initialize sensor classes based on the config file."""
-        for sensor in self._config['arduino'][self.ARDUINO_NAME]['sensors']:
+        for sensor in self._config['arduino'][self.ARDUINO_NAME].get('sensors', []):
             sensor_class = self.SENSOR_CLASSES.get(sensor['type'])
             if sensor_class:
                 self.sensors[sensor['tag']] = sensor_class(self, sensor['tag'], sensor['topic'])
@@ -84,7 +84,7 @@ class PeripheralPublisher(SerialNode):
 
     def setup_servos(self) -> None:
         """Initialize servo classes based on the config file."""
-        for servo in self._config['arduino'][self.ARDUINO_NAME]['servos']:
+        for servo in self._config['arduino'][self.ARDUINO_NAME].get('servos', []):
             self.servos[servo['tag']] = PeripheralServo(servo['name'], servo['tag'], servo['min_pwm'], servo['max_pwm'])
 
     def process_line(self, line: str) -> None:
