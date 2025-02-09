@@ -119,7 +119,6 @@ the FTDI string is `B0004VDI`.
 
 If it's not obvious which FTDI string corresponds with which device, unplug the device, run the command, and note which string disappears. Then plug the device back in and run the command again to find the string that reappears. That string corresponds to the device.
 
-
 ## Arduino CLI
 On Linux hosts, with the container running in privileged mode, use the CLI provided by `arduino.py` to install libraries, find ports, compile, and upload Arduino code. The CLI is a wrapper around the Arduino CLI and other commands, and is used to simplify the process of uploading code to the Arduino.
 
@@ -181,6 +180,15 @@ If an error occurs, it is recommended to run the command with the `-p` flag to p
 > #define CRUSH 2
 > ```
 > define the values for the `oogway`, `oogway_shell`, and `crush` robot names. The `ROBOT_NAME` preprocessor directive is used in the Arduino sketches to modify their behavior based on the capabilities of the robot.
+
+## Serial Node
+`serial_node.py` defines `SerialNode`, an abstract base class for ROS nodes that interface with serial devices. The class handles connecting to the serial device, reading data from it, and writing data to it.
+
+Thus, by handling the basic serial communication, `SerialNode` allows subclasses to focus on parsing the data from the serial device and publishing it or receiving commands and sending them to the serial device.
+
+It gracefully handles errors and exceptions that may occur during the process. If any read or write operation fails, the node will attempt to reconnect to the serial device indefinitely until the operation is successful. If the node is stopped, it will close the serial connection and exit.
+
+The `dvl_raw.py`, `peripheral.py`, and `thrusters.py` scripts sublcass `SerialNode` to interface with the DVL, Peripheral Arduino, and Thruster Arduino.
 
 ## Thruster Allocations to PWMs
 The `thrusters.py` node subscribes to `/controls/thruster_allocs` of type `custom_msgs/msg/ThrusterAllocs`. This is an array of 64-bit floats, and they must be in range [-1, 1]. It also subscribes to `/sensors/voltage` of type `std_msgs/msg/Float64`. This is a 64-bit float that is clamped to the range [14.0, 18.0].
