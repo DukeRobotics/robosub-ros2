@@ -1,5 +1,5 @@
 #include "Adafruit_PWMServoDriver.h"
-#include "MultiplexedBasicESC.h"
+#include "MultiplexedBasicESC.hpp"
 #include <Arduino.h>
 
 #define OOGWAY 0
