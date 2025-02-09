@@ -142,21 +142,22 @@ def _update_extension_version(extension: pathlib.Path, version: str) -> None:
         json.dump(package, file, indent=2)
 
 
-def publish(extension_paths: Sequence[pathlib.Path], version: str | None = None) -> None:
+def publish(extension_paths: Sequence[pathlib.Path], version: str | None = None, force: bool = False) -> None:
     """
     Publish custom Foxglove extensions.
 
     Args:
         extension_paths: Sequence of extension paths to publish.
         version: Version to publish extensions under. If None, the short HEAD commit hash is used.
+        force: If True, publish extensions even if the repository is dirty.
 
     Raises:
-        SystemExit: If the Foxglove directory is dirty and no version is given.
+        SystemExit: If the repository is dirty and no version is given.
     """
     repo = git.Repo(path=FOXGLOVE_PATH.parent)
     is_dirty = repo.is_dirty(untracked_files=True)
-    if is_dirty and version is None:
-        msg = 'Commit changes before publishing or use the --version flag.'
+    if not force and is_dirty and version is None:
+        msg = 'Unable to publish since repository is dirty. Use --force to override.'
         raise SystemExit(msg)
     if version is None:
         version = repo.head.object.hexsha[:7]
@@ -301,6 +302,11 @@ def main() -> None:
         nargs='?',
         help='Version to publish extensions under. If no version is given, the short HEAD commit hash is used.',
     )
+    publish_parser.add_argument(
+        '-f', '--force',
+        action='store_true',
+        help='Publish extensions even if the repository is dirty.',
+    )
 
     subparsers.add_parser(
         'clean',
@@ -329,7 +335,7 @@ def main() -> None:
     elif args.action in {'watch', 'w'}:
         watch(args.extensions[0])
     elif args.action in {'publish', 'p'}:
-        publish(args.extensions or EXTENSION_PATHS, args.version)
+        publish(args.extensions or EXTENSION_PATHS, args.version, args.force)
     elif args.action in {'clean', 'c'}:
         clean()
     elif args.action in {'uninstall', 'u'}:
