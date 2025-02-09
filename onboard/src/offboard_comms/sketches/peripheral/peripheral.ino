@@ -41,7 +41,7 @@ void setup() {
 
 void loop() {
   if (valid_robot) {
-    // Run all functions
+    // Call all sensors and process servo commands
     robot->process();
   } else {
     Serial.println("Error: Invalid ROBOT_NAME: " + String(ROBOT_NAME));

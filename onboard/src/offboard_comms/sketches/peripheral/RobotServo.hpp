@@ -41,6 +41,7 @@ class RobotServo {
         }
 
         void updateServo() {
+            // If the servo is active and the delay has passed, return the servo to the stop position
             if (servoActive && (millis() - servoTime >= delay)) {
                 myServo.writeMicroseconds(stopPWM);
                 servoActive = false;

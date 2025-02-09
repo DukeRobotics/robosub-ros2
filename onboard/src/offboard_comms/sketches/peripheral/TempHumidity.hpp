@@ -23,6 +23,7 @@ class TempHumidity {
             int result = dht11->readTemperatureHumidity(temperature, humidity);
 
             // If result is 0, then the read was successful
+            // If result is not 0, then the read was unsuccessful; do not print any data and try reading again next time this function is called
             if (result == 0) {
                 String printHumidity = this->humidityTag + String((float)humidity);
                 Serial.println(printHumidity);
