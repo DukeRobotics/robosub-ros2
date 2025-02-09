@@ -43,6 +43,8 @@ void write_pwms() {
 }
 
 void setup() {
+    Serial.begin(BAUD_RATE);
+
     switch (ROBOT_NAME) {
         case OOGWAY:
             NUM_THRUSTERS = 8;
@@ -77,8 +79,6 @@ void setup() {
 
     // Write the stop PWM to all thrusters to initialize them (proper beep sequence)
     write_pwms();
-
-    Serial.begin(BAUD_RATE);
 }
 
 void loop() {
