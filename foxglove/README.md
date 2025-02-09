@@ -8,7 +8,7 @@ For initial setup instructions, follow the root [SETUP.md](../SETUP.md#set-up-fo
 
 ## Using foxglove.py
 > [!IMPORTANT]
-> The `foxglove.py` CLI should be run *inside* the Docker container (even on your local machine). For more details see [SETUP.md](../SETUP.md#set-up-the-docker-container).
+> The `foxglove.py` CLI should be run *inside* the Docker container. For more details see [SETUP.md](../SETUP.md#set-up-the-docker-container).
 
 The [`foxglove.py`](foxglove.py) CLI provides a unified interface to manage our custom extensions. It integrates commands from the [`foxglove`](https://github.com/foxglove/foxglove-cli), [`foxglove-extension`](https://github.com/foxglove/create-foxglove-extension/blob/main/src/bin/foxglove-extension.ts), and [`npm`](https://docs.npmjs.com/cli/v11/commands) CLIs. Extensions can be installed locally or published to our organization.
 
