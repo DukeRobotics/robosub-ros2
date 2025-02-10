@@ -13,6 +13,7 @@ RUN apt install -y --no-install-recommends clang
 RUN apt install -y --no-install-recommends clang-format
 RUN apt install -y --no-install-recommends gdb
 RUN apt install -y --no-install-recommends gdbserver
+RUN apt install -y --no-install-recommends golang
 RUN apt install -y --no-install-recommends iputils-ping
 RUN apt install -y --no-install-recommends libeigen3-dev
 RUN apt install -y --no-install-recommends libyaml-cpp-dev
@@ -46,6 +47,13 @@ RUN /root/dev/venv/bin/pip install python-nmap
 RUN /root/dev/venv/bin/pip install ruff
 RUN /root/dev/venv/bin/pip install scikit-learn
 RUN /root/dev/venv/bin/pip install sympy
+RUN /root/dev/venv/bin/pip install mypy
+
+# Install Node.js (Jod)
+ENV NVM_DIR=/root/.nvm
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash \
+    && . $NVM_DIR/nvm.sh \
+    && nvm install --lts=Jod
 
 # Set no password for root user
 RUN passwd -d root
@@ -77,6 +85,12 @@ RUN git clone https://github.com/robotology/osqp-eigen.git && \
     make install && \
     cd ../.. && \
     rm -rf osqp-eigen
+
+# Build and install Foxglove CLI from source
+RUN git clone --depth=1 --single-branch --branch=main https://github.com/foxglove/foxglove-cli.git && \
+    cd foxglove-cli && \
+    make install && \
+    mv ~/go/bin/foxglove /usr/local/bin/foxglove
 
 # Copy .gdbinit file into container
 COPY .gdbinit /root/.gdbinit
@@ -120,6 +134,12 @@ RUN --mount=type=secret,id=github_auth_ssh_key,required=false \
         git config --global user.email "$GIT_USER_EMAIL" && \
         git config --global --add safe.directory /root/dev/robosub-ros2 && \
         git config --global pull.rebase false; \
+    fi
+
+# Copy Foxglove CLI configuration file
+RUN --mount=type=secret,id=foxgloverc \
+    if [ -f /run/secrets/foxgloverc ]; then \
+        cat /run/secrets/foxgloverc > ~/.foxgloverc; \
     fi
 
 # Run entrypoint script via tini to ensure SIGTERM is properly handled and zombie processes are reaped
