@@ -150,7 +150,7 @@ class SerialNode(Node, ABC):
                 if self._use_nonblocking:
                     line = self.readline_nonblocking().strip()
                 else:
-                    line = self._serial.readline().decode('utf-8').strip()
+                    line = self._serial.readline().decode('utf-8', errors='ignore').strip()
 
                 if line:
                     self._num_consecutive_empty_lines = 0
