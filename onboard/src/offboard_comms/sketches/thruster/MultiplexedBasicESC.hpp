@@ -57,7 +57,7 @@ class MultiplexedBasicESC{
          * Write a PWM value to the ESC
          * @param uS: The PWM value in microseconds
         */
-        void write(uint8_t uS) {
+        void write(uint16_t uS) {
             if(is_attached) {
                 multiplexer->setPin(pin, map(uS, 1100, 1900, 1000, 1720), false);
             }
