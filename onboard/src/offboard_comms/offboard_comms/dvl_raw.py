@@ -59,7 +59,11 @@ class DVLRawPublisher(SerialNode):
         Args:
             line (str): line to process
         """
-        data_type = line[1:3]
+        try:
+            data_type = line[1:3]
+        except IndexError:
+            self.get_logger().warn(f'Failed to parse data type from line: {line}')
+
         if data_type in self._dvl_line_parsers:
             self._dvl_line_parsers[data_type](self._clean_line(line))
         else:
