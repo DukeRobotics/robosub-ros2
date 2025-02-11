@@ -13,11 +13,9 @@ from serial.tools import list_ports
 class SerialNode(Node, ABC):
     """Abstract ROS node to read and write to serial."""
 
-    MAX_NUM_CONSECUTIVE_EMPTY_LINES = 5
-
     def __init__(self, node_name: str, baudrate: int, config_file_path: str, serial_device_name: str,
                  read_from_serial: bool, connection_retry_period: int=1, loop_rate: int=10,
-                 use_nonblocking: bool = False) -> None:
+                 use_nonblocking: bool = False, max_num_consecutive_empty_lines: int = 5) -> None:
         """
         Initialize SerialNode.
 
@@ -30,6 +28,7 @@ class SerialNode(Node, ABC):
             connection_retry_period (int): Time in seconds to wait before trying again to connect to serial.
             loop_rate (int): Rate in Hz to read from serial.
             use_nonblocking (bool): Whether to use non-blocking read from serial.
+            max_num_consecutive_empty_lines (int): Maximum number of consecutive empty lines to read before resetting
         """
         self._node_name = node_name
         self._baud = baudrate
@@ -38,6 +37,7 @@ class SerialNode(Node, ABC):
         self._connection_retry_period = connection_retry_period
         self._loop_rate = loop_rate
         self._use_nonblocking = use_nonblocking
+        self._max_num_consecutive_empty_lines = max_num_consecutive_empty_lines
 
         with Path(rr.get_filename(config_file_path, use_protocol=False)).open() as f:
             self._config = yaml.safe_load(f)
@@ -159,7 +159,7 @@ class SerialNode(Node, ABC):
                     self.get_logger().info(f'Empty line read from {self._serial_device_name}.')
                     self._num_consecutive_empty_lines += 1
 
-                    if self._num_consecutive_empty_lines >= self.MAX_NUM_CONSECUTIVE_EMPTY_LINES:
+                    if self._num_consecutive_empty_lines >= self._max_num_consecutive_empty_lines:
                         self.get_logger().error(f'{self._num_consecutive_empty_lines} consecutive empty lines read from'
                                                 f' {self._serial_device_name}. Resetting serial connection.')
                         self._num_consecutive_empty_lines = 0
