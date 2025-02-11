@@ -29,6 +29,7 @@ class SerialNode(Node, ABC):
             loop_rate (int): Rate in Hz to read from serial.
             use_nonblocking (bool): Whether to use non-blocking read from serial.
             max_num_consecutive_empty_lines (int): Maximum number of consecutive empty lines to read before resetting
+                serial connection.
         """
         self._node_name = node_name
         self._baud = baudrate
