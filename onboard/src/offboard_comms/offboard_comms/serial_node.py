@@ -99,12 +99,15 @@ class SerialNode(Node, ABC):
 
         return buff.decode('utf-8', errors='ignore')
 
-    def writebytes(self, data: bytes) -> None:
+    def writebytes(self, data: bytes) -> bool:
         """
         Write bytes to serial port.
 
         Args:
             data (bytes): Data to write.
+
+        Returns:
+            bool: True if write was successful, False otherwise
         """
         if self._serial and self._serial.is_open:
             try:
@@ -113,17 +116,24 @@ class SerialNode(Node, ABC):
                 self.get_logger().error(f'Error in writing to {self._serial_device_name} serial port, trying to '
                                         'reconnect.')
                 self.reset_serial()
+                return False
         else:
             self.get_logger().error(f'Error in writing to {self._serial_device_name} serial port; not connected.')
+            return False
 
-    def writeline(self, line: str) -> None:
+        return True
+
+    def writeline(self, line: str) -> bool:
         """
         Write line to serial port.
 
         Args:
             line (str): Line to write.
+
+        Returns:
+            bool: True if write was successful, False otherwise.
         """
-        self.writebytes((line + '\r\n').encode('utf-8'))
+        return self.writebytes((line + '\r\n').encode('utf-8'))
 
     def process_line(self, _: str) -> None:
         """
