@@ -1,3 +1,5 @@
+// This library was developed by the Duke Robotics Club.
+
 #include <Arduino.h>
 #include "Adafruit_PWMServoDriver.h"
 
