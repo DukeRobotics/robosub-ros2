@@ -128,10 +128,12 @@ class PeripheralPublisher(SerialNode):
             servo = self.servos[request.tag]
 
             if servo.min_pwm <= pwm <= servo.max_pwm:
-                self.writeline(f'{request.tag}:{pwm}')
-
-                response.success = True
-                response.message = f'Successfully set {servo.name} servo to PWM: {pwm}'
+                if self.writeline(f'{request.tag}:{pwm}'):
+                    response.success = True
+                    response.message = f'Successfully set {servo.name} servo to PWM: {pwm}'
+                else:
+                    response.success = False
+                    response.message = f'Failed to set {servo.name} servo to PWM: {pwm}. Error in writing to serial port.'
             else:
                 error_msg = (f'Invalid PWM value {pwm} for {servo.name} servo. Must be between {servo.min_pwm} and '
                              f'{servo.max_pwm}.')
