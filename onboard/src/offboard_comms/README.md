@@ -224,11 +224,11 @@ Now to test, use the `test_thrusters.py` script. This script starts a ROS node t
 
 The script provides the following CLI:
 ```bash
-test-thrusters [-s SPEED] [-r RATE] [--no-log-allocs]
+test-thrusters [-s SPEED] [-r RATE] [--log-allocs]
 ```
 - `-s`, `--speed`: The speed at which the thrusters should spin. This is a float in the range [-1, 1]. The default is 0.05.
 - `-r`, `--rate`: The rate at which the thruster allocations should be published. This is a float in Hz. The default is 20.
-- `--no-log-allocs`: Do not log the thruster allocations to the console. By default, the allocations are logged.
+- `--log-allocs`: Log each thruster allocation published to the console. This is useful for debugging.
 
 For example, to test the thrusters at a speed of 0.1 and a rate of 10 Hz, run:
 ```bash
