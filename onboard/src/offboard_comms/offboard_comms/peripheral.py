@@ -96,6 +96,10 @@ class PeripheralPublisher(SerialNode):
         Args:
             line (str): A line of data from the serial port.
         """
+        if ':' not in line:
+            self.get_logger().error(f'Invalid data format: "{line}"')
+            return
+
         tag, data = line.split(':', 1)
         if data == '':
             self.get_logger().error(f'Empty data for tag: "{tag}"')
