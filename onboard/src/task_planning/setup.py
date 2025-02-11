@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from setuptools import find_packages, setup
 
 package_name = 'task_planning'
@@ -10,15 +12,17 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/launch', [str(p) for p in Path('./launch').glob('*')]),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='root',
-    maintainer_email='root@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer='Duke Robotics',
+    maintainer_email='hello@duke-robotics.com',
+    description='Task planning package',
+    license='MIT',
     entry_points={
         'console_scripts': [
+            'task_runner = task_planning.task_runner:main',
         ],
     },
 )
