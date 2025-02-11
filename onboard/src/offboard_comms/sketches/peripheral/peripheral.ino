@@ -11,9 +11,9 @@
 #define CRUSH 2
 
 #define VOLTAGE_DELAY 100
-#define PRESSURE_DELAY 0
+#define PRESSURE_DELAY 50
 #define TEMP_HUMIDITY_DELAY 1000
-#define SERVO_DELAY 0
+#define SERVO_DELAY 50
 
 // Baud rate for serial communication with Blue Robotics Bar30 High-Resolution 300m Depth/Pressure Sensor
 #define BAUD_RATE 9600
