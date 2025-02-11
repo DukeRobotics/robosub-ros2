@@ -36,7 +36,7 @@ alias fox="python3 /root/dev/robosub-ros2/foxglove/foxglove.py"
 
 # Source nvm and use version jod
 source /root/.nvm/nvm.sh
-nvm use lts/jod
+nvm use lts/jod > /dev/null  # Suppress stdout, only show stderr
 
 # Source python virtual environment
 source /root/dev/robosub-ros2/venv.sh activate
