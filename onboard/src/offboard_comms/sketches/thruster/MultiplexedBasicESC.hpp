@@ -1,4 +1,5 @@
 // This library was developed by the Duke Robotics Club.
+// It is designed to control a Blue Robotics Basic ESC using the Adafruit PWM Servo Driver.
 
 #include <Arduino.h>
 #include "Adafruit_PWMServoDriver.h"
