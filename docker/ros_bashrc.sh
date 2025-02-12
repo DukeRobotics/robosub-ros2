@@ -8,7 +8,7 @@ export PYTHONWARNINGS="ignore:easy_install command is deprecated"
 # Ex. warning messages will be in yellow, error messages in red
 export RCUTILS_COLORIZED_OUTPUT=1
 
-# Direct all ROS logs to stdout
+# Direct all ROS logs to stdout instead of stderr
 # This means any node with output="log" will not print to the terminal
 export RCUTILS_LOGGING_USE_STDOUT=1
 
