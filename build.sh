@@ -13,7 +13,8 @@ package_exists() {
     package_name=$1
     workspace_dir=$2
 
-    [ -d "$workspace_dir/src/$package_name" ]
+    # Run colcon list and check if the package exists
+    colcon list --base-path "$workspace_dir" | awk '{print $1}' | grep -q "^$package_name$";
 }
 
 # Function to remove paths from an environment variable
