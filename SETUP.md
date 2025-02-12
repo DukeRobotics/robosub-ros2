@@ -66,6 +66,7 @@ GITHUB_AUTH_SSH_KEY_PUB_PATH=
 GITHUB_SIGNING_SSH_KEY_PRIV_PATH=
 GIT_ALLOWED_SIGNERS_PATH=
 NO_GIT=false
+ROBOT_NAME=
 ```
 > [!IMPORTANT]
 > Do **not** include any extraneous whitespace or comments in the `.env` file. Do **not** put spaces around the `=` sign.
@@ -73,11 +74,10 @@ NO_GIT=false
 - `GITHUB_AUTH_SSH_KEY_PUB_PATH`: Absolute path to the _public_ SSH key used for authenticating with GitHub.
 - `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`: Absolute path to the _private_ SSH key used for signing commits.
 - `GIT_ALLOWED_SIGNERS_PATH`: Absolute path to the allowed signers file.
-
-> [!NOTE]
-> If your SSH keys are **not** located in plaintext files on your computer, then do **not** include the variables above in `.env`. Instead, include only `NO_GIT=true`.
->
-> This disables git authentication and signing inside the Docker container. This is useful for CI/CD pipelines or if you have your SSH keys stored in encrypted files.
+- `NO_GIT`: For most users, this should be set to `false`. Set to `true` if you do **not** want to use git inside the Docker container. This is useful for CI/CD pipelines or if you have your SSH keys stored in encrypted files.
+    > [!NOTE]
+    > If you set `NO_GIT=true`, do not set the variables `GITHUB_AUTH_SSH_KEY_PRIV_PATH`, `GITHUB_AUTH_SSH_KEY_PUB_PATH`, `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`, or `GIT_ALLOWED_SIGNERS_PATH`. These variables are only used if `NO_GIT=false`.
+- `ROBOT_NAME`: The name of the robot you are developing for. This is used to set the `$ROBOT_NAME` environment variable in the Docker container, which is used by some scripts to determine which robot-specific configuration to use.
 
 ## Set Up the Docker Container
 The Docker container is used to develop and run the code in a consistent environment. It is configured with all the necessary dependencies and tools to develop the code.
