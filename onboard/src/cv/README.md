@@ -46,8 +46,6 @@ The following are the folders and files in the CV package:
 `models`: Contains our pre-trained models and a `.yaml` file that specifies the details of each model (classes predicted, topic name, and the path to the model weights).
 * `depthai_models.yaml`: contains models for object detection. A model is specified by a name, what classes it predicts, and the path to a .blob file, as well as other configuration parameters. `input_size` is [width, height]. The blob file format is specific to the processors that the OAK cameras use.
 
-`udev`: Linux device manager files for USB cameras.
-
 `CMakeLists.txt`: A text file stating the necessary package dependencies and the files in our package.
 
 `package.xml`: A xml file stating the basic information about the CV package.
@@ -98,7 +96,9 @@ To stream the feed or perform spatial detection using the OAK camera, use `ros2 
 ## Non-DepthAI Cameras
 
 ### USB Camera
-This package also contains driver code to publish a camera stream from a USB-type camera in `usb_camera.py`. A USB camera can be located by `/dev/video*` on a linux computer, where `*` can be replaced by any number specifying a given camera channel (default is `0`, with the number increasing for each new camera you plug in). The script `usb_camera.py` uses OpenCV to capture a stream frame by frame from a specified USB camera channel and publishes it to a specified ROS topic. Use `ros2 launch cv usb_camera.xml` to start a stream once a USB camera has been plugged in. You can specify the ROS topic to which the USB camera feed is published via
+This package also contains driver code to publish a camera stream from a USB-type camera in `usb_camera.py`. A USB camera can be located by `/dev/video*` on a linux computer, where `*` can be replaced by any number specifying a given camera channel. The default channel is `0`. Each camera may provide multiple channels, however, typically, only the first channel can be used by OpenCV to capture the camera stream. If multiple cameras are plugged in, the channels are enumerated in the order in which the cameras are plugged in. For example, channels `0-3` correspond to one camera, while channels `4-7` correspond to another camera.
+
+The script `usb_camera.py` uses OpenCV to capture a stream frame by frame from a specified USB camera channel and publishes it to a specified ROS topic. Use `ros2 launch cv usb_camera.xml` to start a stream once a USB camera has been plugged in. You can specify the ROS topic to which the USB camera feed is published via
 
 ```bash
 ros2 launch cv usb_camera.xml topic:=<topic>
@@ -106,6 +106,7 @@ ros2 launch cv usb_camera.xml topic:=<topic>
 
 By default, `<topic>` is set to `/camera/usb_camera/compressed`. Note that the camera must be plugged in _before_ the Docker container is started.
 
+The `udev` rules located at the repository root in the rile `99-robosub-ros2.rules` are used to symlink the first channel provided by each of the front and bottom cameras to `/dev/video_front` and `/dev/video_bottom` respectively. This is done to ensure that the cameras are always accessible at the same path, regardless of the channel they are plugged into. The `usb_camera_connect.py` script is used to connect to both of these cameras simultaneously, and can be launched using `ros2 launch cv usb_camera_connect.xml`.
 
 ### Running the Code
 
