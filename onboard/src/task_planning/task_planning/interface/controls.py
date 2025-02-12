@@ -127,13 +127,15 @@ class Controls:
             return
         # TODO: what if this doesn't return success?
         if not self.bypass:
-            self._set_control_types(ControlTypes(
-                x=control_type,
-                y=control_type,
-                z=control_type,
-                roll=control_type,
-                pitch=control_type,
-                yaw=control_type,
+            self._set_control_types.call_async(SetControlTypes.Request(
+                control_types=ControlTypes(
+                    x=control_type,
+                    y=control_type,
+                    z=control_type,
+                    roll=control_type,
+                    pitch=control_type,
+                    yaw=control_type,
+                ),
             ))
         self._all_axes_control_type = control_type
         self.start_new_move()
@@ -175,7 +177,7 @@ class Controls:
     def start_new_move(self) -> None:
         """Start a new movement."""
         if not self.bypass:
-            self._reset_pid_loops()
+            self._reset_pid_loops.call_async(Trigger.Request())
 
     # In global coordinates
     def publish_desired_position(self, pose: Pose, set_control_types: bool = True) -> None:
