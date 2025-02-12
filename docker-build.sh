@@ -25,7 +25,6 @@ if [ "$NO_GIT" != "true" ] && [ "$NO_GIT" != "false" ]; then
     exit 1
 fi
 
-
 # Read Git username and email from .env or default to global Git settings
 GIT_USER_NAME=$(git config --global user.name)
 GIT_USER_EMAIL=$(git config --global user.email)
