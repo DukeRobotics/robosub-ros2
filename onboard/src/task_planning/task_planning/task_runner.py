@@ -27,7 +27,7 @@ class TaskPlanning(Node):
         self.get_logger().info('Task planning node initialized')
 
         self.bypass = self.declare_parameter('bypass', False).value
-        self.untethered = self.declare_parameter('untethered', False).value
+        self.autonomous = self.declare_parameter('autonomous', False).value
 
         # Initialize transform buffer and listener
         tf_buffer = tf2_ros.Buffer()
@@ -94,7 +94,7 @@ class TaskPlanning(Node):
         self.current_task = 0
         self.started_running_tasks = False
 
-        if self.untethered:
+        if self.autonomous:
             self.countdown_value = self.COUNTDOWN_SECS
             input(f'Press enter to start {self.countdown_value} second countdown...')
             self.get_logger().info('Countdown started...')
@@ -102,7 +102,7 @@ class TaskPlanning(Node):
         else:
             input('Press enter to start tasks...')
 
-        self.task_timer = self.create_timer(self.TASK_RATE_SECS, self.run_tasks, autostart=not self.untethered)
+        self.task_timer = self.create_timer(self.TASK_RATE_SECS, self.run_tasks, autostart=not self.autonomous)
 
     def countdown(self) -> None:
         """Count down to start tasks."""
@@ -125,7 +125,7 @@ class TaskPlanning(Node):
                 self.get_logger().info('Running tasks...')
 
             if self.current_task >= len(self.tasks) or not rclpy.ok():
-                if self.untethered:
+                if self.autonomous:
                     Controls().call_enable_controls(False)
                 self.task_timer.cancel()
                 self.get_logger().info('All tasks completed!')
