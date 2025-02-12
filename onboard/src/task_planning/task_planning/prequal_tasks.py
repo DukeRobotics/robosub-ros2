@@ -21,16 +21,6 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
     Complete the prequalification task by moving to a series of local poses. Returns when the robot is at the final pose
     with zero velocity, within a small tolerance, completing the prequalification task.
     """
-    # countdown_length = 10
-    # for i in range(countdown_length):
-    #     logger.info(f'Starting in {countdown_length - i}')
-    #     start_time = time.time()
-    #     while time.time() - start_time < 1:
-    #         await Yield()
-    #         time.sleep(0.01)
-
-    # Controls().call_enable_controls(True)
-
     DEPTH_LEVEL = -0.5
 
     await move_tasks.move_to_pose_local(
@@ -159,5 +149,3 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
     DEPTH_LEVEL = State().depth
 
     await track_blue_rectangle(3, -1)
-
-    Controls().call_enable_controls(False)
