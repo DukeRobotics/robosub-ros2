@@ -17,7 +17,7 @@ cd "$robosub_ros2_path" || exit
 # Load variables from .env file
 set -o allexport
 source .env
-set -o allexport
+set +o allexport
 
 # Read Git username and email from .env or default to global Git settings
 GIT_USER_NAME=$(git config --global user.name)
