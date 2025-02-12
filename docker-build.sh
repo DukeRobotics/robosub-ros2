@@ -25,6 +25,13 @@ if [ "$NO_GIT" != "true" ] && [ "$NO_GIT" != "false" ]; then
     exit 1
 fi
 
+# If ROBOT_NAME is not set, let user know and default to blank string
+if [ -z "$ROBOT_NAME" ]; then
+    echo "Warning: ROBOT_NAME is not set in .env; defaulting to blank string"
+    ROBOT_NAME=""
+    sleep 2  # Give user time to read the message before the docker build output
+fi
+
 # Read Git username and email from .env or default to global Git settings
 GIT_USER_NAME=$(git config --global user.name)
 GIT_USER_EMAIL=$(git config --global user.email)
