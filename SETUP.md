@@ -1,7 +1,7 @@
 
 # Set Up the Repository and Development Environment
 
-Setting up the repository and development environment is an involved process. This document outlines the steps required to set up the repository and development environment on your local machine.
+Setting up the repository and development environment is an involved process. This document outlines the steps required to set up the repository and development environment on your local machine or robot.
 
 Steps 1-3 need to be completed once to set up the repository and required software. Step 4 needs to be completed each time you want to start developing.
 
@@ -67,6 +67,7 @@ GITHUB_SIGNING_SSH_KEY_PRIV_PATH=
 GIT_ALLOWED_SIGNERS_PATH=
 NO_GIT=false
 ROBOT_NAME=
+IS_ROBOT=
 ```
 > [!IMPORTANT]
 > Do **not** include any extraneous whitespace or comments in the `.env` file. Do **not** put spaces around the `=` sign.
@@ -76,8 +77,27 @@ ROBOT_NAME=
 - `GIT_ALLOWED_SIGNERS_PATH`: Absolute path to the allowed signers file.
 - `NO_GIT`: For most users, this should be set to `false`. Set to `true` if you do **not** want to use git inside the Docker container. This is useful for CI/CD pipelines or if you have your SSH keys stored in encrypted files.
     > [!NOTE]
-    > If you set `NO_GIT=true`, do not set the variables `GITHUB_AUTH_SSH_KEY_PRIV_PATH`, `GITHUB_AUTH_SSH_KEY_PUB_PATH`, `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`, or `GIT_ALLOWED_SIGNERS_PATH`. These variables are only used if `NO_GIT=false`.
-- `ROBOT_NAME`: The name of the robot you are developing for. This is used to set the `$ROBOT_NAME` environment variable in the Docker container, which is used by some scripts to determine which robot-specific configuration to use.
+    > If you set `NO_GIT=true`, do not include the variables `GITHUB_AUTH_SSH_KEY_PRIV_PATH`, `GITHUB_AUTH_SSH_KEY_PUB_PATH`, `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`, or `GIT_ALLOWED_SIGNERS_PATH` in `.env`. These variables are only used if `NO_GIT=false`.
+- `ROBOT_NAME`: The name of the robot you are developing for. This is used to set the `$ROBOT_NAME` environment variable in the Docker container, which is used by some scripts to determine which robot-specific configuration to use. If you are setting up the repository on the robot, then this should obviously be the name of the robot. If you are setting up the repository on your development machine, then this name can be changed to test different robot configurations.
+- `IS_ROBOT`: Set to `true` if you are setting up the repository on the robot. Set to `false` or do not include this variable in `.env` if you are setting up the repository on your development machine.
+
+## Set Up Udev Rules (Robot Only)
+If you are setting up the repository on the robot, you need to set up the udev rules to symlink some USB devices to ports that are consistent across reboots and used by code in this repository.
+
+1. Open a terminal and navigate to the root of the repository.
+2. Run the following command to symlink the `99-robosub-ros2.rules` file located in the repository root to the `/etc/udev/rules.d` directory:
+    ```bash
+    sudo ln -s $(pwd)/99-robosub-ros2.rules /etc/udev/rules.d/99-robosub-ros2.rules
+    ```
+3. Run the following command to reload the udev rules:
+    ```bash
+    sudo udevadm control --reload-rules && sudo udevadm trigger
+    ```
+4. To check if the rules were applied correctly, run the following command
+    ```bash
+    ls /dev
+    ```
+    and check if the symlinks are present. If the symlinks are not present, reboot the robot and check again.
 
 ## Set Up the Docker Container
 The Docker container is used to develop and run the code in a consistent environment. It is configured with all the necessary dependencies and tools to develop the code.
