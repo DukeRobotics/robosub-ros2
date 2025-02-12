@@ -19,6 +19,13 @@ set -o allexport
 source .env
 set +o allexport
 
+# Make sure NO_GIT is set to "true" or "false"
+if [ "$NO_GIT" != "true" ] && [ "$NO_GIT" != "false" ]; then
+    echo "Error: NO_GIT must be set to 'true' or 'false' in .env"
+    exit 1
+fi
+
+
 # Read Git username and email from .env or default to global Git settings
 GIT_USER_NAME=$(git config --global user.name)
 GIT_USER_EMAIL=$(git config --global user.email)
@@ -37,6 +44,17 @@ fi
 
 # If the user wants to set up Git in the container, add the necessary build arguments and secrets
 if [ "$NO_GIT" != "true" ]; then
+    # List of required environment variables
+    required_env_vars=("GITHUB_AUTH_SSH_KEY_PRIV_PATH" "GITHUB_AUTH_SSH_KEY_PUB_PATH" "GITHUB_SIGNING_SSH_KEY_PRIV_PATH" "GIT_ALLOWED_SIGNERS_PATH")
+
+    # Loop through each required environment variable and check if it is set
+    for env_var in "${required_env_vars[@]}"; do
+        if [ -z "${!env_var}" ]; then
+            echo "Error: $env_var is not set in .env"
+            exit 1
+        fi
+    done
+
     docker_build_cmd+=" --build-arg GIT_USER_NAME='$GIT_USER_NAME'"
     docker_build_cmd+=" --build-arg GIT_USER_EMAIL='$GIT_USER_EMAIL'"
     docker_build_cmd+=" --secret id=github_auth_ssh_key,src='$GITHUB_AUTH_SSH_KEY_PRIV_PATH'"
@@ -51,8 +69,8 @@ docker_build_cmd+=" -t robosub-ros2:latest ./docker"
 # Build the Docker image
 eval "$docker_build_cmd"
 
-# Set the compose file name based on $ROBOT_NAME
-if [ -n "$ROBOT_NAME" ]; then
+# If $IS_ROBOT is set to "true", then this script is running on the robot
+if [ "$IS_ROBOT" == "true" ]; then
     compose_file="docker-compose-robot.yml"
 else
     compose_file="docker-compose.yml"
