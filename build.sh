@@ -8,6 +8,14 @@ original_cwd=$(pwd)
 CORE_WS="/root/dev/robosub-ros2/core"
 ONBOARD_WS="/root/dev/robosub-ros2/onboard"
 
+# Function to check if a package exists in a workspace
+package_exists() {
+    package_name=$1
+    workspace_dir=$2
+
+    [ -d "$workspace_dir/src/$package_name" ]
+}
+
 # Function to remove paths from an environment variable
 remove_paths_from_env_var() {
     env_var_name=$1
@@ -109,6 +117,12 @@ elif [ "$1" == "clean" ]; then
     fi
 
 elif [ -n "$1" ]; then
+    # Make sure package exists in onboard workspace
+    if ! package_exists "$1" "$ONBOARD_WS"; then
+        echo "Error: Package '$1' not found in onboard workspace."
+        return 1
+    fi
+
     # Build a specific package in the onboard workspace
     build_workspace "$ONBOARD_WS" "$1" "$debug_mode"
 else
