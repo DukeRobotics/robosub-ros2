@@ -205,9 +205,7 @@ def transform_pose(tf_buffer: tf2_ros.Buffer, base_frame: str, target_frame: str
     pose_stamped.header.frame_id = base_frame
 
     trans = tf_buffer.lookup_transform(target_frame, base_frame, Time())
-    transformed = tf2_geometry_msgs.do_transform_pose(pose, trans)
-
-    return transformed
+    return tf2_geometry_msgs.do_transform_pose(pose, trans)
 
 
 def add_poses(pose_list: list[Pose]) -> Pose:
@@ -229,7 +227,7 @@ def add_poses(pose_list: list[Pose]) -> Pose:
         p_sum.z += pose.position.z
         q_sum = qmult(geometry_quat_to_transforms3d_quat(pose.orientation), q_sum)
 
-    return Pose(p_sum, transforms3d_quat_to_geometry_quat(q_sum))
+    return Pose(position=p_sum, orientation=transforms3d_quat_to_geometry_quat(q_sum))
 
 
 def parse_pose(pose: Pose) -> dict:
@@ -244,8 +242,8 @@ def parse_pose(pose: Pose) -> dict:
         'yaw'. Roll, pitch, and yaw are in radians.
     """
     pose_dict = {'x': pose.position.x, 'y': pose.position.y, 'z': pose.position.z}
-    pose_dict['roll'], pose_dict['pitch'], pose_dict['yaw'] = quat2euler(
-        geometry_quat_to_transforms3d_quat(pose.orientation))
+    pose_dict['roll'], pose_dict['pitch'], pose_dict['yaw'] = \
+        quat2euler(geometry_quat_to_transforms3d_quat(pose.orientation))
     return pose_dict
 
 

@@ -7,7 +7,7 @@ from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.node import Node
 
-from task_planning import test_tasks, comp_tasks, move_tasks, prequal_tasks
+from task_planning import comp_tasks, move_tasks, prequal_tasks, test_tasks  # noqa: F401
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.marker_dropper import MarkerDropper
