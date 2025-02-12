@@ -4,7 +4,7 @@ The Duke Robotics Club is a student organization of [Duke University](https://du
 
 This repository contains all code required for running and testing our AUVs. The code is built on the [Robot Operating System (ROS) 2](https://github.com/ros2) framework. We use the [Jazzy Jalisco](https://docs.ros.org/en/jazzy) distribution of ROS 2.
 
-We are currently in the process of migrating our codebase from ROS 1 to ROS 2. The ROS 1 codebase can be found in the [robosub-ros repository](https://github.com/DukeRobotics/robosub-ros).
+Our previous ROS 1 codebase can be found in the [robosub-ros repository](https://github.com/DukeRobotics/robosub-ros).
 
 ## Set Up the Repository and Development Environment
 Setting up the repository and development enviornment is an involved process. The full process is documented in the [SETUP.md](SETUP.md) file.
