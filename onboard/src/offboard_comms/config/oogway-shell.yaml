@@ -23,9 +23,10 @@ arduino:
       - name: marker dropper
         tag: M
         service_name: /servos/marker_dropper
-        type: continuous
-        min_pwm: 500
-        max_pwm: 2500
+        type: discrete
+        states:
+          left: 1250
+          right: 1750
       - name: torpedoes
         tag: T
         service_name: /servos/torpedoes
