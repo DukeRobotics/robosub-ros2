@@ -22,12 +22,17 @@ arduino:
     servos:
       - name: marker dropper
         tag: M
+        service_name: /servos/marker_dropper
+        type: continuous
         min_pwm: 500
         max_pwm: 2500
       - name: torpedoes
         tag: T
-        min_pwm: 700
-        max_pwm: 2300
+        service_name: /servos/torpedoes
+        type: discrete
+        states:
+          left: 1250
+          right: 1750
   thruster:
     ftdi: 02AB8D8451544E5450202020FF0D334A
     fqbn: arduino:megaavr:nano
