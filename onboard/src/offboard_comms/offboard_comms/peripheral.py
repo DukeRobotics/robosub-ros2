@@ -236,7 +236,7 @@ class PeripheralPublisher(SerialNode):
                 response.message = f'Failed to set {servo.name} servo to PWM: {pwm}. Error in writing to serial.'
         else:
             error_msg = (f'Invalid PWM value {pwm} for {servo.name} servo. Must be between {servo.min_pwm} and '
-                            f'{servo.max_pwm} (inclusive).')
+                            f'{servo.max_pwm} (both inclusive).')
 
             response.success = False
             response.message = error_msg
