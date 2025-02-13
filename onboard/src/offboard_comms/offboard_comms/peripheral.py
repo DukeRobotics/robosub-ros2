@@ -114,15 +114,24 @@ class PeripheralPublisher(SerialNode):
     def setup_sensors(self) -> None:
         """Initialize sensor classes based on the config file."""
         for sensor in self._config['arduino'][self.ARDUINO_NAME].get('sensors', []):
+            if sensor['tag'] in self.sensors:
+                error_msg = f'Duplicate sensor tag: {sensor["tag"]}'
+                raise ValueError(error_msg)
+
             sensor_class = self.SENSOR_CLASSES.get(sensor['type'])
             if sensor_class:
                 self.sensors[sensor['tag']] = sensor_class(self, sensor['tag'], sensor['topic'])
             else:
-                self.get_logger().error(f'Invalid sensor type: {sensor["type"]}')
+                error_msg = f'Invalid sensor type: {sensor["type"]}'
+                raise ValueError(error_msg)
 
     def setup_servos(self) -> None:
         """Initialize servo classes based on the config file."""
         for servo in self._config['arduino'][self.ARDUINO_NAME].get('servos', []):
+            if servo['tag'] in self.servos:
+                error_msg = f'Duplicate servo tag: {servo["tag"]}'
+                raise ValueError(error_msg)
+
             servo_type_info = self.SERVO_TYPES.get(servo['type'])
             if servo_type_info:
                 del servo['type']  # Remove type from servo dict as it is not stored in the servo dataclass
@@ -131,7 +140,8 @@ class PeripheralPublisher(SerialNode):
                                               servo_callback_with_tag)
                 self.servos[servo['tag']] = servo_type_info.servo_dataclass(**servo, service=service)
             else:
-                self.get_logger().error(f'Invalid servo type: {servo["type"]}')
+                error_msg = f'Invalid servo type: {servo["type"]}'
+                raise ValueError(error_msg)
 
     def process_line(self, line: str) -> None:
         """
