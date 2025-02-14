@@ -86,12 +86,16 @@ RUN git clone https://github.com/robotology/osqp-eigen.git && \
     cd ../.. && \
     rm -rf osqp-eigen
 
-# Build and install Foxglove CLI from source
-RUN git clone --depth=1 --single-branch --branch=main https://github.com/foxglove/foxglove-cli.git && \
-    cd foxglove-cli && \
-    make install && \
-    mv ~/go/bin/foxglove /usr/local/bin/foxglove
-
+# Install Foxglove CLI from pre-built binaries based on architecture
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        curl -L https://github.com/foxglove/foxglove-cli/releases/latest/download/foxglove-linux-amd64 -o /usr/local/bin/foxglove; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        curl -L https://github.com/foxglove/foxglove-cli/releases/latest/download/foxglove-linux-arm64 -o /usr/local/bin/foxglove; \
+    else \
+        echo "Unsupported architecture for Foxglove CLI: $ARCH" && exit 1; \
+    fi && \
+    chmod +x /usr/local/bin/foxglove
 # Copy .gdbinit file into container
 COPY .gdbinit /root/.gdbinit
 
