@@ -228,7 +228,7 @@ def lint(files: list[str] | None = None, fix: bool = False) -> None:
     if files:
         script += ' ' + ' '.join(files)
     if fix:
-        script += ' --fix'
+        script += ' -- --fix'
 
     try:
         run_at_path(script, FOXGLOVE_PATH)
