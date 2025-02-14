@@ -13,7 +13,6 @@ RUN apt install -y --no-install-recommends clang
 RUN apt install -y --no-install-recommends clang-format
 RUN apt install -y --no-install-recommends gdb
 RUN apt install -y --no-install-recommends gdbserver
-RUN apt install -y --no-install-recommends golang
 RUN apt install -y --no-install-recommends iputils-ping
 RUN apt install -y --no-install-recommends libeigen3-dev
 RUN apt install -y --no-install-recommends libyaml-cpp-dev
@@ -96,6 +95,7 @@ RUN ARCH=$(uname -m) && \
         echo "Unsupported architecture for Foxglove CLI: $ARCH" && exit 1; \
     fi && \
     chmod +x /usr/local/bin/foxglove
+
 # Copy .gdbinit file into container
 COPY .gdbinit /root/.gdbinit
 
