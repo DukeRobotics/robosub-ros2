@@ -216,6 +216,24 @@ def watch(extension: pathlib.Path) -> None:
     command = "npx nodemon --watch './src/**' -e ts,tsx --exec 'npm run local-install'"
     run_at_path(command, extension)
 
+def lint(files: list[str] | None = None, fix: bool = False) -> None:
+    """
+    Lint Foxglove extensions.
+
+    Args:
+        files: Files to lint. If no files are given, all files are linted.
+        fix: If True, attempt to autofix linting errors by modifying files in place.
+    """
+    script = 'npm run lint'
+    if files:
+        script += ' ' + ' '.join(files)
+    if fix:
+        script += ' --fix'
+
+    try:
+        run_at_path(script, FOXGLOVE_PATH)
+    except subprocess.CalledProcessError as e:
+        raise SystemExit(1) from e
 
 def extension_package(name: str) -> pathlib.Path:
     """
@@ -285,6 +303,23 @@ def main() -> None:
         help='Extension to watch for changes.',
     )
 
+    lint_parser = subparsers.add_parser(
+        'lint',
+        aliases=['l'],
+        help='Lint Foxglove extensions.',
+    )
+    lint_parser.add_argument(
+        'files',
+        action='store',
+        nargs='*',
+        help='Files to lint. If no files are given, all files are linted.',
+    )
+    lint_parser.add_argument(
+        '-f', '--fix',
+        action='store_true',
+        help='Attempt to autofix linting errors by modifying files in place.',
+    )
+
     publish_parser = subparsers.add_parser(
         'publish',
         aliases=['p'],
@@ -326,7 +361,6 @@ def main() -> None:
         help='Troubleshoot the Foxglove development environment.',
     )
 
-
     args = parser.parse_args()
     if args.action in {'build', 'b'}:
         build(skip_ci=args.skip_ci)
@@ -334,6 +368,8 @@ def main() -> None:
         install(args.extensions or EXTENSION_PATHS)
     elif args.action in {'watch', 'w'}:
         watch(args.extensions[0])
+    elif args.action in {'lint', 'l'}:
+        lint(args.files, args.fix)
     elif args.action in {'publish', 'p'}:
         publish(args.extensions or EXTENSION_PATHS, args.version, args.force)
     elif args.action in {'clean', 'c'}:
