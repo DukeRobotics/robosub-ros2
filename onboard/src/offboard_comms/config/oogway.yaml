@@ -32,8 +32,8 @@ arduino:
         service_name: /servos/torpedoes
         type: discrete
         states:
-          left: 1250
-          right: 1750
+          left: 1650
+          right: 1350
   thruster:
     ftdi: B0004VDI
     fqbn: arduino:avr:nano
