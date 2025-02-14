@@ -34,11 +34,15 @@ jobs:
         id: run-docker
         run: docker compose up -d
 
-      # NOTE: This must be run before TypeScript linting
       - name: Build Foxglove environment
         id: build-foxglove
         run: |
           docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build-foxglove.sh
+
+      - name: Lint Foxglove monorepo
+        if: always() && steps.run-docker.outcome == 'success' && steps.build-foxglove.outcome == 'success'
+        run: |
+          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/lint-foxglove.sh
 
       - name: Lint Files
         run: |
