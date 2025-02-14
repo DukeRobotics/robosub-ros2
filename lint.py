@@ -29,8 +29,6 @@ class LintLanguageProperties:
     lint_command: str
     autofix_command: str | None
 
-ESLINT_CONFIG_PATH = '/root/dev/robosub-ros2/foxglove/eslint.config.mjs'
-
 class LintLanguage(Enum):
     """Enum to specify the programming language for linting."""
     PYTHON = LintLanguageProperties(
@@ -50,18 +48,6 @@ class LintLanguage(Enum):
         file_extensions=['.sh'],
         lint_command='shellcheck {path}',
         autofix_command='shellcheck -f diff {path} | git apply --allow-empty && shellcheck {path}',
-    )
-    TYPESCRIPT = LintLanguageProperties(
-        name='typescript',
-        file_extensions=['.ts', '.tsx'],
-        lint_command=   f'npx --yes eslint {{path}} --config {ESLINT_CONFIG_PATH} --no-warn-ignored',
-        autofix_command=f'npx --yes eslint {{path}} --config {ESLINT_CONFIG_PATH} --no-warn-ignored --fix',
-    )
-    JAVASCRIPT = LintLanguageProperties(
-        name='javascript',
-        file_extensions=['.js', '.jsx'],
-        lint_command=   f'npx --yes eslint {{path}} --config {ESLINT_CONFIG_PATH} --no-warn-ignored',
-        autofix_command=f'npx --yes eslint {{path}} --config {ESLINT_CONFIG_PATH} --no-warn-ignored --fix',
     )
 
 # Map from LintLanguage name to LintLanguage
