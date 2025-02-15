@@ -7,3 +7,5 @@ services:
       - ./:/root/dev/robosub-ros2
     ports:
       - 28765:28765
+    environment:
+      - ROBOT_NAME=${ROBOT_NAME}

@@ -31,4 +31,7 @@ alias test-thrusters="ros2 run offboard_comms test_thrusters"
 # Alias to run arduino CLI in offboard comms
 alias arduino="ros2 run offboard_comms arduino"
 
+# Alias to run lint.py
+alias lint="python3 /root/dev/robosub-ros2/lint.py"
+
 source /root/dev/robosub-ros2/venv.sh activate
