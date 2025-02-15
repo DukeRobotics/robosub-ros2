@@ -41,6 +41,7 @@ The following are the folders and files in the CV package:
 * `path_marker_detector.xml`: Runs the path marker detector script.
 * `pink_bins_detector.xml`: Runs the pink bins detector script.
 * `usb_camera_connect.xml`: Runs the USB camera connect script.
+* `usb_camera_detectors.xml`: Runs the USB camera connect script, along with all detectors that use the USB camera feed.
 * `usb_camera.xml`: Runs the USB camera script.
 
 `models`: Contains our pre-trained models and a `.yaml` file that specifies the details of each model (classes predicted, topic name, and the path to the model weights).

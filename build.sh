@@ -163,5 +163,5 @@ else
     build_workspace "$ONBOARD_WS" "" "$debug_mode"
 fi
 
-# Reload bashrc and return to original directory
+# Return to original directory
 cd "$original_cwd" || exit

@@ -1097,7 +1097,6 @@ async def bin_task(self: Task) -> Task[None, None, None]:
     await track_bin(target='bin_red', desired_depth=MID_DEPTH_LEVEL, pixel_threshold=MID_PIXEL_THRESHOLD,
                     step_size=0.18, y_offset=30, x_offset=25)
 
-    # If both balls loaded on the RIGHT, this is False
     drop_marker(MarkerDropperStates.LEFT)
     logger.info('Dropped left marker')
     await sleep(3)

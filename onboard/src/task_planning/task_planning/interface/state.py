@@ -37,13 +37,11 @@ class State:
             tf_buffer: The transform buffer for the robot. Defaults to None.
         """
         self.bypass = bypass
-        self._tf_buffer = tf_buffer
+        self._tf_buffer = tf_buffer if tf_buffer else Buffer()
 
         self.received_state = False
         self.received_depth = False
         self.received_imu = False
-
-        node.create_subscription(Odometry, self.STATE_TOPIC, self._on_receive_state, 10)
 
         self._state = Odometry()
         self._orig_state = Odometry()
@@ -53,7 +51,6 @@ class State:
         self._orig_imu = Imu()
 
         node.create_subscription(Odometry, self.STATE_TOPIC, self._on_receive_state, 10)
-        self._state = None
 
         self._reset_pose = node.create_client(SetPose, self.RESET_POSE_SERVICE)
         if not bypass:
@@ -124,7 +121,7 @@ class State:
         """Reset the pose."""
         request = SetPose.Request()
         request.pose = PoseWithCovarianceStamped()
-        request.pose.pose.orientation.w = 1
+        request.pose.pose.pose.orientation.w = 1.0
 
         if not self.bypass:
             self._reset_pose.call_async(request)

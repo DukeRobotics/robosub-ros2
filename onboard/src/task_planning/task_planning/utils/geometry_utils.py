@@ -2,7 +2,7 @@
 import numpy as np
 import tf2_geometry_msgs
 import tf2_ros
-from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion, Twist, Vector3
+from geometry_msgs.msg import Point, Pose, Quaternion, Twist, Vector3
 from rclpy.time import Time
 from transforms3d.euler import euler2quat, quat2euler
 from transforms3d.quaternions import qmult
@@ -200,10 +200,6 @@ def transform_pose(tf_buffer: tf2_ros.Buffer, base_frame: str, target_frame: str
     Returns:
         The transformed pose.
     """
-    pose_stamped = PoseStamped()
-    pose_stamped.pose = pose
-    pose_stamped.header.frame_id = base_frame
-
     trans = tf_buffer.lookup_transform(target_frame, base_frame, Time())
     return tf2_geometry_msgs.do_transform_pose(pose, trans)
 
@@ -227,7 +223,10 @@ def add_poses(pose_list: list[Pose]) -> Pose:
         p_sum.z += pose.position.z
         q_sum = qmult(geometry_quat_to_transforms3d_quat(pose.orientation), q_sum)
 
-    return Pose(position=p_sum, orientation=transforms3d_quat_to_geometry_quat(q_sum))
+    pose_sum = Pose()
+    pose_sum.position = p_sum
+    pose_sum.orientation = transforms3d_quat_to_geometry_quat(q_sum)
+    return pose_sum
 
 
 def parse_pose(pose: Pose) -> dict:

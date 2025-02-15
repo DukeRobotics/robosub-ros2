@@ -127,16 +127,16 @@ class Controls:
             return
         # TODO: what if this doesn't return success?
         if not self.bypass:
-            self._set_control_types.call_async(SetControlTypes.Request(
-                control_types=ControlTypes(
-                    x=control_type,
-                    y=control_type,
-                    z=control_type,
-                    roll=control_type,
-                    pitch=control_type,
-                    yaw=control_type,
-                ),
-            ))
+            request = SetControlTypes.Request()
+            request.control_types = ControlTypes(
+                x=control_type,
+                y=control_type,
+                z=control_type,
+                roll=control_type,
+                pitch=control_type,
+                yaw=control_type,
+            )
+            self._set_control_types.call_async(request)
         self._all_axes_control_type = control_type
         self.start_new_move()
 

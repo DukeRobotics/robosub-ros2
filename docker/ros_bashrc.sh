@@ -5,7 +5,7 @@
 export PYTHONWARNINGS="ignore:easy_install command is deprecated"
 
 # Use colorized output in ROS commands
-# Ex. warning messages will be in yellow, error messages in red
+# For example, warning messages will be in yellow, error messages in red
 export RCUTILS_COLORIZED_OUTPUT=1
 
 # Direct all ROS logs to stdout instead of stderr
