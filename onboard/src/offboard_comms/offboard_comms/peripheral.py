@@ -212,7 +212,7 @@ class PeripheralPublisher(SerialNode):
     def continuous_servo(self, request: SetContinuousServo.Request, response: SetContinuousServo.Response, tag: str) \
             -> SetContinuousServo.Response:
         """
-        Service callback to control discrete servos.
+        Service callback to control continuous servos.
 
         Args:
             request (SetContinuousServo.Request): The request to control the servo.
