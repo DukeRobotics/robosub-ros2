@@ -7,11 +7,8 @@
 
 class Oogway : public Robot {
 private:
+    // Flag to determine if this is Oogway's shell (true) or the actual robot (false)
     bool isShell;
-    int voltageDelay;
-    int pressureDelay;
-    int tempHumidityDelay;
-    int servoDelay;
 
     Voltage* voltage_sensor;
     Pressure* pressure_sensor;

@@ -52,7 +52,7 @@ The `lint.py` script lint checks files of supported programming languages. It ca
 ./lint.py [OPTIONS]
 ```
 - `-h, --help`: Show the help message and exit.
-- `-p, --path [PATH]`: Path to the directory or file to lint. Defaults to linting the entire repository.
+- `-p, --path [PATH]`: Path to the directory or file to lint, relative to the current working directory. Must be within the repository. Defaults to the repository root.
 - `-l, --languages {bash,cpp,python}`: Language(s) to lint. Defaults to linting all supported languages.
 - `-f, --fix`: Automatically fix linting errors where possible. Autofix is supported for Bash, C++, and Python.
 - `--print-success`: Print the paths to the files that were successfully linted. This is automatically enabled if `--path` is a file.

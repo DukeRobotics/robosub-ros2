@@ -32,24 +32,30 @@ class ThrusterTester(Node):
 
     CONFIG_PATH = f'package://controls/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
 
-    def __init__(self, speed: float, rate: float, no_log_allocs: bool) -> None:
+    def __init__(self, speed: float, rate: float, log_allocs: bool) -> None:
         """
         Initialize the thruster tester node.
 
         Args:
             speed (float): Speed to publish to all thrusters.
             rate (float): Publishing rate in Hz.
-            no_log_allocs (bool): Disable logging of thruster allocs messages.
+            log_allocs (bool): Whether to log each thruster allocs message published.
         """
         super().__init__('thruster_tester')
+
+        if 'thrusters' not in self.get_node_names():
+            self.get_logger().error('Thrusters node is not running.')
+
         self.publisher_ = self.create_publisher(ThrusterAllocs, '/controls/thruster_allocs', 10)
         self.num_thrusters = self.get_thruster_count()
         self.thrust_speed = speed
         self.allocs = [self.thrust_speed] * self.num_thrusters
-        self.no_log_allocs = no_log_allocs
+        self.msg = ThrusterAllocs()
+        self.msg.allocs = self.allocs
+        self.log_allocs = log_allocs
         self.timer = self.create_timer(1.0 / rate, self.publish_allocs)
-        self.get_logger().info(f'Publishing {self.num_thrusters} thrusters at speed {self.thrust_speed} with rate '
-                               f'{rate} Hz.')
+        self.get_logger().info(f'Publishing allocs for {self.num_thrusters} thrusters at speed {self.thrust_speed} '
+                               f'with rate {rate} Hz.')
 
     def get_thruster_count(self) -> int:
         """
@@ -64,11 +70,9 @@ class ThrusterTester(Node):
 
     def publish_allocs(self) -> None:
         """Publish the thruster allocations."""
-        msg = ThrusterAllocs()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.allocs = self.allocs
-        self.publisher_.publish(msg)
-        if not self.no_log_allocs:
+        self.msg.header.stamp = self.get_clock().now().to_msg()
+        self.publisher_.publish(self.msg)
+        if self.log_allocs:
             self.get_logger().info(f'Published thruster allocs: {self.allocs}')
 
 
@@ -81,14 +85,14 @@ def main(args: list[str] | None = None) -> None:
     """
     parser = argparse.ArgumentParser(description='Thruster Tester Node')
     parser.add_argument('-s', '--speed', type=validate_speed, default=DEFAULT_SPEED,
-                        help=f'Thruster speed (default: {DEFAULT_SPEED})')
+                        help=f'Thruster speed (default: {DEFAULT_SPEED}).')
     parser.add_argument('-r', '--rate', type=float, default=DEFAULT_RATE,
-                        help=f'Publishing rate in Hz (default: {DEFAULT_RATE})')
-    parser.add_argument('--no-log-allocs', action='store_true', help='Disable logging of thruster allocs messages')
+                        help=f'Publishing rate in Hz (default: {DEFAULT_RATE}).')
+    parser.add_argument('--log-allocs', action='store_true', help='Log each thruster allocs message published.')
     parsed_args = parser.parse_args()
 
     rclpy.init(args=args)
-    node = ThrusterTester(parsed_args.speed, parsed_args.rate, parsed_args.no_log_allocs)
+    node = ThrusterTester(parsed_args.speed, parsed_args.rate, parsed_args.log_allocs)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
