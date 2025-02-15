@@ -96,7 +96,7 @@ To stream the feed or perform spatial detection using the OAK camera, use `ros2 
 ## Non-DepthAI Cameras
 
 ### USB Camera
-This package also contains driver code to publish a camera stream from a USB-type camera in `usb_camera.py`. A USB camera can be located by `/dev/video*` on a linux computer, where `*` can be replaced by any number specifying a given camera channel. The default channel is `0`. Each camera may provide multiple channels, however, typically, only the first channel can be used by OpenCV to capture the camera stream. If multiple cameras are plugged in, the channels are enumerated in the order in which the cameras are plugged in. For example, channels `0-3` correspond to one camera, while channels `4-7` correspond to another camera.
+This package also contains driver code to publish a camera stream from a USB-type camera in `usb_camera.py`. A USB camera can be located by `/dev/video*` on a linux computer, where `*` can be replaced by any number specifying a given camera channel. The default channel is `0`. Each camera may provide multiple channels; however, typically, only the first channel can be used by OpenCV to capture the camera stream. If multiple cameras are plugged in, the channels are enumerated in the order in which the cameras are plugged in. For example, channels `0-3` correspond to one camera, while channels `4-7` correspond to another camera.
 
 The script `usb_camera.py` uses OpenCV to capture a stream frame by frame from a specified USB camera channel and publishes it to a specified ROS topic. Use `ros2 launch cv usb_camera.xml` to start a stream once a USB camera has been plugged in. You can specify the ROS topic to which the USB camera feed is published via
 
@@ -106,7 +106,7 @@ ros2 launch cv usb_camera.xml topic:=<topic>
 
 By default, `<topic>` is set to `/camera/usb_camera/compressed`. Note that the camera must be plugged in _before_ the Docker container is started.
 
-The `udev` rules located at the repository root in the rile `99-robosub-ros2.rules` are used to symlink the first channel provided by each of the front and bottom cameras to `/dev/video_front` and `/dev/video_bottom` respectively. This is done to ensure that the cameras are always accessible at the same path, regardless of the channel they are plugged into. The `usb_camera_connect.py` script is used to connect to both of these cameras simultaneously, and can be launched using `ros2 launch cv usb_camera_connect.xml`.
+The `udev` rules located at the repository root in the file `99-robosub-ros2.rules` are used to symlink the first channel provided by each of the front and bottom cameras to `/dev/video_front` and `/dev/video_bottom` respectively. This is done to ensure that the cameras are always accessible at the same path, regardless of the channel they are plugged into. The `usb_camera_connect.py` script is used to connect to both of these cameras simultaneously, and can be launched using `ros2 launch cv usb_camera_connect.xml`.
 
 ### Running the Code
 

@@ -78,13 +78,13 @@ IS_ROBOT=
 - `NO_GIT`: For most users, this should be set to `false`. Set to `true` if you do **not** want to use git inside the Docker container. This is useful for CI/CD pipelines or if you have your SSH keys stored in encrypted files.
     > [!NOTE]
     > If you set `NO_GIT=true`, do not include the variables `GITHUB_AUTH_SSH_KEY_PRIV_PATH`, `GITHUB_AUTH_SSH_KEY_PUB_PATH`, `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`, or `GIT_ALLOWED_SIGNERS_PATH` in `.env`. These variables are only used if `NO_GIT=false`.
-- `ROBOT_NAME`: The name of the robot you are developing for. This is used to set the `$ROBOT_NAME` environment variable in the Docker container, which is used by some scripts to determine which robot-specific configuration to use. If you are setting up the repository on the robot, then this should obviously be the name of the robot. If you are setting up the repository on your development machine, then this name can be changed to test different robot configurations.
+- `ROBOT_NAME`: The name of the robot you are developing for. This is used to set the `$ROBOT_NAME` environment variable in the Docker container, which is used by some scripts to determine which robot-specific configuration to use. If you are setting up the repository on the robot, then this should be the name of the robot. If you are setting up the repository on your development machine, then this name can be changed to test different robot configurations.
 - `IS_ROBOT`: Set to `true` if you are setting up the repository on the robot. Set to `false` or do not include this variable in `.env` if you are setting up the repository on your development machine.
 
 ## Set Up Udev Rules (Robot Only)
 If you are setting up the repository on the robot, you need to set up the udev rules to symlink some USB devices to ports that are consistent across reboots and used by code in this repository.
 
-1. Open a terminal and navigate to the root of the repository.
+1. Open a terminal outside of the Docker container and navigate to the root of the repository.
 2. Run the following command to symlink the `99-robosub-ros2.rules` file located in the repository root to the `/etc/udev/rules.d` directory:
     ```bash
     sudo ln -s $(pwd)/99-robosub-ros2.rules /etc/udev/rules.d/99-robosub-ros2.rules
