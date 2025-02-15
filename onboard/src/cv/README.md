@@ -26,7 +26,7 @@ The following are the folders and files in the CV package:
 * `image_tools.py`: Auxiliary functions to convert ROS image messages to other types and vice versa.
 * `path_marker_detector.py`: Detects path marker using HSV filtering.
 * `pink_bins_detector.py`: Detects pink bins using HSV filtering.
-* `usb_camera_connect.py`: Connects and opens USB cameras.
+* `usb_camera_connect_all.py`: Connects and opens USB cameras.
 * `usb_camera.py`: Publishes images coming from USB cameras.
 * `utils.py`: Auxiliary functions that visualize detections on an image feed and modularize certain repeated calculations such as distance.
 
@@ -40,7 +40,7 @@ The following are the folders and files in the CV package:
 * `depthai_spatial_detection.xml`: Runs the DepthAI spatial detection script.
 * `path_marker_detector.xml`: Runs the path marker detector script.
 * `pink_bins_detector.xml`: Runs the pink bins detector script.
-* `usb_camera_connect.xml`: Runs the USB camera connect script.
+* `usb_camera_connect_all.xml`: Runs the USB camera connect script.
 * `usb_camera_detectors.xml`: Runs the USB camera connect script, along with all detectors that use the USB camera feed.
 * `usb_camera.xml`: Runs the USB camera script.
 
@@ -107,7 +107,7 @@ ros2 launch cv usb_camera.xml topic:=<topic>
 
 By default, `<topic>` is set to `/camera/usb_camera/compressed`. Note that the camera must be plugged in _before_ the Docker container is started.
 
-The `udev` rules located at the repository root in the file `99-robosub-ros2.rules` are used to symlink the first channel provided by each of the front and bottom cameras to `/dev/video_front` and `/dev/video_bottom` respectively. This is done to ensure that the cameras are always accessible at the same path, regardless of the channel they are plugged into. The `usb_camera_connect.py` script is used to connect to both of these cameras simultaneously, and can be launched using `ros2 launch cv usb_camera_connect.xml`.
+The `udev` rules located at the repository root in the file `99-robosub-ros2.rules` are used to symlink the first channel provided by each of the front and bottom cameras to `/dev/video_front` and `/dev/video_bottom` respectively. This is done to ensure that the cameras are always accessible at the same path, regardless of the channel they are plugged into. The `usb_camera_connect_all.py` script is used to connect to all cameras simultaneously, and can be launched using `ros2 launch cv usb_camera_connect_all.xml`.
 
 ### Running the Code
 
