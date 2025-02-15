@@ -40,7 +40,12 @@ class DVLRawPublisher(SerialNode):
         self._current_msg = DVLRaw()
 
     def get_ftdi_string(self) -> str:
-        """Get the FTDI string for the DVL."""
+        """
+        Get the FTDI string for the DVL.
+
+        Returns:
+            str: FTDI string for the DVL.
+        """
         return self._config['dvl']['ftdi']
 
     def _extract_floats(self, num_string: str, start: int, stop: int) -> list[float]:
@@ -54,7 +59,11 @@ class DVLRawPublisher(SerialNode):
         Args:
             line (str): line to process
         """
-        data_type = line[1:3]
+        try:
+            data_type = line[1:3]
+        except IndexError:
+            self.get_logger().warn(f'Failed to parse data type from line: {line}')
+
         if data_type in self._dvl_line_parsers:
             self._dvl_line_parsers[data_type](self._clean_line(line))
         else:

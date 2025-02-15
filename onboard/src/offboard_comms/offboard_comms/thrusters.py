@@ -84,7 +84,12 @@ class Thrusters(SerialNode):
         self.pwm_publisher = self.create_publisher(PWMAllocs, '/offboard/pwm', 1)
 
     def get_ftdi_string(self) -> str:
-        """Get the FTDI string for the serial device."""
+        """
+        Get the FTDI string for the Thruster Arduino.
+
+        Returns:
+            str: FTDI string for the Thruster Arduino.
+        """
         return self._config['arduino'][self.ARDUINO_NAME]['ftdi']
 
     def load_lookup_tables(self) -> None:

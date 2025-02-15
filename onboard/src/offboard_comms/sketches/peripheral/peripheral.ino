@@ -11,14 +11,15 @@
 #define CRUSH 2
 
 #define VOLTAGE_DELAY 100
-#define PRESSURE_DELAY 0
+#define PRESSURE_DELAY 50
 #define TEMP_HUMIDITY_DELAY 1000
-#define SERVO_DELAY 0
+#define SERVO_DELAY 50
 
 // Baud rate for serial communication with Blue Robotics Bar30 High-Resolution 300m Depth/Pressure Sensor
 #define BAUD_RATE 9600
 
 Robot* robot;
+bool valid_robot = true;
 
 void setup() {
   Serial.begin(BAUD_RATE);
@@ -31,14 +32,19 @@ void setup() {
       robot = new Oogway(VOLTAGE_DELAY, PRESSURE_DELAY, TEMP_HUMIDITY_DELAY, SERVO_DELAY, true);
       break;
     case CRUSH:
-      // robot = new Oogway(VOLTAGE_DELAY, PRESSURE_DELAY, TEMP_HUMIDITY_DELAY, SERVO_DELAY, false);
+      // TODO: crush
       break;
     default:
-      robot = new Oogway(VOLTAGE_DELAY, PRESSURE_DELAY, TEMP_HUMIDITY_DELAY, SERVO_DELAY, false);
+      valid_robot = false;
   }
 }
 
 void loop() {
-  // Run all functions
-  robot->process();
+  if (valid_robot) {
+    // Call all sensors and process servo commands
+    robot->process();
+  } else {
+    Serial.println("Error: Invalid ROBOT_NAME: " + String(ROBOT_NAME));
+    delay(500); // Delay to avoid flooding the serial output
+  }
 }
