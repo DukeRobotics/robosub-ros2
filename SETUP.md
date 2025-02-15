@@ -90,6 +90,9 @@ The Docker container is used to develop and run the code in a consistent environ
 
 Make sure you have Docker running on your machine. Then, follow the instructions below to set up the Docker container.
 
+> [!NOTE]
+> Starting the Docker container will create an empty `~/.foxglove-studio/` directory on your local machine if it does not already exist. Foxglove Desktop uses this directory to load locally installed extensions.
+
 ### Using VS Code Dev Containers
 If you're using VS Code and have the Dev Containers extension installed:
 
