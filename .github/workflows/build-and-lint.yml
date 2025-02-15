@@ -52,6 +52,7 @@ jobs:
 
       - name: Build Foxglove environment
         id: build-foxglove
+        if: always() && steps.run-docker.outcome == 'success'
         run: |
           docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build-foxglove.sh
 
