@@ -1,3 +1,5 @@
+from enum import Enum
+
 from custom_msgs.srv import SetDiscreteServo
 from rclpy.logging import get_logger
 from rclpy.node import Node
@@ -5,6 +7,11 @@ from rclpy.task import Future
 from task_planning.utils.other_utils import singleton
 
 logger = get_logger('marker_dropper_interface')
+
+class MarkerDropperStates(Enum):
+    """Enum for the states of the marker dropper servo."""
+    LEFT = 'left'
+    RIGHT = 'right'
 
 @singleton
 class MarkerDropper:
@@ -31,17 +38,17 @@ class MarkerDropper:
             while not self.drop_marker_client.wait_for_service(timeout_sec=1.0):
                 logger.info(f'{self.MARKER_DROPPER_SERVICE} not ready, waiting...')
 
-    def drop_marker(self, data: bool) -> Future:
+    def drop_marker(self, data: MarkerDropperStates) -> Future:
         """
-        Send a request to activate or deactivate the marker dropper servo.
+        Rotate the marker dropper servo to the specified state.
 
         Args:
-            data (bool): True to drop the left marker, False to drop the right marker.
+            data (MarkerDropperStates): The state to set the marker dropper servo to.
 
         Returns:
             Future: The result of the asynchronous service call.
         """
         request = SetDiscreteServo.Request()
-        request.state = 'left' if data else 'right'
+        request.state = data.value
 
         return self.drop_marker_client.call_async(request)
