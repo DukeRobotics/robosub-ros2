@@ -16,7 +16,7 @@ from transforms3d.euler import quat2euler
 from task_planning import cv_tasks, move_tasks
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
-from task_planning.interface.marker_dropper import MarkerDropper
+from task_planning.interface.marker_dropper import MarkerDropper, MarkerDropperStates
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield, task
 from task_planning.utils import geometry_utils
@@ -1097,13 +1097,12 @@ async def bin_task(self: Task) -> Task[None, None, None]:
     await track_bin(target='bin_red', desired_depth=MID_DEPTH_LEVEL, pixel_threshold=MID_PIXEL_THRESHOLD,
                     step_size=0.18, y_offset=30, x_offset=25)
 
-    # If both balls loaded on the RIGHT, this is False
-    drop_marker(False)
-    logger.info('Dropped first marker')
+    drop_marker(MarkerDropperStates.LEFT)
+    logger.info('Dropped left marker')
     await sleep(3)
 
-    drop_marker(True)
-    logger.info('Dropped second marker')
+    drop_marker(MarkerDropperStates.RIGHT)
+    logger.info('Dropped right marker')
     await sleep(2)
 
     await correct_depth(desired_depth=START_DEPTH_LEVEL)

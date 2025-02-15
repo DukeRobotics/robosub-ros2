@@ -24,7 +24,7 @@ class State:
     # ROS topics for the state and resetting the pose
     STATE_TOPIC = 'state'
     DEPTH_TOPIC = '/sensors/depth'
-    IMU_TOPIC = '/vectornav/IMU'
+    IMU_TOPIC = '/vectornav/imu'
     RESET_POSE_SERVICE = '/set_pose'
 
     def __init__(self, node: Node, bypass: bool = False, tf_buffer: Buffer = None) -> None:
@@ -37,15 +37,20 @@ class State:
             tf_buffer: The transform buffer for the robot. Defaults to None.
         """
         self.bypass = bypass
-        if tf_buffer:
-            self._tf_buffer = tf_buffer
+        self._tf_buffer = tf_buffer if tf_buffer else Buffer()
 
         self.received_state = False
         self.received_depth = False
         self.received_imu = False
 
+        self._state = Odometry()
+        self._orig_state = Odometry()
+        self._depth = 0
+        self._orig_depth = 0
+        self._imu = Imu()
+        self._orig_imu = Imu()
+
         node.create_subscription(Odometry, self.STATE_TOPIC, self._on_receive_state, 10)
-        self._state = None
 
         self._reset_pose = node.create_client(SetPose, self.RESET_POSE_SERVICE)
         if not bypass:
@@ -114,7 +119,9 @@ class State:
 
     def reset_pose(self) -> None:
         """Reset the pose."""
-        posecov = PoseWithCovarianceStamped()
-        posecov.pose.pose.orientation.w = 1
+        request = SetPose.Request()
+        request.pose = PoseWithCovarianceStamped()
+        request.pose.pose.pose.orientation.w = 1.0
+
         if not self.bypass:
-            self._reset_pose(posecov)
+            self._reset_pose.call_async(request)

@@ -1,14 +1,12 @@
 # ruff: noqa
 import math
-import time
-import move_tasks
+from task_planning import move_tasks
 
 from rclpy.logging import get_logger
-from interface.controls import Controls
-from interface.cv import CV
-from interface.state import State
-from task import Task, Yield, task
-from utils import geometry_utils
+from task_planning.interface.cv import CV
+from task_planning.interface.state import State
+from task_planning.task import Task, task
+from task_planning.utils import geometry_utils
 
 logger = get_logger('prequal_tasks')
 
@@ -21,16 +19,6 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
     Complete the prequalification task by moving to a series of local poses. Returns when the robot is at the final pose
     with zero velocity, within a small tolerance, completing the prequalification task.
     """
-    countdown_length = 10
-    for i in range(countdown_length):
-        logger.info(f'Starting in {countdown_length - i}')
-        start_time = time.time()
-        while time.time() - start_time < 1:
-            await Yield()
-            time.sleep(0.01)
-
-    Controls().call_enable_controls(True)
-
     DEPTH_LEVEL = -0.5
 
     await move_tasks.move_to_pose_local(
@@ -159,5 +147,3 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
     DEPTH_LEVEL = State().depth
 
     await track_blue_rectangle(3, -1)
-
-    Controls().call_enable_controls(False)

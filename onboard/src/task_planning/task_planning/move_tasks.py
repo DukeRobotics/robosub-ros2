@@ -2,6 +2,7 @@ import copy
 
 from geometry_msgs.msg import Pose, Twist
 from rclpy.clock import Clock
+from rclpy.duration import Duration
 from rclpy.logging import get_logger
 from transforms3d.euler import euler2quat, quat2euler
 
@@ -46,7 +47,7 @@ async def move_to_pose_global(_self: Task, pose: Pose, timeout: int = 30) -> Tas
         Controls().publish_desired_position(pose)
 
         # Check if the timeout has been reached
-        if (Clock().now() - start_time).to_sec() > timeout:
+        if (Clock().now() - start_time) > Duration(seconds=timeout):
             logger.warning('Move to pose timed out')
             return None
 
@@ -75,7 +76,7 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False,
     Send:
         Pose: A new local pose to move to.
     """
-    global_pose = geometry_utils.local_pose_to_global(State().tfBuffer, pose)
+    global_pose = geometry_utils.local_pose_to_global(State().tf_buffer, pose)
 
     if keep_level:
         orig_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(
@@ -86,7 +87,7 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False,
 
     return await coroutine_utils.transform(
         move_to_pose_global(global_pose, timeout=time_limit, parent=self),
-        send_transformer=lambda p: geometry_utils.local_pose_to_global(State().tfBuffer, p) if p else p)
+        send_transformer=lambda p: geometry_utils.local_pose_to_global(State().tf_buffer, p) if p else p)
 
 
 @task

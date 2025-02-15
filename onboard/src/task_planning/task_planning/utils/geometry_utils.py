@@ -2,8 +2,8 @@
 import numpy as np
 import tf2_geometry_msgs
 import tf2_ros
-from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion, Twist, Vector3
-from rclpy.clock import Clock
+from geometry_msgs.msg import Point, Pose, Quaternion, Twist, Vector3
+from rclpy.time import Time
 from transforms3d.euler import euler2quat, quat2euler
 from transforms3d.quaternions import qmult
 
@@ -44,7 +44,7 @@ def transforms3d_quat_to_geometry_quat(quat: np.ndarray) -> Quaternion:
     Returns:
         The converted geometry_msgs/Quaternion.
     """
-    return Quaternion(quat[1], quat[2], quat[3], quat[0])
+    return Quaternion(x=quat[1], y=quat[2], z=quat[3], w=quat[0])
 
 
 def geometry_quat_to_transforms3d_quat(quat: Quaternion) -> np.ndarray:
@@ -121,7 +121,7 @@ def angular_distance_rpy(rpy1: tuple[float, float, float], rpy2: tuple[float, fl
     roll = np.fabs(rpy1[0] - rpy2[0])
     pitch = np.fabs(rpy1[1] - rpy2[1])
     yaw = np.fabs(rpy1[2] - rpy2[2])
-    return Vector3(roll, pitch, yaw)
+    return Vector3(x=roll, y=pitch, z=yaw)
 
 
 def at_pose(current_pose: Pose, desired_pose: Pose, linear_tol: float = 0.15, roll_tol: float = 0.2,
@@ -200,14 +200,8 @@ def transform_pose(tf_buffer: tf2_ros.Buffer, base_frame: str, target_frame: str
     Returns:
         The transformed pose.
     """
-    pose_stamped = PoseStamped()
-    pose_stamped.pose = pose
-    pose_stamped.header.frame_id = base_frame
-
-    trans = tf_buffer.lookup_transform(target_frame, base_frame, Clock().now())
-    transformed = tf2_geometry_msgs.do_transform_pose(pose_stamped, trans)
-
-    return transformed.pose
+    trans = tf_buffer.lookup_transform(target_frame, base_frame, Time())
+    return tf2_geometry_msgs.do_transform_pose(pose, trans)
 
 
 def add_poses(pose_list: list[Pose]) -> Pose:
@@ -229,7 +223,10 @@ def add_poses(pose_list: list[Pose]) -> Pose:
         p_sum.z += pose.position.z
         q_sum = qmult(geometry_quat_to_transforms3d_quat(pose.orientation), q_sum)
 
-    return Pose(p_sum, transforms3d_quat_to_geometry_quat(q_sum))
+    pose_sum = Pose()
+    pose_sum.position = p_sum
+    pose_sum.orientation = transforms3d_quat_to_geometry_quat(q_sum)
+    return pose_sum
 
 
 def parse_pose(pose: Pose) -> dict:
@@ -244,8 +241,8 @@ def parse_pose(pose: Pose) -> dict:
         'yaw'. Roll, pitch, and yaw are in radians.
     """
     pose_dict = {'x': pose.position.x, 'y': pose.position.y, 'z': pose.position.z}
-    pose_dict['roll'], pose_dict['pitch'], pose_dict['yaw'] = quat2euler(
-        geometry_quat_to_transforms3d_quat(pose.orientation))
+    pose_dict['roll'], pose_dict['pitch'], pose_dict['yaw'] = \
+        quat2euler(geometry_quat_to_transforms3d_quat(pose.orientation))
     return pose_dict
 
 
