@@ -37,7 +37,7 @@ class DVLOdomPublisher(Node):
         Convert raw DVL data to an odometry message and publish it.
 
         Args:
-            msg (DVLRaw): raw DVL data
+            msg (DVLRaw): Raw DVL data.
         """
         # check if the data is good
         # for now, only check bs and sa status as they are the only two data that we are currently using
