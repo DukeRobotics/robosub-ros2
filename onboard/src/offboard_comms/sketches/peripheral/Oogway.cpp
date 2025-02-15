@@ -7,7 +7,7 @@
 
 class Oogway : public Robot {
 private:
-    // Flag to determine if this is Oogway's shell (true) or Oogway itself (false)
+    // Flag to determine if this is Oogway's shell (true) or the actual robot (false)
     bool isShell;
 
     Voltage* voltage_sensor;
