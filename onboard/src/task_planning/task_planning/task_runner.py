@@ -1,5 +1,6 @@
 # ruff: noqa: ERA001
 import time
+import os
 
 import rclpy
 import tf2_ros
@@ -7,7 +8,9 @@ from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.node import Node
 
-from task_planning import comp_tasks, move_tasks, prequal_tasks, test_tasks  # noqa: F401
+from task_planning import comp_tasks, move_tasks, prequal_tasks, test_tasks, tasks_crush, tasks_oogway  # noqa: F401
+import task_planning.tasks_oogway as tasks_oogway
+import task_planning.tasks_crush as tasks_crush
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.marker_dropper import MarkerDropper
@@ -61,35 +64,16 @@ class TaskPlanning(Node):
             while not State().state:
                 pass
 
+        # Determine the robot name
+        robot_name = os.getenv('ROBOT_NAME', '').upper()
+
         # Tasks to run
-        self.tasks = [
-            # comp_tasks.initial_submerge(-0.7, parent=Task.MAIN_ID),
-            # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=Task.MAIN_ID),
-
-            prequal_tasks.prequal_task(parent=Task.MAIN_ID),
-
-            # comp_tasks.coin_flip(parent=Task.MAIN_ID),
-            # comp_tasks.yaw_to_cv_object('gate_red_cw', direction=1, yaw_threshold=math.radians(10),
-            #                             latency_threshold=1, depth_level=0.7, parent=Task.MAIN_ID),
-            # comp_tasks.gate_task(offset=-0.1, direction=-1, parent=Task.MAIN_ID),
-            # comp_tasks.gate_style_task(depth_level=0.9, parent=Task.MAIN_ID),
-            # comp_tasks.yaw_to_cv_object('buoy', direction=1, depth_level=0.7, parent=Task.MAIN_ID),
-            # comp_tasks.buoy_task(turn_to_face_buoy=False, depth=0.7, parent=Task.MAIN_ID),
-            # comp_tasks.after_buoy_task(parent=Task.MAIN_ID)
-
-            # comp_tasks.align_path_marker(direction=-1, parent=Task.MAIN_ID),
-            # comp_tasks.center_path_marker(parent=Task.MAIN_ID),
-            # comp_tasks.yaw_to_cv_object('path_marker', yaw_threshold=math.radians(5), direction=-1,
-            #                             depth_level=0.5, parent=Task.MAIN_ID),
-            # comp_tasks.dead_reckoning_path_marker_to_bin(maximum_distance=4, parent=Task.MAIN_ID),
-            # comp_tasks.path_marker_to_pink_bin(maximum_distance=6, parent=Task.MAIN_ID),
-            # comp_tasks.buoy_to_octagon(direction=1, move_forward=0, parent=Task.MAIN_ID),
-            # comp_tasks.let_search_for_bin_turtlesim_style_because_why_not(parent=Task.MAIN_ID),
-            # comp_tasks.bin_task(parent=Task.MAIN_ID),
-            # comp_tasks.yaw_to_cv_object('bin_pink_front', direction=-1, yaw_threshold=math.radians(15),
-            #                             depth_level=1.0, parent=Task.MAIN_ID),
-            # comp_tasks.octagon_task(direction=1, parent=Task.MAIN_ID),
-        ]
+        if robot_name == 'OOGWAY':
+            self.tasks = tasks_oogway.get_tasks()
+        elif robot_name == 'CRUSH':
+            self.tasks = tasks_crush.get_tasks()
+        else:
+            raise ValueError(f"Unknown robot name: {robot_name}")
 
         self.current_task = 0
         self.started_running_tasks = False
