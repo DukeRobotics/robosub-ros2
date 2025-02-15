@@ -270,7 +270,7 @@ def main() -> None:
     build_parser = subparsers.add_parser(
         'build',
         aliases=['b'],
-        help='Build all necessary dependencies for Foxglove.',
+        help='Build all necessary dependencies for Foxglove development.',
     )
     build_parser.add_argument(
         '--skip-ci',
@@ -281,19 +281,19 @@ def main() -> None:
     install_parser = subparsers.add_parser(
         'install',
         aliases=['i'],
-        help='Install Foxglove extensions. By default, all extensions are installed.',
+        help='Install Foxglove extensions locally.',
     )
     install_parser.add_argument(
         'extensions',
         nargs='*',
         type=extension_package,
-        help='Install extension(s) by name.',
+        help='Install extension(s) by name. By default, all extensions are installed.',
     )
 
     watch_parser = subparsers.add_parser(
         'watch',
         aliases=['w'],
-        help='Watch a Foxglove extension for changes and rebuild on save.',
+        help='Automatically reinstall a Foxglove extension after changes.',
     )
     watch_parser.add_argument(
         'extensions',
@@ -306,13 +306,13 @@ def main() -> None:
     lint_parser = subparsers.add_parser(
         'lint',
         aliases=['l'],
-        help='Lint Foxglove extensions.',
+        help='Lint the Foxglove monorepo.',
     )
     lint_parser.add_argument(
         'files',
         action='store',
         nargs='*',
-        help='Files to lint. If no files are given, all files are linted.',
+        help='Files to lint. By default, all files are linted.',
     )
     lint_parser.add_argument(
         '-f', '--fix',
@@ -323,19 +323,19 @@ def main() -> None:
     publish_parser = subparsers.add_parser(
         'publish',
         aliases=['p'],
-        help='Publish Foxglove extensions. By default, all extensions are published.',
+        help='Publish Foxglove extensions to an organization.',
     )
     publish_parser.add_argument(
         'extensions',
         nargs='*',
         type=extension_package,
-        help='Specify extension(s) to publish. If no names are given, all extensions are published.',
+        help='Specify extension(s) to publish. By default, all extensions are published.',
     )
     publish_parser.add_argument(
         '-v', '--version',
         action='store',
         nargs='?',
-        help='Version to publish extensions under. If no version is given, the short HEAD commit hash is used.',
+        help='Version to publish extensions under. By default, the short HEAD commit hash is used.',
     )
     publish_parser.add_argument(
         '-f', '--force',
@@ -346,13 +346,13 @@ def main() -> None:
     subparsers.add_parser(
         'clean',
         aliases=['c'],
-        help='Clean up the Foxglove monorepo.',
+        help='Remove build files from the Foxglove monorepo.',
     )
 
     subparsers.add_parser(
         'uninstall',
         aliases=['u'],
-        help='Uninstall all Foxglove extensions.',
+        help='Uninstall all local Foxglove extensions.',
     )
 
     subparsers.add_parser(
