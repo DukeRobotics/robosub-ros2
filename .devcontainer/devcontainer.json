@@ -12,6 +12,7 @@
                 "cschlosser.doxdocgen",
                 "dbaeumer.vscode-eslint",
                 "eamodio.gitlens",
+                "esbenp.prettier-vscode",
                 "github.copilot",
                 "github.copilot-chat",
                 "github.vscode-github-actions",
@@ -50,6 +51,27 @@
 
                 // Python-related settings
                 "python.defaultInterpreterPath": "/root/dev/venv/bin/python3",
+
+                // TypeScript/JavaScript-related settings
+                "[typescript]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode",
+                    "editor.formatOnSave": true
+                },
+                "[typescriptreact]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode",
+                    "editor.formatOnSave": true
+                },
+                "[javascript]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode",
+                    "editor.formatOnSave": true
+                },
+                "[javascriptreact]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode",
+                    "editor.formatOnSave": true
+                },
+                "eslint.workingDirectories": [
+                    "foxglove"
+                ],
 
                 // Doxygen doc generator settings
                 "doxdocgen.generic.returnTemplate": "@return ",

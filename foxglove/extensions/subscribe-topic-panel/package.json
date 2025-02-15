@@ -1,0 +1,17 @@
+{
+  "name": "@duke-robotics/ros-jazzy-subscribe-topic-panel",
+  "displayName": "Subscribe Topic Panel (Jazzy)",
+  "description": "Subscribe to ROS topics",
+  "publisher": "Duke Robotics",
+  "version": "0.0.0",
+  "main": "./dist/extension.js",
+  "scripts": {
+    "foxglove:prepublish": "foxglove-extension build --mode production",
+    "lint:ci": "eslint --report-unused-disable-directives .",
+    "lint": "eslint --report-unused-disable-directives --fix .",
+    "local-install": "foxglove-extension install",
+    "watch:local-install": "nodemon --watch './src/**' -e ts,tsx --exec 'npm run local-install'",
+    "package": "foxglove-extension package",
+    "pretest": "foxglove-extension pretest"
+  }
+}
