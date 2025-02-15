@@ -22,3 +22,8 @@ __pycache__
 .vscode/*
 !.vscode/c_cpp_properties.json
 !.vscode/launch.json
+
+# Foxglove
+node_modules
+dist
+*.foxe

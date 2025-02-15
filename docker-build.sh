@@ -69,6 +69,11 @@ if [ "$NO_GIT" != "true" ]; then
     docker_build_cmd+=" --secret id=git_allowed_signers,src='$GIT_ALLOWED_SIGNERS_PATH'"
 fi
 
+# If the user has a .foxgloverc file, add it as a secret
+if [[ -f "$FOXGLOVERC_PATH" ]]; then
+    docker_build_cmd+=" --secret id=foxgloverc,src='$FOXGLOVERC_PATH'"
+fi
+
 # Set the build context to the current (docker) directory
 docker_build_cmd+=" -t robosub-ros2:latest ./docker"
 
