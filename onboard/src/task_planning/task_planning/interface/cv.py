@@ -270,7 +270,10 @@ class CV:
 
         lane_marker_angle = sum(self.lane_marker_angles[skip:filter_len-skip]) / len(self.lane_marker_angles)
         self.cv_data['lane_marker_angle'] = lane_marker_angle
-        self.lane_marker_angle_publisher.publish(self.cv_data['lane_marker_angle'])
+
+        msg = Float64()
+        msg.data = self.cv_data['lane_marker_angle']
+        self.lane_marker_angle_publisher.publish(msg)
 
     # TODO: Remove this and integrate into _on_receive_distance_data
     def _on_receive_lane_marker_dist(self, dist: Float64) -> None:

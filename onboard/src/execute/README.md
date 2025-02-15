@@ -1,5 +1,7 @@
 # Execute
 
-This package contains ROS launch files that simplify starting and stopping large portions of our software stack.
+This package contains ROS launch files that are used to start multiple nodes at once across multiple packages. They simplify the process of starting a large number of nodes.
 
-See [Running Launch Files](https://github.com/DukeRobotics/robosub-ros/#running-launch-files) in this repo's README for some common use cases.
+## Launch Files
+### robot.xml
+This launch file starts all nodes required to run the robot, excluding DepthAI and task planning.
