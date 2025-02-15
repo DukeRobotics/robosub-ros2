@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-"""A CLI that manages custom extensions for Foxglove Studio."""
-
 import argparse
 import functools
 import json
@@ -114,10 +112,6 @@ def install(extension_paths: Sequence[pathlib.Path]) -> None:
     """
     successes = 0
     for extension in extension_paths:
-        if not (extension / 'package.json').is_file():
-            print(f'{extension.name}: skipped (no package.json)')
-            continue
-
         run_at_path('npm run local-install', extension)
 
         print(f'{extension.name}: installed')
@@ -164,10 +158,6 @@ def publish(extension_paths: Sequence[pathlib.Path], version: str | None = None,
 
     successes = 0
     for extension in extension_paths:
-        if not (extension / 'package.json').is_file():
-            print(f'{extension.name}: skipped (no package.json)')
-            continue
-
         # Update package.json version
         _update_extension_version(extension, version)
 
