@@ -38,12 +38,13 @@ fox uninstall
 ```bash
 fox [SUBCOMMAND]
 ```
-- [`b, build`](#build) - Prepare an extension for installation or publishing.
-- [`i, install`](#install) - Install an extension locally.
-- [`w, watch`](#watch) - Watch an extension for changes and automatically reinstall.
-- [`p, publish`](#publish) - Publish an extension to your organization.
+- [`b, build`](#build) - Build all necessary dependencies for Foxglove development.
+- [`i, install`](#install) - Install Foxglove extensions locally.
+- [`w, watch`](#watch) - Automatically reinstall a Foxglove extension after changes.
+- [`l, lint`](#lint) - Lint the Foxglove monorepo.
+- [`p, publish`](#publish) - Publish Foxglove extensions to an organization.
 - [`c, clean`](#clean) - Remove build files from the Foxglove monorepo.
-- [`u, uninstall`](#uninstall) - Uninstall a locally installed extension.
+- [`u, uninstall`](#uninstall) - Uninstall all local Foxglove extensions.
 - [`d, doctor`](#doctor) - Troubleshoot the Foxglove development environment.
 
 You can also run `fox [SUBCOMMAND] -h` to view a help message.
@@ -69,7 +70,7 @@ By default, `fox build` does several things:
 
 #### Install
 To perform a local install, run:
-```
+```bash
 fox install [extensions ...]
 ```
 - `extensions`: A list of extensions to install. If no extensions are given, all extensions are installed.
@@ -85,6 +86,14 @@ To watch an extension for changes, run:
 fox watch extension
 ```
 This will automatically execute `npm run local-install` upon `.ts` or `.tsx` file changes in the `src` directory.
+
+#### Lint
+To lint the Foxglove monorepo, run:
+```bash
+fox lint [files ...]
+```
+- `files`: A list of files to lint. If no files are given, the entire Foxglove monorepo is linted.
+- `-f, --fix`: Attempt to autofix linting errors by modifying files in place.
 
 #### Publish
 > [!IMPORTANT]
@@ -132,14 +141,6 @@ This command will exit with a non-zero status if any potential problems are foun
     - The bridge opens a WebSocket on port `28765`. This port is mapped to port `28765` on the host machine, so you can connect to the WebSocket from your host machine.
 2. Open Foxglove Studio and connect to the WebSocket at `ws://IP_ADDRESS:28765`.
     - Replace `IP_ADDRESS` with the IP address of the host machine. If you are running the Docker container locally, you can use `localhost` as the IP address.
-
-## Linting & Formatting
-We use [eslint](https://eslint.org/) for linting and [prettier](https://prettier.io/) for formatting. To lint the Foxglove monorepo, run the following command from the `robosub-ros2` root:
-```bash
-./lint.py -p foxglove
-```
-
-See [SCRIPTS.md](../SCRIPTS.md#lintpy) for more information.
 
 ## Monorepo Structure
 ### Extensions
