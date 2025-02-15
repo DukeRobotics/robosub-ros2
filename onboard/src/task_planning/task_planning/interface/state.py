@@ -122,7 +122,9 @@ class State:
 
     def reset_pose(self) -> None:
         """Reset the pose."""
-        posecov = PoseWithCovarianceStamped()
-        posecov.pose.pose.orientation.w = 1
+        request = SetPose.Request()
+        request.pose = PoseWithCovarianceStamped()
+        request.pose.pose.orientation.w = 1
+
         if not self.bypass:
-            self._reset_pose(posecov)
+            self._reset_pose.call_async(request)
