@@ -51,7 +51,7 @@ You can also run `fox [SUBCOMMAND] -h` to view a help message.
 
 #### Build
 > [!IMPORTANT]
-> Building must be performed before local installing or publishing custom extensions. Additionally, building is a prerequisite for `lint.py` (eslint) and other Foxglove developer tools.
+> Building must be performed before local installing or publishing custom extensions. Additionally, building is a prerequisite for `fox lint` (eslint) and other Foxglove developer tools.
 
 To build, run:
 ```
