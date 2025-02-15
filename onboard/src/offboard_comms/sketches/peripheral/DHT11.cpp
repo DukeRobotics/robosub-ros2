@@ -2,6 +2,8 @@
  * DHT11.cpp
  * Library for reading temperature and humidity from the DHT11 sensor.
  *
+ * Obtained from https://github.com/dhrubasaha08/DHT11
+ *
  * Author: Dhruba Saha
  * Version: 2.1.0
  * License: MIT
@@ -96,15 +98,26 @@ byte DHT11::readByte()
 
   for (int i = 0; i < 8; i++)
   {
-    while (digitalRead(_pin) == LOW)
-      ;
+    unsigned long timeout_start_pin_low = millis();
+    while (digitalRead(_pin) == LOW) {
+      if (millis() - timeout_start_pin_low > TIMEOUT_DURATION)
+      {
+        return DHT11::ERROR_TIMEOUT;
+      }
+    }
     delayMicroseconds(30);
     if (digitalRead(_pin) == HIGH)
     {
       value |= (1 << (7 - i));
     }
-    while (digitalRead(_pin) == HIGH)
-      ;
+
+    unsigned long timeout_start_pin_high = millis();
+    while (digitalRead(_pin) == HIGH) {
+      if (millis() - timeout_start_pin_high > TIMEOUT_DURATION)
+      {
+        return DHT11::ERROR_TIMEOUT;
+      }
+    }
   }
   return value;
 }

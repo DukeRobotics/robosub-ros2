@@ -272,12 +272,39 @@ def print_summary(language_stats: dict[LintLanguage, LintLanguageStats]) -> None
         print(f'  {lang_emoji} {lang.value.name.capitalize()}: {stats.success}/{stats.total}')
     print()
 
+def validate_path(path: str) -> Path:
+    """
+    Validate the path provided to the CLI and return it as a Path object.
+
+    Args:
+        path (str): The path to validate.
+
+    Returns:
+        Path: The validated path as a Path object, guaranteed to exist and be within the repository.
+    """
+    if not path:
+        error_msg = 'The path argument cannot be empty.'
+        raise argparse.ArgumentTypeError(error_msg)
+
+    target_path = Path(path).resolve()
+
+    if not target_path.exists():
+        error_msg = f'The specified path "{target_path}" does not exist.'
+        raise argparse.ArgumentTypeError(error_msg)
+
+    # Ensure target_path is in the repository
+    if not target_path.is_relative_to(REPO_PATH):
+        error_msg = f'The specified path "{target_path}" must be within the repository located at "{REPO_PATH}".'
+        raise argparse.ArgumentTypeError(error_msg)
+
+    return target_path
 
 def main() -> None:
     """Parse command-line arguments and initiate the linting process."""
     parser = argparse.ArgumentParser(description='Lint files.')
-    parser.add_argument('-p', '--path', nargs='?', default=REPO_PATH,
-                        help='Path to the directory or file to lint. Defaults to the entire repository.')
+    parser.add_argument('-p', '--path', nargs='?', default=REPO_PATH, type=validate_path, const=REPO_PATH,
+                        help='Path to the directory or file to lint, relative to the current working directory. '
+                             'Must be within the repository. Defaults to the repository root.')
     parser.add_argument('-l', '--languages', choices=LINT_LANGUAGE_NAMES, nargs='+',
                         default=LINT_LANGUAGE_NAMES,
                         help=f'Language(s) to lint ({", ".join(LINT_LANGUAGE_NAMES)}). '
@@ -305,16 +332,9 @@ def main() -> None:
                              'in a CI/CD environment that does not have the git tree available.')
     args = parser.parse_args()
 
-    target_path = Path(args.path).resolve()
-
-    if not target_path.exists():
-        error_msg = f'The specified path "{target_path}" does not exist.'
-        raise FileNotFoundError(error_msg)
-
-    # Ensure target_path is in the repository
-    if not target_path.is_relative_to(REPO_PATH):
-        error_msg = f'The specified path "{target_path}" must be within the repository located at "{REPO_PATH}".'
-        raise ValueError(error_msg)
+    target_path: Path = args.path
+    if not target_path.is_file():
+        print(f'Linting files in {target_path}...')
 
     # Convert string arguments to their respective enum types
     output_type = STR_TO_LINT_OUTPUT_TYPE[args.output_type]

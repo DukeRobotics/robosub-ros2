@@ -60,9 +60,19 @@ arduino:
         servos (optional):
             - name: servo_1
               tag: servo_1_tag
-              min_pwm: servo_1_min_pwm
-              max_pwm: servo_1_max_pwm
+              service_name: servo_1_service_name
+              type: discrete
+              states:
+                state_1: pwm_1
+                state_2: pwm_2
+                ...
             - name: servo_2
+              tag: servo_2_tag
+              service_name: servo_2_service_name
+              type: continuous
+              min_pwm: min_pwm
+              max_pwm: max_pwm
+            - name: servo_3
               ...
     arduino_2:
         ...
@@ -87,11 +97,17 @@ dvl:
         - `type` is the type of sensor. This is a string that describes the sensor. It is used to determine how to process the sensor data.
         - `tag` is the tag that the sensor uses to identify its data. The serial data is sent in the form `tag:data`. It is used to identify the sensor that produced the data.
         - `topic` is the ROS topic to publish the sensor data to.
+        > [!IMPORTANT]
+        > The Peripheral Arduino sketch does **not** read the [robot config file](#robot-config-file). So, if a new sensor is added to the robot and connected to the Peripheral Arduino, simply adding the new sensor to the `sensors` section of the [robot config file](#robot-config-file) will **not** be sufficient to enable the sensor. The subclass for the robot in the Peripheral Arduino sketch must be updated to initialize the new sensor.
     - `servos` is an optional list of servos that the Arduino supports. Each servo is a dictionary with the following keys:
         - `name` is a human-readable name for the servo. This is used to idenfity the servo in messages and logs.
         - `tag` is the tag that uniquely identifies the servo. The servo commands are sent in the form `tag:pwm`. It is used by the Arduino to identify the servo that the command is intended for.
-        - `min_pwm` is the minimum PWM value that the servo accepts.
-        - `max_pwm` is the maximum PWM value that the servo accepts.
+        - `service_name` is the name of the ROS service that controls the servo.
+        - `type` is the type of servo. It can be either `discrete` or `continuous`. A `discrete` servo has a fixed set of states that it can be set to, where each state is mapped to a specific PWM value. A `continuous` servo can be set to any PWM value within a range.
+        - `states` (`discrete` servos only) is a dictionary that maps the states of the servo to the PWM values. Each key is a state of the servo, and the corresponding value is the PWM value to set the servo to when it is in that state.
+        - `min_pwm` and `max_pwm` (`continuous` servos only) are the minimum and maximum PWM values that the servo can be set to.
+        > [!IMPORTANT]
+        > The Peripheral Arduino sketch does **not** read the [robot config file](#robot-config-file). So, if a new servo is added to the robot and connected to the Peripheral Arduino, simply adding the new servo to the `servos` section of the [robot config file](#robot-config-file) will **not** be sufficient to enable the servo. The subclass for the robot in the Peripheral Arduino sketch must be updated to initialize the new servo.
 - `dvl`
     - `ftdi` is the FTDI string of the DVL. This is a unique identifier for the DVL and is used to find the port that the DVL is connected to. To find the FTDI string, see the [Obtain FTDI String](#obtain-ftdi-string) section.
     - `negate_x_vel`, `negate_y_vel`, and `negate_z_vel` are boolean values that determine whether the DVL's velocity readings should be negated. These values are used to correct for the orientation of the DVL on the robot. If the DVL is mounted in a way that causes the velocity readings along one or more axes to have an incorrect sign, set the corresponding value(s) to `true`. Otherwise, set them to `false`.
@@ -118,7 +134,6 @@ usb-FTDI_FT232R_USB_UART_B0004VDI-if00-port0
 the FTDI string is `B0004VDI`.
 
 If it's not obvious which FTDI string corresponds with which device, unplug the device, run the command, and note which string disappears. Then plug the device back in and run the command again to find the string that reappears. That string corresponds to the device.
-
 
 ## Arduino CLI
 On Linux hosts, with the container running in privileged mode, use the CLI provided by `arduino.py` to install libraries, find ports, compile, and upload Arduino code. The CLI is a wrapper around the Arduino CLI and other commands, and is used to simplify the process of uploading code to the Arduino.
@@ -182,6 +197,15 @@ If an error occurs, it is recommended to run the command with the `-p` flag to p
 > ```
 > define the values for the `oogway`, `oogway_shell`, and `crush` robot names. The `ROBOT_NAME` preprocessor directive is used in the Arduino sketches to modify their behavior based on the capabilities of the robot.
 
+## Serial Node
+`serial_node.py` defines `SerialNode`, an abstract base class for ROS nodes that interface with serial devices. The class handles connecting to the serial device, reading data from it, and writing data to it.
+
+Thus, by handling the basic serial communication, `SerialNode` allows subclasses to focus on parsing the data from the serial device and publishing it or receiving commands and sending them to the serial device.
+
+It gracefully handles errors and exceptions that may occur during the process. If any read or write operation fails, the node will attempt to reconnect to the serial device indefinitely until the operation is successful. If the node is stopped, it will close the serial connection and exit.
+
+The `dvl_raw.py`, `peripheral.py`, and `thrusters.py` scripts sublcass `SerialNode` to interface with the DVL, Peripheral Arduino, and Thruster Arduino.
+
 ## Thruster Allocations to PWMs
 The `thrusters.py` node subscribes to `/controls/thruster_allocs` of type `custom_msgs/msg/ThrusterAllocs`. This is an array of 64-bit floats, and they must be in range [-1, 1]. It also subscribes to `/sensors/voltage` of type `std_msgs/msg/Float64`. This is a 64-bit float that is clamped to the range [14.0, 18.0].
 
@@ -216,11 +240,11 @@ Now to test, use the `test_thrusters.py` script. This script starts a ROS node t
 
 The script provides the following CLI:
 ```bash
-test-thrusters [-s SPEED] [-r RATE] [--no-log-allocs]
+test-thrusters [-s SPEED] [-r RATE] [--log-allocs]
 ```
 - `-s`, `--speed`: The speed at which the thrusters should spin. This is a float in the range [-1, 1]. The default is 0.05.
 - `-r`, `--rate`: The rate at which the thruster allocations should be published. This is a float in Hz. The default is 20.
-- `--no-log-allocs`: Do not log the thruster allocations to the console. By default, the allocations are logged.
+- `--log-allocs`: Log each thruster allocation published to the console. This is useful for debugging.
 
 For example, to test the thrusters at a speed of 0.1 and a rate of 10 Hz, run:
 ```bash
@@ -294,10 +318,13 @@ The Peripheral Arduino supports any servo compatible with the Arduino Servo libr
 
 The servo is controlled by sending a message to the Arduino over serial in the following format: `servo_tag:pwm`, where `servo_tag` is the unique identifier of the servo, and `pwm` is the PWM value to set the servo to. The Arduino validates the data by checking that the tag is a valid servo tag and the PWM is within the range defined for that servo. If the data is valid, the Arduino sets the PWM value for the servo, rotating it to the desired position. After a predefined time (usually 1 second), the servo will return to its original position.
 
-If a servo command is sent, then the servo will not accept any other commands until the servo has returned to its original position. Thus, if you wish to send multiple commands to the same servo in quick succession, you must wait for at least 2 seconds between commands.
+> [!NOTE]
+> From the Peripheral Arduino's perspective, all servos are continuous servos. The Arduino does not differentiate between continuous and discrete servos; for any servo, it will accept any PWM value that is within its range. The distinction between discrete and continuous servos is made in the [robot config file](#robot-config-file) and [Peripheral Publisher](#peripheral-publisher) script, which requires discrete servos to be set to one of a predefined set of states and continuous servos to be set to any PWM value within a range.
+
+If a servo command is sent, then the servo will not accept any other commands until the servo has returned to its original position. Thus, if you wish to send multiple commands to the same servo in quick succession, you must wait for at least 3 seconds between commands.
 
 ## Peripheral Publisher
-The `peripheral.py` script starts a ROS node that interfaces with the Peripheral Arduino. It publishes all sensor data received from the Arduino to the appropriate ROS topics. It also advertises the `/servo_control` service, with message type `custom_msgs/srv/SetServo`, which enables control over the servos.
+The `peripheral.py` script starts a ROS node that interfaces with the Peripheral Arduino. It publishes all sensor data received from the Arduino to the appropriate ROS topics. It also advertises services to control the servos connected to the Arduino.
 
 ### Sensors
 The script uses the `sensors` section under the Peripheral Arduino section of the [robot config file](#robot-config-file) to determine the types of sensors connected to the current robot, the tags that the sensors use to identify their data, and the ROS topics to publish the sensor data to.
@@ -312,19 +339,13 @@ The sensor types, classes, and the message types they publish are as follows:
 
 To add support for a new sensor type, create a new subclass of `PeripheralSensor` in the `peripheral_sensors.py` script and add it to the `SENSOR_CLASSES` dictionary in the `peripheral.py` script.
 
-> [!IMPORTANT]
-> The Peripheral Arduino sketch does **not** read the [robot config file](#robot-config-file). So, if a new sensor is added to the robot and connected to the Peripheral Arduino, simply adding the new sensor to the `sensors` section of the [robot config file](#robot-config-file) will **not** be sufficient to enable the sensor. The subclass for the robot in the Peripheral Arduino sketch must be updated to initialize the new sensor.
-
 ### Servos
-The script uses the `servos` section under the Peripheral Arduino section of the [robot config file](#robot-config-file) to determine the servos connected to the current robot, the tags that the servos use to identify their data, and the PWM range for each servo.
+The script uses the `servos` section under the Peripheral Arduino section of the [robot config file](#robot-config-file) to determine the servos connected to the current robot, the tags that the servos use to identify their data, the name of the service for that servo, the servo type (discrete or continuous) and set of states or the PWM range for each servo. Services for discrete servos accept messages of type `custom_msgs/srv/SetDiscreteServo` and services for continuous servos accept messages of type `custom_msgs/srv/SetContinuousServo`.
 
-When `peripheral.py` receives a service request to control a servo, it validates the request by checking that the tag is a valid servo tag and the PWM is within the range defined for that servo. If the request is valid, it sends the command to the Peripheral Arduino to control the servo.
+When `peripheral.py` receives a service request to control a servo, it first validates the request. For discrete servos, it checks if the state provided is part of the configured set of states. For continuous servos, it checks if PWM is within the range defined for that servo (minimum and maximum are included in the range). If the request is valid, it sends the command to the Peripheral Arduino to control the servo.
 
 > [!CAUTION]
-> The `peripheral.py` script and the Peripheral Arduino only check if the PWM value is within the min and max PWM values defined for the servo. They do **not** check if setting the PWM value will result in the servo moving to an unsafe position. It is the responsibility of the user to ensure that the PWM values sent to the servos are safe.
+> The `peripheral.py` script only checks if the state is within the defined set of states (discrete servos) or the PWM value is within the min and max PWM values (continuous servos). They do **not** check if setting the servo to that state or PWM value will result in the servo moving to an unsafe position. It is the responsibility of the user to ensure that the PWM values sent to the servos are safe.
 
 > [!WARNING]
-> The Peripheral Arduino will not accept any other commands for a servo until the servo has returned to its original position. If you send multiple service requests for the same servo in quick succession, the service will respond with a success message, but the servo will not perform any actions except the first one until it has returned to its original position. To avoid this, wait for at least 2 seconds between service requests for the same servo.
-
-> [!IMPORTANT]
-> The Peripheral Arduino sketch does **not** read the [robot config file](#robot-config-file). So, if a new servo is added to the robot and connected to the Peripheral Arduino, simply adding the new servo to the `servos` section of the [robot config file](#robot-config-file) will **not** be sufficient to enable the servo. The subclass for the robot in the Peripheral Arduino sketch must be updated to initialize the new servo.
+> The Peripheral Arduino will not accept any other commands for a servo until the servo has returned to its original position. If you send multiple service requests for the same servo in quick succession, the service will respond with a success message, but the servo will not perform any actions except the first one until it has returned to its original position. To avoid this, **wait for at least 3 seconds** between service requests for the same servo.

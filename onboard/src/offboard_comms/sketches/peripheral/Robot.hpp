@@ -11,18 +11,22 @@
 
 class Robot {
     protected:
-        bool isShell;
+        // Delay between each sensor reading
         int voltageDelay;
         int pressureDelay;
         int tempHumidityDelay;
         int servoDelay;
 
+        // Current time in milliseconds
         int currentTime;
+
+        // Last time each sensor was called
         int prevTimeVoltage;
         int prevTimePressure;
         int prevTimeTempHumidity;
         int prevTimeServo;
 
+        // Lists to store each sensor, and size of each list
         Voltage* voltageList[MAX_VOLTAGE_SENSORS];
         Pressure* pressureList[MAX_PRESSURE_SENSORS];
         TempHumidity* tempHumidityList[MAX_TEMP_HUMIDITY_SENSORS];
@@ -30,12 +34,8 @@ class Robot {
         int numVoltage, numPressure, numTempHumidity, numServos;
 
     public:
-        Robot(int voltageDelay, int pressureDelay, int tempHumidityDelay, int servoDelay) :
-            voltageDelay(voltageDelay), pressureDelay(pressureDelay), tempHumidityDelay(tempHumidityDelay), servoDelay(servoDelay), isShell(false) {
-            init();
-        }
-
-        void init() {
+        Robot(int voltageDelay, int pressureDelay, int tempHumidityDelay, int servoDelay)
+            : voltageDelay(voltageDelay), pressureDelay(pressureDelay), tempHumidityDelay(tempHumidityDelay), servoDelay(servoDelay) {
             prevTimeVoltage = 0;
             prevTimePressure = 0;
             prevTimeTempHumidity = 0;
@@ -70,6 +70,9 @@ class Robot {
             }
         }
 
+        // Process method to be called in the main loop
+        // This method will call the methods to print each sensor's data
+        // It will also check for incoming serial data to control the servos
         void process() {
             currentTime = millis();
 
@@ -101,6 +104,7 @@ class Robot {
 
             if (currentTime - prevTimeServo >= servoDelay) {
                 prevTimeServo = currentTime;
+                // Check for incoming serial data to control servos
                 if (Serial.available() > 0) {
                     String input = Serial.readString();
                     int colonIndex = input.indexOf(":");

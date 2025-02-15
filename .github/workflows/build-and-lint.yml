@@ -17,8 +17,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create .env file with NO_GIT
-        run: echo "NO_GIT=true" > .env
+      - name: Create .env file with NO_GIT and ROBOT_NAME
+        run: |
+          echo "NO_GIT=true" >> .env
+          echo "ROBOT_NAME=oogway" >> .env
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2

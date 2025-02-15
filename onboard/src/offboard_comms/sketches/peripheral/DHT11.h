@@ -3,6 +3,8 @@
  * Header file for the DHT11 library, providing functionalities to interface with
  * the DHT11 temperature & humidity sensor.
  *
+ * Obtained from https://github.com/dhrubasaha08/DHT11
+ *
  * Author: Dhruba Saha
  * Version: 2.1.0
  * License: MIT
@@ -63,7 +65,7 @@ public:
 
   // Constants to represent error codes.
   static const int ERROR_CHECKSUM = 254;    // Error code indicating checksum mismatch.
-  static const int ERROR_TIMEOUT = 253;     // Error code indicating a timeout occurred during reading.
+  static const uint8_t ERROR_TIMEOUT = 253;     // Error code indicating a timeout occurred during reading.
   static const int TIMEOUT_DURATION = 10; // Duration (in milliseconds) to wait before timing out. This value has been modified from the original 1000 milliseconds to 10 milliseconds.
 
   /**
