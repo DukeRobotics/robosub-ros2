@@ -1,0 +1,3 @@
+<launch>
+	<node name="depthai_camera_connect" pkg="cv" exec="depthai_camera_connect" output="screen"/>
+</launch>

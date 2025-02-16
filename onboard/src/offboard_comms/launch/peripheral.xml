@@ -1,0 +1,3 @@
+<launch>
+	<node name="peripheral" pkg="offboard_comms" exec="peripheral" output="screen" />
+</launch>

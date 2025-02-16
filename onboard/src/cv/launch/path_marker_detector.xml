@@ -1,0 +1,3 @@
+<launch>
+	<node name="path_marker_detector" pkg="cv" exec="path_marker_detector" output="screen"/>
+</launch>
