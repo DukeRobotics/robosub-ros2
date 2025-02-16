@@ -1,0 +1,46 @@
+arduino:
+  peripheral:
+    ftdi: B0005AVT
+    fqbn: arduino:avr:nano
+    core: arduino:avr
+    sketch: sketches/peripheral
+    libraries:
+      - servo
+    sensors:
+      - type: voltage
+        tag: V
+        topic: /sensors/voltage
+      - type: pressure
+        tag: P
+        topic: /sensors/depth
+      - type: temperature
+        tag: T
+        topic: /sensors/temperature
+      - type: humidity
+        tag: H
+        topic: /sensors/humidity
+    servos:
+      - name: marker dropper
+        tag: M
+        service_name: /servos/marker_dropper
+        type: discrete
+        states:
+          left: 1250
+          right: 1750
+      - name: torpedoes
+        tag: T
+        service_name: /servos/torpedoes
+        type: discrete
+        states:
+          left: 1650
+          right: 1350
+  thruster:
+    ftdi: 02AB8D8451544E5450202020FF0D334A
+    fqbn: arduino:megaavr:nano
+    core: arduino:megaavr
+    sketch: sketches/thruster
+dvl:
+  ftdi: D309SFWS
+  negate_x_vel: false
+  negate_y_vel: false
+  negate_z_vel: false

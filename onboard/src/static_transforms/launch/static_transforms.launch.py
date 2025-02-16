@@ -18,7 +18,6 @@ def make_transform_publisher(transform: list) -> Node:
     """
     return Node(package='tf2_ros',
                 executable='static_transform_publisher',
-                output='screen',
                 arguments=['--x', str(transform[0]),
                            '--y', str(transform[1]),
                            '--z', str(transform[2]),

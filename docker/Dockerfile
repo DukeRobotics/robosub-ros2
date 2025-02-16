@@ -17,7 +17,9 @@ RUN apt install -y --no-install-recommends iputils-ping
 RUN apt install -y --no-install-recommends libeigen3-dev
 RUN apt install -y --no-install-recommends libyaml-cpp-dev
 RUN apt install -y --no-install-recommends nano
+RUN apt install -y --no-install-recommends nmap
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
+RUN apt install -y --no-install-recommends python3-jsonpickle
 RUN apt install -y --no-install-recommends python3-opencv
 RUN apt install -y --no-install-recommends python3-pip
 RUN apt install -y --no-install-recommends python3-transforms3d
@@ -26,6 +28,7 @@ RUN apt install -y --no-install-recommends ros-jazzy-cv-bridge
 RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
 RUN apt install -y --no-install-recommends ros-jazzy-robot-localization
 RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
+RUN apt install -y --no-install-recommends ros-jazzy-vision-msgs
 RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends tini
@@ -40,10 +43,17 @@ RUN /root/dev/venv/bin/pip install GitPython
 RUN /root/dev/venv/bin/pip install gputil
 RUN /root/dev/venv/bin/pip install pandas
 RUN /root/dev/venv/bin/pip install pyserial
-RUN /root/dev/venv/bin/pip install python3-nmap
+RUN /root/dev/venv/bin/pip install python-nmap
 RUN /root/dev/venv/bin/pip install ruff
 RUN /root/dev/venv/bin/pip install scikit-learn
 RUN /root/dev/venv/bin/pip install sympy
+RUN /root/dev/venv/bin/pip install mypy
+
+# Install Node.js (Jod)
+ENV NVM_DIR=/root/.nvm
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash \
+    && . $NVM_DIR/nvm.sh \
+    && nvm install --lts=Jod
 
 # Set no password for root user
 RUN passwd -d root
@@ -76,8 +86,22 @@ RUN git clone https://github.com/robotology/osqp-eigen.git && \
     cd ../.. && \
     rm -rf osqp-eigen
 
+# Install Foxglove CLI from pre-built binaries based on architecture
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        curl -L https://github.com/foxglove/foxglove-cli/releases/latest/download/foxglove-linux-amd64 -o /usr/local/bin/foxglove; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        curl -L https://github.com/foxglove/foxglove-cli/releases/latest/download/foxglove-linux-arm64 -o /usr/local/bin/foxglove; \
+    else \
+        echo "Unsupported architecture for Foxglove CLI: $ARCH" && exit 1; \
+    fi && \
+    chmod +x /usr/local/bin/foxglove
+
 # Copy .gdbinit file into container
 COPY .gdbinit /root/.gdbinit
+
+# Install Arduino CLI
+RUN curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
 
 # Create development directory
 RUN mkdir -p /root/dev/robosub-ros2
@@ -115,6 +139,12 @@ RUN --mount=type=secret,id=github_auth_ssh_key,required=false \
         git config --global user.email "$GIT_USER_EMAIL" && \
         git config --global --add safe.directory /root/dev/robosub-ros2 && \
         git config --global pull.rebase false; \
+    fi
+
+# Copy Foxglove CLI configuration file
+RUN --mount=type=secret,id=foxgloverc \
+    if [ -f /run/secrets/foxgloverc ]; then \
+        cat /run/secrets/foxgloverc > ~/.foxgloverc; \
     fi
 
 # Run entrypoint script via tini to ensure SIGTERM is properly handled and zombie processes are reaped

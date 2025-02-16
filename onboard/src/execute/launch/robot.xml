@@ -1,0 +1,9 @@
+<launch>
+    <include file="$(find-pkg-share controls)/launch/controls.xml" />
+    <include file="$(find-pkg-share cv)/launch/usb_camera_detectors.xml" />
+    <include file="$(find-pkg-share offboard_comms)/launch/offboard_comms.xml" />
+    <include file="$(find-pkg-share sensor_fusion)/launch/fuse.launch.py" />
+    <include file="$(find-pkg-share static_transforms)/launch/static_transforms.launch.py" />
+    <include file="$(find-pkg-share system_utils)/launch/system_utils.xml" />
+    <include file="$(find-pkg-share vectornav)/launch/vectornav.launch.py" />
+</launch>
