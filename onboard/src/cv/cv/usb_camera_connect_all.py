@@ -40,7 +40,7 @@ def generate_launch_description() -> LaunchDescription:
     return LaunchDescription(
         [
             LogInfo(msg='Launching USB Camera nodes...'),
-            *connect_all(Node('usb_camera_connect')),
+            *connect_all(Node('usb_camera_connect_all')),
         ],
     )
 
