@@ -40,10 +40,8 @@ class BuoyDetectorContourMatching(Node):
             np_arr = np.frombuffer(data.data, np.uint8)
             image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        except TypeError as t:
-          self.get_logger().error('Failed to convert image: %s', t)
-        except AttributeError as a:
-            self.get_logger().error('Failed to convert image: %s', a)
+        except (TypeError, AttributeError) as t:
+            self.get_logger().error(f'Failed to convert image: {t}')
 
         # Define the range for HSV filtering on the red buoy
         lower_red = np.array([0, 110, 190])

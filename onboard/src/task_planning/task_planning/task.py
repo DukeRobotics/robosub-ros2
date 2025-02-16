@@ -1,15 +1,22 @@
 from __future__ import annotations
 
-from enum import IntEnum
 import inspect
-import jsonpickle
-from typing import Any, Callable, Coroutine, Generator, Generic, Optional, Type, TypeVar, Union
+from enum import IntEnum
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-import rclpy
-from rclpy.node import Node
+if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine, Generator
+
+import jsonpickle
 from custom_msgs.msg import TaskUpdate
 
+if TYPE_CHECKING:
+    from rclpy.node import Node
+from rclpy.qos import HistoryPolicy, QoSProfile
+from std_msgs.msg import Header
+
 from task_planning.message_conversion.jsonpickle_custom_handlers import register_custom_jsonpickle_handlers
+from task_planning.utils.other_utils import singleton
 
 # Register all JSONPickle handlers for custom classes
 register_custom_jsonpickle_handlers()
@@ -17,8 +24,9 @@ register_custom_jsonpickle_handlers()
 
 class TaskStatus(IntEnum):
     """
-    An enum to represent the status of a task. All values are equivalent to the constants defined in
-    custom_msgs/TaskUpdate.
+    An enum to represent the status of a task.
+
+    All values are equivalent to the constants defined in custom_msgs/TaskUpdate.
 
     Attributes:
         INITIALIZED: The task has been initialized
@@ -41,12 +49,7 @@ class TaskStatus(IntEnum):
     ERRORED = TaskUpdate.ERRORED
 
 
-"""
-TODO:ros2
-
-Same idea as the TODO in marker_dropper. Don't create another node for TaskUpdatePublisher.
-"""
-
+@singleton
 class TaskUpdatePublisher:
     """
     A singleton class to publish task updates.
@@ -55,22 +58,14 @@ class TaskUpdatePublisher:
         _instance: The singleton instance of this class. Is a static attribute.
         publisher: The publisher for the task_updates topic
     """
+    def __init__(self, node: Node) -> None:
+        qos_profile = QoSProfile(
+            history=HistoryPolicy.KEEP_ALL,
+        )
+        self.node = node
+        self.publisher = node.create_publisher(TaskUpdate, '/task_planning/updates', qos_profile)
 
-    _instance = None
-
-    def __new__(cls, node):
-        if cls._instance is None:
-            cls._instance = super(TaskUpdatePublisher, cls).__new__(cls)
-            cls._instance.__init__(node)
-        return cls._instance
-
-    def __init__(self, node: Node):
-        # TODO:ros2 better way to do this?
-        self.publisher = node.create_publisher(TaskUpdate, '/task_planning/updates', 100000000)
-
-
-
-    def publish_update(self, task_id: int, parent_id: int, name: str, status: TaskStatus, data: Any) -> None:
+    def publish_update(self, task_id: int, parent_id: int, name: str, status: TaskStatus, data: Any) -> None:  # noqa: ANN401
         """
         Publish a message to the task_updates topic.
 
@@ -87,62 +82,55 @@ class TaskUpdatePublisher:
             AssertionError: If name is not a string
             AssertionError: If the status is not a valid TaskStatus
         """
-
         # Ensure id, parent_id, and name are of the correct types
-        assert isinstance(task_id, int), "Task id must be an int"
-        assert isinstance(parent_id, int), "Parent id must be an int"
-        assert isinstance(name, str), "Name must be a string"
+        assert isinstance(task_id, int), 'Task id must be an int'
+        assert isinstance(parent_id, int), 'Parent id must be an int'
+        assert isinstance(name, str), 'Name must be a string'
 
         # Ensure status is one of the valid statuses
-        assert status in TaskStatus, "Invalid task status"
+        assert status in TaskStatus, 'Invalid task status'
 
         # Options for jsonpickle encoding
         jsonpickle_options = {
-            "unpicklable": True,
-            "make_refs": False,
-            "warn": True,
-            "fail_safe": lambda e: "Failed to encode"  # If an object fails to encode, replace it with this string
+            'unpicklable': True,
+            'make_refs': False,
+            'warn': True,
+            'fail_safe': lambda: 'Failed to encode',  # If an object fails to encode, replace it with this string
         }
 
         # Encode the data to JSON
-        msg_data = ""
+        msg_data = ''
         try:
             msg_data = jsonpickle.encode(data, **jsonpickle_options)
-        except Exception:
-            self.get_logger().warn(f"Task with id {task_id} failed to encode data to JSON when publishing {status.name}: {data}")
+        except Exception:  # noqa: BLE001
+            self.get_logger().warn(
+                f'Task with id {task_id} failed to encode data to JSON when publishing {status.name}: {data}',
+            )
             msg_data = jsonpickle.encode(str(data), **jsonpickle_options)
 
-        # Create Message
-        msg = TaskUpdate()
+        # Create message header
+        header = Header(stamp=self.node.get_clock().now().to_msg())
 
-        # Set header
-        msg.header.stamp = self.get_clock().now().to_msg()
-
-        # Set other fields
-        msg.id = task_id
-        msg.parent_id = parent_id
-        msg.name = name
-        msg.status = status
-        msg.data = msg_data
-
-        # Publish the Message
+        # Publish the message
+        msg = TaskUpdate(header=header, id=task_id, parent_id=parent_id, name=name, status=status, data=msg_data)
         self.publisher.publish(msg)
 
-    def __del__(self):
-        # In ROS2, explicit unregisterring is not needed
-        pass
+    def __del__(self) -> None:
+        """Destroy the publisher when deleted."""
+        self.node.destroy_publisher(self.publisher)
 
 
-YieldType = TypeVar("YieldType")
-SendType = TypeVar("SendType")
-ReturnType = TypeVar("ReturnType")
+YieldType = TypeVar('YieldType')
+SendType = TypeVar('SendType')
+ReturnType = TypeVar('ReturnType')
 
 
 class Task(Generic[YieldType, SendType, ReturnType]):
     """
-    A wrapper around a coroutine to publish task updates for every action taken on the coroutine. All functions defined
-    for native coroutines are also defined by this class, including send, throw, close, and __await__. Also defines
-    step, which sends `None` to the coroutine.
+    A wrapper around a coroutine to publish task updates for every action taken on the coroutine.
+
+    All functions defined for native coroutines are also defined by this class, including send, throw, close, and
+    __await__. Also defines step, which sends `None` to the coroutine.
 
     Attributes:
         MAIN_ID: The id of the main task
@@ -159,7 +147,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
     MAIN_ID = 0
 
     def __init__(self, coroutine: Callable[..., Coroutine[YieldType, SendType, ReturnType]], *args,
-                 parent: Optional[Union[Task, int]] = None, **kwargs):
+                 parent: Task | int | None = None, **kwargs) -> None:
         """
         Initialize the Task object.
 
@@ -173,7 +161,6 @@ class Task(Generic[YieldType, SendType, ReturnType]):
             ValueError: If the parent is not a Task or Task.MAIN_ID
             AssertionError: If the coroutine is not a native coroutine
         """
-
         self._initialized = False
         self._id = id(self)
         self._done = False
@@ -187,10 +174,11 @@ class Task(Generic[YieldType, SendType, ReturnType]):
             self.parent = parent
             self._parent_id = parent.id
         else:
-            raise ValueError("Task parent must be a Task or MAIN_ID. Instead got " + str(parent))
+            msg = f'Task parent must be a Task or MAIN_ID. Instead got {parent}'
+            raise ValueError(msg)
 
         # Ensure coroutine is a native coroutine
-        assert inspect.iscoroutinefunction(coroutine), "Coroutine must be a native coroutine"
+        assert inspect.iscoroutinefunction(coroutine), 'Coroutine must be a native coroutine'
 
         # Initialize the coroutine
         self._coroutine = coroutine(self, *args, **kwargs)
@@ -200,69 +188,53 @@ class Task(Generic[YieldType, SendType, ReturnType]):
 
         initialized_data = {}
         if args:
-            initialized_data["args"] = args
+            initialized_data['args'] = args
         if kwargs:
-            initialized_data["kwargs"] = kwargs
+            initialized_data['kwargs'] = kwargs
         self._publish_update(TaskStatus.INITIALIZED, initialized_data)
         self._initialized = True
 
     @property
-    def id(self):
-        """
-        The id of the task
-        """
+    def id(self) -> int:
+        """The id of the task."""
         return self._id
 
     @property
-    def parent_id(self):
-        """
-        The id of the parent task
-        """
+    def parent_id(self) -> int:
+        """The id of the parent task."""
         return self._parent_id
 
     @property
-    def done(self):
-        """
-        If the coroutine has returned, closed, or deleted
-        """
+    def done(self) -> bool:
+        """If the coroutine has returned, closed, or deleted."""
         return self._done
 
     @property
-    def started(self):
-        """
-        If the coroutine has been sent at least one value
-        """
+    def started(self) -> bool:
+        """If the coroutine has been sent at least one value."""
         return self._started
 
     @property
-    def name(self):
-        """
-        The name of the coroutine
-        """
+    def name(self) -> str:
+        """The name of the coroutine."""
         return self._name
 
     @property
-    def initialized(self):
-        """
-        If this object has been properly initialized
-        """
+    def initialized(self) -> bool:
+        """If this object has been properly initialized."""
         return self._initialized
 
     @property
-    def args(self):
-        """
-        The positional arguments used to initialize the coroutine
-        """
+    def args(self) -> tuple:
+        """The positional arguments used to initialize the coroutine."""
         return self._args
 
     @property
-    def kwargs(self):
-        """
-        The keyword arguments used to initialize the coroutine
-        """
+    def kwargs(self) -> dict[str, Any]:
+        """The keyword arguments used to initialize the coroutine."""
         return self._kwargs
 
-    def _publish_update(self, status: TaskStatus, data: Any) -> None:
+    def _publish_update(self, status: TaskStatus, data: Any) -> None:  # noqa: ANN401
         """
         Publish a message to the task_updates topic.
 
@@ -273,16 +245,13 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         Raises:
             AssertionError: If the status is not a valid TaskStatus
         """
+        TaskUpdatePublisher().publish_update(self._id, self._parent_id, self._name, status, data)
 
-        TaskUpdatePublisher.get_instance().publish_update(self._id, self._parent_id, self._name, status, data)
-
-    def step(self):
-        """
-        Send a None value to the coroutine
-        """
+    def step(self) -> YieldType | ReturnType:
+        """Send a None value to the coroutine."""
         return self.send(None)
 
-    def send(self, value: SendType) -> Union[YieldType, ReturnType]:
+    def send(self, value: SendType) -> YieldType | ReturnType:
         """
         Send a value to the coroutine.
 
@@ -295,13 +264,11 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         Raises:
             Type[BaseException]: If the coroutine raises an exception
         """
-
         self._started = True
         try:
             self._publish_update(TaskStatus.RESUMED, value)
             ret_val = self._coroutine.send(value)
             self._publish_update(TaskStatus.PAUSED, ret_val)
-            return ret_val
         except StopIteration as e:
             self._done = True
             self._publish_update(TaskStatus.RETURNED, e.value)
@@ -309,9 +276,11 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         except BaseException as e:
             self._done = True
             self._publish_update(TaskStatus.ERRORED, e)
-            raise e
+            raise
+        else:
+            return ret_val
 
-    def throw(self, error: Type[BaseException]) -> Union[YieldType, ReturnType]:
+    def throw(self, error: type[BaseException]) -> YieldType | ReturnType:
         """
         Raise an exception in the coroutine.
 
@@ -324,13 +293,11 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         Raises:
             Type[BaseException]: If the coroutine raises an exception
         """
-
         self._started = True
         try:
             self._publish_update(TaskStatus.THREW, error)
             ret_val = self._coroutine.throw(error)
             self._publish_update(TaskStatus.PAUSED, ret_val)
-            return ret_val
         except StopIteration as e:
             self._done = True
             self._publish_update(TaskStatus.RETURNED, e.value)
@@ -338,35 +305,31 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         except BaseException as e:
             self._done = True
             self._publish_update(TaskStatus.ERRORED, e)
-            raise e
+            raise
+        else:
+            return ret_val
 
     def close(self) -> None:
-        """
-        Close the coroutine.
-        """
-
+        """Close the coroutine."""
         if not self._done:
             try:
                 self._publish_update(TaskStatus.CLOSED, None)
                 self._coroutine.close()
             except BaseException as e:
                 self._publish_update(TaskStatus.ERRORED, e)
-                raise e
+                raise
             finally:
                 self._done = True
 
     def __del__(self) -> None:
-        """
-        Close the coroutine when the object is deleted.
-        """
-
+        """Close the coroutine when the object is deleted."""
         if self._initialized and not self._done:
             try:
                 self._publish_update(TaskStatus.DELETED, None)
                 self._coroutine.close()
             except BaseException as e:
                 self._publish_update(TaskStatus.ERRORED, e)
-                raise e
+                raise
             finally:
                 self._done = True
 
@@ -383,35 +346,31 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         Raises:
             Type[BaseException]: If the coroutine raises an exception
         """
-
-        input = None
+        input_ = None
         output = None
         while not self._done:
             # Yield output and accept input only if the coroutine has been started
             if self._started:
-                input = (yield output)
-            output = self.send(input)
+                input_ = (yield output)
+            output = self.send(input_)
         return output
 
 
 def task(func: Callable[..., Coroutine[YieldType, SendType, ReturnType]]) -> \
         Callable[..., Task[YieldType, SendType, ReturnType]]:
-    """
-    A decorator to wrap a coroutine within Task.
-    """
+    """Wrap a coroutine within Task."""
 
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> Task:
         return Task(func, *args, **kwargs)
     return wrapper
 
 
 class Yield(Generic[YieldType, SendType]):
-    """
-    A class to allow coroutines to yield and accept input.
-    """
+    """A class to allow coroutines to yield and accept input."""
 
-    def __init__(self, value: YieldType = None):
+    def __init__(self, value: YieldType = None) -> None:
         self.value = value
 
     def __await__(self) -> Generator[YieldType, SendType, SendType]:
+        """Allow the object to be used in an asynchronous context by enabling it to be awaited."""
         return (yield self.value)

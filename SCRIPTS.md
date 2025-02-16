@@ -24,11 +24,12 @@ The `build.sh` script has several options to build and clean packages. The scrip
     - If the `--debug` flag is specified, the script builds the package(s) with debug symbols. This applies only to packages built with CMake.
 - The first argument can also be `clean` to remove the `build`, `install`, and `log` directories from the `core` and `onboard` workspaces.
     ```bash
-    source build.sh clean [core|onboard]
+    source build.sh clean [core|onboard|PACKAGE_NAME]
     ```
     - The optional second argument can be `core` or `onboard`.
     - If the second argument is `core`, the script cleans only the `core` workspace.
     - If the second argument is `onboard`, the script cleans only the `onboard` workspace.
+    - If the second argument is the name of a specific package in `onboard`, the script cleans only that package.
 
 ## `docker-build.sh`
 The `docker-build.sh` script builds the Docker image and starts the container.
@@ -51,7 +52,7 @@ The `lint.py` script lint checks files of supported programming languages. It ca
 ./lint.py [OPTIONS]
 ```
 - `-h, --help`: Show the help message and exit.
-- `-p, --path [PATH]`: Path to the directory or file to lint. Defaults to linting the entire repository.
+- `-p, --path [PATH]`: Path to the directory or file to lint, relative to the current working directory. Must be within the repository. Defaults to the repository root.
 - `-l, --languages {bash,cpp,python}`: Language(s) to lint. Defaults to linting all supported languages.
 - `-f, --fix`: Automatically fix linting errors where possible. Autofix is supported for Bash, C++, and Python.
 - `--print-success`: Print the paths to the files that were successfully linted. This is automatically enabled if `--path` is a file.

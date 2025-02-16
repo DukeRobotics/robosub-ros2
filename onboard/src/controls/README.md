@@ -107,7 +107,7 @@ Ensure that the robot's current [state](#state) is being published to the `/stat
 
 Launch the controls node by running:
 ```bash
-ros2 launch controls controls.launch
+ros2 launch controls controls.xml
 ```
 
 To make the robot move to a [desired state](#desired-state), do the following in the given order and in quick succession:
@@ -318,9 +318,9 @@ One pair of CSV files is required for each robot. They should be located in the 
 
 ### Launch Config
 The `launch` directory contains the following launch files:
-- `controls.launch`: Primary launch file for the system.
-- `controls_gdbserver.launch`: Launch file for debugging the system with GDB.
-- `controls_valgrind.launch`: Launch file for debugging the system with Valgrind.
+- `controls.xml`: Primary launch file for the system.
+- `controls_gdbserver.xml`: Launch file for debugging the system with GDB.
+- `controls_valgrind.xml`: Launch file for debugging the system with Valgrind.
 
 Each of these launch files contains the following parameters:
 - `sim`: Whether the system is being run in simulation or not. _Currently, this parameter is not used by the system,_ but it may be used in the future.
@@ -658,7 +658,7 @@ source build.sh controls
 
 Then, run the package with the following command:
 ```bash
-ros2 launch controls controls.launch
+ros2 launch controls controls.xml
 ```
 
 > [!NOTE]
@@ -681,7 +681,7 @@ For more information on debugging with VS Code, see the [VS Code documentation](
 #### Terminal
 Run the following launch file to start the node through GDBServer:
 ```bash
-ros2 launch controls controls_gdbserver.launch
+ros2 launch controls controls_gdbserver.xml
 ```
 This will start the server at `localhost:3000`. In a separate terminal, run the following command to attach GDB to the server:
 ```bash
@@ -691,7 +691,7 @@ gdb -ex "target remote localhost:3000"
 #### VS Code (GDBServer)
 Run the following launch file to start the node through GDBServer:
 ```bash
-ros2 launch controls controls_gdbserver.launch
+ros2 launch controls controls_gdbserver.xml
 ```
 This will start the server at `localhost:3000`. Then, attach the VS Code debugger to the server.
 1. Go to the `Run and Debug` tab in VS Code.
@@ -737,10 +737,10 @@ VS Code will run the compiled binary and use `gdb` to debug it.
 ### Valgrind
 To debug with [Valgrind](https://valgrind.org), run the following launch file:
 ```bash
-ros2 launch controls controls_valgrind.launch
+ros2 launch controls controls_valgrind.xml
 ```
 > [!NOTE]
-> To modify the options used to run GDB or Valgrind, modify the `launch-prefix` in the `node` tag in the `controls_gdbserver.launch` and `controls_valgrind.launch` files. If you're debugging with VS Code, modify `.vscode/launch.json`.
+> To modify the options used to run GDB or Valgrind, modify the `launch-prefix` in the `node` tag in the `controls_gdbserver.xml` and `controls_valgrind.xml` files. If you're debugging with VS Code, modify `.vscode/launch.json`.
 
 ### Structural Principles
 The `controls` package is designed to be modular and extensible. It is divided into several classes, each of which is responsible for a specific aspect of the system. The classes are designed to be as independent as possible, so that they can be modified or replaced without affecting the rest of the system.

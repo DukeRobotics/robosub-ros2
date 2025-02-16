@@ -1,36 +1,54 @@
-import rclpy
+from enum import Enum
+
+from custom_msgs.srv import SetDiscreteServo
+from rclpy.logging import get_logger
 from rclpy.node import Node
-from example_interfaces.srv import SetBool
+from rclpy.task import Future
 from task_planning.utils.other_utils import singleton
 
-"""
-TODO:ros2
+logger = get_logger('marker_dropper_interface')
 
-Look at the other interfaces. MarkDropper does *not* inherit from rclypy.node since it should receive a node
-object in its constructor (note that MarkerDropper is a @singleton).
-"""
+class MarkerDropperStates(Enum):
+    """Enum for the states of the marker dropper servo."""
+    LEFT = 'left'
+    RIGHT = 'right'
 
 @singleton
 class MarkerDropper:
+    """
+    A singleton class to control the marker dropper mechanism using a ROS 2 service.
 
-    # ROS service names
-    SERVO_CONTROL_SERVICE = 'marker_dropper/servo_control'
+    This class provides an interface to interact with the `/servos/marker_dropper` service, which controls the servo
+    mechanism for dropping markers.
 
-    def __init__(self, node: Node, bypass: bool = False):
+    Attributes:
+        MARKER_DROPPER_SERVICE (str): The name of the ROS 2 service for controlling the marker dropper servo.
+        node (Node): The ROS 2 node instance used to create the service client.
+        drop_marker_client (Client): A client for the service to control the servo.
+    """
+
+    MARKER_DROPPER_SERVICE = '/servos/marker_dropper'
+
+    def __init__(self, node: Node, bypass: bool = False) -> None:
         self.node = node
 
-        # Create a client for the servo_control service
-        self.drop_marker_client = node.create_client(SetBool, self.SERVO_CONTROL_SERVICE)
+        self.drop_marker_client = node.create_client(SetDiscreteServo, self.MARKER_DROPPER_SERVICE)
 
         if not bypass:
             while not self.drop_marker_client.wait_for_service(timeout_sec=1.0):
-                self.get_logger().info('servo_control service not available, waiting again...')
+                logger.info(f'{self.MARKER_DROPPER_SERVICE} not ready, waiting...')
 
-    def drop_marker(self, data: bool):
-        # Create a request
-        request = SetBool.Request()
-        request.data = data  # Assuming True means "drop the marker"
+    def drop_marker(self, data: MarkerDropperStates) -> Future:
+        """
+        Rotate the marker dropper servo to the specified state.
 
-        # Call the service
-        future = self.drop_marker_client.call_async(request)
-        return future
+        Args:
+            data (MarkerDropperStates): The state to set the marker dropper servo to.
+
+        Returns:
+            Future: The result of the asynchronous service call.
+        """
+        request = SetDiscreteServo.Request()
+        request.state = data.value
+
+        return self.drop_marker_client.call_async(request)

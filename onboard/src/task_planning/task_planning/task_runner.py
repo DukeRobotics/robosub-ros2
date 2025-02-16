@@ -1,182 +1,151 @@
-import comp_tasks
-from task_planning.interface.controls import Controls
-from task_planning.interface.cv import CV
-from task_planning.interface.state import State
-from task_planning.interface.marker_dropper import MarkerDropper
+# ruff: noqa: ERA001
+import time
 
 import rclpy
-from rclpy.node import Node
-import time
-from builtin_interfaces.msg import Time
-from rclpy.time import Time as rclpy_time
-from rclpy.duration import Duration
-from rclpy.clock import Clock
-
-from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
-import task_planning.comp_tasks as comp_tasks
-
 import tf2_ros
-import math
+from rclpy.clock import Clock
+from rclpy.duration import Duration
+from rclpy.node import Node
+
+from task_planning import comp_tasks, move_tasks, prequal_tasks, test_tasks  # noqa: F401
+from task_planning.interface.controls import Controls
+from task_planning.interface.cv import CV
+from task_planning.interface.marker_dropper import MarkerDropper
+from task_planning.interface.state import State
+from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
 
 
 class TaskPlanning(Node):
+    """Node for running tasks."""
     NODE_NAME = 'task_planning'
+    TASK_RATE_SECS = 1 / 30
+    COUNTDOWN_SECS = 10
 
-    def __init__(self):
-        """
-        Initialize the task planning node.
-
-        Including intializing the interfaces and the task update publisher.
-        """
-        main_initialized = False
+    def __init__(self) -> None:
+        """Set up the task planning node."""
         super().__init__(self.NODE_NAME)
-        bypass = self.declare_parameter('bypass', False).value
-        untethered = self.declare_parameter('untethered', False).value
-        self.get_logger().info('task_planning node initialized')
+        self.get_logger().info('Task planning node initialized')
 
-        # When ros is shutdown, if main finished initializing, publish that it has closed
-        def publish_close():
-            if main_initialized:
-                TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.CLOSED, None)
-
-        rclpy.shutdown_callback(publish_close)
+        self.bypass = self.declare_parameter('bypass', False).value
+        self.autonomous = self.declare_parameter('autonomous', False).value
 
         # Initialize transform buffer and listener
-        tfBuffer = tf2_ros.Buffer()
-        _ = tf2_ros.TransformListener(tfBuffer, self)
+        tf_buffer = tf2_ros.Buffer()
+        _ = tf2_ros.TransformListener(tf_buffer, self)
 
         # Initialize interfaces
-        # TODO:ros2 set bypass=false
-        Controls(self, bypass=True)
-        state = State(self, tfBuffer=tfBuffer, bypass=True)
-        CV(self, bypass=True)
-        MarkerDropper(self, bypass=True)
-
-
+        Controls(self, bypass=self.bypass)
+        State(self, tf_buffer=tf_buffer, bypass=self.bypass)
+        CV(self, bypass=self.bypass)
+        MarkerDropper(self, bypass=self.bypass)
 
         # Initialize the task update publisher
         TaskUpdatePublisher(self)
 
-
         # Wait one second for all publishers and subscribers to start
-        # time.sleep(1) TODO:ros2 uncomment
+        time.sleep(1)
 
         # Ensure transform from odom to base_link is available
+        if not self.bypass:
+            try:
+                _ = tf_buffer.lookup_transform('odom', 'base_link', Clock().now(), Duration(seconds=15))
+            except (
+                tf2_ros.LookupException,
+                tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException,
+            ):
+                self.get_logger().error('Failed to get transform')
+                return
+
+            # Ensure state is available
+            while not State().state:
+                pass
+
+        # Tasks to run
+        self.tasks = [
+            # comp_tasks.initial_submerge(-0.7, parent=Task.MAIN_ID),
+            # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=Task.MAIN_ID),
+
+            prequal_tasks.prequal_task(parent=Task.MAIN_ID),
+
+            # comp_tasks.coin_flip(parent=Task.MAIN_ID),
+            # comp_tasks.yaw_to_cv_object('gate_red_cw', direction=1, yaw_threshold=math.radians(10),
+            #                             latency_threshold=1, depth_level=0.7, parent=Task.MAIN_ID),
+            # comp_tasks.gate_task(offset=-0.1, direction=-1, parent=Task.MAIN_ID),
+            # comp_tasks.gate_style_task(depth_level=0.9, parent=Task.MAIN_ID),
+            # comp_tasks.yaw_to_cv_object('buoy', direction=1, depth_level=0.7, parent=Task.MAIN_ID),
+            # comp_tasks.buoy_task(turn_to_face_buoy=False, depth=0.7, parent=Task.MAIN_ID),
+            # comp_tasks.after_buoy_task(parent=Task.MAIN_ID)
+
+            # comp_tasks.align_path_marker(direction=-1, parent=Task.MAIN_ID),
+            # comp_tasks.center_path_marker(parent=Task.MAIN_ID),
+            # comp_tasks.yaw_to_cv_object('path_marker', yaw_threshold=math.radians(5), direction=-1,
+            #                             depth_level=0.5, parent=Task.MAIN_ID),
+            # comp_tasks.dead_reckoning_path_marker_to_bin(maximum_distance=4, parent=Task.MAIN_ID),
+            # comp_tasks.path_marker_to_pink_bin(maximum_distance=6, parent=Task.MAIN_ID),
+            # comp_tasks.buoy_to_octagon(direction=1, move_forward=0, parent=Task.MAIN_ID),
+            # comp_tasks.let_search_for_bin_turtlesim_style_because_why_not(parent=Task.MAIN_ID),
+            # comp_tasks.bin_task(parent=Task.MAIN_ID),
+            # comp_tasks.yaw_to_cv_object('bin_pink_front', direction=-1, yaw_threshold=math.radians(15),
+            #                             depth_level=1.0, parent=Task.MAIN_ID),
+            # comp_tasks.octagon_task(direction=1, parent=Task.MAIN_ID),
+        ]
+
+        self.current_task = 0
+        self.started_running_tasks = False
+
+        if self.autonomous:
+            self.countdown_value = self.COUNTDOWN_SECS
+            input(f'Press enter to start {self.countdown_value} second countdown...')
+            self.get_logger().info('Countdown started...')
+            self.countdown_timer = self.create_timer(1.0, self.countdown)
+        else:
+            input('Press enter to start tasks...')
+
+        self.task_timer = self.create_timer(self.TASK_RATE_SECS, self.run_tasks, autostart=not self.autonomous)
+
+    def countdown(self) -> None:
+        """Count down to start tasks."""
+        self.get_logger().info(f'Countdown: {self.countdown_value}')
+        if self.countdown_value <= 0:
+            self.get_logger().info('Countdown complete!')
+            self.countdown_timer.cancel()
+            Controls().call_enable_controls(True)
+            self.task_timer.reset()
+
+        self.countdown_value -= 1
+
+    def run_tasks(self) -> None:
+        """Step through the tasks, or end the node if all tasks are completed."""
         try:
-            _ = tfBuffer.lookup_transform('odom', 'base_link', Clock().now(), Duration(seconds=15))
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-            self.get_logger().info("str(e)")
-            self.get_logger().error('Failed to get transform')
-            return
+            if not self.started_running_tasks:
+                # Main has finished initializing and has started running tasks
+                self.started_running_tasks = True
+                TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.INITIALIZED, None)
+                self.get_logger().info('Running tasks...')
 
-        # Ensure state is available
-        while not state.state:
-            pass
+            if self.current_task >= len(self.tasks) or not rclpy.ok():
+                if self.autonomous:
+                    Controls().call_enable_controls(False)
+                self.task_timer.cancel()
+                self.get_logger().info('All tasks completed!')
 
-        # Main has initialized
-        TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.INITIALIZED, None)
-        main_initialized = True
-        # Run tasks
-        try:
-            # Tasks to run
-            tasks = [
-                comp_tasks.initial_submerge(-0.7, parent=Task.MAIN_ID),
-                comp_tasks.coin_flip(parent=Task.MAIN_ID),
-                comp_tasks.yaw_to_cv_object('gate_red_cw', direction=1, yaw_threshold=math.radians(10),
-                                            latency_threshold=1, depth_level=0.7, parent=Task.MAIN_ID),
-                comp_tasks.gate_task(offset=-0.1, direction=-1, parent=Task.MAIN_ID),
-                comp_tasks.gate_style_task(depth_level=0.9, parent=Task.MAIN_ID),
-                comp_tasks.yaw_to_cv_object('buoy', direction=1, depth_level=0.7, parent=Task.MAIN_ID),
-                comp_tasks.buoy_task(turn_to_face_buoy=False, depth=0.7, parent=Task.MAIN_ID),
-                comp_tasks.after_buoy_task(parent=Task.MAIN_ID)
-
-
-
-                # comp_tasks.align_path_marker(direction=-1, parent=Task.MAIN_ID),
-                # comp_tasks.center_path_marker(parent=Task.MAIN_ID),
-                # comp_tasks.yaw_to_cv_object('path_marker', yaw_threshold=math.radians(5), direction=-1,
-                #                             depth_level=0.5, parent=Task.MAIN_ID),
-                # comp_tasks.dead_reckoning_path_marker_to_bin(maximum_distance=4, parent=Task.MAIN_ID),
-                # comp_tasks.path_marker_to_pink_bin(maximum_distance=6, parent=Task.MAIN_ID),
-                # comp_tasks.buoy_to_octagon(direction=1, move_forward=0, parent=Task.MAIN_ID),
-                # comp_tasks.let_search_for_bin_turtlesim_style_because_why_not(parent=Task.MAIN_ID),
-                # comp_tasks.bin_task(parent=Task.MAIN_ID),
-                # comp_tasks.yaw_to_cv_object('bin_pink_front', direction=-1, yaw_threshold=math.radians(15),
-                #                             depth_level=1.0, parent=Task.MAIN_ID),
-                # comp_tasks.octagon_task(direction=1, parent=Task.MAIN_ID),
-            ]
-            input('Press enter to run tasks...\n')
-
-            # TODO:ros2 migrate this correctly using timers
-
-            def countdown_callback():
-                self.get_logger().info(f'Countdown: {self.countdown_value}')
-
-                if self.countdown_value <= 0:
-                    self.countdown_timer.cancel()  # Stop the timer
-                    Controls().call_enable_controls(True)
-                    self.get_logger().info('Countdown complete!')
-
-                self.countdown_value -= 1
-
-            if untethered:
-                # self.get_logger().info('\nCountdown started...\n')
-                # self.countdown_timer = self.create_timer(1, self.countdown)
-                # for i in tqdm(range(10, 0, -1)):
-                #     time.sleep(1)
-                #     if not rclpy.ok():
-                #         break
-                # Controls().call_enable_controls(True)
-                self.countdown_value = 10  # Start from 10
-                self.get_logger().info('\nCountdown started...\n')
-                self.countdown_timer = self.create_timer(1.0, countdown_callback)
-                self.countdown_timer.cancel()
-
-
-            self.get_logger().info('\nRunning tasks.\n')
-
-            # TODO:ros2 migrate this correctly using timers
-            # Step through tasks, stopping if rpy is shutdown
-
-            current_task = 0
-            def run_tasks():
-                if current_task >= len(tasks) or not rclpy.ok():
-                    return
-                if not tasks[self.current_task].done:
-                    tasks[self.current_task].step()
-                else:
-                    self.current_task += 1
-
-            self.task_runner_timer = self.create_timer(30, run_tasks)
-
-
-            # rate = self.create_rate(30)
-            # for t in tasks:
-            #     while not t.done and rclpy.ok():
-            #         t.step()
-            #         rate.sleep()
-            #     if not rclpy.ok():
-            #         break
-
-            if untethered:
-                Controls().call_enable_controls(False)
+                # Main has finished gracefully
+                TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.RETURNED, None)
+                self.destroy_node()
+                rclpy.shutdown()
+            elif not self.tasks[self.current_task].done:
+                    self.tasks[self.current_task].step()
+            else:
+                self.current_task += 1
 
         except BaseException as e:
-
             # Main has errored
             TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.ERRORED, e)
             raise
 
-        else:
-
-            # Main has returned
-            TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.RETURNED, None)
-
-
-def main(args=None):
-    """
-    Spin up the task planning node.
-    """
+def main(args: list[str] | None = None) -> None:
+    """Spin up the task planning node."""
     rclpy.init(args=args)
     task_planning = TaskPlanning()
 

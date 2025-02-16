@@ -35,7 +35,7 @@ setup(
             'depthai_spatial_detection = cv.depthai_spatial_detection:main',
             'path_marker_detector = cv.path_marker_detector:main',
             'pink_bins_detector = cv.pink_bins_detector:main',
-            'usb_camera_connect = cv.usb_camera_connect:main',
+            'usb_camera_connect_all = cv.usb_camera_connect_all:main',
             'usb_camera = cv.usb_camera:main',
         ],
     },

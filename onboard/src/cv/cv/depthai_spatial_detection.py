@@ -110,10 +110,13 @@ class DepthAISpatialDetector(Node):
             - "depth": contains ImgFrame messages with UINT16 values representing the depth in millimeters by default.
                 See the property depth in https://docs.luxonis.com/projects/api/en/latest/components/nodes/stereo_depth/
 
-        :param nn_blob_path: Path to blob file used for object detection.
-        :param sync_nn: If True, sync the RGB output feed with the detection from the neural network. Needed if the RGB
-        feed output will be used and needs to be synced with the object detections.
-        :return: depthai.Pipeline object to compute
+        Args:
+            nn_blob_path (str): Path to blob file used for object detection.
+            sync_nn (bool): If True, sync the RGB output feed with the detection from the neural network. Needed if the
+                RGB feed output will be used and needs to be synced with the object detections.
+
+        Returns:
+            depthai.Pipeline: Pipeline object to compute.
         """
         model = self.models[self.current_model_name]
 
@@ -179,19 +182,20 @@ class DepthAISpatialDetector(Node):
         """
         Create and assign the pipeline and set the current model name.
 
-        :param model_name: Name of the model. The model name should match a key in cv/models/depthai_models.yaml.
-        For example, if depthai_models.yaml is:
+        Args:
+            model_name (str): Name of the model. The model name should match a key in cv/models/depthai_models.yaml.
+                For example, if the yaml file contains the following:
 
-        gate:
-            classes: ['gate', 'gate_side', 'gate_tick', 'gate_top', 'start_gate']
-            topic: cv/
-            weights: yolo_v4_tiny_openvino_2021.3_6shave-2022-7-21_416_416.blob
-            input_size: [416, 416]
-            coordinate_size: 4
-            anchors: [10, 14, 23, 27, 37, 58, 81, 82, 135, 169, 344, 319]
-            anchor_masks: {"side26": [0, 1, 2], "side13": [3, 4, 5]}
+                gate:
+                    classes: ['gate', 'gate_side', 'gate_tick', 'gate_top', 'start_gate']
+                    topic: cv/
+                    weights: yolo_v4_tiny_openvino_2021.3_6shave-2022-7-21_416_416.blob
+                    input_size: [416, 416]
+                    coordinate_size: 4
+                    anchors: [10, 14, 23, 27, 37, 58, 81, 82, 135, 169, 344, 319]
+                    anchor_masks: {"side26": [0, 1, 2], "side13": [3, 4, 5]}
 
-        Then, a possible model name is "gate".
+                Then, a possible model name is "gate".
         """
         # If the model is already set, don't reinitialize
         if model_name == self.current_model_name:
@@ -216,7 +220,9 @@ class DepthAISpatialDetector(Node):
         Initialize the publishers for the node. A publisher is created for each class that the model predicts.
 
         The publishers are created in format: "cv/camera/model_name".
-        :param model_name: Name of the model that is being used.
+
+        Args:
+            model_name (str): Name of the model that is being used.
         """
         model = self.models[model_name]
 
@@ -242,8 +248,9 @@ class DepthAISpatialDetector(Node):
         """
         Assign output queues from the pipeline to dictionary of queues.
 
-        :param device: DepthAI.Device object for the connected device.
-        See https://docs.luxonis.com/projects/api/en/latest/components/device/
+        Args:
+            device (DepthAI.Device): DepthAI.Device object for the connected device.
+                See https://docs.luxonis.com/projects/api/en/latest/components/device/
         """
         # If the output queues are already set, don't reinitialize
         if self.connected:
@@ -367,12 +374,15 @@ class DepthAISpatialDetector(Node):
         """
         Publish predictions to label-specific topic. Publishes to /cv/[camera]/[label].
 
-        :param bbox: Tuple for the bounding box.
-            Values are from 0-1, where X increases left to right and Y increases top to bottom.
-        :param det_coords: Tuple with the X, Y, and Z values in meters, and in the robot rotational reference frame.
-        :param label: Predicted label for the detection.
-        :param confidence: Confidence for the detection, from 0 to 1.
-        :param shape: Tuple with the (height, width) of the image. NOTE: This is in reverse order from the model.
+        Args:
+            bbox (tuple): Tuple for the bounding box. Values are from 0-1, where X increases left to right and Y
+                increases top to bottom.
+            det_coords (tuple): Tuple with the X, Y, and Z values in meters in the robot rotational reference frame.
+            yaw (float): Yaw angle in radians.
+            label (str): Predicted label for the detection.
+            confidence (float): Confidence for the detection, from 0 to 1.
+            shape (tuple): Tuple with the (height, width) of the image. NOTE: This is in reverse order from the model.
+            using_sonar (bool): Whether or not sonar is being used.
         """
         object_msg = CVObject()
 
@@ -406,8 +416,11 @@ class DepthAISpatialDetector(Node):
         """
         Listen to sonar response.
 
-        Updates instance variable self.sonar_response based on
-        what sonar throws back if it is in range (> SONAR_RANGE = 1.75m).
+        Updates instance variable self.sonar_response based on what sonar throws back if it is in range
+        (> SONAR_RANGE = 1.75m).
+
+        Args:
+            sonar_results (object): The sonar response message.
         """
         # Check to see if the sonar is in range - are results from sonar valid?
         if not sonar_results.is_object:
@@ -419,15 +432,20 @@ class DepthAISpatialDetector(Node):
             self.in_sonar_range = False
 
     def update_priority(self, obj: str) -> None:
-        """Update the current priority class. If the priority class is detected, sonar will be called."""
+        """
+        Update the current priority class. If the priority class is detected, sonar will be called.
+
+        Args:
+            obj (str): The current priority class.
+        """
         self.current_priority = obj
 
     def run(self) -> bool:
         """
         Run the selected model on the connected device.
 
-        :return: False if the model is not in cv/models/depthai_models.yaml.
-        Otherwise, the model will be run on the device.
+        Returns:
+            bool: False if the model is not in cv/models/depthai_models.yaml. Otherwise, runs the model on the device.
         """
         # Check if model is valid
         if self.running_model not in self.models:
@@ -451,9 +469,11 @@ class DepthAISpatialDetector(Node):
         See: https://math.stackexchange.com/questions/1320285/convert-a-pixel-displacement-to-angular-rotation
         for implementation details.
 
-        :param x_offset: x pixels from center of image
+        Args:
+            x_offset (int): x pixels from center of image.
 
-        :return: angle in degrees
+        Returns:
+            float: Angle in degrees.
         """
         image_center_x = self.camera_pixel_width / 2.0
         return math.degrees(math.atan((x_offset - image_center_x) * 0.005246675486))
@@ -462,12 +482,14 @@ class DepthAISpatialDetector(Node):
         """
         Compute angle from y offset.
 
-        See: https://math.stackexchange.com/questions/1320285/convert-a-pixel-displacement-to-angular-rotation
-        for implementation details.
+        See https://math.stackexchange.com/questions/1320285/convert-a-pixel-displacement-to-angular-rotation for
+        implementation details.
 
-        :param y_offset: y pixels from center of image
+        Args:
+            y_offset (int): y pixels from center of image.
 
-        :return: angle in degrees
+        Returns:
+            float: Angle in degrees.
         """
         image_center_y = self.camera_pixel_height / 2.0
         return math.degrees(math.atan((y_offset - image_center_y) * 0.003366382395))
@@ -476,8 +498,12 @@ class DepthAISpatialDetector(Node):
         """
         Take in a detected bounding box from the camera and return the angle range to sonar sweep.
 
-        :param min_x: minimum x coordinate of camera bounding box (robot y)
-        :param max_x: maximum x coordinate of camera bounding box (robot y)
+        Args:
+            min_x (float): Minimum x coordinate of camera bounding box (robot y).
+            max_x (float): Maximum x coordinate of camera bounding box (robot y).
+
+        Returns:
+            tuple[float, float]: Tuple containing the minimum and maximum angle to sweep sonar.
         """
         distance_to_screen = self.camera_pixel_width / 2 * \
             1/math.tan(math.radians(HORIZONTAL_FOV/2))
@@ -490,8 +516,11 @@ def mm_to_meters(val_mm: float) -> float:
     """
     Convert value from millimeters to meters.
 
-    :param val_mm: Value in millimeters.
-    :return: Input value converted to meters.
+    Args:
+        val_mm (float): Value in millimeters.
+
+    Returns:
+        float: Input value converted to meters.
     """
     return val_mm / MM_IN_METER
 
@@ -501,10 +530,14 @@ def camera_frame_to_robot_frame(cam_x: float, cam_y: float, cam_z: float) -> tup
     Convert coordinates in camera reference frame to coordinates in robot reference frame.
 
     This ONLY ACCOUNTS FOR THE ROTATION BETWEEN COORDINATE FRAMES, and DOES NOT ACCOUNT FOR THE TRANSLATION.
-    :param cam_x: X coordinate of object in camera reference frame.
-    :param cam_y: Y coordinate of object in camera reference frame.
-    :param cam_z: Z coordinate of object in camera reference frame.
-    :return: X,Y,Z coordinates of object in robot rotational reference frame.
+
+    Args:
+        cam_x (float): X coordinate of object in camera reference frame.
+        cam_y (float): Y coordinate of object in camera reference frame.
+        cam_z (float): Z coordinate of object in camera reference frame.
+
+    Returns:
+        tuple[float, float, float]: X, Y, Z coordinates of object in robot rotational reference frame.
     """
     robot_y = -cam_x
     robot_z = cam_y

@@ -5,7 +5,7 @@ ekf_localization_node:
     base_link_frame: base_link
     world_frame: odom
 
-    frequency: 20.0
+    frequency: 15.0
 
     odom0: sensors/dvl/odom
     odom0_config: [false, false, false, # x, y, z
@@ -13,6 +13,7 @@ ekf_localization_node:
                   true,  true,  false, # linear velocity
                   false, false, false, # angular velocity
                   false, false, false] # linear acceleration
+    odom0_nodelay: true
 
     imu0: vectornav/imu
     imu0_config: [false, false, false,
@@ -20,6 +21,7 @@ ekf_localization_node:
                   false, false, false,
                   true, true, true,
                   false, false, false]
+    imu0_nodelay: true
 
     pose0: sensors/depth
     pose0_config: [false, false, true,
@@ -27,13 +29,12 @@ ekf_localization_node:
                   false, false, false,
                   false, false, false,
                   false, false, false]
-
-    imu0_queue_size: 20
+    pose0_nodelay: true
 
     pose0_differential: true
     odom0_differential: true
     smooth_lagged_data: true
-    history_length: 0.5
+    history_length: 0.1
 
     initial_state: [0.0, 0.0, 0.0,
                     0.0, 0.0, 0.0,

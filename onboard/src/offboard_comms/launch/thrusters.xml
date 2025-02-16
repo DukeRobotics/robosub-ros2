@@ -1,0 +1,3 @@
+<launch>
+    <node name="thrusters" pkg="offboard_comms" exec="thrusters"  output="screen" />
+</launch>

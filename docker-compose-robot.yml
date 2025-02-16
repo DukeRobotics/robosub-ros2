@@ -8,5 +8,3 @@ services:
     privileged: true
     volumes:
       - /dev:/dev
-    environment:
-      - ROBOT_NAME=${ROBOT_NAME}

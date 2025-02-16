@@ -111,10 +111,10 @@ class TopicTransforms(Node):
             Conversions.pose_to_twist,
         ),
         TopicTransformData(
-            '/vectornav/IMU',
+            '/vectornav/imu',
             Imu,
             lambda x: x.orientation,
-            '/transforms/vectornav/IMU/orientation',
+            '/transforms/vectornav/imu/orientation',
             Vector3,
             Conversions.quat_to_vector,
         ),
@@ -159,7 +159,7 @@ class TopicTransforms(Node):
         output_msg = data.output_type_conversion(converted_input)
         data.publisher.publish(output_msg)
 
-def main(args: list[str] | None) -> None:
+def main(args: list[str] | None = None) -> None:
     """
     Run main entry point for the TopicTransforms node.
 

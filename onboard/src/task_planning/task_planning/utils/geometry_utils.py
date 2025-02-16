@@ -1,20 +1,12 @@
-import numpy as np
-from typing import List, Tuple
 
-import rclpy
-from geometry_msgs.msg import Vector3, Pose, PoseStamped, \
-    Twist, Point, Quaternion
+import numpy as np
 import tf2_geometry_msgs
 import tf2_ros
-from builtin_interfaces.msg import Time
-from rclpy.time import Time as rclpy_time
-from rclpy.duration import Duration
-
+from geometry_msgs.msg import Point, Pose, Quaternion, Twist, Vector3
+from rclpy.time import Time
 from transforms3d.euler import euler2quat, quat2euler
 from transforms3d.quaternions import qmult
 
-# Time in ROS2
-tf2_time = rclpy.time.Time()
 
 def vector3_to_numpy(vector: Vector3) -> np.ndarray:
     """
@@ -52,7 +44,7 @@ def transforms3d_quat_to_geometry_quat(quat: np.ndarray) -> Quaternion:
     Returns:
         The converted geometry_msgs/Quaternion.
     """
-    return Quaternion(quat[1], quat[2], quat[3], quat[0])
+    return Quaternion(x=quat[1], y=quat[2], z=quat[3], w=quat[0])
 
 
 def geometry_quat_to_transforms3d_quat(quat: Quaternion) -> np.ndarray:
@@ -112,10 +104,12 @@ def angular_distance_quat(quat1: Quaternion, quat2: Quaternion) -> Vector3:
     return angular_distance_rpy(rpy1, rpy2)
 
 
-def angular_distance_rpy(rpy1: Tuple[float, float, float], rpy2: Tuple[float, float, float]) -> Vector3:
+def angular_distance_rpy(rpy1: tuple[float, float, float], rpy2: tuple[float, float, float]) -> Vector3:
     """
-    Find the difference between two orientations, provided as (roll, pitch, yaw). All arguments must be in radians,
-    or they all must be in degrees. The return value will be in the same units as the input.
+    Find the difference between two orientations, provided as (roll, pitch, yaw).
+
+    All arguments must be in radians, or they all must be in degrees.
+    The return value will be in the same units as the input.
 
     Args:
         rpy1: The first orientation with three values, in order: roll, pitch, yaw.
@@ -127,7 +121,7 @@ def angular_distance_rpy(rpy1: Tuple[float, float, float], rpy2: Tuple[float, fl
     roll = np.fabs(rpy1[0] - rpy2[0])
     pitch = np.fabs(rpy1[1] - rpy2[1])
     yaw = np.fabs(rpy1[2] - rpy2[2])
-    return Vector3(roll, pitch, yaw)
+    return Vector3(x=roll, y=pitch, z=yaw)
 
 
 def at_pose(current_pose: Pose, desired_pose: Pose, linear_tol: float = 0.15, roll_tol: float = 0.2,
@@ -139,13 +133,16 @@ def at_pose(current_pose: Pose, desired_pose: Pose, linear_tol: float = 0.15, ro
         current_pose: The current pose.
         desired_pose: The desired pose.
         linear_tol: The allowable linear distance in meters for the robot to be considered at the desired pose.
-        angular_tol: The allowable angular distance in radians for each axis for the robot to be considered at the
+        roll_tol: The allowable angular distance in radians in the roll axis for the robot to be considered at the
+        desired pose.
+        pitch_tol: The allowable angular distance in radians in the pitch axis for the robot to be considered at the
+        desired pose.
+        yaw_tol: The allowable angular distance in radians in the yaw axis for the robot to be considered at the
         desired pose.
 
     Returns:
         True if the current pose is within the tolerances of the desired pose.
     """
-
     linear = point_linear_distance(current_pose.position, desired_pose.position) < linear_tol
     angular_dist = angular_distance_quat(current_pose.orientation, desired_pose.orientation)
     angular = np.all(vector3_to_numpy(angular_dist) < np.array([roll_tol, pitch_tol, yaw_tol]))
@@ -154,7 +151,7 @@ def at_pose(current_pose: Pose, desired_pose: Pose, linear_tol: float = 0.15, ro
 
 def at_vel(current_twist: Twist, desired_twist: Twist, linear_tol: float = 0.02, angular_tol: float = 0.02) -> bool:
     """
-    Check if current twist within tolerance of a desired twist (linear and angular velocities).
+    Check if current twist is within tolerance of a desired twist (linear and angular velocities).
 
     Args:
         current_twist: The current twist.
@@ -167,7 +164,6 @@ def at_vel(current_twist: Twist, desired_twist: Twist, linear_tol: float = 0.02,
     Returns:
         True if the current twist is within the tolerances of the desired twist.
     """
-
     linear = vector3_linear_distance(current_twist.linear, desired_twist.linear) < linear_tol
     angular = vector3_linear_distance(current_twist.angular, desired_twist.angular) < angular_tol
     return linear and angular
@@ -185,19 +181,18 @@ def stopped_at_pose(current_pose: Pose, desired_pose: Pose, current_twist: Twist
     Returns:
         True if the robot is at the desired pose and has stopped moving, within the default tolerances.
     """
-
     at_desired_pose = at_pose(current_pose, desired_pose)
     at_desired_vel = at_vel(current_twist, Twist())
 
     return at_desired_pose and at_desired_vel
 
 
-def transform_pose(tfBuffer: tf2_ros.Buffer, base_frame: str, target_frame: str, pose: Pose) -> Pose:
+def transform_pose(tf_buffer: tf2_ros.Buffer, base_frame: str, target_frame: str, pose: Pose) -> Pose:
     """
     Transform a pose from one frame to another. Uses the latest transform available at the time of the call.
 
     Args:
-        tfBuffer: The transform buffer.
+        tf_buffer: The transform buffer.
         base_frame: The frame of the input pose.
         target_frame: The frame to transform the pose to.
         pose: The pose to transform.
@@ -205,18 +200,11 @@ def transform_pose(tfBuffer: tf2_ros.Buffer, base_frame: str, target_frame: str,
     Returns:
         The transformed pose.
     """
-
-    pose_stamped = PoseStamped()
-    pose_stamped.pose = pose
-    pose_stamped.header.frame_id = base_frame
-
-    trans = tfBuffer.lookup_transform(target_frame, base_frame, node.get_clock().now())
-    transformed = tf2_geometry_msgs.do_transform_pose(pose_stamped, trans)
-
-    return transformed.pose
+    trans = tf_buffer.lookup_transform(target_frame, base_frame, Time())
+    return tf2_geometry_msgs.do_transform_pose(pose, trans)
 
 
-def add_poses(pose_list: List[Pose]) -> Pose:
+def add_poses(pose_list: list[Pose]) -> Pose:
     """
     Add a list of poses together. Sums the positions and multiplies the orientations.
 
@@ -226,7 +214,6 @@ def add_poses(pose_list: List[Pose]) -> Pose:
     Returns:
         The sum of the poses.
     """
-
     p_sum = Point(0, 0, 0)
     q_sum = np.array([1, 0, 0, 0])
 
@@ -236,7 +223,10 @@ def add_poses(pose_list: List[Pose]) -> Pose:
         p_sum.z += pose.position.z
         q_sum = qmult(geometry_quat_to_transforms3d_quat(pose.orientation), q_sum)
 
-    return Pose(p_sum, transforms3d_quat_to_geometry_quat(q_sum))
+    pose_sum = Pose()
+    pose_sum.position = p_sum
+    pose_sum.orientation = transforms3d_quat_to_geometry_quat(q_sum)
+    return pose_sum
 
 
 def parse_pose(pose: Pose) -> dict:
@@ -250,10 +240,9 @@ def parse_pose(pose: Pose) -> dict:
         A dictionary with the position and orientation of the pose. It has the keys 'x', 'y', 'z', 'roll', 'pitch', and
         'yaw'. Roll, pitch, and yaw are in radians.
     """
-
     pose_dict = {'x': pose.position.x, 'y': pose.position.y, 'z': pose.position.z}
-    pose_dict['roll'], pose_dict['pitch'], pose_dict['yaw'] = quat2euler(
-        geometry_quat_to_transforms3d_quat(pose.orientation))
+    pose_dict['roll'], pose_dict['pitch'], pose_dict['yaw'] = \
+        quat2euler(geometry_quat_to_transforms3d_quat(pose.orientation))
     return pose_dict
 
 
@@ -272,38 +261,35 @@ def create_pose(x: float, y: float, z: float, roll: float, pitch: float, yaw: fl
     Returns:
         The Pose message.
     """
-
     pose = Pose()
     pose.position = Point(x=x, y=y, z=z)
     pose.orientation = transforms3d_quat_to_geometry_quat(euler2quat(roll, pitch, yaw))
     return pose
 
 
-def local_pose_to_global(tfBuffer: tf2_ros.Buffer, pose: Pose) -> Pose:
+def local_pose_to_global(tf_buffer: tf2_ros.Buffer, pose: Pose) -> Pose:
     """
     Convert a pose from local coordinates to global coordinates.
 
     Args:
-        tfBuffer: The transform buffer.
+        tf_buffer: The transform buffer.
         pose: The pose to convert, in "base_link" frame.
 
     Returns:
         The global pose in "odom" frame.
     """
+    return transform_pose(tf_buffer, 'base_link', 'odom', pose)
 
-    return transform_pose(tfBuffer, 'base_link', 'odom', pose)
 
-
-def global_pose_to_local(tfBuffer: tf2_ros.Buffer, pose: Pose) -> Pose:
+def global_pose_to_local(tf_buffer: tf2_ros.Buffer, pose: Pose) -> Pose:
     """
     Convert a pose from global coordinates to local coordinates.
 
     Args:
-        tfBuffer: The transform buffer.
+        tf_buffer: The transform buffer.
         pose: The pose to convert, in "odom" frame.
 
     Returns:
         The local pose in "base_link" frame.
     """
-
-    return transform_pose(tfBuffer, 'odom', 'base_link', pose)
+    return transform_pose(tf_buffer, 'odom', 'base_link', pose)
