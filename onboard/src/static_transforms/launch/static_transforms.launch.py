@@ -6,16 +6,19 @@ import yaml
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
+TRANFORM_YAML_LABELS = ('x', 'y', 'z', 'roll', 'pitch', 'yaw', 'frame_id', 'child_frame')
 
-def make_transform_publisher(transform: list) -> Node:
+def make_transform_publisher(node_name: str, transform: list) -> Node:
     """
     Create a tf2 static transform publisher node for a given transform.
 
     Args:
+        node_name (str): The name of the transform
         transform (list): Transform values and frame names, in the form
             [x, y, z, roll, pitch, yaw, frame_id, child_frame_id].
     """
-    return Node(package='tf2_ros',
+    return Node(name=node_name,
+                package='tf2_ros',
                 executable='static_transform_publisher',
                 arguments=['--x', str(transform[0]),
                            '--y', str(transform[1]),
@@ -42,13 +45,13 @@ def generate_launch_description() -> LaunchDescription:
 
     robot_name = os.getenv('ROBOT_NAME', 'oogway')
     config_yaml_path = f'package://static_transforms/config/{robot_name}.yaml'
+    config_file_resolved_path = rr.get_filename(config_yaml_path, use_protocol=False)
 
-    with Path(config_yaml_path).open() as f:
+    with Path(config_file_resolved_path).open() as f:
         transforms = yaml.safe_load(f)['transforms']
 
-        for transform in transforms:
-            transform_list = [transform['x'], transform['y'], transform['z'], transform['roll'], transform['pitch'],
-                                transform['yaw'], transform['frame_id'], transform['child_frame']]
-            ld.add_action(make_transform_publisher(transform_list))
+        for transform_name, transform_info in transforms.items():
+            transform_list = [transform_info[label] for label in TRANFORM_YAML_LABELS]
+            ld.add_action(make_transform_publisher(transform_name + '_static_tranform', transform_list))
 
     return ld
