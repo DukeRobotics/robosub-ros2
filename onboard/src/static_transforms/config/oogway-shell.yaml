@@ -1,5 +1,5 @@
 transforms:
-  corner_link_transform:
+  corner_link:
     x: 0.219075
     y: -0.3095625
     z: 0.19764375
@@ -8,7 +8,7 @@ transforms:
     yaw: 0
     frame_id: 'base_link'
     child_frame: 'corner_link'
-  dvl_link_transform:
+  dvl_link:
     x: -0.20955
     y: 0.0809625
     z: -0.276225
@@ -17,7 +17,7 @@ transforms:
     yaw: 0
     frame_id: 'corner_link'
     child_frame: 'dvl_link'
-  imu_link_transform:
+  imu_link:
     x: -0.219075
     y: 0.3095625
     z: -0.11241875
@@ -26,7 +26,7 @@ transforms:
     yaw: 0
     frame_id: 'corner_link'
     child_frame: 'imu_link'
-  sonar_link_transform:
+  sonar_link:
     x: 0.067
     y: 0.31
     z: 0.05
@@ -35,7 +35,7 @@ transforms:
     yaw: 0
     frame_id: 'corner_link'
     child_frame: 'sonar_link'
-  cameras_link_transform:
+  cameras_link:
     x: 0
     y: 0.0362
     z: 0
