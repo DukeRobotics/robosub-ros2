@@ -8,7 +8,7 @@ from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.node import Node
 
-from task_planning import comp_tasks, move_tasks, prequal_tasks, test_tasks, tasks_crush, tasks_oogway  # noqa: F401
+from task_planning import tasks_crush, tasks_oogway
 import task_planning.tasks_oogway as tasks_oogway
 import task_planning.tasks_crush as tasks_crush
 from task_planning.interface.controls import Controls
