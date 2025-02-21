@@ -6,7 +6,6 @@ import yaml
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
-TRANFORM_YAML_LABELS = ('x', 'y', 'z', 'roll', 'pitch', 'yaw', 'frame_id', 'child_frame')
 
 def make_transform_publisher(node_name: str, transform: list) -> Node:
     """
@@ -20,14 +19,14 @@ def make_transform_publisher(node_name: str, transform: list) -> Node:
     return Node(name=node_name,
                 package='tf2_ros',
                 executable='static_transform_publisher',
-                arguments=['--x', str(transform[0]),
-                           '--y', str(transform[1]),
-                           '--z', str(transform[2]),
-                           '--roll', str(transform[3]),
-                           '--pitch', str(transform[4]),
-                           '--yaw', str(transform[5]),
-                           '--frame-id', transform[6],
-                           '--child-frame-id', transform[7]])
+                arguments=['--x', str(transform['x']),
+                           '--y', str(transform['y']),
+                           '--z', str(transform['z']),
+                           '--roll', str(transform['roll']),
+                           '--pitch', str(transform['pitch']),
+                           '--yaw', str(transform['yaw']),
+                           '--frame-id', transform['frame_id'],
+                           '--child-frame-id', transform['child_frame']])
 
 def generate_launch_description() -> LaunchDescription:
     """
@@ -51,7 +50,6 @@ def generate_launch_description() -> LaunchDescription:
         transforms = yaml.safe_load(f)['transforms']
 
         for transform_name, transform_info in transforms.items():
-            transform_list = [transform_info[label] for label in TRANFORM_YAML_LABELS]
-            ld.add_action(make_transform_publisher(transform_name + '_static_tranform', transform_list))
+            ld.add_action(make_transform_publisher(transform_name + '_static_tranform', transform_info))
 
     return ld
