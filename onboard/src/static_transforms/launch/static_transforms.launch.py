@@ -7,14 +7,14 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 
 
-def make_transform_publisher(node_name: str, transform: list) -> Node:
+def make_transform_publisher(node_name: str, transform: dict) -> Node:
     """
     Create a tf2 static transform publisher node for a given transform.
 
     Args:
         node_name (str): The name of the transform
-        transform (list): Transform values and frame names, in the form
-            [x, y, z, roll, pitch, yaw, frame_id, child_frame_id].
+        transform (dict): A dict containing transform values and frame names with labels 'x', 'y', 'z', 'roll', 'pitch'
+                          'yaw', 'frame_id', and 'child_frame'.
     """
     return Node(name=node_name,
                 package='tf2_ros',
