@@ -6,51 +6,6 @@ import yaml
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
-ROBOT_NAME = os.getenv('ROBOT_NAME', 'oogway')
-STATIC_TRANSFORMS_PATH_TEMPLATE = 'package://offboard_comms/{subpath}' # Probably wrong, it's copy pasted
-CONFIG_YAML_PATH = STATIC_TRANSFORMS_PATH_TEMPLATE.format(subpath=f'config/{ROBOT_NAME}.yaml')
-
-OUTPUT_PREFIX = Path(__file__).name.capitalize()
-
-error_when_loading_yaml = True
-try:
-    config_file_resolved_path = rr.get_filename(CONFIG_YAML_PATH, use_protocol=False)
-    with Path(config_file_resolved_path).open() as f:
-        config_data = yaml.safe_load(f)
-        TRANSFORMS_DATA = config_data['transforms']
-
-    error_when_loading_yaml = False
-
-except FileNotFoundError:
-    print(
-        f'{OUTPUT_PREFIX}: FATAL ERROR: Could not find config YAML file at "{config_file_resolved_path}". '
-        'Please make sure the file exists.',
-    )
-
-except yaml.YAMLError as e:
-    if hasattr(e, 'problem_mark'):
-        mark = e.problem_mark
-        print(
-            f'{OUTPUT_PREFIX}: FATAL ERROR: Config YAML file is not in valid YAML format at line {mark.line + 1} and '
-            f'column {mark.column + 1}.',
-        )
-
-    print(
-        f'{OUTPUT_PREFIX}: FATAL ERROR: Could not parse config YAML file at "{config_file_resolved_path}". '
-        f'Please make sure the file is in valid YAML format.',
-    )
-
-except KeyError:
-    print(
-        f'{OUTPUT_PREFIX}: FATAL ERROR: Config YAML file at "{config_file_resolved_path}" does not contain required '
-        'top-level key "transforms".',
-    )
-
-except Exception as e:  # noqa: BLE001
-    print(
-        f'{OUTPUT_PREFIX}: FATAL ERROR: An unexpected error occurred when loading the config YAML file at '
-        f'"{config_file_resolved_path}": {e}',
-    )
 
 def make_transform_publisher(transform: list) -> Node:
     """
@@ -85,9 +40,15 @@ def generate_launch_description() -> LaunchDescription:
     """
     ld = LaunchDescription()
 
-    for transform in TRANSFORMS_DATA:
-        transform_list = [transform['x'], transform['y'], transform['z'], transform['roll'], transform['pitch'],
-                            transform['yaw'], transform['frame_id'], transform['child_frame']]
-        ld.add_action(make_transform_publisher(transform_list))
+    robot_name = os.getenv('ROBOT_NAME', 'oogway')
+    config_yaml_path = f'package://static_transforms/config/{robot_name}.yaml'
+
+    with Path(config_yaml_path).open() as f:
+        transforms = yaml.safe_load(f)['transforms']
+
+        for transform in transforms:
+            transform_list = [transform['x'], transform['y'], transform['z'], transform['roll'], transform['pitch'],
+                                transform['yaw'], transform['frame_id'], transform['child_frame']]
+            ld.add_action(make_transform_publisher(transform_list))
 
     return ld
