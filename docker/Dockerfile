@@ -85,7 +85,7 @@ RUN passwd -d ubuntu
 # Set up non-root user with provided UID and GID
 
 # On Linux, any files read or modified in the container will be owned by the UID and GID of the user you are running the container as.
-# This ownership rule applies to the host as well. For example, if you are running the container as root, then any files read or modified in the container
+# This ownership rule applies to the host as well. For example, if you are running the container as root, then any files created, read, or modified in the container
 # will be owned by root in the container and on the host. Since you typically log into the host as a non-root user, you will not be able to modify these files
 # without changing the ownership back to your user. The base image used by this Dockerfile comes with a non-root user named ubuntu. Here, we set the UID and GID
 # of the ubuntu user to match the UID and GID of the user on the host machine. This way, any files read or modified in the container will be owned by the same
