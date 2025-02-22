@@ -35,20 +35,20 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
             parent=self)
         logger.info(f'Rotate {angle}')
 
-    async def track_blue_rectangle(distance, direction):
+    async def track_blue_rectangle(distance, direction, step_size=1):
         logger.info(f'track_blue_rectangle {distance} {direction}')
-        repeats = math.ceil(distance)
+        repeats = math.ceil(distance / step_size)
         total_dist = 0
         prev_touching_top = False
         prev_touching_bottom = False
         for i in range(repeats):
-            step = distance - total_dist if i == repeats-1 else 1
+            step = distance - total_dist if i == repeats-1 else step_size
             await move_tasks.move_to_pose_local(
                 geometry_utils.create_pose(step * direction, 0, 0, 0, 0, 0),
                 parent=self)
 
             total_dist += step
-            logger.info(f'Moved forward {total_dist}')
+            logger.info(f'Moved {"forward" if direction == 1 else "backward"} {total_dist}')
 
             touching_top = CV().cv_data['lane_marker_touching_top']
             touching_bottom = CV().cv_data['lane_marker_touching_bottom']
