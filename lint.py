@@ -34,8 +34,8 @@ class LintLanguage(Enum):
     PYTHON = LintLanguageProperties(
         name='python',
         file_extensions=['.py'],
-        lint_command='/root/dev/venv/bin/python3 -m ruff check -q {path}',
-        autofix_command='/root/dev/venv/bin/python3 -m ruff check --fix -q {path}',
+        lint_command='/home/ubuntu/venv/bin/python3 -m ruff check -q {path}',
+        autofix_command='/home/ubuntu/venv/bin/python3 -m ruff check --fix -q {path}',
     )
     CPP = LintLanguageProperties(
         name='cpp',
@@ -73,7 +73,7 @@ STATUS_EMOJI = {
 }
 
 # Path to the repository and default path to lint
-REPO_PATH = Path('/root/dev/robosub-ros2')
+REPO_PATH = Path('/home/ubuntu/robosub-ros2')
 
 @dataclass
 class LintLanguageStats:

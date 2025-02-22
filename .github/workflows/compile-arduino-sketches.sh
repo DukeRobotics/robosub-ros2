@@ -7,6 +7,6 @@
 # This ensures the exit code of the script is 1 if any command fails, and 0 if all commands succeed
 set -e
 
-source /root/ros_bashrc.sh
+source /home/ubuntu/ros_bashrc.sh
 
 ros2 run offboard_comms arduino compile all
