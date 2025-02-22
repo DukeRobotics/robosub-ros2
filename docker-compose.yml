@@ -4,8 +4,8 @@ services:
     container_name: onboard2
     tty: true
     volumes:
-      - ./:/root/dev/robosub-ros2
-      - ~/.foxglove-studio/:/root/.foxglove-studio
+      - ./:/home/ubuntu/robosub-ros2
+      - ~/.foxglove-studio/:/home/ubuntu/.foxglove-studio
     ports:
       - 28765:28765
     environment:

@@ -1,5 +1,5 @@
 # SSH config file for container
 Host github.com
-  IdentityFile /root/.ssh/github_auth_key
+  IdentityFile /home/ubuntu/.ssh/github_auth_key
   IdentitiesOnly no
   StrictHostKeyChecking no
