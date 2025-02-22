@@ -21,8 +21,6 @@ jobs:
         run: |
           echo "NO_GIT=true" >> .env
           echo "ROBOT_NAME=oogway" >> .env
-          echo "USER_UID=$(id -u)" >> .env
-          echo "USER_GID=$(id -g)" >> .env
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -33,6 +31,9 @@ jobs:
           context: ./docker
           tags: robosub-ros2:latest
           load: true
+          build-args: |
+            USER_UID=$(id -u)
+            USER_GID=$(id -g)
 
       - name: Run Docker container
         id: run-docker
