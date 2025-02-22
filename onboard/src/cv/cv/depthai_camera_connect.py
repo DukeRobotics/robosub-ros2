@@ -31,6 +31,7 @@ def connect(pipeline: dai.Pipeline) -> dai.Device:
     total_tries = 5
 
     # A node
+
     node = DepthAiCameraConnect()
 
     for _ in range(total_tries):
@@ -70,13 +71,11 @@ def custom_autodiscovery() -> str:
         RuntimeError: If the camera's IP address could not be found.
     """
     mac_address = '44:A9:2C:3C:0A:90'  # DepthAI camera MAC address
-    ip_range = '169.254.1.222'  # 192.168.1.0 to 192.168.1.255
-
-    mac_address = '44:A9:2C:3C:0A:90'  # DepthAI camera MAC address
     ip_range = '192.168.1.0/24'  # 192.168.1.0 to 192.168.1.255
 
     nm = nmap.PortScanner()
-    scan = nm.scan(hosts=ip_range, arguments='-sP')['scan']
+    scan = nm.scan(hosts=ip_range, arguments='-sP')
+    scan = scan['scan']
 
     for ip, info in scan.items():
         print(f"Searching,... {ip} {info['addresses']}")
