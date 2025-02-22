@@ -142,12 +142,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
     # Come back to gate
     await track_blue_rectangle(7, -1)
 
-    # Submerge below gate
-    # await move_tasks.move_to_pose_local(
-    #     geometry_utils.create_pose(0, 0, -0.4, 0, 0, 0),
-    #     parent=self)
-    # logger.info('Moved to (0, 0, -0.4)')
-    # DEPTH_LEVEL = State().depth
+    # Robot is already deep enough to go through gate
 
     # Move back through gate
     await track_blue_rectangle(2, -1)
