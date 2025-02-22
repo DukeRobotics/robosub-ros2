@@ -32,6 +32,10 @@ if [ -z "$ROBOT_NAME" ]; then
     sleep 2  # Give user time to read the message before the docker build output
 fi
 
+# Create ~/.foxglove-studio directory if it doesn't exist
+# On a Linux host, this ensures that the directory is owned by the user and not root
+mkdir -p ~/.foxglove-studio
+
 # Read Git username and email from .env or default to global Git settings
 GIT_USER_NAME=$(git config --global user.name)
 GIT_USER_EMAIL=$(git config --global user.email)
