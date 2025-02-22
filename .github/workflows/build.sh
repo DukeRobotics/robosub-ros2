@@ -6,7 +6,7 @@
 # This ensures the exit code of the script is 1 if any command fails, and 0 if all commands succeed
 set -e
 
-source /root/ros_bashrc.sh
+source /home/ubuntu/ros_bashrc.sh
 
-source /root/dev/robosub-ros2/build.sh clean
-source /root/dev/robosub-ros2/build.sh
+source /home/ubuntu/robosub-ros2/build.sh clean
+source /home/ubuntu/robosub-ros2/build.sh

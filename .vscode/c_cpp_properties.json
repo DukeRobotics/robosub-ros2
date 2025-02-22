@@ -10,8 +10,8 @@
                 "/usr/include/**",
                 "/usr/local/include/**",
                 "/usr/include/eigen3/**",
-                "/root/dev/robosub-ros2/onboard/src/controls/include/controls/**",
-                "/root/dev/robosub-ros2/core/install/custom_msgs/include/**"
+                "/home/ubuntu/robosub-ros2/onboard/src/controls/include/controls/**",
+                "/home/ubuntu/robosub-ros2/core/install/custom_msgs/include/**"
             ],
             "name": "ROS",
             "compilerPath": "/usr/bin/clang",

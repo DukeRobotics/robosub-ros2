@@ -5,8 +5,8 @@
 original_cwd=$(pwd)
 
 # Directories for the core and onboard workspaces
-CORE_WS="/root/dev/robosub-ros2/core"
-ONBOARD_WS="/root/dev/robosub-ros2/onboard"
+CORE_WS="/home/ubuntu/robosub-ros2/core"
+ONBOARD_WS="/home/ubuntu/robosub-ros2/onboard"
 
 # Function to check if a package exists in a workspace
 package_exists() {

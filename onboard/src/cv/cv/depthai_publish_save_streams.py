@@ -32,7 +32,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
     STREAM_TOPIC_DEPTH = f'/camera/{CAMERA}/depth/compressed'
 
     # Base path for saving the streams to files
-    BASE_PATH = '/root/dev/robosub-ros/'
+    BASE_PATH = '/home/ubuntu/robosub-ros/'
 
     def __init__(self) -> None:
         """Set up publisher and camera node pipeline."""
