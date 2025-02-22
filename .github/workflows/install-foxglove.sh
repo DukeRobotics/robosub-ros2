@@ -8,4 +8,4 @@ set -e
 
 source /home/ubuntu/ros_bashrc.sh
 
-/home/ubuntu/venv/bin/python3 /home/ubuntu/robosub-ros2/foxglove/foxglove.py install
+sudo /home/ubuntu/venv/bin/python3 /home/ubuntu/robosub-ros2/foxglove/foxglove.py install
