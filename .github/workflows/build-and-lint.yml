@@ -67,7 +67,7 @@ jobs:
       - name: Lint Foxglove monorepo
         if: always() && steps.build-foxglove.outcome == 'success'
         run: |
-          docker compose exec robosub-ros2 bash /home/ubuntu/robosub-ros2/.github/workflows/lint-foxglove.sh
+          docker compose exec -u root robosub-ros2 bash /home/ubuntu/robosub-ros2/.github/workflows/lint-foxglove.sh
 
       - name: Install Foxglove extensions
         if: always() && steps.build-foxglove.outcome == 'success'
