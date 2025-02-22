@@ -2,7 +2,7 @@
     "name": "RoboSub ROS2",
     "dockerComposeFile": "../docker-compose.yml",
     "service": "robosub-ros2",
-    "workspaceFolder": "/root/dev/robosub-ros2",
+    "workspaceFolder": "/home/ubuntu/robosub-ros2",
     "initializeCommand": "bash ./docker-build.sh skip-wsl",
     "customizations": {
         "vscode": {
@@ -50,7 +50,7 @@
                 "git.enableCommitSigning": true,
 
                 // Python-related settings
-                "python.defaultInterpreterPath": "/root/dev/venv/bin/python3",
+                "python.defaultInterpreterPath": "/home/ubuntu/venv/bin/python3",
 
                 // TypeScript/JavaScript-related settings
                 "[typescript]": {

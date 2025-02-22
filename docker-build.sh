@@ -32,6 +32,10 @@ if [ -z "$ROBOT_NAME" ]; then
     sleep 2  # Give user time to read the message before the docker build output
 fi
 
+# Create ~/.foxglove-studio directory if it doesn't exist
+# On a Linux host, this ensures that the directory is owned by the user and not root
+mkdir -p ~/.foxglove-studio
+
 # Read Git username and email from .env or default to global Git settings
 GIT_USER_NAME=$(git config --global user.name)
 GIT_USER_EMAIL=$(git config --global user.email)
@@ -47,6 +51,11 @@ docker_build_cmd="docker build --build-arg CACHE_BUSTER='$year_week' --build-arg
 if [ "$1" == "--no-cache" ] || [ "$2" == "--no-cache" ]; then
     docker_build_cmd+=" --no-cache"
 fi
+
+# Check if USER_UID and USER_GID are set, if not, set them to 1000 by default
+USER_UID=${USER_UID:-1000}
+USER_GID=${USER_GID:-1000}
+docker_build_cmd+=" --build-arg USER_UID=$USER_UID --build-arg USER_GID=$USER_GID"
 
 # If the user wants to set up Git in the container, add the necessary build arguments and secrets
 if [ "$NO_GIT" != "true" ]; then

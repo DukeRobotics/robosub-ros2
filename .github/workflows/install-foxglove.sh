@@ -6,6 +6,6 @@
 # This ensures the exit code of the script is 1 if any command fails, and 0 if all commands succeed
 set -e
 
-source /root/ros_bashrc.sh
+source /home/ubuntu/ros_bashrc.sh
 
-/root/dev/venv/bin/python3 /root/dev/robosub-ros2/foxglove/foxglove.py install
+/home/ubuntu/venv/bin/python3 /home/ubuntu/robosub-ros2/foxglove/foxglove.py install

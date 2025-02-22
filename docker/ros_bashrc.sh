@@ -16,15 +16,15 @@ source /opt/ros/jazzy/setup.bash
 source /usr/share/colcon_cd/function/colcon_cd.sh
 
 # Check if the core setup file exists and source it
-if [ -f /root/dev/robosub-ros2/core/install/setup.bash ]; then
-    source /root/dev/robosub-ros2/core/install/setup.bash
+if [ -f /home/ubuntu/robosub-ros2/core/install/setup.bash ]; then
+    source /home/ubuntu/robosub-ros2/core/install/setup.bash
 else
     echo "Core setup.bash not found, skipping."
 fi
 
 # Check if the onboard setup file exists and source it
-if [ -f /root/dev/robosub-ros2/onboard/install/setup.bash ]; then
-    source /root/dev/robosub-ros2/onboard/install/setup.bash
+if [ -f /home/ubuntu/robosub-ros2/onboard/install/setup.bash ]; then
+    source /home/ubuntu/robosub-ros2/onboard/install/setup.bash
 else
     echo "Onboard setup.bash not found, skipping."
 fi
@@ -41,14 +41,14 @@ alias test-thrusters="ros2 run offboard_comms test_thrusters"
 alias arduino="ros2 run offboard_comms arduino"
 
 # Alias for foxglove.py CLI
-alias fox="python3 /root/dev/robosub-ros2/foxglove/foxglove.py"
+alias fox="python3 /home/ubuntu/robosub-ros2/foxglove/foxglove.py"
 
 # Alias to run lint.py
-alias lint="python3 /root/dev/robosub-ros2/lint.py"
+alias lint="python3 /home/ubuntu/robosub-ros2/lint.py"
 
 # Source nvm and use version jod
-source /root/.nvm/nvm.sh
+source /home/ubuntu/.nvm/nvm.sh
 nvm use lts/jod > /dev/null  # Suppress stdout, only show stderr
 
 # Source python virtual environment
-source /root/dev/robosub-ros2/venv.sh activate
+source /home/ubuntu/robosub-ros2/venv.sh activate
