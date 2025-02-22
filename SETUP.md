@@ -72,6 +72,8 @@ NO_GIT=false
 ROBOT_NAME=
 IS_ROBOT=
 FOXGLOVERC_PATH=
+USER_UID=
+USER_GID=
 ```
 > [!IMPORTANT]
 > Do **not** include any extraneous whitespace or comments in the `.env` file. Do **not** put spaces around the `=` sign.
@@ -83,8 +85,15 @@ FOXGLOVERC_PATH=
     > [!NOTE]
     > If you set `NO_GIT=true`, do not include the variables `GITHUB_AUTH_SSH_KEY_PRIV_PATH`, `GITHUB_AUTH_SSH_KEY_PUB_PATH`, `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`, or `GIT_ALLOWED_SIGNERS_PATH` in `.env`. These variables are only used if `NO_GIT=false`.
 - `ROBOT_NAME`: The name of the robot you are developing for. This is used to set the `$ROBOT_NAME` environment variable in the Docker container, which is used by some scripts to determine which robot-specific configuration to use. If you are setting up the repository on the robot, then this should be the name of the robot. If you are setting up the repository on your development machine, then this name can be changed to test different robot configurations.
-- `IS_ROBOT`: Set to `true` if you are setting up the repository on the robot. Set to `false` or do not include this variable in `.env` if you are setting up the repository on your development machine.
+- `IS_ROBOT` (Optional): Set to `true` if you are setting up the repository on the robot. Set to `false` or do not include this variable in `.env` if you are setting up the repository on your development machine.
 - `FOXGLOVERC_PATH` (Optional): Absolute path to the [`.foxgloverc`](#set-up-the-foxgloverc-file) file.
+- `USER_UID` and `USER_GID` (Optional): The user ID and group ID of the `ubuntu` user in the Docker container.
+
+    If you are a Linux user, set these variables to your user ID and group ID. This ensures that all files in this repository are owned by that combination of user ID and group ID in both the container and host machine, which avoids file permission issues.
+
+    To retrieve these values, open a terminal outside of the Docker container. To get your user ID, run `id -u`. To get your group ID, run `id -g`.
+    > [!NOTE]
+    > If you are a Mac or Windows user, do **_not_** include `USER_UID` and `USER_GID` in your `.env` file. Include these variables **_only_** if you are a Linux user. If the variables are not included in `.env`, then the UID and GID will both be set to `1000`, which is the default UID and GID for non-root users in Ubuntu.
 
 ## Set Up Udev Rules (Robot Only)
 If you are setting up the repository on the robot, you need to set up the udev rules to symlink some USB devices to ports that are consistent across reboots and used by code in this repository.
@@ -125,7 +134,7 @@ If you're using VS Code and have the Dev Containers extension installed:
 4. Wait for the container to finish building.
 5. Now, you're ready to start developing!
     - VS Code is automatically configured with helpful extensions and settings.
-    - Any changes you make in the `/root/dev/robosub-ros2` directory in the container are reflected in the repository on your host machine.
+    - Any changes you make in the `/home/ubuntu/robosub-ros2` directory in the container are reflected in the repository on your host machine.
     - Any terminals you open in VS Code are automatically connected to the Docker container.
     - To open a file or directory in the container in VS Code, run the following command in the integrated terminal:
         ```bash
@@ -160,14 +169,14 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
     ```
 3. Once the container is running, access its shell by running:
     ```bash
-    docker exec -ti -w /root/dev/robosub-ros2 onboard2 bash
+    docker exec -ti -w /home/ubuntu/robosub-ros2 onboard2 bash
     ```
-    - If you're running this command in Git Bash on Windows, add an extra `/` before `/root`:
+    - If you're running this command in Git Bash on Windows, add an extra `/` before `/home`:
         ```bash
-        docker exec -ti -w //root/dev/robosub-ros2 onboard2 bash
+        docker exec -ti -w //home/ubuntu/robosub-ros2 onboard2 bash
         ```
 4. Now, you're ready to start developing!
-    - Any changes you make in the repository on your host machine are reflected in the `/root/dev/robosub-ros2` directory in the Docker container.
+    - Any changes you make in the repository on your host machine are reflected in the `/home/ubuntu/robosub-ros2` directory in the Docker container.
     - If you set `NO_GIT=false` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
     - You must build the packages in the container before running the code. See the [Build Packages in README.md](README.md#build-packages) section for more information.
     - To open additional terminals in the container, open a new terminal and run the `docker exec` command above.
