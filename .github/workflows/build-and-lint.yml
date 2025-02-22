@@ -21,24 +21,11 @@ jobs:
         run: |
           echo "NO_GIT=true" >> .env
           echo "ROBOT_NAME=oogway" >> .env
+          echo "USER_UID=$(id -u)" >> .env
+          echo "USER_GID=$(id -g)" >> .env
 
-      - name: Get User UID and GID
-        run: |
-          echo "USER_UID=$(id -u)" >> $GITHUB_ENV
-          echo "USER_GID=$(id -g)" >> $GITHUB_ENV
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./docker
-          tags: robosub-ros2:latest
-          load: true
-          build-args: |
-            USER_UID=${{ env.USER_UID }}
-            USER_GID=${{ env.USER_GID }}
+      - name: Build and run Docker container
+        run: ./docker-build.sh
 
       - name: Run Docker container
         id: run-docker
