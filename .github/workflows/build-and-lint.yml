@@ -38,30 +38,30 @@ jobs:
 
       - name: Lint Files
         run: |
-          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/lint.sh
+          docker compose exec robosub-ros2 bash /home/ubuntu/robosub-ros2/.github/workflows/lint.sh
 
       - name: Build ROS2
         if: always() && steps.run-docker.outcome == 'success'
         run: |
-          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build.sh
+          docker compose exec robosub-ros2 bash /home/ubuntu/robosub-ros2/.github/workflows/build.sh
 
       - name: Compile Arduino Sketches
         if: always() && steps.run-docker.outcome == 'success'
         run: |
-          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/compile-arduino-sketches.sh
+          docker compose exec robosub-ros2 bash /home/ubuntu/robosub-ros2/.github/workflows/compile-arduino-sketches.sh
 
       - name: Build Foxglove environment
         id: build-foxglove
         if: always() && steps.run-docker.outcome == 'success'
         run: |
-          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/build-foxglove.sh
+          docker compose exec robosub-ros2 bash /home/ubuntu/robosub-ros2/.github/workflows/build-foxglove.sh
 
       - name: Lint Foxglove monorepo
         if: always() && steps.build-foxglove.outcome == 'success'
         run: |
-          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/lint-foxglove.sh
+          docker compose exec robosub-ros2 bash /home/ubuntu/robosub-ros2/.github/workflows/lint-foxglove.sh
 
       - name: Install Foxglove extensions
         if: always() && steps.build-foxglove.outcome == 'success'
         run: |
-          docker compose exec robosub-ros2 bash /root/dev/robosub-ros2/.github/workflows/install-foxglove.sh
+          docker compose exec robosub-ros2 bash /home/ubuntu/robosub-ros2/.github/workflows/install-foxglove.sh

@@ -16,7 +16,7 @@ class BuoyDetectorContourMatching(Node):
         super().__init__('buoy_detector_contour_matching')
 
         # Load the reference image in grayscale (assumes the image is already binary: white and black)
-        self.reference_image = cv2.imread('/root/dev/robosub-ros2/onboard/build/cv/assets/polyform-a0-buoy-contour.png',
+        self.reference_image = cv2.imread('/home/ubuntu/robosub-ros2/onboard/build/cv/assets/polyform-a0-buoy-contour.png',
                                           cv2.IMREAD_GRAYSCALE)
 
         # Compute the contours directly on the binary image

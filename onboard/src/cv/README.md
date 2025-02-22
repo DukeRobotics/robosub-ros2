@@ -87,7 +87,7 @@ Note: To get the model files onto the Docker container, you may have to use `scp
 
 Navigate to [this url](https://download.pytorch.org/models/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth)
 to manually download the default model file used by the Detecto package. Move this file onto the Docker
-container under the directory `/root/.cache/torch/checkpoints/` (do not rename the file).
+container under the directory `/home/ubuntu/.cache/torch/checkpoints/` (do not rename the file).
 
 ### Running the Code
 To stream the feed or perform spatial detection using the OAK camera, use `ros2 launch cv <module>` with the following files as needed.

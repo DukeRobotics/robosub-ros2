@@ -125,7 +125,7 @@ If you're using VS Code and have the Dev Containers extension installed:
 4. Wait for the container to finish building.
 5. Now, you're ready to start developing!
     - VS Code is automatically configured with helpful extensions and settings.
-    - Any changes you make in the `/root/dev/robosub-ros2` directory in the container are reflected in the repository on your host machine.
+    - Any changes you make in the `/home/ubuntu/robosub-ros2` directory in the container are reflected in the repository on your host machine.
     - Any terminals you open in VS Code are automatically connected to the Docker container.
     - To open a file or directory in the container in VS Code, run the following command in the integrated terminal:
         ```bash
@@ -160,14 +160,14 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
     ```
 3. Once the container is running, access its shell by running:
     ```bash
-    docker exec -ti -w /root/dev/robosub-ros2 onboard2 bash
+    docker exec -ti -w /home/ubuntu/robosub-ros2 onboard2 bash
     ```
-    - If you're running this command in Git Bash on Windows, add an extra `/` before `/root`:
+    - If you're running this command in Git Bash on Windows, add an extra `/` before `/home`:
         ```bash
-        docker exec -ti -w //root/dev/robosub-ros2 onboard2 bash
+        docker exec -ti -w //home/ubuntu/robosub-ros2 onboard2 bash
         ```
 4. Now, you're ready to start developing!
-    - Any changes you make in the repository on your host machine are reflected in the `/root/dev/robosub-ros2` directory in the Docker container.
+    - Any changes you make in the repository on your host machine are reflected in the `/home/ubuntu/robosub-ros2` directory in the Docker container.
     - If you set `NO_GIT=false` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
     - You must build the packages in the container before running the code. See the [Build Packages in README.md](README.md#build-packages) section for more information.
     - To open additional terminals in the container, open a new terminal and run the `docker exec` command above.
