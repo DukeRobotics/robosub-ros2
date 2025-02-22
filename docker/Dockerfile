@@ -89,7 +89,8 @@ RUN passwd -d ubuntu
 # will be owned by root in the container and on the host. Since you typically log into the host as a non-root user, you will not be able to modify these files
 # without changing the ownership back to your user. The base image used by this Dockerfile comes with a non-root user named ubuntu. Here, we set the UID and GID
 # of the ubuntu user to match the UID and GID of the user on the host machine. This way, any files read or modified in the container will be owned by the same
-# user on the host machine, avoiding permissions issues. If the host is not running Linux, the UID and GID of the ubuntu user can be set to any values
+# user on the host machine, avoiding permissions issues. If the host is not running Linux, the UID and GID of the ubuntu user can be set to any value
+
 # (typically 1000 for both); the host user will still be able to read and modify files in the container.
 ARG USER_UID
 ARG USER_GID
