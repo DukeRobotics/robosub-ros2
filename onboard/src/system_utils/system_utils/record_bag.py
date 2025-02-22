@@ -84,8 +84,8 @@ class RecordBag(Node):
         human_readable_time = datetime.fromtimestamp(current_time_sec, tz=UTC).strftime('%Y.%m.%d_%I-%M-%S_%p')
 
         # Start recording all topics to a bag file
-        Path('/root/dev/robosub-ros2/bag_files/').mkdir(parents=False, exist_ok=True)
-        command = f'ros2 bag record -a -o /root/dev/robosub-ros2/bag_files/{human_readable_time}.bag'
+        Path('/home/ubuntu/robosub-ros2/bag_files/').mkdir(parents=False, exist_ok=True)
+        command = f'ros2 bag record -a -o /home/ubuntu/robosub-ros2/bag_files/{human_readable_time}.bag'
         self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, shell=True,  # noqa: S602
                                         start_new_session=True)
 
