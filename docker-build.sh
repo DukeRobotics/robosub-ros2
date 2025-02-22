@@ -48,6 +48,11 @@ if [ "$1" == "--no-cache" ] || [ "$2" == "--no-cache" ]; then
     docker_build_cmd+=" --no-cache"
 fi
 
+# Check if USER_UID and USER_GID are set, if not, set them to 1000 by default
+USER_UID=${USER_UID:-1000}
+USER_GID=${USER_GID:-1000}
+docker_build_cmd+=" --build-arg USER_UID=$USER_UID --build-arg USER_GID=$USER_GID"
+
 # If the user wants to set up Git in the container, add the necessary build arguments and secrets
 if [ "$NO_GIT" != "true" ]; then
     # List of required environment variables
