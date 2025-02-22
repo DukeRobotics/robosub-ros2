@@ -11,7 +11,7 @@ Setting up the repository and development enviornment is an involved process. Th
 
 ## Build Packages
 1. Open a terminal in the Docker container.
-2. Navigate to the root of the repository `/root/dev/robosub-ros2`.
+2. Navigate to the root of the repository `/home/ubuntu/robosub-ros2`.
 3. Run the following command to build all packages:
     ```bash
     source build.sh
@@ -48,7 +48,7 @@ The linters can be accessed via the CLI provided by `lint.py`. This CLI is also 
 
 To lint all code in the repository:
 1. Open a terminal in the Docker container.
-2. Navigate to the root of the repository `/root/dev/robosub-ros2`.
+2. Navigate to the root of the repository `/home/ubuntu/robosub-ros2`.
 3. Run the following command:
     ```bash
     ./lint.py
