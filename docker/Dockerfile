@@ -128,18 +128,17 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | b
 # Create SSH directory
 RUN mkdir -p /home/ubuntu/.ssh
 
-# Copy SSH config file
-COPY ssh_config /home/ubuntu/.ssh/config
+# Copy SSH config file, .gdbinit file, and ROS bashrc file into container
+# The COPY command by default sets the owner of the copied files to root, so we need to specify the owner explicitly, despite the USER command above
+COPY --chown=ubuntu:ubuntu ssh_config /home/ubuntu/.ssh/config
+COPY --chown=ubuntu:ubuntu .gdbinit /home/ubuntu/.gdbinit
+COPY --chown=ubuntu:ubuntu ros_bashrc.sh /home/ubuntu/ros_bashrc.sh
 
-# Copy .gdbinit file into container
-COPY .gdbinit /home/ubuntu/.gdbinit
+# Source ROS bashrc file at the end of .bashrc
+RUN echo "source /home/ubuntu/ros_bashrc.sh" >> /home/ubuntu/.bashrc
 
 # Create development directory
 RUN mkdir -p /home/ubuntu/robosub-ros2
-
-# Copy ROS bashrc file into container and source it at end of .bashrc
-COPY ros_bashrc.sh /home/ubuntu/ros_bashrc.sh
-RUN echo "source /home/ubuntu/ros_bashrc.sh" >> /home/ubuntu/.bashrc
 
 # Define ARGs for Git information
 ARG NO_GIT
@@ -147,15 +146,16 @@ ARG GIT_USER_NAME
 ARG GIT_USER_EMAIL
 
 # Configure Git and SSH keys
+# Secrets are mounted as files in /run/secrets and are owned by root so they can only be read using sudo
 RUN --mount=type=secret,id=github_auth_ssh_key,required=false \
     --mount=type=secret,id=github_auth_ssh_key_pub,required=false \
     --mount=type=secret,id=github_signing_ssh_key,required=false \
     --mount=type=secret,id=git_allowed_signers,required=false \
     if [ "$NO_GIT" != "true" ]; then \
-        cat /run/secrets/github_auth_ssh_key > /home/ubuntu/.ssh/github_auth_key && \
-        cat /run/secrets/github_auth_ssh_key_pub > /home/ubuntu/.ssh/github_auth_key.pub && \
-        cat /run/secrets/github_signing_ssh_key > /home/ubuntu/.ssh/github_signing_key && \
-        cat /run/secrets/git_allowed_signers > /home/ubuntu/.ssh/allowed_signers && \
+        sudo cat /run/secrets/github_auth_ssh_key > /home/ubuntu/.ssh/github_auth_key && \
+        sudo cat /run/secrets/github_auth_ssh_key_pub > /home/ubuntu/.ssh/github_auth_key.pub && \
+        sudo cat /run/secrets/github_signing_ssh_key > /home/ubuntu/.ssh/github_signing_key && \
+        sudo cat /run/secrets/git_allowed_signers > /home/ubuntu/.ssh/allowed_signers && \
         chmod 600 /home/ubuntu/.ssh/github_auth_key /home/ubuntu/.ssh/github_signing_key && \
         chmod 644 /home/ubuntu/.ssh/github_auth_key.pub /home/ubuntu/.ssh/allowed_signers; \
         git config --global commit.gpgSign true && \
@@ -171,7 +171,7 @@ RUN --mount=type=secret,id=github_auth_ssh_key,required=false \
 # Copy Foxglove CLI configuration file
 RUN --mount=type=secret,id=foxgloverc \
     if [ -f /run/secrets/foxgloverc ]; then \
-        cat /run/secrets/foxgloverc > /home/ubuntu/.foxgloverc; \
+        sudo cat /run/secrets/foxgloverc > /home/ubuntu/.foxgloverc; \
     fi
 
 # Run entrypoint script via tini to ensure SIGTERM is properly handled and zombie processes are reaped
