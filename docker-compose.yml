@@ -2,6 +2,7 @@ services:
   robosub-ros2:
     image: robosub-ros2:latest
     container_name: onboard2
+    user: ubuntu
     tty: true
     volumes:
       - ./:/home/ubuntu/robosub-ros2
