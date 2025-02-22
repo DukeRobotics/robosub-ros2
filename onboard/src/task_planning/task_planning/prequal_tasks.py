@@ -94,25 +94,32 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
             prev_touching_top = touching_top
             prev_touching_bottom = touching_bottom
 
+    # Move up to gate
     await track_blue_rectangle(2.5, 1)
 
+    # Submerge below gate
     await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, 0, -0.3, 0, 0, 0),
+        geometry_utils.create_pose(0, 0, -0.5, 0, 0, 0),
         parent=self)
-    logger.info('Moved to (0, 0, -0.3)')
+    logger.info('Moved to (0, 0, -0.5)')
     DEPTH_LEVEL = State().depth
 
+    # Move through gate
     await track_blue_rectangle(2, 1)
 
+    # Come back up
     await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, 0, 0.3, 0, 0, 0),
+        geometry_utils.create_pose(0, 0, 0.2, 0, 0, 0),
         parent=self)
-    logger.info('Moved to (0, 0, 0.3)')
+    logger.info('Moved to (0, 0, 0.2)')
     DEPTH_LEVEL = State().depth
 
+    # Move to buoy
     await track_blue_rectangle(7, 1)
 
+    # Dead reckon around buoy
     directions = [
+        (1, 0, 0),
         (1, 0, 0),
         (1, 0, 0),
         (1, 0, 0),
@@ -122,7 +129,9 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
         (-1, 0, 0),
         (-1, 0, 0),
         (0, -1, 0),
-        (0, -0.8, 0),
+        (0, -1, 0),
+        (0, -1, 0),
+        (0, -0.5, 0)
     ]
     for direction in directions:
         await move_tasks.move_to_pose_local(
@@ -130,20 +139,25 @@ async def prequal_task(self: Task) -> Task[None, None, None]:
             parent=self)
         logger.info(f'Moved to {direction}')
 
+    # Come back to gate
     await track_blue_rectangle(7, -1)
 
-    await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, 0, -0.2, 0, 0, 0),
-        parent=self)
-    logger.info('Moved to (0, 0, -0.2)')
-    DEPTH_LEVEL = State().depth
+    # Submerge below gate
+    # await move_tasks.move_to_pose_local(
+    #     geometry_utils.create_pose(0, 0, -0.4, 0, 0, 0),
+    #     parent=self)
+    # logger.info('Moved to (0, 0, -0.4)')
+    # DEPTH_LEVEL = State().depth
 
+    # Move back through gate
     await track_blue_rectangle(2, -1)
 
+    # Come back up
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, 0.2, 0, 0, 0),
         parent=self)
     logger.info('Moved to (0, 0, 0.2)')
     DEPTH_LEVEL = State().depth
 
+    # Return to start
     await track_blue_rectangle(3, -1)

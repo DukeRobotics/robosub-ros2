@@ -6,6 +6,7 @@ import tf2_ros
 from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.node import Node
+from rclpy.time import Time
 
 from task_planning import comp_tasks, move_tasks, prequal_tasks, test_tasks  # noqa: F401
 from task_planning.interface.controls import Controls
@@ -47,15 +48,15 @@ class TaskPlanning(Node):
 
         # Ensure transform from odom to base_link is available
         if not self.bypass:
-            try:
-                _ = tf_buffer.lookup_transform('odom', 'base_link', Clock().now(), Duration(seconds=15))
-            except (
-                tf2_ros.LookupException,
-                tf2_ros.ConnectivityException,
-                tf2_ros.ExtrapolationException,
-            ):
-                self.get_logger().error('Failed to get transform')
-                return
+            # try:
+            #     _ = tf_buffer.lookup_transform('odom', 'base_link', Time(), Duration(seconds=15))
+            # except (
+            #     tf2_ros.LookupException,
+            #     tf2_ros.ConnectivityException,
+            #     tf2_ros.ExtrapolationException,
+            # ):
+            #     self.get_logger().error('Failed to get transform')
+            #     return
 
             # Ensure state is available
             while not State().state:
