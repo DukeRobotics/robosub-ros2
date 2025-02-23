@@ -55,7 +55,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
         direction_term = 'forward' if forward else 'backward'
         logger.info(f'track_blue_rectangle {distance} {direction_term}')
 
-        direction_mutliplier = 1 if forward else -1
+        direction_sign= 1 if forward else -1
 
         # The number of times to move the robot along the X axis
         repeats = math.ceil(distance / step_size)
@@ -70,7 +70,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
         for i in range(repeats):
             step = distance - total_dist if i == repeats-1 else step_size
             await move_tasks.move_to_pose_local(
-                geometry_utils.create_pose(step * direction_mutliplier, 0, 0, 0, 0, 0),
+                geometry_utils.create_pose(step * direction_sign, 0, 0, 0, 0, 0),
                 parent=self)
 
             total_dist += step
