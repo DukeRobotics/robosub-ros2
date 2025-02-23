@@ -29,18 +29,19 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
 
     DEPTH_LEVEL = State().depth
 
-    async def rotate_deg(angle: float) -> Coroutine[None, None, None]:
+    async def rotate_deg(angle: float, log_msg_prefix: str = 'Rotate') -> Coroutine[None, None, None]:
         """
         Rotate the robot by the specified angle in degrees.
 
         Args:
             angle (float): The angle to rotate the robot in degrees. Positive angles rotate the robot to the left.
+            log_msg_prefix (str): The prefix for the message logged after rotating. Defaults to 'Rotate'.
         """
         rad_angle = math.radians(angle)
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, rad_angle),
             parent=self)
-        logger.info(f'Rotate {angle}')
+        logger.info(f'{log_msg_prefix} {angle}')
 
     async def track_blue_rectangle(distance: float, forward: bool, step_size: float = 1.0) -> \
         Coroutine[None, None, None]:
@@ -55,7 +56,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
         direction_term = 'forward' if forward else 'backward'
         logger.info(f'track_blue_rectangle {distance} {direction_term}')
 
-        direction_sign= 1 if forward else -1
+        direction_sign = 1 if forward else -1
 
         # The number of times to move the robot along the X axis
         repeats = math.ceil(distance / step_size)
@@ -96,7 +97,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, 0.2, 0, 0, 0, 0),
                     parent=self)
-                logger.info('Touching top correction (0, 0.2, 0)')
+                logger.info('Touching top correction: Moved 0.2 to the left')
 
                 # If the lane marker touched the top of the frame in the previous step as well despite the yaw
                 # correction, then it means the robot's yaw has drifted significantly to the right, so rotate left
@@ -109,7 +110,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, -0.2, 0, 0, 0, 0),
                     parent=self)
-                logger.info('Touching bottom correction (0, -0.2, 0)')
+                logger.info('Touching bottom correction: Moved 0.2 to the right')
 
                 # If the lane marker touched the bottom of the frame in the previous step as well despite the yaw
                 # correction, then it means the robot's yaw has drifted significantly to the left, so rotate right
@@ -117,13 +118,14 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
                     await rotate_deg(-20)
 
             # Yaw correction so the robot's X axis is parallel to the lane marker
+            # The 'lane_marker_angle' provides the angle between the lane line and the robot's X axis. The coordinate
+            # frame of this angle is such that when viewed from the top, if the robot has rotated counterclockwise
+            # (left) relative to the lane marker, then the angle is positive. If the robot has rotated clockwise
+            # (right) relative to the lane marker, then the angle is negative. To correct the robot's yaw, the robot
+            # must rotate in the opposite direction of the angle, hence the angle is negated.
             angle = (CV().cv_data['lane_marker_angle'] * -1)
             if abs(angle) > 0:
-                rad_angle = math.radians(angle)
-                await move_tasks.move_to_pose_local(
-                    geometry_utils.create_pose(0, 0, 0, 0, 0, rad_angle),
-                    parent=self)
-                logger.info(f'Yaw correction {angle}')
+                await rotate_deg(angle, 'Yaw correction')
 
             # Y correction so the robot is centered on the lane marker
             dist_pixels = CV().cv_data['lane_marker_dist']
