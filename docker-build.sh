@@ -30,6 +30,11 @@ if [ -z "$ROBOT_NAME" ]; then
     echo "Warning: ROBOT_NAME is not set in .env; defaulting to blank string"
     ROBOT_NAME=""
     sleep 2  # Give user time to read the message before the docker build output
+
+# Check if ROBOT_NAME is a valid robot name
+elif ! grep -Fxq "$ROBOT_NAME" "./robot_names"; then
+    echo "Warning: ROBOT_NAME '$ROBOT_NAME' is not a valid robot name. Proceed with caution."
+    sleep 2  # Give user time to read the message before the docker build output
 fi
 
 # Create ~/.foxglove-studio directory if it doesn't exist

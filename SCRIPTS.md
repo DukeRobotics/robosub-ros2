@@ -70,6 +70,9 @@ The `robot_aliases.sh` script contains aliases that make it easier to run common
 - `bashon2`: Alias for opening a bash shell in the Docker container.
 - `dkill`: Alias for stopping all running Docker containers.
 
+## `robot_names`
+The `robot_names` script contains a list of valid values for the `ROBOT_NAME` environment variable. It has one valid value per line, and should not include any blank lines, leading/trailing whitespace, or comments.
+
 ## `venv.sh`
 The `venv.sh` script activates and deactivates the Python virtual environment. It must be run with `source` to activate the virtual environment in the current shell.
 
