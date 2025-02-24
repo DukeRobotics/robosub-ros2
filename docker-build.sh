@@ -16,7 +16,10 @@ cd "$robosub_ros2_path" || exit
 
 # Load variables from .env file
 set -o allexport
-source .env
+if ! source .env; then
+    echo "Error: Failed to source .env file."
+    exit 1
+fi
 set +o allexport
 
 # Make sure NO_GIT is set to "true" or "false"
@@ -33,7 +36,7 @@ if [ -z "$ROBOT_NAME" ]; then
 
 # Check if ROBOT_NAME is a valid robot name
 elif ! grep -Fxq "$ROBOT_NAME" "./robot_names"; then
-    echo "Warning: ROBOT_NAME '$ROBOT_NAME' is not a valid robot name. Proceed with caution."
+    echo "Warning: ROBOT_NAME '$ROBOT_NAME' is not a valid robot name. Will proceed with this name."
     sleep 2  # Give user time to read the message before the docker build output
 fi
 
