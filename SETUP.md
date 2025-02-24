@@ -95,8 +95,11 @@ USER_GID=
     > [!NOTE]
     > If you are a Mac or Windows user, do **_not_** include `USER_UID` and `USER_GID` in your `.env` file. Include these variables **_only_** if you are a Linux user. If the variables are not included in `.env`, then the UID and GID will both be set to `1000`, which is the default UID and GID for non-root users in Ubuntu.
 
-## Set Up Udev Rules (Robot Only)
-If you are setting up the repository on the robot, you need to set up the udev rules to symlink some USB devices to ports that are consistent across reboots and used by code in this repository.
+## Robot Only Setup
+If you are setting up the repository on the robot, there's a few additional steps you need to take. If you are setting up the repository on your development machine, you can skip to the [Set Up the Docker Container](#set-up-the-docker-container) section.
+
+### Set Up Udev Rules
+Set up the udev rules to symlink some USB devices to ports that are consistent across reboots and used by code in this repository.
 
 1. Open a terminal outside of the Docker container and navigate to the root of the repository.
 2. Run the following command to symlink the `99-robosub-ros2.rules` file located in the repository root to the `/etc/udev/rules.d` directory:
@@ -112,6 +115,31 @@ If you are setting up the repository on the robot, you need to set up the udev r
     ls /dev
     ```
     and check if the symlinks are present. If the symlinks are not present, reboot the robot and check again.
+
+### Set Up Bash Aliases
+Set up bash aliases to make it easier to run common commands associated with this repository _outside_ the Docker container (aliases used _inside_ the Docker container are defined in `docker/ros_bashrc.sh`).
+
+1. Open the `~/.bashrc` file in a text editor.
+2. Check if the `~/.bash_aliases` file is sourced in the `~/.bashrc` file. If it is not, add the following line to the `~/.bashrc` file
+    ```bash
+    source ~/.bash_aliases
+    ```
+    and create a `~/.bash_aliases` file.
+3. Add the following line to the `~/.bash_aliases` file to source the `robot_aliases.sh` file in the repository:
+    ```bash
+    source /absolute/path/to/robosub-ros2/robot_aliases.sh
+    ```
+    - Replace `/path/to/robosub-ros2` with the absolute path to the `robosub-ros2` repository on the robot.
+4. Source the `~/.bashrc` file by running the following command to apply the changes:
+    ```bash
+    source ~/.bashrc
+    ```
+5. Run the following command to check if the aliases were set up correctly:
+    ```bash
+    alias
+    ```
+    - You should see a list of all aliases set up on the robot. This list should include the aliases defined in the `robot_aliases.sh` file.
+    - If the aliases are not present, check the `~/.bash_aliases` file and the `~/.bashrc` file to ensure they are set up correctly.
 
 ## Set Up the Docker Container
 The Docker container is used to develop and run the code in a consistent environment. It is configured with all the necessary dependencies and tools to develop the code.

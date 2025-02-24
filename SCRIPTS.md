@@ -64,6 +64,12 @@ The `lint.py` script lint checks files of supported programming languages. It ca
 - `--github-action`: Use GitHub Actions workflow commands in the output.
 - `--no-git-tree`: Do not check if files are ignored by git. Instead, lint all files in the repository, including git-ignored files. This is useful when this script is run in a CI/CD environment that does not have the git tree available.
 
+## `robot_aliases.sh`
+The `robot_aliases.sh` script contains aliases that make it easier to run common commands on the robot outside of the Docker container. It should be sourced in the robot's `.bashrc` or `.bash_aliases` file to make the aliases available in the robot's shell.
+- `onboard2`: Alias for running `docker-build.sh`.
+- `bashon2`: Alias for opening a bash shell in the Docker container.
+- `dkill`: Alias for stopping all running Docker containers.
+
 ## `venv.sh`
 The `venv.sh` script activates and deactivates the Python virtual environment. It must be run with `source` to activate the virtual environment in the current shell.
 
