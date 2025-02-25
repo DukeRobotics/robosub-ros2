@@ -22,6 +22,7 @@ RUN apt install -y --no-install-recommends libeigen3-dev
 RUN apt install -y --no-install-recommends libyaml-cpp-dev
 RUN apt install -y --no-install-recommends nano
 RUN apt install -y --no-install-recommends nmap
+RUN apt install -y --no-install-recommends openssh-client
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-jsonpickle
 RUN apt install -y --no-install-recommends python3-opencv
