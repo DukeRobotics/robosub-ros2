@@ -142,7 +142,7 @@ RUN echo "source /home/ubuntu/ros_bashrc.sh" >> /home/ubuntu/.bashrc
 RUN mkdir -p /home/ubuntu/robosub-ros2
 
 # Define ARGs for Git information
-ARG NO_GIT
+ARG ENABLE_GIT
 ARG GIT_USER_NAME
 ARG GIT_USER_EMAIL
 
@@ -152,7 +152,7 @@ RUN --mount=type=secret,id=github_auth_ssh_key,required=false \
     --mount=type=secret,id=github_auth_ssh_key_pub,required=false \
     --mount=type=secret,id=github_signing_ssh_key,required=false \
     --mount=type=secret,id=git_allowed_signers,required=false \
-    if [ "$NO_GIT" != "true" ]; then \
+    if [ "$ENABLE_GIT" == "true" ]; then \
         sudo cat /run/secrets/github_auth_ssh_key > /home/ubuntu/.ssh/github_auth_key && \
         sudo cat /run/secrets/github_auth_ssh_key_pub > /home/ubuntu/.ssh/github_auth_key.pub && \
         sudo cat /run/secrets/github_signing_ssh_key > /home/ubuntu/.ssh/github_signing_key && \

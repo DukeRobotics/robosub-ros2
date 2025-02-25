@@ -68,7 +68,7 @@ GITHUB_AUTH_SSH_KEY_PRIV_PATH=
 GITHUB_AUTH_SSH_KEY_PUB_PATH=
 GITHUB_SIGNING_SSH_KEY_PRIV_PATH=
 GIT_ALLOWED_SIGNERS_PATH=
-NO_GIT=false
+ENABLE_GIT=true
 ROBOT_NAME=
 IS_ROBOT=
 FOXGLOVERC_PATH=
@@ -81,9 +81,9 @@ USER_GID=
 - `GITHUB_AUTH_SSH_KEY_PUB_PATH`: Absolute path to the _public_ SSH key used for authenticating with GitHub.
 - `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`: Absolute path to the _private_ SSH key used for signing commits.
 - `GIT_ALLOWED_SIGNERS_PATH`: Absolute path to the allowed signers file.
-- `NO_GIT`: For most users, this should be set to `false`. Set to `true` if you do **not** want to use git inside the Docker container. This is useful for CI/CD pipelines or if you have your SSH keys stored in encrypted files.
+- `ENABLE_GIT`: For most users, this should be set to `true`. Set to `false` if you do **not** want to use git inside the Docker container. This is useful for CI/CD pipelines or if you have your SSH keys stored in encrypted files.
     > [!NOTE]
-    > If you set `NO_GIT=true`, do not include the variables `GITHUB_AUTH_SSH_KEY_PRIV_PATH`, `GITHUB_AUTH_SSH_KEY_PUB_PATH`, `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`, or `GIT_ALLOWED_SIGNERS_PATH` in `.env`. These variables are only used if `NO_GIT=false`.
+    > If you set `ENABLE_GIT=false`, do not include the variables `GITHUB_AUTH_SSH_KEY_PRIV_PATH`, `GITHUB_AUTH_SSH_KEY_PUB_PATH`, `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`, or `GIT_ALLOWED_SIGNERS_PATH` in `.env`. These variables are only used if `ENABLE_GIT=true`.
 - `ROBOT_NAME`: The name of the robot you are developing for. This is used to set the `$ROBOT_NAME` environment variable in the Docker container, which is used by some scripts to determine which robot-specific configuration to use. If you are setting up the repository on the robot, then this should be the name of the robot. If you are setting up the repository on your development machine, then this name can be changed to test different robot configurations.
 - `IS_ROBOT` (Optional): Set to `true` if you are setting up the repository on the robot. Set to `false` or do not include this variable in `.env` if you are setting up the repository on your development machine.
 - `FOXGLOVERC_PATH` (Optional): Absolute path to the [`.foxgloverc`](#set-up-the-foxgloverc-file) file.
@@ -171,7 +171,7 @@ If you're using VS Code and have the Dev Containers extension installed:
         - Replace `PATH_TO_FILE_OR_DIRECTORY` with the path to the file or directory you want to open in VS Code.
         - If it is a file, the file will open in the current VS Code window.
         - If it is a directory, a new VS Code window will open with the directory as the workspace.
-    - If you set `NO_GIT=false` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
+    - If you set `ENABLE_GIT=true` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
     - You must build the packages in the container before running the code. See [Build Packages in README.md](README.md#build-packages) section for more information.
 6. When you're done, simply close the VS Code window to stop the container.
 
@@ -205,7 +205,7 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
         ```
 4. Now, you're ready to start developing!
     - Any changes you make in the repository on your host machine are reflected in the `/home/ubuntu/robosub-ros2` directory in the Docker container.
-    - If you set `NO_GIT=false` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
+    - If you set `ENABLE_GIT=true` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
     - You must build the packages in the container before running the code. See the [Build Packages in README.md](README.md#build-packages) section for more information.
     - To open additional terminals in the container, open a new terminal and run the `docker exec` command above.
 5. When you're done, open a new terminal _on the host machine_, navigate to the root of the repository, and run:

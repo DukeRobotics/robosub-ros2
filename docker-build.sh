@@ -22,9 +22,9 @@ if ! source .env; then
 fi
 set +o allexport
 
-# Make sure NO_GIT is set to "true" or "false"
-if [ "$NO_GIT" != "true" ] && [ "$NO_GIT" != "false" ]; then
-    echo "Error: NO_GIT must be set to 'true' or 'false' in .env"
+# Make sure ENABLE_GIT is set to "true" or "false"
+if [ "$ENABLE_GIT" != "true" ] && [ "$ENABLE_GIT" != "false" ]; then
+    echo "Error: ENABLE_GIT must be set to 'true' or 'false' in .env"
     exit 1
 fi
 
@@ -53,7 +53,7 @@ GIT_USER_EMAIL=$(git config --global user.email)
 year_week=$(date +%Y-%U)
 
 # Command used to build the Docker image
-docker_build_cmd="docker build --build-arg CACHE_BUSTER='$year_week' --build-arg NO_GIT='$NO_GIT'"
+docker_build_cmd="docker build --build-arg CACHE_BUSTER='$year_week' --build-arg ENABLE_GIT='$ENABLE_GIT'"
 
 # If the first or second argument is --no-cache, build the image without cache
 if [ "$1" == "--no-cache" ] || [ "$2" == "--no-cache" ]; then
@@ -66,7 +66,7 @@ USER_GID=${USER_GID:-1000}
 docker_build_cmd+=" --build-arg USER_UID=$USER_UID --build-arg USER_GID=$USER_GID"
 
 # If the user wants to set up Git in the container, add the necessary build arguments and secrets
-if [ "$NO_GIT" != "true" ]; then
+if [ "$ENABLE_GIT" == "true" ]; then
     # List of required environment variables
     required_env_vars=("GITHUB_AUTH_SSH_KEY_PRIV_PATH" "GITHUB_AUTH_SSH_KEY_PUB_PATH" "GITHUB_SIGNING_SSH_KEY_PRIV_PATH" "GIT_ALLOWED_SIGNERS_PATH")
 
