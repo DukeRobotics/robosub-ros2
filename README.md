@@ -21,6 +21,16 @@ Setting up the repository and development enviornment is an involved process. Th
 
 See [SCRIPTS.md](SCRIPTS.md) for more information about how to use `build.sh` and other scripts at the root of the repository.
 
+## Run Code
+1. Open a terminal in the Docker container.
+2. Make sure you have built all packages by following the instructions in the [Build Packages](#build-packages) section.
+2. Run the following command:
+    ```bash
+    ros2 launch execute robot.xml
+    ```
+    - This command launches all nodes required to run the robot.
+    - It does not launch task planning, which must be run separately for the robot to complete tasks autonomously. See the [task planning README](onboard/src/task_planning/README.md) for instructions on launching the task planning node.
+
 ## Foxglove
 We use [Foxglove Studio](https://foxglove.dev) for visualizing and debugging our code. Foxglove Studio is a web-based tool that allows us to visualize received data and send data in real time to ROS 2 topics and services.
 
@@ -44,9 +54,11 @@ To ensure code quality and consistent formatting, we use the following linters:
 - Bash: [ShellCheck](https://www.shellcheck.net)
 - TypeScript/JavaScript: [ESLint](https://eslint.org)
 
-The linters can be accessed via the CLI provided by `lint.py`. This CLI is also used by the GitHub Actions `build-and-lint` workflow.
+ESLint can be accessed by the CLI provided by `foxglove.py`; see the [foxglove README](foxglove/README.md) for more information about running ESLint.
 
-To lint all code in the repository:
+All other linters can be accessed via the CLI provided by `lint.py`. This CLI is also used by the GitHub Actions `build-and-lint` workflow.
+
+To lint all code in the repository with `lint.py`:
 1. Open a terminal in the Docker container.
 2. Navigate to the root of the repository `/home/ubuntu/robosub-ros2`.
 3. Run the following command:
