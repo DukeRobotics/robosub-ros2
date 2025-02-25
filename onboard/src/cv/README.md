@@ -15,7 +15,7 @@ The following are the folders and files in the CV package:
 
 `cv`: This is the "meat" of our package that contains all of the files that connects to the camera and/or performs detection.
 * `bin_detector.py`: Detects bins using HSV filtering.
-* `blue_rectangle_detector.py`: Detects blue rectangles using HSV filtering.
+* `lane_marker_detector.py`: Detects the lane marker in Taishoff Aquatics Pavillion using HSV filtering.
 * `buoy_detector_contour_matching`: Detects buoy using HSV filtering.
 * `config.py`: Constants.
 * `correct.py`: Auxiliary functions that correct any distortion.
@@ -32,10 +32,10 @@ The following are the folders and files in the CV package:
 
 `launch`: Contains the various launch files for our CV package. There are specific launch files for each script in `cv`.
 * `bin_detector.xml`: Runs the bin detector script.
-* `blue_rectangle_detector`: Runs the blue rectangle detector script.
-* `buoy_detector_contour_matching`: Runs the buoy detector contour matching script.
-* `depthai_camera_connect`: Runs the DepthAI camera connect script.
-* `depthai_mono_detection`: Runs the DepthAI mono detection script.
+* `lane_marker_detector.xml`: Runs the lane marker detector script.
+* `buoy_detector_contour_matching.xml`: Runs the buoy detector contour matching script.
+* `depthai_camera_connect.xml`: Runs the DepthAI camera connect script.
+* `depthai_mono_detection.xml`: Runs the DepthAI mono detection script.
 * `depthai_publish_save_streams.xml`: Runs the DepthAI publish and save streams script.
 * `depthai_spatial_detection.xml`: Runs the DepthAI spatial detection script.
 * `path_marker_detector.xml`: Runs the path marker detector script.
