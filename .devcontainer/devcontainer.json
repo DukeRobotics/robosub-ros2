@@ -50,6 +50,7 @@
 
                 // Python-related settings
                 "python.defaultInterpreterPath": "/home/ubuntu/venv/bin/python3",
+                "python.terminal.activateEnvironment": false,
 
                 // TypeScript/JavaScript-related settings
                 "[typescript]": {
