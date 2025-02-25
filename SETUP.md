@@ -85,6 +85,11 @@ USER_GID=
     > [!NOTE]
     > If you set `ENABLE_GIT=false`, do not include the variables `GITHUB_AUTH_SSH_KEY_PRIV_PATH`, `GITHUB_AUTH_SSH_KEY_PUB_PATH`, `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`, or `GIT_ALLOWED_SIGNERS_PATH` in `.env`. These variables are only used if `ENABLE_GIT=true`.
 - `ROBOT_NAME`: The name of the robot you are developing for. This is used to set the `$ROBOT_NAME` environment variable in the Docker container, which is used by some scripts to determine which robot-specific configuration to use. If you are setting up the repository on the robot, then this should be the name of the robot. If you are setting up the repository on your development machine, then this name can be changed to test different robot configurations.
+    > [!IMPORTANT]
+    > The value of `ROBOT_NAME` should be one of the values defined on each line of the `robot_names` file. You can start the Docker container with an invalid `ROBOT_NAME` value, but some scripts may not work correctly.
+
+    > [!NOTE]
+    > If you are setting up a new robot, you may need to add the robot name to the `robot_names` file. See [SCRIPTS.md](SCRIPTS.md#robot_names) for more information.
 - `IS_ROBOT` (Optional): Set to `true` if you are setting up the repository on the robot. Set to `false` or do not include this variable in `.env` if you are setting up the repository on your development machine.
 - `FOXGLOVERC_PATH` (Optional): Absolute path to the [`.foxgloverc`](#set-up-the-foxgloverc-file) file.
 - `USER_UID` and `USER_GID` (Optional): The user ID and group ID of the `ubuntu` user in the Docker container.
