@@ -69,7 +69,6 @@ target_precompile_headers(controls
     <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
     <Eigen/Dense>
     <yaml-cpp/yaml.h>
-    [["OsqpEigen/OsqpEigen.h"]]
 )
 
 install(TARGETS controls DESTINATION lib/${PROJECT_NAME})
@@ -87,5 +86,3 @@ install(
 )
 
 ament_package()
-
-
