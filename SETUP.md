@@ -95,17 +95,20 @@ USER_GID=
     > [!NOTE]
     > If you are a Mac or Windows user, do **_not_** include `USER_UID` and `USER_GID` in your `.env` file. Include these variables **_only_** if you are a Linux user. If the variables are not included in `.env`, then the UID and GID will both be set to `1000`, which is the default UID and GID for non-root users in Ubuntu.
 
-## Robot Only Setup
-If you are setting up the repository on the robot, there's a few additional steps you need to take. If you are setting up the repository on your development machine, you can skip to the [Set Up the Docker Container](#set-up-the-docker-container) section.
+## Set Up the Robot
+If you are setting up the repository on the robot, there's a few additional steps you need to take. If you are setting up the repository on your development machine, skip to the [Set Up the Docker Container](#set-up-the-docker-container) section.
 
 ### Set Up Udev Rules
 Set up the udev rules to symlink some USB devices to ports that are consistent across reboots and used by code in this repository.
 
+Each robot has its own udev rules file located in the `robot/udev` directory. The name of the file is `99-ros2-ROBOT_NAME.rules`, where `ROBOT_NAME` is the name of the robot. If this file does not exist, you will need to create it first.
+
 1. Open a terminal outside of the Docker container and navigate to the root of the repository.
-2. Run the following command to symlink the `99-robosub-ros2.rules` file located in the repository root to the `/etc/udev/rules.d` directory:
+2. Run the following command to symlink the `99-ros2-ROBOT_NAME.rules` file located in the repository root to the `/etc/udev/rules.d` directory:
     ```bash
-    sudo ln -s $(pwd)/99-robosub-ros2.rules /etc/udev/rules.d/99-robosub-ros2.rules
+    sudo ln -s $(pwd)/robot/udev/99-ros2-ROBOT_NAME.rules /etc/udev/rules.d/99-ros2-ROBOT_NAME.rules
     ```
+    Replace `ROBOT_NAME` with the name of the robot.
 3. Run the following command to reload the udev rules:
     ```bash
     sudo udevadm control --reload-rules && sudo udevadm trigger
@@ -125,11 +128,11 @@ Set up bash aliases to make it easier to run common commands associated with thi
     source ~/.bash_aliases
     ```
     and create a `~/.bash_aliases` file.
-3. Add the following line to the `~/.bash_aliases` file to source the `robot_aliases.sh` file in the repository:
+3. Add the following line to the `~/.bash_aliases` file to source the `robot/robot_aliases.sh` file in the repository:
     ```bash
-    source /absolute/path/to/robosub-ros2/robot_aliases.sh
+    source /absolute/path/to/robosub-ros2/robot/robot_aliases.sh
     ```
-    - Replace `/path/to/robosub-ros2` with the absolute path to the `robosub-ros2` repository on the robot.
+    - Replace `/absolute/path/to/robosub-ros2` with the absolute path to the `robosub-ros2` repository on the robot.
 4. Source the `~/.bashrc` file by running the following command to apply the changes:
     ```bash
     source ~/.bashrc
@@ -138,7 +141,7 @@ Set up bash aliases to make it easier to run common commands associated with thi
     ```bash
     alias
     ```
-    - You should see a list of all aliases set up on the robot. This list should include the aliases defined in the `robot_aliases.sh` file.
+    - You should see a list of all aliases set up on the robot. This list should include the aliases defined in the `robot/robot_aliases.sh` file.
     - If the aliases are not present, check the `~/.bash_aliases` file and the `~/.bashrc` file to ensure they are set up correctly.
 
 ## Set Up the Docker Container

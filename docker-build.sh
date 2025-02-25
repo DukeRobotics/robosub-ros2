@@ -99,7 +99,7 @@ eval "$docker_build_cmd"
 
 # If $IS_ROBOT is set to "true", then this script is running on the robot
 if [ "$IS_ROBOT" == "true" ]; then
-    compose_file="docker-compose-robot.yml"
+    compose_file="robot/docker-compose.yml"
 else
     compose_file="docker-compose.yml"
 fi
