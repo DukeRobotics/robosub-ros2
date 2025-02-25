@@ -24,10 +24,8 @@ RUN apt install -y --no-install-recommends nano
 RUN apt install -y --no-install-recommends nmap
 RUN apt install -y --no-install-recommends openssh-client
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
-RUN apt install -y --no-install-recommends python3-jsonpickle
 RUN apt install -y --no-install-recommends python3-opencv
 RUN apt install -y --no-install-recommends python3-pip
-RUN apt install -y --no-install-recommends python3-transforms3d
 RUN apt install -y --no-install-recommends python3-venv
 RUN apt install -y --no-install-recommends ros-jazzy-cv-bridge
 RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
@@ -112,13 +110,15 @@ RUN python3 -m venv /home/ubuntu/venv --system-site-packages
 RUN /home/ubuntu/venv/bin/pip install depthai
 RUN /home/ubuntu/venv/bin/pip install GitPython
 RUN /home/ubuntu/venv/bin/pip install gputil
+RUN /home/ubuntu/venv/bin/pip install jsonpickle
+RUN /home/ubuntu/venv/bin/pip install mypy
 RUN /home/ubuntu/venv/bin/pip install pandas
 RUN /home/ubuntu/venv/bin/pip install pyserial
 RUN /home/ubuntu/venv/bin/pip install python-nmap
 RUN /home/ubuntu/venv/bin/pip install ruff
 RUN /home/ubuntu/venv/bin/pip install scikit-learn
 RUN /home/ubuntu/venv/bin/pip install sympy
-RUN /home/ubuntu/venv/bin/pip install mypy
+RUN /home/ubuntu/venv/bin/pip install transforms3d
 
 # Install Node.js (Jod)
 ENV NVM_DIR=/home/ubuntu/.nvm
