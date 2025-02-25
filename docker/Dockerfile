@@ -34,7 +34,6 @@ RUN apt install -y --no-install-recommends ros-jazzy-robot-localization
 RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
 RUN apt install -y --no-install-recommends ros-jazzy-vision-msgs
 RUN apt install -y --no-install-recommends shellcheck
-RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends tini
 RUN apt install -y --no-install-recommends valgrind
 
