@@ -68,7 +68,7 @@ The DepthAI camera scripts only support YOLO models. After you train a YOLO mode
 model_name:
   classes: ["class1", "class2", ...]
   sizes: {"class1": [width, height], "class2": [width, height], ...}
-  topic: cv/
+  topic: string
   weights: model_weights.blob
   input_size: [width, height]
   coordinate_size: int
@@ -82,7 +82,7 @@ model_name:
 * `model_name`: A unique name for the model.
 * `classes`: A list of the classes that the model predicts. Must be in the same order as the model's output.
 * `sizes`: A dictionary mapping each class to its size. Provided by the model's output.
-* `topic`: The first part of the topic to which the model's detections will be published.For example, if the topic is `cv/`, the model will publish to `cv/<camera>/<class>`.
+* `topic`: The first part of the topic to which the model's detections will be published. It should **not** include a trailing slash. For example, if the topic is `cv`, the model will publish to `cv/<camera>/<class>`.
 * `weights`: The name of the `.blob` file containing the model's weights. Must be in the `cv/models` folder.
 * `input_size`: The size of the input image to the model.
 * `coordinate_size`: The size of the coordinates tuple used to represent the bounding boxes output by the model. This is usually 4.

@@ -51,7 +51,7 @@ class CV:
 
             for model_class in model['classes']:
                 self.cv_data[model_class] = None
-                topic = f"{model['topic']}{self.CV_CAMERA}/{model_class}"
+                topic = f"{model['topic']}/{self.CV_CAMERA}/{model_class}"
                 node.create_subscription(
                     CVObject,
                     topic,
