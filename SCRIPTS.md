@@ -64,6 +64,9 @@ The `lint.py` script lint checks files of supported programming languages. It ca
 - `--github-action`: Use GitHub Actions workflow commands in the output.
 - `--no-git-tree`: Do not check if files are ignored by git. Instead, lint all files in the repository, including git-ignored files. This is useful when this script is run in a CI/CD environment that does not have the git tree available.
 
+## `robot_names`
+The `robot_names` file contains a list of valid values for the `ROBOT_NAME` environment variable. It has one valid value per line and a blank line at the end. It should not include any other blank lines, leading/trailing whitespace, or comments.
+
 ## `venv.sh`
 The `venv.sh` script activates and deactivates the Python virtual environment. It must be run with `source` to activate the virtual environment in the current shell.
 

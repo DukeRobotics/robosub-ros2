@@ -9,4 +9,10 @@ set -e
 
 source /home/ubuntu/ros_bashrc.sh
 
-ros2 run offboard_comms arduino compile all
+# Loop through every valid robot name and compile the Arduino sketches for each robot
+while read -r line; do
+    export ROBOT_NAME="$line"
+    echo "::group::Compiling Arduino sketches for robot: $ROBOT_NAME"
+    ros2 run offboard_comms arduino compile all
+    echo "::endgroup::"
+done < "/home/ubuntu/robosub-ros2/robot_names"

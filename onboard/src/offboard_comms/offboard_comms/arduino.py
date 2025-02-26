@@ -11,7 +11,7 @@ import resource_retriever as rr
 import yaml
 from serial.tools import list_ports
 
-ROBOT_NAME = os.getenv('ROBOT_NAME', 'oogway')
+ROBOT_NAME = os.getenv('ROBOT_NAME')
 
 # Template for the path to the offboard_comms package
 OFFBOARD_COMMS_PATH_TEMPLATE = 'package://offboard_comms/{subpath}'

@@ -16,12 +16,15 @@ cd "$robosub_ros2_path" || exit
 
 # Load variables from .env file
 set -o allexport
-source .env
+if ! source .env; then
+    echo "Error: Failed to source .env file."
+    exit 1
+fi
 set +o allexport
 
-# Make sure NO_GIT is set to "true" or "false"
-if [ "$NO_GIT" != "true" ] && [ "$NO_GIT" != "false" ]; then
-    echo "Error: NO_GIT must be set to 'true' or 'false' in .env"
+# Make sure ENABLE_GIT is set to "true" or "false"
+if [ "$ENABLE_GIT" != "true" ] && [ "$ENABLE_GIT" != "false" ]; then
+    echo "Error: ENABLE_GIT must be set to 'true' or 'false' in .env"
     exit 1
 fi
 
@@ -29,6 +32,11 @@ fi
 if [ -z "$ROBOT_NAME" ]; then
     echo "Warning: ROBOT_NAME is not set in .env; defaulting to blank string"
     ROBOT_NAME=""
+    sleep 2  # Give user time to read the message before the docker build output
+
+# Check if ROBOT_NAME is a valid robot name
+elif ! grep -Fxq "$ROBOT_NAME" "./robot_names"; then
+    echo "Warning: ROBOT_NAME '$ROBOT_NAME' is not a valid robot name. Will proceed with this name."
     sleep 2  # Give user time to read the message before the docker build output
 fi
 
@@ -45,7 +53,7 @@ GIT_USER_EMAIL=$(git config --global user.email)
 year_week=$(date +%Y-%U)
 
 # Command used to build the Docker image
-docker_build_cmd="docker build --build-arg CACHE_BUSTER='$year_week' --build-arg NO_GIT='$NO_GIT'"
+docker_build_cmd="docker build --build-arg CACHE_BUSTER='$year_week' --build-arg ENABLE_GIT='$ENABLE_GIT'"
 
 # If the first or second argument is --no-cache, build the image without cache
 if [ "$1" == "--no-cache" ] || [ "$2" == "--no-cache" ]; then
@@ -58,7 +66,7 @@ USER_GID=${USER_GID:-1000}
 docker_build_cmd+=" --build-arg USER_UID=$USER_UID --build-arg USER_GID=$USER_GID"
 
 # If the user wants to set up Git in the container, add the necessary build arguments and secrets
-if [ "$NO_GIT" != "true" ]; then
+if [ "$ENABLE_GIT" == "true" ]; then
     # List of required environment variables
     required_env_vars=("GITHUB_AUTH_SSH_KEY_PRIV_PATH" "GITHUB_AUTH_SSH_KEY_PUB_PATH" "GITHUB_SIGNING_SSH_KEY_PRIV_PATH" "GIT_ALLOWED_SIGNERS_PATH")
 
@@ -91,7 +99,7 @@ eval "$docker_build_cmd"
 
 # If $IS_ROBOT is set to "true", then this script is running on the robot
 if [ "$IS_ROBOT" == "true" ]; then
-    compose_file="docker-compose-robot.yml"
+    compose_file="robot/docker-compose.yml"
 else
     compose_file="docker-compose.yml"
 fi
