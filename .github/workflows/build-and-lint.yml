@@ -17,7 +17,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create .env file with ENABLE_GIT and ROBOT_NAME
+      - name: Create .env file
         run: |
           echo "ENABLE_GIT=false" >> .env
           echo "USER_UID=$(id -u)" >> .env
