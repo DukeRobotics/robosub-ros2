@@ -51,7 +51,7 @@ class CV:
 
             for model_class in model['classes']:
                 self.cv_data[model_class] = None
-                topic = f"{model['topic']}{self.CV_CAMERA}/{model_class}"
+                topic = f"{model['topic']}/{self.CV_CAMERA}/{model_class}"
                 node.create_subscription(
                     CVObject,
                     topic,
@@ -256,10 +256,10 @@ class CV:
 
     def _on_receive_lane_marker_angle(self, angle: Float64) -> None:
         """
-        Parse the received angle of the blue rectangle and store it.
+        Parse the received angle of the lane marker and store it.
 
         Args:
-            angle: The received angle of the blue rectangle in degrees
+            angle: The received angle of the lane marker in degrees
         """
         filter_len = 10
         skip = 0

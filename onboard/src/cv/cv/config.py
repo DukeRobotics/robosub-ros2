@@ -21,15 +21,14 @@ class Bins:
     lower_blue = np.array([90, 150, 50])
     upper_blue = np.array([125, 255, 255])
 
-
 class Buoy:
     """Buoy dimension and color constants."""
     WIDTH = 0.2032  # Width of buoy in meters
 
-class BlueRect:
-    """BlueRect color constants."""
-    BLUE_BOT = np.array([100, 150, 50])
-    BLUE_TOP = np.array([140, 255, 255])
+class LaneMarker:
+    """Lane marker color constants."""
+    LANE_MARKER_BOT = np.array([100, 150, 50])
+    LANE_MARKER_TOP = np.array([140, 255, 255])
 
 class PathMarker:
     """Path marker color bounds and contour parameters."""

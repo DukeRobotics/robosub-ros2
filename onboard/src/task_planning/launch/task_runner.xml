@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<launch>
-	<arg name="bypass" default="false" description="Bypass mode"/>
-    <arg name="autonomous" default="false" description="Autonomous mode"/>
-	<node pkg="task_planning" name="task_runner" exec="task_runner" output="screen">
-		<param name="bypass" value="$(var bypass)" />
-		<param name="autonomous" value="$(var autonomous)" />
-	</node>
-</launch>

@@ -1,6 +1,6 @@
 <launch>
     <include file="$(find-pkg-share cv)/launch/bin_detector.xml"/>
-    <include file="$(find-pkg-share cv)/launch/blue_rectangle_detector.xml"/>
+    <include file="$(find-pkg-share cv)/launch/lane_marker_detector.xml"/>
     <include file="$(find-pkg-share cv)/launch/buoy_detector_contour_matching.xml"/>
     <include file="$(find-pkg-share cv)/launch/path_marker_detector.xml"/>
     <include file="$(find-pkg-share cv)/launch/pink_bins_detector.xml">

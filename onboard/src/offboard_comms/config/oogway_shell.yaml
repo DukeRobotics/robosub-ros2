@@ -36,7 +36,7 @@ arduino:
           right: 1350
   thruster:
     ftdi: 02AB8D8451544E5450202020FF0D334A
-    fqbn: arduino:megaavr:nano
+    fqbn: arduino:megaavr:nona4809
     core: arduino:megaavr
     sketch: sketches/thruster
 dvl:
