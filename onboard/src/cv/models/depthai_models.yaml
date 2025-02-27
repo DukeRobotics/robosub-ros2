@@ -1,6 +1,6 @@
 gate:
   classes: ['gate', 'gate_side', 'gate_tick', 'gate_top', 'start_gate']
-  topic: cv/
+  topic: cv
   weights: yolo_v4_tiny_gate_openvino_2021.3_6shave-2022-7-21_416_416.blob
   input_size: [416, 416]
   coordinate_size: 4
@@ -12,7 +12,7 @@ gate:
 
 gate_buoy:
   classes: ['buoy_bootlegger', 'buoy_gman', 'gate']
-  topic: cv/
+  topic: cv
   weights: yolo_v4_tiny_buoys_and_gate_6shave.blob
   input_size: [416, 416]
   coordinate_size: 4
@@ -24,7 +24,7 @@ gate_buoy:
 
 yolov8n_2023_main:
   classes: ['buoy_abydos_serpenscaput','buoy_abydos_taurus','buoy_earth_auriga','buoy_earth_cetus','gate_abydos','gate_earth']
-  topic: cv/
+  topic: cv
   weights: yolov8n-2023-main_openvino_2022.1_6shave.blob
   input_size: [416, 416]
   coordinate_size: 4
@@ -37,7 +37,7 @@ yolov8n_2023_main:
 yolov7_tiny_2023_main:
   classes: ['buoy_abydos_serpenscaput','buoy_abydos_taurus','buoy_earth_auriga','buoy_earth_cetus','gate_abydos','gate_earth']
   sizes: {"buoy_abydos_serpenscaput": [-1, -1], "buoy_abydos_taurus": [-1, -1], "buoy_earth_auriga": [-1, -1], "buoy_earth_cetus": [-1, -1], "gate_abydos": [-1, -1], "gate_earth": [-1, -1]} # for testing
-  topic: cv/
+  topic: cv
   weights: yolov7-tiny-2023-main_openvino_2022.1_6shave.blob
   input_size: [416, 416]
   coordinate_size: 4
@@ -50,7 +50,7 @@ yolov7_tiny_2023_main:
 2024_gate_glyphs:
   classes: ["gate_blue_ccw", "gate_red_cw", "gate_tick", "gate_whole"]
   sizes: {"gate_blue_ccw": [0.24, 0.3], "gate_red_cw": [0.24, 0.3], "gate_tick": [0.051, 0.61], "gate_whole": [3.048, 1.52]}
-  topic: cv/
+  topic: cv
   weights: 2024_gate_glyphs.blob
   input_size: [416, 416]
   coordinate_size: 4

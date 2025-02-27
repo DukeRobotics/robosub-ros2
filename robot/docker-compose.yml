@@ -1,7 +1,7 @@
 services:
   robosub-ros2:
     extends:
-      file: docker-compose.yml
+      file: ../docker-compose.yml
       service: robosub-ros2
     image: robosub-ros2:latest
     tty: true
