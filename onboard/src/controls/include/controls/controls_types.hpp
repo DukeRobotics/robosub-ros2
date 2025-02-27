@@ -87,9 +87,9 @@ const std::unordered_map<PIDGainTypesEnum, std::string> PID_GAIN_TYPES_NAMES = {
 const std::string CONTROLS_PACKAGE_PATH = ament_index_cpp::get_package_share_directory("controls");
 
 // Path to robot config file
+inline const char* ROBOT_NAME = std::getenv("ROBOT_NAME");
 const std::string ROBOT_CONFIG_FILE_PATH =
-    CONTROLS_PACKAGE_PATH + "/config/" + std::string(std::getenv("ROBOT_NAME") ? std::getenv("ROBOT_NAME") : "oogway") +
-    ".yaml";
+    CONTROLS_PACKAGE_PATH + "/config/" + std::string(ROBOT_NAME ? ROBOT_NAME : "") + ".yaml";
 
 // Map of PID gains
 typedef std::unordered_map<PIDGainTypesEnum, double> PIDGainsMap;

@@ -16,7 +16,7 @@ from tf_transformations import quaternion_from_euler
 class DVLOdomPublisher(Node):
     """A class to convert raw DVL data to odometry messages."""
 
-    CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
+    CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
 
     NODE_NAME = 'dvl_odom_pub'
     DVL_RAW_TOPIC = 'sensors/dvl/raw'
