@@ -15,10 +15,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='root',
-    maintainer_email='root@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer='Duke Robotics',
+    maintainer_email='hello@duke-robotics.com',
+    description='Run the Sonar on the robot.',
+    license='MIT',
     entry_points={
         'console_scripts': [
             "sonar = sonar.sonar:main",
