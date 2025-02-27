@@ -39,6 +39,10 @@ The `docker-build.sh` script builds the Docker image and starts the container.
     ```bash
     ./docker-build.sh --no-cache
     ```
+- The script accepts an optional flag `--github-action` intended for use in GitHub Actions workflows.
+    ```bash
+    ./docker-build.sh --github-action
+    ```
 
 ## `lint.py`
 The `lint.py` script lint checks files of supported programming languages. It can be executed with the following command:

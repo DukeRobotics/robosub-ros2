@@ -28,15 +28,21 @@ if [ "$ENABLE_GIT" != "true" ] && [ "$ENABLE_GIT" != "false" ]; then
     exit 1
 fi
 
-# Make sure ROBOT_NAME is set
-if [ -z "$ROBOT_NAME" ]; then
-    echo "Error: ROBOT_NAME is not set in .env"
-    exit 1
+# If this is not run by a Github Action, make sure ROBOT_NAME is set
+if [ "$1" != "--github-action" ] && [ "$2" != "--github-action" ]; then
+    if [ -z "$ROBOT_NAME" ]; then
+        echo "Error: ROBOT_NAME is not set in .env"
+        exit 1
 
-# Make sure ROBOT_NAME is a valid robot name
-elif ! grep -Fxq "$ROBOT_NAME" "robot/robot_names"; then
-    echo "Error: ROBOT_NAME '$ROBOT_NAME' is not a valid robot name."
-    exit 1
+    # Make sure ROBOT_NAME is a valid robot name
+    elif ! grep -Fxq "$ROBOT_NAME" "robot/robot_names"; then
+        echo "Error: ROBOT_NAME '$ROBOT_NAME' is not a valid robot name."
+        exit 1
+    fi
+
+# If this is run by a Github Action, set ROBOT_NAME to an empty string
+else
+    export ROBOT_NAME=""
 fi
 
 # Create ~/.foxglove-studio directory if it doesn't exist
