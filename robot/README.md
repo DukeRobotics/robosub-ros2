@@ -1,6 +1,6 @@
 # Robot Configuration
 
-This directory contains files intended to be used exclusively on the robot.
+This directory contains configuration related to the robots that run the code in this repository.
 
 ## Udev Rules
 
@@ -33,3 +33,6 @@ The `robot_aliases.sh` script contains aliases that make it easier to run common
 - `onboard2`: Alias for running `docker-build.sh`.
 - `bashon2`: Alias for opening a bash shell in the Docker container.
 - `dkill`: Alias for stopping all running Docker containers.
+
+## `robot_names`
+The `robot_names` file contains a list of valid values for the `ROBOT_NAME` environment variable. It has one valid value per line must include a blank line at the end. It should not include any other blank lines, leading/trailing whitespace, or comments.

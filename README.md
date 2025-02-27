@@ -54,7 +54,7 @@ To ensure code quality and consistent formatting, we use the following linters:
 - Bash: [ShellCheck](https://www.shellcheck.net)
 - TypeScript/JavaScript: [ESLint](https://eslint.org)
 
-ESLint can be accessed by the CLI provided by `foxglove.py`; see the [foxglove README](foxglove/README.md) for more information about running ESLint.
+ESLint can be accessed by the CLI provided by `foxglove.py`; see the [Foxglove README](foxglove/README.md) for more information about running ESLint.
 
 All other linters can be accessed via the CLI provided by `lint.py`. This CLI is also used by the GitHub Actions `build-and-lint` workflow.
 

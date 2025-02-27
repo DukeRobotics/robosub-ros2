@@ -2,12 +2,6 @@
 
 Documentation for the scripts in the repository root.
 
-## Contents
-- [`build.sh`](#buildsh)
-- [`docker-build.sh`](#docker-buildsh)
-- [`lint.py`](#lintpy)
-- [`venv.sh`](#venvsh)
-
 ## `build.sh`
 The `build.sh` script has several options to build and clean packages. The script must be run with `source` to ensure the environment variables are set in the current shell.
 - By default, the script builds all packages in the `core` and `onboard` workspaces.
@@ -63,9 +57,6 @@ The `lint.py` script lint checks files of supported programming languages. It ca
 - `-s, --sort`: Sort the output by language.
 - `--github-action`: Use GitHub Actions workflow commands in the output.
 - `--no-git-tree`: Do not check if files are ignored by git. Instead, lint all files in the repository, including git-ignored files. This is useful when this script is run in a CI/CD environment that does not have the git tree available.
-
-## `robot_names`
-The `robot_names` file contains a list of valid values for the `ROBOT_NAME` environment variable. It has one valid value per line and a blank line at the end. It should not include any other blank lines, leading/trailing whitespace, or comments.
 
 ## `venv.sh`
 The `venv.sh` script activates and deactivates the Python virtual environment. It must be run with `source` to activate the virtual environment in the current shell.

@@ -28,16 +28,15 @@ if [ "$ENABLE_GIT" != "true" ] && [ "$ENABLE_GIT" != "false" ]; then
     exit 1
 fi
 
-# If ROBOT_NAME is not set, let user know and default to blank string
+# Make sure ROBOT_NAME is set
 if [ -z "$ROBOT_NAME" ]; then
-    echo "Warning: ROBOT_NAME is not set in .env; defaulting to blank string"
-    ROBOT_NAME=""
-    sleep 2  # Give user time to read the message before the docker build output
+    echo "Error: ROBOT_NAME is not set in .env"
+    exit 1
 
-# Check if ROBOT_NAME is a valid robot name
-elif ! grep -Fxq "$ROBOT_NAME" "./robot_names"; then
-    echo "Warning: ROBOT_NAME '$ROBOT_NAME' is not a valid robot name. Will proceed with this name."
-    sleep 2  # Give user time to read the message before the docker build output
+# Make sure ROBOT_NAME is a valid robot name
+elif ! grep -Fxq "$ROBOT_NAME" "robot/robot_names"; then
+    echo "Error: ROBOT_NAME '$ROBOT_NAME' is not a valid robot name."
+    exit 1
 fi
 
 # Create ~/.foxglove-studio directory if it doesn't exist

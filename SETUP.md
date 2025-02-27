@@ -138,6 +138,10 @@ Set up bash aliases to make it easier to run common commands associated with thi
     source /absolute/path/to/robosub-ros2/robot/robot_aliases.sh
     ```
     - Replace `/absolute/path/to/robosub-ros2` with the absolute path to the `robosub-ros2` repository on the robot.
+
+    > [!NOTE]
+    > It is considered good practice to define aliases separately in `~/.bash_aliases` instead of putting them directly in `~/.bashrc`. However `source .../robosub-ros2/robot/robot_aliases.sh` can be added to the `~/.bashrc` file directly if you prefer not to use a `~/.bash_aliases` file.
+
 4. Source the `~/.bashrc` file by running the following command to apply the changes:
     ```bash
     source ~/.bashrc
