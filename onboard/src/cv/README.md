@@ -15,7 +15,7 @@ The following are the folders and files in the CV package:
 
 `cv`: This is the "meat" of our package that contains all of the files that connects to the camera and/or performs detection.
 * `bin_detector.py`: Detects bins using HSV filtering.
-* `blue_rectangle_detector.py`: Detects blue rectangles using HSV filtering.
+* `lane_marker_detector.py`: Detects the lane marker in Taishoff Aquatics Pavillion using HSV filtering.
 * `buoy_detector_contour_matching`: Detects buoy using HSV filtering.
 * `config.py`: Constants.
 * `correct.py`: Auxiliary functions that correct any distortion.
@@ -32,10 +32,10 @@ The following are the folders and files in the CV package:
 
 `launch`: Contains the various launch files for our CV package. There are specific launch files for each script in `cv`.
 * `bin_detector.xml`: Runs the bin detector script.
-* `blue_rectangle_detector`: Runs the blue rectangle detector script.
-* `buoy_detector_contour_matching`: Runs the buoy detector contour matching script.
-* `depthai_camera_connect`: Runs the DepthAI camera connect script.
-* `depthai_mono_detection`: Runs the DepthAI mono detection script.
+* `lane_marker_detector.xml`: Runs the lane marker detector script.
+* `buoy_detector_contour_matching.xml`: Runs the buoy detector contour matching script.
+* `depthai_camera_connect.xml`: Runs the DepthAI camera connect script.
+* `depthai_mono_detection.xml`: Runs the DepthAI mono detection script.
 * `depthai_publish_save_streams.xml`: Runs the DepthAI publish and save streams script.
 * `depthai_spatial_detection.xml`: Runs the DepthAI spatial detection script.
 * `path_marker_detector.xml`: Runs the path marker detector script.
@@ -58,36 +58,39 @@ This package contains code for the Luxonis OAK-D PoE camera, which uses a python
 
 ### Setup
 
-Generally, you would train a separate object detection model for each task you need computer vision for (gates, buoys, etc.). You can then load them as follows:
+The DepthAI camera scripts only support YOLO models. After you train a YOLO model, you will receive a `.pt` file contianing the weights of the model. You will also receive other information about the model, such as the classes it predicts, the input size, the anchor masks, and the anchors, which must be included in the `depthai_models.yaml` file.
 
-* Create object detection models and save them as .pth files (see [here](https://github.com/DukeRobotics/documentation/tree/master/cv/training))
-* Place these models in the `/models` folder
-* Update the `/models/models.yaml` file with each model's details in the following format:
-
-```yaml
-<model_name>:  # A name/identifier for your model
-  classes: [<class1>, <class2>, ...]  # The classes the model is trained to predict
-  topic: <topic_name>  # set to /cv by default; change if you want to specify model in publisher topics .etc
-  weights: <file_name>  # the name of your model file
-...
-```
-
-Example entry for a buoy model:
+1. Convert the weights file to a `.blob` file, which is necessary to run the model on the DepthAI camera. Go to [tools.luxonis.com](https://tools.luxonis.com/) and upload your `.pt` file. This will generate a `.blob` file that you can download.
+2. Place the `.blob` file in the `cv/models` folder.
+3. Add an entry for your model in the `cv/models/depthai_models.yaml` file. The format is as follows:
 
 ```yaml
-buoy:
-  classes: [alien, bat, witch]
-  topic: /cv
-  weights: buoy_model.pth
+model_name:
+  classes: ["class1", "class2", ...]
+  sizes: {"class1": [width, height], "class2": [width, height], ...}
+  topic: string
+  weights: model_weights.blob
+  input_size: [width, height]
+  coordinate_size: int
+  anchors: [anchor1, anchor2, ...]
+  anchor_masks: {"mask1": [anchor1, anchor2, ...], "mask2": [anchor1, anchor2, ...], ...}
+  iou_threshold: float
+  confidence_threshold: float
+  colors: ["color1", "color2", ...]
 ```
 
-Note: To get the model files onto the Docker container, you may have to use `scp`. Also, if you come across the following error:
-
-`URLError: <urlopen error [Errno -3] Temporary failure in name resolution>`
-
-Navigate to [this url](https://download.pytorch.org/models/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth)
-to manually download the default model file used by the Detecto package. Move this file onto the Docker
-container under the directory `/home/ubuntu/.cache/torch/checkpoints/` (do not rename the file).
+* `model_name`: A unique name for the model.
+* `classes`: A list of the classes that the model predicts. Must be in the same order as the model's output.
+* `sizes`: A dictionary mapping each class to its size. Provided by the model's output.
+* `topic`: The first part of the topic to which the model's detections will be published. It should **not** include a trailing slash. For example, if the topic is `cv`, the model will publish to `cv/<camera>/<class>`.
+* `weights`: The name of the `.blob` file containing the model's weights. Must be in the `cv/models` folder.
+* `input_size`: The size of the input image to the model.
+* `coordinate_size`: The size of the coordinates tuple used to represent the bounding boxes output by the model. This is usually 4.
+* `anchors`: A list of the model's anchors. Provided by the model's output.
+* `anchor_masks`: A dictionary mapping each mask to the anchors it uses. Provided by the model's output.
+* `iou_threshold`: The IOU threshold used by the model for non-maximum suppression, which removes overlapping bounding boxes.
+* `confidence_threshold`: The confidence threshold used by the model. The model will only publish detections with a confidence greater than this value.
+* `colors`: A list of colors to use when drawing the bounding boxes on the input image to visualize the model's detections. There must be one color for each class. Each value is a string in hexadecimal format, _without the `#` symbol_.
 
 ### Running the Code
 To stream the feed or perform spatial detection using the OAK camera, use `ros2 launch cv <module>` with the following files as needed.

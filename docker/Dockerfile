@@ -22,11 +22,10 @@ RUN apt install -y --no-install-recommends libeigen3-dev
 RUN apt install -y --no-install-recommends libyaml-cpp-dev
 RUN apt install -y --no-install-recommends nano
 RUN apt install -y --no-install-recommends nmap
+RUN apt install -y --no-install-recommends openssh-client
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
-RUN apt install -y --no-install-recommends python3-jsonpickle
 RUN apt install -y --no-install-recommends python3-opencv
 RUN apt install -y --no-install-recommends python3-pip
-RUN apt install -y --no-install-recommends python3-transforms3d
 RUN apt install -y --no-install-recommends python3-venv
 RUN apt install -y --no-install-recommends ros-jazzy-cv-bridge
 RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
@@ -34,7 +33,6 @@ RUN apt install -y --no-install-recommends ros-jazzy-robot-localization
 RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
 RUN apt install -y --no-install-recommends ros-jazzy-vision-msgs
 RUN apt install -y --no-install-recommends shellcheck
-RUN apt install -y --no-install-recommends snapd
 RUN apt install -y --no-install-recommends tini
 RUN apt install -y --no-install-recommends valgrind
 
@@ -112,13 +110,15 @@ RUN python3 -m venv /home/ubuntu/venv --system-site-packages
 RUN /home/ubuntu/venv/bin/pip install depthai
 RUN /home/ubuntu/venv/bin/pip install GitPython
 RUN /home/ubuntu/venv/bin/pip install gputil
+RUN /home/ubuntu/venv/bin/pip install jsonpickle
+RUN /home/ubuntu/venv/bin/pip install mypy
 RUN /home/ubuntu/venv/bin/pip install pandas
 RUN /home/ubuntu/venv/bin/pip install pyserial
 RUN /home/ubuntu/venv/bin/pip install python-nmap
 RUN /home/ubuntu/venv/bin/pip install ruff
 RUN /home/ubuntu/venv/bin/pip install scikit-learn
 RUN /home/ubuntu/venv/bin/pip install sympy
-RUN /home/ubuntu/venv/bin/pip install mypy
+RUN /home/ubuntu/venv/bin/pip install transforms3d
 
 # Install Node.js (Jod)
 ENV NVM_DIR=/home/ubuntu/.nvm
@@ -142,7 +142,7 @@ RUN echo "source /home/ubuntu/ros_bashrc.sh" >> /home/ubuntu/.bashrc
 RUN mkdir -p /home/ubuntu/robosub-ros2
 
 # Define ARGs for Git information
-ARG NO_GIT
+ARG ENABLE_GIT
 ARG GIT_USER_NAME
 ARG GIT_USER_EMAIL
 
@@ -152,7 +152,7 @@ RUN --mount=type=secret,id=github_auth_ssh_key,required=false \
     --mount=type=secret,id=github_auth_ssh_key_pub,required=false \
     --mount=type=secret,id=github_signing_ssh_key,required=false \
     --mount=type=secret,id=git_allowed_signers,required=false \
-    if [ "$NO_GIT" != "true" ]; then \
+    if [ "$ENABLE_GIT" = "true" ]; then \
         sudo cat /run/secrets/github_auth_ssh_key > /home/ubuntu/.ssh/github_auth_key && \
         sudo cat /run/secrets/github_auth_ssh_key_pub > /home/ubuntu/.ssh/github_auth_key.pub && \
         sudo cat /run/secrets/github_signing_ssh_key > /home/ubuntu/.ssh/github_signing_key && \

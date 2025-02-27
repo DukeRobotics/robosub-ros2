@@ -30,7 +30,7 @@ def validate_speed(value: str) -> float:
 class ThrusterTester(Node):
     """Node to publish thruster allocations. Publishes a constant speed for all thrusters at 20 Hz."""
 
-    CONFIG_PATH = f'package://controls/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
+    CONFIG_PATH = f'package://controls/config/{os.getenv("ROBOT_NAME")}.yaml'
 
     def __init__(self, speed: float, rate: float, log_allocs: bool) -> None:
         """
