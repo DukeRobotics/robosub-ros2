@@ -15,4 +15,4 @@ while read -r line; do
     echo "::group::Compiling Arduino sketches for robot: $ROBOT_NAME"
     ros2 run offboard_comms arduino compile all
     echo "::endgroup::"
-done < "/home/ubuntu/robosub-ros2/robot_names"
+done < "/home/ubuntu/robosub-ros2/robot/robot_names"
