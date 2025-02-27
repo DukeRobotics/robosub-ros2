@@ -46,6 +46,10 @@ alias fox="python3 /home/ubuntu/robosub-ros2/foxglove/foxglove.py"
 # Alias to run lint.py
 alias lint="python3 /home/ubuntu/robosub-ros2/lint.py"
 
+# Aliases to enable and disable controls
+alias enable-controls="ros2 service call /controls/enable std_srvs/srv/SetBool '{data: true}'"
+alias disable-controls="ros2 service call /controls/enable std_srvs/srv/SetBool '{data: false}'"
+
 # Source nvm and use version jod
 source /home/ubuntu/.nvm/nvm.sh
 nvm use lts/jod > /dev/null  # Suppress stdout, only show stderr
