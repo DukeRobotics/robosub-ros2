@@ -86,10 +86,10 @@ USER_GID=
     > If you set `ENABLE_GIT=false`, do not include the variables `GITHUB_AUTH_SSH_KEY_PRIV_PATH`, `GITHUB_AUTH_SSH_KEY_PUB_PATH`, `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`, or `GIT_ALLOWED_SIGNERS_PATH` in `.env`. These variables are only used if `ENABLE_GIT=true`.
 - `ROBOT_NAME`: The name of the robot you are developing for. This is used to set the `$ROBOT_NAME` environment variable in the Docker container, which is used by some scripts to determine which robot-specific configuration to use. If you are setting up the repository on the robot, then this should be the name of the robot. If you are setting up the repository on your development machine, then this name can be changed to test different robot configurations.
     > [!IMPORTANT]
-    > The value of `ROBOT_NAME` should be one of the values defined on each line of the `robot_names` file. You can start the Docker container with an invalid `ROBOT_NAME` value, but some scripts may not work correctly.
+    > The value of `ROBOT_NAME` must be one of the values defined on each line of the `robot_names` file.
 
     > [!NOTE]
-    > If you are setting up a new robot, you may need to add the robot name to the `robot_names` file. See [SCRIPTS.md](SCRIPTS.md#robot_names) for more information.
+    > If you are setting up a new robot, you may need to add the robot name to the `robot_names` file. See [robot/README.md](robot/README.md#robot_names) for more information.
 - `IS_ROBOT` (Optional): Set to `true` if you are setting up the repository on the robot. Set to `false` or do not include this variable in `.env` if you are setting up the repository on your development machine.
 - `FOXGLOVERC_PATH` (Optional): Absolute path to the [`.foxgloverc`](#set-up-the-foxgloverc-file) file.
 - `USER_UID` and `USER_GID` (Optional): The user ID and group ID of the `ubuntu` user in the Docker container.
@@ -169,10 +169,10 @@ If you're using VS Code and have the Dev Containers extension installed:
     ```bash
     ./docker-build.sh
     ```
-2. Open the Command Palette (`Ctrl/Cmd + Shift + P`).
-3. Run the `Dev Containers: Reopen in Container` command.
-4. Wait for the container to finish building.
-5. Now, you're ready to start developing!
+3. Open the Command Palette (`Ctrl/Cmd + Shift + P`).
+4. Run the `Dev Containers: Reopen in Container` command.
+5. Wait for the container to finish building.
+6. Now, you're ready to start developing!
     - VS Code is automatically configured with helpful extensions and settings.
     - Any changes you make in the `/home/ubuntu/robosub-ros2` directory in the container are reflected in the repository on your host machine.
     - Any terminals you open in VS Code are automatically connected to the Docker container.
@@ -185,7 +185,7 @@ If you're using VS Code and have the Dev Containers extension installed:
         - If it is a directory, a new VS Code window will open with the directory as the workspace.
     - If you set `ENABLE_GIT=true` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
     - You must build the packages in the container before running the code. See [Build Packages in README.md](README.md#build-packages) section for more information.
-6. When you're done, simply close the VS Code window to stop the container.
+7. When you're done, simply close the VS Code window to stop the container.
 
 > [!IMPORTANT]
 > **Windows Users:**
@@ -241,11 +241,11 @@ Setting up the `.foxgloverc` file with allow you to publish custom Foxglove exte
 1. Go to the [Foxglove settings page](https://app.foxglove.dev/duke-robotics/settings/apikeys) and generate a new API key.
 
 2. Outside of the Docker container, create a `~/.foxgloverc` file with the following information:
-```
-auth_type: 2
-base_url: https://api.foxglove.dev
-bearer_token:
-```
-Add the API key generated in Step 1 as the `bearer_token`.
+    ```
+    auth_type: 2
+    base_url: https://api.foxglove.dev
+    bearer_token:
+    ```
+    Add the API key generated in Step 1 as the `bearer_token`.
 
 3. Rebuild the Docker container and run `foxglove auth info`. You should see a message indicating that you have successfully authenticated with an API key.
