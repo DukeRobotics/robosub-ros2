@@ -21,7 +21,8 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
-            "sonar = sonar.sonar:main"
+            "sonar = sonar.sonar:main",
+            "sonar_test_client = sonar.sonar_test_client:main",
         ],
     },
 )

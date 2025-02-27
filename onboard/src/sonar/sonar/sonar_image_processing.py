@@ -114,6 +114,7 @@ def find_center_point_and_angle(array, threshold, eps, min_samples, get_plot=Tru
         image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
 
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
         return average_column_index, angle, image
 
     return average_column_index, angle, array

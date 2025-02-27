@@ -29,13 +29,12 @@ class Sonar(Node):
 
     SONAR_FTDI_OOGWAY = "DK0C1WF7"
     _serial_port = None
-    CONNECTION_RETRY_PERIOD = 1.0  # s
+    CONNECTION_RETRY_RATE = 5  # s
     LOOP_RATE = 10  # Hz
     STATUS_LOOP_RATE = 1 # Hz
 
     SONAR_STATUS_TOPIC = 'sonar/status'
     SONAR_REQUEST_TOPIC = 'sonar/request'
-    SONAR_RESPONSE_TOPIC = 'sonar/cv/response'
     SONAR_IMAGE_TOPIC = 'sonar/image/compressed'
 
     NODE_NAME = "sonar"
@@ -76,7 +75,7 @@ class Sonar(Node):
             self.get_logger().error("Sonar not found.")
             rclpy.shutdown()
 
-        self.connect_timer = self.create_timer(self.CONNECTION_RETRY_PERIOD, self.connect)
+        self.connect_timer = self.create_timer(1.0 / self.CONNECTION_RETRY_RATE, self.connect)
         self.status_publisher_timer = self.create_timer(1.0 / self.STATUS_LOOP_RATE, self.publish_status)
 
     def connect(self) -> None:
@@ -287,9 +286,11 @@ class Sonar(Node):
         sonar_index, normal_angle, plot = sonar_image_processing.find_center_point_and_angle(
             sonar_sweep_array, self.VALUE_THRESHOLD, self.DBSCAN_EPS,
             self.DBSCAN_MIN_SAMPLES, True)
+        
+        color_image = sonar_image_processing.build_color_sonar_image_from_int_array(sonar_sweep_array)
 
         if sonar_index is None:
-            return (None, sonar_sweep_array, None)
+            return (None, color_image, None)
 
         sonar_angle = (start_angle + end_angle) / 2  # Take the middle of the sweep
 
@@ -308,7 +309,7 @@ class Sonar(Node):
         """
         if not is_color:
             sonar_sweep = sonar_image_processing.build_color_sonar_image_from_int_array(sonar_sweep)
-        return self.cv_bridge.cv2_to_compressed_imgmsg(sonar_sweep, dst_format=compressed_format) #TODO ROS2
+        return self.cv_bridge.cv2_to_compressed_imgmsg(sonar_sweep, dst_format=compressed_format)
 
     def constant_sweep(self):
         """ In debug mode scan indefinitely and publish images
@@ -347,29 +348,37 @@ class Sonar(Node):
             Nothing
         """
 
+        response.pose = Pose()
+        response.normal_angle = 0.0
+        response.is_object = False
+
         # Get request details
-        left_gradians, right_gradians, new_range = request.start_angle, request.end_angle, request.distance_of_scan
+        left_degrees = request.start_angle
+        right_degrees = request.end_angle
+        new_range = request.distance_of_scan
+
+        left_gradians = sonar_utils.degrees_to_centered_gradians(left_degrees)
+        right_gradians = sonar_utils.degrees_to_centered_gradians(right_degrees)
+
+        self.get_logger().info(f"Recieved Sonar request: {left_gradians}, {right_gradians}, {new_range}")
 
         #angle must be between 0 and 400 and range must be positive
         if left_gradians < 0 or right_gradians < 0 or right_gradians > 400 or new_range < 0:
             self.get_logger().error("bad sonar request")
-            return
+            return response
 
         if new_range != self.prev_range:
             self.set_new_range(new_range)
 
         object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep(left_gradians, right_gradians)
 
-        # Publish the response
-        response.pose = object_pose
-        response.normal_angle = normal_angle
-        response.is_object = True
+        if object_pose is not None:
+            response.pose = object_pose
+            response.normal_angle = normal_angle
+            response.is_object = True
 
         if object_pose is None:
             self.get_logger().error("no object found")
-            response.pose = Pose()
-            response.normal_angle = 0.0
-            response.is_object = False
 
         if self.stream:
             sonar_image = self.convert_to_ros_compressed_img(plot, is_color=True)
