@@ -1,18 +1,3 @@
-# This file contains udev rules which symlink ports of some devices mounted to /dev to ports with easily identifiable names that
-# don't change when the devices or robot itself are rebooted.
-#
-# The udev rules are applied on the host machine, not the Docker container.
-# The name of this file starts with "99-" to ensure that it is applied after other udev rules, giving these rules highest priority.
-#
-# This file must be symlinked to /etc/udev/rules.d/99-robosub-ros2.rules on the robot.
-# This can be done with `sudo ln -s /absolute/path/to/robosub-ros2/99-robosub-ros2.rules /etc/udev/rules.d/99-robosub-ros2.rules`, where
-# /absolute/path/to/robosub-ros2/99-robosub-ros2.rules is the absolute path to this file.
-#
-# If the rules in this file are changed, run `sudo udevadm control --reload-rules && sudo udevadm trigger` on the host to apply the changes.
-# If you don't see the changes applied, try unplugging and replugging the device(s) the rule applies to.
-# If that doesn't work, try rebooting the host machine.
-# If you still don't see the changes applied, the rules may be incorrect.
-
 # Map front and bottom cameras to /dev/video_front and /dev/video_bottom
 # Map only the first channel provided by the cameras to /dev/video_front and /dev/video_bottom
 # NOTE: The cameras don't have any distinguishing information other than the USB port they are connected to, so

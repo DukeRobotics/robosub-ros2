@@ -43,8 +43,8 @@ class Thrusters(SerialNode):
     SERIAL_DEVICE_NAME = 'thruster arduino'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
 
-    CONTROLS_CONFIG_FILE_PATH = f'package://controls/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
-    OFFBOARD_COMMS_CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
+    CONTROLS_CONFIG_FILE_PATH = f'package://controls/config/{os.getenv("ROBOT_NAME")}.yaml'
+    OFFBOARD_COMMS_CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
     ARDUINO_NAME = 'thruster'
     NUM_LOOKUP_ENTRIES = 201  # -1.0 to 1.0 in 0.01 increments
     VOLTAGE_FILES: ClassVar[list[tuple[int, str]]] = [
