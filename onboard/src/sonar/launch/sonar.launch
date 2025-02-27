@@ -1,8 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <launch>
-	<arg name="stream" default="True" />
-	<arg name="debug" default="False" />
-	<node pkg="sonar" name="sonar" type="sonar.py" output="screen">
-		<param name="stream" value="$(arg stream)" />
-		<param name="debug" value="$(arg debug)" />
+	<arg name="stream" default="true" />
+	<arg name="debug" default="false" />
+	<node pkg="sonar" name="sonar" exec="sonar" output="screen">
+		<param name="stream" value="$(var stream)" />
+		<param name="debug" value="$(var debug)" />
 	</node>
 </launch>
