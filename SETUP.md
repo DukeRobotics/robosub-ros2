@@ -68,7 +68,7 @@ GITHUB_AUTH_SSH_KEY_PRIV_PATH=
 GITHUB_AUTH_SSH_KEY_PUB_PATH=
 GITHUB_SIGNING_SSH_KEY_PRIV_PATH=
 GIT_ALLOWED_SIGNERS_PATH=
-NO_GIT=false
+ENABLE_GIT=true
 ROBOT_NAME=
 IS_ROBOT=
 FOXGLOVERC_PATH=
@@ -81,10 +81,15 @@ USER_GID=
 - `GITHUB_AUTH_SSH_KEY_PUB_PATH`: Absolute path to the _public_ SSH key used for authenticating with GitHub.
 - `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`: Absolute path to the _private_ SSH key used for signing commits.
 - `GIT_ALLOWED_SIGNERS_PATH`: Absolute path to the allowed signers file.
-- `NO_GIT`: For most users, this should be set to `false`. Set to `true` if you do **not** want to use git inside the Docker container. This is useful for CI/CD pipelines or if you have your SSH keys stored in encrypted files.
+- `ENABLE_GIT`: For most users, this should be set to `true`. Set to `false` if you do **not** want to use git inside the Docker container. This is useful for CI/CD pipelines or if you have your SSH keys stored in encrypted files.
     > [!NOTE]
-    > If you set `NO_GIT=true`, do not include the variables `GITHUB_AUTH_SSH_KEY_PRIV_PATH`, `GITHUB_AUTH_SSH_KEY_PUB_PATH`, `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`, or `GIT_ALLOWED_SIGNERS_PATH` in `.env`. These variables are only used if `NO_GIT=false`.
+    > If you set `ENABLE_GIT=false`, do not include the variables `GITHUB_AUTH_SSH_KEY_PRIV_PATH`, `GITHUB_AUTH_SSH_KEY_PUB_PATH`, `GITHUB_SIGNING_SSH_KEY_PRIV_PATH`, or `GIT_ALLOWED_SIGNERS_PATH` in `.env`. These variables are only used if `ENABLE_GIT=true`.
 - `ROBOT_NAME`: The name of the robot you are developing for. This is used to set the `$ROBOT_NAME` environment variable in the Docker container, which is used by some scripts to determine which robot-specific configuration to use. If you are setting up the repository on the robot, then this should be the name of the robot. If you are setting up the repository on your development machine, then this name can be changed to test different robot configurations.
+    > [!IMPORTANT]
+    > The value of `ROBOT_NAME` must be one of the values defined on each line of the `robot/robot_names` file.
+
+    > [!NOTE]
+    > If you are setting up a new robot, you may need to add the robot name to the `robot/robot_names` file. See [robot/README.md](robot/README.md#robot_names) for more information.
 - `IS_ROBOT` (Optional): Set to `true` if you are setting up the repository on the robot. Set to `false` or do not include this variable in `.env` if you are setting up the repository on your development machine.
 - `FOXGLOVERC_PATH` (Optional): Absolute path to the [`.foxgloverc`](#set-up-the-foxgloverc-file) file.
 - `USER_UID` and `USER_GID` (Optional): The user ID and group ID of the `ubuntu` user in the Docker container.
@@ -95,14 +100,20 @@ USER_GID=
     > [!NOTE]
     > If you are a Mac or Windows user, do **_not_** include `USER_UID` and `USER_GID` in your `.env` file. Include these variables **_only_** if you are a Linux user. If the variables are not included in `.env`, then the UID and GID will both be set to `1000`, which is the default UID and GID for non-root users in Ubuntu.
 
-## Set Up Udev Rules (Robot Only)
-If you are setting up the repository on the robot, you need to set up the udev rules to symlink some USB devices to ports that are consistent across reboots and used by code in this repository.
+## Set Up the Robot
+If you are setting up the repository on the robot, there's a few additional steps you need to take. If you are setting up the repository on your development machine, skip to the [Set Up the Docker Container](#set-up-the-docker-container) section.
+
+### Set Up Udev Rules
+Set up the udev rules to symlink some USB devices to ports that are consistent across reboots and used by code in this repository.
+
+Each robot has its own udev rules file located in the `robot/udev` directory. The name of the file is `99-ros2-ROBOT_NAME.rules`, where `ROBOT_NAME` is the name of the robot. If this file does not exist, you will need to create it first.
 
 1. Open a terminal outside of the Docker container and navigate to the root of the repository.
-2. Run the following command to symlink the `99-robosub-ros2.rules` file located in the repository root to the `/etc/udev/rules.d` directory:
+2. Run the following command to symlink the `99-ros2-ROBOT_NAME.rules` file located in the repository root to the `/etc/udev/rules.d` directory:
     ```bash
-    sudo ln -s $(pwd)/99-robosub-ros2.rules /etc/udev/rules.d/99-robosub-ros2.rules
+    sudo ln -s $(pwd)/robot/udev/99-ros2-ROBOT_NAME.rules /etc/udev/rules.d/99-ros2-ROBOT_NAME.rules
     ```
+    Replace `ROBOT_NAME` with the name of the robot.
 3. Run the following command to reload the udev rules:
     ```bash
     sudo udevadm control --reload-rules && sudo udevadm trigger
@@ -112,6 +123,35 @@ If you are setting up the repository on the robot, you need to set up the udev r
     ls /dev
     ```
     and check if the symlinks are present. If the symlinks are not present, reboot the robot and check again.
+
+### Set Up Bash Aliases
+Set up bash aliases to make it easier to run common commands associated with this repository _outside_ the Docker container (aliases used _inside_ the Docker container are defined in `docker/ros_bashrc.sh`).
+
+1. Open the `~/.bashrc` file in a text editor.
+2. Check if the `~/.bash_aliases` file is sourced in the `~/.bashrc` file. If it is not, add the following line to the `~/.bashrc` file
+    ```bash
+    source ~/.bash_aliases
+    ```
+    and create a `~/.bash_aliases` file.
+3. Add the following line to the `~/.bash_aliases` file to source the `robot/robot_aliases.sh` file in the repository:
+    ```bash
+    source /absolute/path/to/robosub-ros2/robot/robot_aliases.sh
+    ```
+    - Replace `/absolute/path/to/robosub-ros2` with the absolute path to the `robosub-ros2` repository on the robot.
+
+    > [!NOTE]
+    > It is considered good practice to define aliases separately in `~/.bash_aliases` instead of putting them directly in `~/.bashrc`. However `source .../robosub-ros2/robot/robot_aliases.sh` can be added to the `~/.bashrc` file directly if you prefer not to use a `~/.bash_aliases` file.
+
+4. Source the `~/.bashrc` file by running the following command to apply the changes:
+    ```bash
+    source ~/.bashrc
+    ```
+5. Run the following command to check if the aliases were set up correctly:
+    ```bash
+    alias
+    ```
+    - You should see a list of all aliases set up on the robot. This list should include the aliases defined in the `robot/robot_aliases.sh` file.
+    - If the aliases are not present, check the `~/.bash_aliases` file and the `~/.bashrc` file to ensure they are set up correctly.
 
 ## Set Up the Docker Container
 The Docker container is used to develop and run the code in a consistent environment. It is configured with all the necessary dependencies and tools to develop the code.
@@ -129,10 +169,10 @@ If you're using VS Code and have the Dev Containers extension installed:
     ```bash
     ./docker-build.sh
     ```
-2. Open the Command Palette (`Ctrl/Cmd + Shift + P`).
-3. Run the `Dev Containers: Reopen in Container` command.
-4. Wait for the container to finish building.
-5. Now, you're ready to start developing!
+3. Open the Command Palette (`Ctrl/Cmd + Shift + P`).
+4. Run the `Dev Containers: Reopen in Container` command.
+5. Wait for the container to finish building.
+6. Now, you're ready to start developing!
     - VS Code is automatically configured with helpful extensions and settings.
     - Any changes you make in the `/home/ubuntu/robosub-ros2` directory in the container are reflected in the repository on your host machine.
     - Any terminals you open in VS Code are automatically connected to the Docker container.
@@ -143,9 +183,9 @@ If you're using VS Code and have the Dev Containers extension installed:
         - Replace `PATH_TO_FILE_OR_DIRECTORY` with the path to the file or directory you want to open in VS Code.
         - If it is a file, the file will open in the current VS Code window.
         - If it is a directory, a new VS Code window will open with the directory as the workspace.
-    - If you set `NO_GIT=false` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
+    - If you set `ENABLE_GIT=true` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
     - You must build the packages in the container before running the code. See [Build Packages in README.md](README.md#build-packages) section for more information.
-6. When you're done, simply close the VS Code window to stop the container.
+7. When you're done, simply close the VS Code window to stop the container.
 
 > [!IMPORTANT]
 > **Windows Users:**
@@ -177,7 +217,7 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
         ```
 4. Now, you're ready to start developing!
     - Any changes you make in the repository on your host machine are reflected in the `/home/ubuntu/robosub-ros2` directory in the Docker container.
-    - If you set `NO_GIT=false` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
+    - If you set `ENABLE_GIT=true` in the `.env` file, you can make signed commits and pull/push changes to remote from within the container.
     - You must build the packages in the container before running the code. See the [Build Packages in README.md](README.md#build-packages) section for more information.
     - To open additional terminals in the container, open a new terminal and run the `docker exec` command above.
 5. When you're done, open a new terminal _on the host machine_, navigate to the root of the repository, and run:
@@ -201,11 +241,11 @@ Setting up the `.foxgloverc` file with allow you to publish custom Foxglove exte
 1. Go to the [Foxglove settings page](https://app.foxglove.dev/duke-robotics/settings/apikeys) and generate a new API key.
 
 2. Outside of the Docker container, create a `~/.foxgloverc` file with the following information:
-```
-auth_type: 2
-base_url: https://api.foxglove.dev
-bearer_token:
-```
-Add the API key generated in Step 1 as the `bearer_token`.
+    ```
+    auth_type: 2
+    base_url: https://api.foxglove.dev
+    bearer_token:
+    ```
+    Add the API key generated in Step 1 as the `bearer_token`.
 
 3. Rebuild the Docker container and run `foxglove auth info`. You should see a message indicating that you have successfully authenticated with an API key.

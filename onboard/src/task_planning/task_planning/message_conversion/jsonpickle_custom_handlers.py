@@ -89,11 +89,8 @@ class BaseExceptionHandler(jsonpickle.handlers.BaseHandler):
 
 def register_custom_jsonpickle_handlers() -> None:
     """Register all custom JSONPickle handlers."""
-    num_interface_classes = 0
     for cls in get_interface_classes():
         jsonpickle.handlers.register(cls, ROSMessageHandler, base=True)
-        num_interface_classes += 1
-    logger.info(f'Registered {num_interface_classes} interface types')
 
     jsonpickle.handlers.register(BaseException, BaseExceptionHandler, base=True)
 

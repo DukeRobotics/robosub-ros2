@@ -74,7 +74,7 @@ class PeripheralPublisher(SerialNode):
     """Serial publisher to publish data from peripheral arduino and send servo commands."""
 
     SERIAL_DEVICE_NAME = 'peripheral arduino'
-    CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
+    CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
 
     BAUDRATE = 9600
     NODE_NAME = 'peripheral'
