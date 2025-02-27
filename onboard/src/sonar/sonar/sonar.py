@@ -7,7 +7,7 @@ from sonar import sonar_utils, sonar_image_processing
 import serial.tools.list_ports as list_ports
 from geometry_msgs.msg import Pose
 from std_msgs.msg import String
-from custom_msgs.msg import SonarSweepRequest, SonarSweepResponse
+from custom_msgs.srv import SonarSweepRequest
 from sensor_msgs.msg import CompressedImage
 import tf2_ros
 from cv_bridge import CvBridge
@@ -31,6 +31,7 @@ class Sonar(Node):
     _serial_port = None
     CONNECTION_RETRY_PERIOD = 1.0  # s
     LOOP_RATE = 10  # Hz
+    STATUS_LOOP_RATE = 1 # Hz
 
     SONAR_STATUS_TOPIC = 'sonar/status'
     SONAR_REQUEST_TOPIC = 'sonar/request'
@@ -48,11 +49,12 @@ class Sonar(Node):
 
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME)
-        self.stream = self.get_parameter('stream').get_parameter_value().bool_value
-        self.debug = self.get_parameter('debug').get_parameter_value().bool_value
+        self.get_logger().info('Sonar planning node initialized')
+
+        self.stream = self.declare_parameter('stream', False).value
+        self.debug = self.declare_parameter('debug', True).value
 
         self.status_publisher = self.create_publisher(String, self.SONAR_STATUS_TOPIC, 10)
-        self.pub_response = self.create_publisher(SonarSweepResponse, self.SONAR_RESPONSE_TOPIC, 10)
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
@@ -75,7 +77,7 @@ class Sonar(Node):
             rclpy.shutdown()
 
         self.connect_timer = self.create_timer(self.CONNECTION_RETRY_PERIOD, self.connect)
-        self.status_publisher_timer = self.create_timer(1.0 / self.LOOP_RATE, self.publish_status)
+        self.status_publisher_timer = self.create_timer(1.0 / self.STATUS_LOOP_RATE, self.publish_status)
 
     def connect(self) -> None:
         """Read FTDI strings of all ports in list_ports.grep."""
@@ -101,11 +103,10 @@ class Sonar(Node):
         self.transmit_duration = self.range_to_transmit(self.DEFAULT_RANGE)
         self.ping360.set_transmit_duration(self.transmit_duration)
 
-        self.listener = tf2_ros.TransformListener()
-
     def publish_status(self):
         """ Publish the status of the sonar device"""
-        self.status_publisher.publish("Sonar running")
+        # make string type std_msgs String
+        self.status_publisher.publish(String(data="Sonar Running"))
 
     def range_to_period(self, range):
         """From a given range determines the sample_period
@@ -309,7 +310,7 @@ class Sonar(Node):
             sonar_sweep = sonar_image_processing.build_color_sonar_image_from_int_array(sonar_sweep)
         return self.cv_bridge.cv2_to_compressed_imgmsg(sonar_sweep, dst_format=compressed_format) #TODO ROS2
 
-    def constant_sweep(self, start_angle, end_angle, distance_of_scan):
+    def constant_sweep(self):
         """ In debug mode scan indefinitely and publish images
 
         Args:
@@ -321,13 +322,13 @@ class Sonar(Node):
             Nothing
         """
         self.get_logger().info("starting constant sweep")
-        self.set_new_range(distance_of_scan)
+        self.set_new_range(self.DEFAULT_RANGE)
         self.get_logger().info(f"stream: {self.stream}")
 
         # Preform a Scan
         try:
-            self.get_logger().info(f"starting sweep from {start_angle} to {end_angle}")
-            sonar_sweep = self.get_sweep(start_angle, end_angle)
+            self.get_logger().info(f"starting sweep from {self.CONSTANT_SWEEP_START} to {self.CONSTANT_SWEEP_END}")
+            sonar_sweep = self.get_sweep(self.CONSTANT_SWEEP_START, self.CONSTANT_SWEEP_END)
             self.get_logger().info("finishng sweep")
             if self.stream:
                 compressed_image = self.convert_to_ros_compressed_img(sonar_sweep)
@@ -336,23 +337,7 @@ class Sonar(Node):
             self.get_logger().error(f"Error during constant sweep: {e}")
             rclpy.shutdown()
 
-        self.sweep_timer = self.create_timer(1.0, lambda: self.constant_sweep(start_angle, end_angle, distance_of_scan), once=True)
-
-    def on_sonar_request(self, request):
-        """ On a sonar request set the current scan to the request
-
-        Args:
-            request (sweepGoal): Request message
-
-        Returns:
-            Nothing
-        """
-        new_range = request.distance_of_scan
-        left_gradians = sonar_utils.degrees_to_centered_gradians(request.start_angle)
-        right_gradians = sonar_utils.degrees_to_centered_gradians(request.end_angle)
-        self.current_scan = (left_gradians, right_gradians, new_range)
-
-    def preform_sonar_request(self):
+    def preform_sonar_request(self, request, response):
         """ Perform a sonar request
 
         Args:
@@ -362,14 +347,10 @@ class Sonar(Node):
             Nothing
         """
 
-        # if the current scan is not set, wait for a new scan
-        if self.current_scan[0] == -1 and self.current_scan[1] == -1 and self.current_scan[2] == -1:
-            self.create_timer(1.0 / self.LOOP_RATE, self.preform_sonar_request, once=True)
-            return
+        # Get request details
+        left_gradians, right_gradians, new_range = request.start_angle, request.end_angle, request.distance_of_scan
 
-        # since we have a scan ...
-        left_gradians, right_gradians, new_range = self.current_scan
-
+        #angle must be between 0 and 400 and range must be positive
         if left_gradians < 0 or right_gradians < 0 or right_gradians > 400 or new_range < 0:
             self.get_logger().error("bad sonar request")
             return
@@ -379,7 +360,7 @@ class Sonar(Node):
 
         object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep(left_gradians, right_gradians)
 
-        response = SonarSweepResponse()
+        # Publish the response
         response.pose = object_pose
         response.normal_angle = normal_angle
         response.is_object = True
@@ -394,28 +375,21 @@ class Sonar(Node):
             sonar_image = self.convert_to_ros_compressed_img(plot, is_color=True)
             self.sonar_image_publisher.publish(sonar_image)
 
-        self.pub_response.publish(response)
-
-        self.current_scan = (-1, -1, -1)
+        return response
 
     def run(self):
         """
         Main loop of the node
         """
-        self.init_sonar()
-
-        # If debug mode is on, do constant sweeps within range
-        self.debug = True
 
         if self.debug:
-            self.constant_sweep(self.CONSTANT_SWEEP_START, self.CONSTANT_SWEEP_END, self.DEFAULT_RANGE)
+            self.create_timer(1.0 / self.LOOP_RATE, self.constant_sweep)
         else:
-            self.create_subscription(SonarSweepRequest, self.SONAR_REQUEST_TOPIC, self.on_sonar_request, 10)
-            self.create_timer(1.0 / self.LOOP_RATE, self.preform_sonar_request, once=True)
+            self.create_service(SonarSweepRequest, 'sonar/request', self.preform_sonar_request)
 
 
 def main(args: list[str] | None = None) -> None:
-    """Create and run the DVL odometry publisher node."""
+    """Create and run the sonar node."""
     rclpy.init(args=args)
     sonar = Sonar()
 
