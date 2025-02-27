@@ -25,6 +25,7 @@
                 "ms-python.vscode-pylance",
                 "ms-vscode-remote.vscode-remote-extensionpack",
                 "ms-vscode.cpptools-extension-pack",
+                "ms-vscode.vscode-serial-monitor",
                 "ms-vsliveshare.vsliveshare",
                 "redhat.vscode-yaml",
                 "tamasfe.even-better-toml",
