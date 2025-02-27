@@ -20,12 +20,12 @@
                 "jeff-hykin.better-cpp-syntax",
                 "mechatroner.rainbow-csv",
                 "ms-azuretools.vscode-docker",
-                "ms-iot.vscode-ros",
                 "ms-python.debugpy",
                 "ms-python.python",
                 "ms-python.vscode-pylance",
                 "ms-vscode-remote.vscode-remote-extensionpack",
                 "ms-vscode.cpptools-extension-pack",
+                "ms-vscode.vscode-serial-monitor",
                 "ms-vsliveshare.vsliveshare",
                 "redhat.vscode-yaml",
                 "tamasfe.even-better-toml",
@@ -51,6 +51,7 @@
 
                 // Python-related settings
                 "python.defaultInterpreterPath": "/home/ubuntu/venv/bin/python3",
+                "python.terminal.activateEnvironment": false,
 
                 // TypeScript/JavaScript-related settings
                 "[typescript]": {

@@ -7,14 +7,14 @@ from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float64
 
-from cv.config import BlueRect
+from cv.config import LaneMarker
 
 
-class BlueRectangleDetector(Node):
-    """Detect blue rectangle (on bins)."""
+class LaneMarkerDetector(Node):
+    """Detect lane marker in Taishoff Aquatics Pavillion."""
     def __init__(self) -> None:
         """Initialize node."""
-        super().__init__('blue_rectangle_detector')
+        super().__init__('lane_marker_detector')
         self.bridge = CvBridge()
         self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/bottom/compressed', self.image_callback,
                                                    10)
@@ -30,7 +30,7 @@ class BlueRectangleDetector(Node):
             np_arr = np.frombuffer(data.data, np.uint8)
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
-            # Process the frame to find the angle of the blue rectangle and draw the rectangle
+            # Process the frame to find the angle of the lane marker and draw a rectangle around it
             angle, distance, rect_info, processed_frame = self.get_angle_and_distance_of_rectangle(frame)
             if angle is not None:
                 angle_msg = Float64()
@@ -60,8 +60,8 @@ class BlueRectangleDetector(Node):
         # Convert frame to HSV color space
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-        # Define range for blue color and create mask
-        mask = cv2.inRange(hsv, BlueRect.BLUE_BOT, BlueRect.BLUE_TOP)
+        # Define range for blue color of lane marker and create mask
+        mask = cv2.inRange(hsv, LaneMarker.LANE_MARKER_BOT, LaneMarker.LANE_MARKER_TOP)
 
         # Find contours in the mask
         contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -130,14 +130,14 @@ class BlueRectangleDetector(Node):
 def main(args: None = None) -> None:
     """Start the node."""
     rclpy.init(args=args)
-    blue_rectangle_detector = BlueRectangleDetector()
+    lane_marker_detector = LaneMarkerDetector()
 
     try:
-        rclpy.spin(blue_rectangle_detector)
+        rclpy.spin(lane_marker_detector)
     except KeyboardInterrupt:
         pass
     finally:
-        blue_rectangle_detector.destroy_node()
+        lane_marker_detector.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
 

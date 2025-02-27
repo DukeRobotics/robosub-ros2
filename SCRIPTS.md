@@ -2,12 +2,6 @@
 
 Documentation for the scripts in the repository root.
 
-## Contents
-- [`build.sh`](#buildsh)
-- [`docker-build.sh`](#docker-buildsh)
-- [`lint.py`](#lintpy)
-- [`venv.sh`](#venvsh)
-
 ## `build.sh`
 The `build.sh` script has several options to build and clean packages. The script must be run with `source` to ensure the environment variables are set in the current shell.
 - By default, the script builds all packages in the `core` and `onboard` workspaces.
@@ -44,6 +38,10 @@ The `docker-build.sh` script builds the Docker image and starts the container.
 - The script accepts an optional flag `--no-cache` to build the Docker image without using the cache.
     ```bash
     ./docker-build.sh --no-cache
+    ```
+- The script accepts an optional flag `--github-action` intended for use in GitHub Actions workflows.
+    ```bash
+    ./docker-build.sh --github-action
     ```
 
 ## `lint.py`

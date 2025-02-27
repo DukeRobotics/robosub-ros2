@@ -33,7 +33,6 @@ const THRUSTER_TYPE_DEFINITION = `type Thruster = {
 // Enum type for robot names
 enum Robot {
   OOGWAY,
-  CTHULHU,
 }
 
 // Interface representing the Thruster object

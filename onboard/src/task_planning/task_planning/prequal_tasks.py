@@ -14,7 +14,7 @@ from task_planning.utils import geometry_utils
 logger = get_logger('prequal_tasks')
 
 # The width of the lane marker in meters (1 foot)
-RECT_HEIGHT_METERS = 0.3048
+LANE_MARKER_HEIGHT_METERS = 0.3048
 
 
 @task
@@ -43,7 +43,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
             parent=self)
         logger.info(f'{log_msg_prefix} {angle}')
 
-    async def track_blue_rectangle(distance: float, forward: bool, step_size: float = 1.0) -> \
+    async def track_lane_marker(distance: float, forward: bool, step_size: float = 1.0) -> \
         Coroutine[None, None, None]:
         """
         Move the robot along the X axis the specified distance centering the lane marker in the bottom mono cam's frame.
@@ -54,7 +54,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
             step_size (float): The distance to move the robot in meters each step.
         """
         direction_term = 'forward' if forward else 'backward'
-        logger.info(f'track_blue_rectangle {distance} {direction_term}')
+        logger.info(f'track_lane_marker {distance} {direction_term}')
 
         direction_sign = 1 if forward else -1
 
@@ -130,7 +130,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
             # Y correction so the robot is centered on the lane marker
             dist_pixels = CV().cv_data['lane_marker_dist']
             height_pixels = CV().cv_data['lane_marker_height']
-            dist_meters = dist_pixels * RECT_HEIGHT_METERS / height_pixels
+            dist_meters = dist_pixels * LANE_MARKER_HEIGHT_METERS / height_pixels
             if abs(dist_meters) > 0:
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, dist_meters, 0, 0, 0, 0),
@@ -149,7 +149,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
             prev_touching_bottom = touching_bottom
 
     # Move up to gate
-    await track_blue_rectangle(2.5, True)
+    await track_lane_marker(2.5, True)
 
     # Submerge below gate
     await move_tasks.move_to_pose_local(
@@ -159,7 +159,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
     DEPTH_LEVEL = State().depth
 
     # Move through gate
-    await track_blue_rectangle(2, True)
+    await track_lane_marker(2, True)
 
     # Come back up
     await move_tasks.move_to_pose_local(
@@ -169,7 +169,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
     DEPTH_LEVEL = State().depth
 
     # Move to buoy
-    await track_blue_rectangle(7, True)
+    await track_lane_marker(7, True)
 
     # Dead reckon around buoy
     directions = [
@@ -194,12 +194,12 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
         logger.info(f'Moved to {direction}')
 
     # Come back to gate
-    await track_blue_rectangle(7, False)
+    await track_lane_marker(7, False)
 
     # Robot is already deep enough to go through gate
 
     # Move back through gate
-    await track_blue_rectangle(2, False)
+    await track_lane_marker(2, False)
 
     # Come back up
     await move_tasks.move_to_pose_local(
@@ -209,4 +209,4 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
     DEPTH_LEVEL = State().depth
 
     # Return to start
-    await track_blue_rectangle(3, False)
+    await track_lane_marker(3, False)

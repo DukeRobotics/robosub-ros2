@@ -10,7 +10,7 @@ class DVLRawPublisher(SerialNode):
     """A class to read and publish raw DVL data from a serial port."""
 
     SERIAL_DEVICE_NAME = 'DVL'
-    CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
+    CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
 
     BAUDRATE = 115200
     NODE_NAME = 'dvl_raw_pub'

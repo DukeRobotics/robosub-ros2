@@ -241,7 +241,7 @@ class DepthAISpatialDetector(Node):
         """
         Initialize the publishers for the node. A publisher is created for each class that the model predicts.
 
-        The publishers are created in format: "cv/camera/model_name".
+        The publishers are created in format: "model['topic']/camera/model_name".
 
         Args:
             model_name (str): Name of the model that is being used.
@@ -251,7 +251,7 @@ class DepthAISpatialDetector(Node):
         # Create a CVObject publisher for each class
         publisher_dict = {}
         for model_class in model['classes']:
-            publisher_name = f'cv/{self.camera}/{model_class}'
+            publisher_name = f'{model['topic']}/{self.camera}/{model_class}'
             publisher_dict[model_class] = self.create_publisher(CVObject,
                                                           publisher_name,
                                                           10)
@@ -347,7 +347,7 @@ class DepthAISpatialDetector(Node):
     def publish_prediction(self, bbox: tuple, det_coords: tuple, yaw: float, label: str, confidence: float,
                            shape: tuple, using_sonar: bool) -> None:
         """
-        Publish predictions to label-specific topic. Publishes to /cv/[camera]/[label].
+        Publish predictions to label-specific topic. Publishes to /model['topic']/[camera]/[label].
 
         Args:
             bbox (tuple): Tuple for the bounding box. Values are from 0-1, where X increases left to right and Y
