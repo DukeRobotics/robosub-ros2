@@ -27,7 +27,7 @@ setup(
     entry_points={
         'console_scripts': [
             'bin_detector = cv.bin_detector:main',
-            'blue_rectangle_detector = cv.blue_rectangle_detector:main',
+            'lane_marker_detector = cv.lane_marker_detector:main',
             'buoy_detector_contour_matching = cv.buoy_detector_contour_matching:main',
             'depthai_camera_connect = cv.depthai_camera_connect:main',
             'depthai_mono_detection = cv.depthai_mono_detection:main',

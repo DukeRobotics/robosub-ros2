@@ -1,0 +1,3 @@
+<launch>
+	<node name="lane_marker_detector" pkg="cv" exec="lane_marker_detector" output="screen"/>
+</launch>

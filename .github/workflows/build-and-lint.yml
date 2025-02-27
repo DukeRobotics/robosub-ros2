@@ -17,15 +17,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create .env file with NO_GIT and ROBOT_NAME
+      - name: Create .env file
         run: |
-          echo "NO_GIT=true" >> .env
-          echo "ROBOT_NAME=oogway" >> .env
+          echo "ENABLE_GIT=false" >> .env
           echo "USER_UID=$(id -u)" >> .env
           echo "USER_GID=$(id -g)" >> .env
 
       - name: Build and run Docker container
-        run: ./docker-build.sh
+        run: ./docker-build.sh --github-action
 
       - name: Run Docker container
         id: run-docker
