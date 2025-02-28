@@ -32,6 +32,11 @@ def connect(node: Node, camera_name: str, pipeline: dai.Pipeline) -> dai.Device:
     with Path(rr.get_filename(config_file_path, use_protocol=False)).open() as f:
         config = yaml.safe_load(f)
 
+    # Check if the camera name is valid
+    if camera_name not in config["depthai"]["devices"]:
+        error_msg = f'Invalid camera name: "{camera_name}". Valid names are: {list(config["depthai"]["devices"].keys())}'
+        raise ValueError(error_msg)
+
     # Number of attempts that will be made to connect to the camera
     total_tries = 5
 
