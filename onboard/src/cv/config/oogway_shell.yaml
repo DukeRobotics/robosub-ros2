@@ -1,0 +1,5 @@
+depthai:
+  ip_range: 192.168.1.0/24
+  devices:
+    front:
+      mac: 44:A9:2C:3F:8A:6C
