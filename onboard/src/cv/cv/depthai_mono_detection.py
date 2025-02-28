@@ -429,7 +429,7 @@ class DepthAISpatialDetector(Node):
         self.init_model(self.running_model)
         self.init_publishers(self.running_model)
 
-        self.device = depthai_camera_connect.connect(self.pipeline)
+        self.device = depthai_camera_connect.connect(self, self.camera, self.pipeline)
         self.init_queues(self.device)
 
         self.detect_timer = self.create_timer(1 / LOOP_RATE, self.detect)
