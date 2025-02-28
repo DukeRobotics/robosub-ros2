@@ -1,5 +1,6 @@
-from setuptools import find_packages, setup
 from pathlib import Path
+
+from setuptools import find_packages, setup
 
 package_name = 'sonar'
 
@@ -21,8 +22,8 @@ setup(
     license='MIT',
     entry_points={
         'console_scripts': [
-            "sonar = sonar.sonar:main",
-            "sonar_test_client = sonar.sonar_test_client:main",
+            'sonar = sonar.sonar:main',
+            'sonar_test_client = sonar.sonar_test_client:main',
         ],
     },
 )
