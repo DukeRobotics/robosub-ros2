@@ -6,7 +6,7 @@ from cv_bridge import CvBridge
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage, Image
 
-from cv.config import Torpoedo, MonoCam
+from cv.config import MonoCam, Torpoedo
 from cv.utils import calculate_relative_pose, compute_yaw
 
 
@@ -149,7 +149,7 @@ class TorpedoTargetDetector(Node):
         ]
 
 
-    def publish_bbox(self, bbox: tuple[int, int, int, int], publisher: object) -> None:  # noqa: ARG002
+    def publish_bbox(self, bbox: tuple[int, int, int, int], publisher: object) -> None:
         """
         Create a CVObject message to publish to the bounding box publisher.
 
