@@ -40,7 +40,7 @@ function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): R
   }, [context]);
 
   // Call the /enable_controls service to toggle controls
-  const callService = (service : string, state : string) => {
+  const callService = (service: string, state: string) => {
     console.log(service, state);
     // Check if service calling is supported by the context
     if (!context.callService) {
@@ -49,8 +49,7 @@ function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): R
     }
 
     // Request payload to toggle controls
-    const request: CustomMsgs.SetDiscreteServoRequest = { state: "left" };
-
+    const request: CustomMsgs.SetDiscreteServoRequest = { state };
     // Make the service call
     context.callService("/servos/torpedoes", request).then(
       (response) => {
@@ -89,14 +88,19 @@ function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): R
             <>
               <Typography key={servo.name}>{servo.name}</Typography>
               {servo.states.map((state) => (
-                <Button key={state} onClick={() => {callService(servo.serviceName, state)}}>
+                <Button
+                  key={state}
+                  onClick={() => {
+                    callService(servo.serviceName, state);
+                  }}
+                >
                   {state}
                 </Button>
               ))}
             </>
           ))}
         </>
-{/*
+        {/*
         <Button
           fullWidth
           variant="contained"
