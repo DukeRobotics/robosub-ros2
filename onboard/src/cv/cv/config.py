@@ -1,3 +1,5 @@
+from enum import Enum
+
 import numpy as np
 
 
@@ -54,3 +56,9 @@ class PinkBins:
     PINK_2_TOP = np.array([160, 150, 255])
     PINK_3_BOT = np.array([155, 100, 150])
     PINK_3_TOP = np.array([175, 255, 255])
+
+class USB_Camera(Enum):
+    """Enum for different USB cameras."""
+
+    FRONT = 0
+    BOTTOM = 1
