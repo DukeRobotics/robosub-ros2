@@ -1,19 +1,24 @@
-import { StdSrvs, StdMsgs } from "@duke-robotics/defs/types";
 import { CustomMsgs } from "@duke-robotics/defs/types";
 import useTheme from "@duke-robotics/theme";
 import { ThemeProvider } from "@emotion/react";
-import { PanelExtensionContext, RenderState, Immutable, MessageEvent } from "@foxglove/extension";
+import { PanelExtensionContext } from "@foxglove/extension";
 import { Typography } from "@mui/material";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button/Button";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 
+interface DiscreteServo {
+  name: string;
+  service: string;
+  states: string[];
+}
+
 // Array of discrete servo panel objects
-const DISCRETE_SERVOS = [
-  { name: "Marker Dropper", serviceName: "/servos/marker_dropper", states: ["left", "right"] },
-  { name: "Torpedoes", serviceName: "/servos/torpedoes", states: ["left", "right"] },
+const DISCRETE_SERVOS: DiscreteServo[] = [
+  { name: "Marker Dropper", service: "/servos/marker_dropper", states: ["left", "right"] },
+  { name: "Torpedoes", service: "/servos/torpedoes", states: ["left", "right"] },
 ];
 
 type ToggleControlsPanel = {
@@ -23,21 +28,6 @@ type ToggleControlsPanel = {
 
 function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [panelState, setState] = useState<ToggleControlsPanel>({});
-  const [renderDone, setRenderDone] = useState<() => void | undefined>();
-
-  useEffect(() => {
-    renderDone?.();
-  }, [renderDone]);
-
-  // Render and watch renderState
-  // Save the value from the most recent message
-  useEffect(() => {
-    context.onRender = (renderState: Immutable<RenderState>, done) => {
-      setRenderDone(() => done);
-    };
-
-    context.watch("currentFrame");
-  }, [context]);
 
   // Call the /enable_controls service to toggle controls
   const callService = (service: string, state: string) => {
@@ -91,7 +81,7 @@ function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): R
                 <Button
                   key={state}
                   onClick={() => {
-                    callService(servo.serviceName, state);
+                    callService(servo.service, state);
                   }}
                 >
                   {state}
