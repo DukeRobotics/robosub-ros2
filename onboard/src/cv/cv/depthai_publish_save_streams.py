@@ -4,11 +4,11 @@ from pathlib import Path
 
 import cv2
 import depthai as dai
-import depthai_camera_connect
+from cv import depthai_camera_connect
 import numpy as np
 import rclpy
-import utils
-from image_tools import ImageTools
+from cv import utils
+from cv.image_tools import ImageTools
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 
@@ -38,7 +38,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
         """Set up publisher and camera node pipeline."""
         super().__init__('depthai_publish_save_streams')
 
-        self.set_parameters(self)
+        self.set_parameters()
 
         num_saved_streams = (int(self.save_rgb_video) + int(self.save_rgb_preview) + int(self.save_left) +
                              int(self.save_right) + int(self.save_disparity))
@@ -65,13 +65,13 @@ class DepthAIStreamsPublisherAndSaver(Node):
                                        f'Using maximum possible framerate: {max_framerate}')
                 self.framerate = max_framerate
 
-        self.start_publishers(self)
+        self.start_publishers()
 
         if num_saved_streams > 3:  # noqa: PLR2004
             msg = 'Cannot save more than 3 streams at once'
             raise ValueError(msg)
 
-        self.check_file_paths(self)
+        self.check_file_paths()
 
         self.image_tools = ImageTools()
         self.pipeline = dai.Pipeline()
@@ -92,27 +92,30 @@ class DepthAIStreamsPublisherAndSaver(Node):
         self.publish_disparity = self.declare_parameter('disparity', False).value
         self.publish_depth = self.declare_parameter('depth', False).value
 
+        self.rgb_video_file_path_param = self.declare_parameter('rgb_video_file_path', '').value
+        self.rgb_preview_file_path_param = self.declare_parameter('rgb_preview_file_path', '').value
+        self.left_file_path_param = self.declare_parameter('left_file_path', '').value
+        self.right_file_path_param = self.declare_parameter('right_file_path', '').value
+        self.disparity_file_path_param = self.declare_parameter('disparity_file_path', '').value
+
         # File paths to save the streams to. If param is empty, the stream will not be saved.
-        self.rgb_video_file_path = os.path.join(self.BASE_PATH, # noqa: PTH118
-                                                self.declare_parameter('rgb_video_file_path', '').value)
-        self.rgb_preview_file_path = os.path.join(self.BASE_PATH,  # noqa: PTH118
-                                               self.declare_parameter('rgb_preview_file_path', '').value)
-        self.left_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('left_file_path', '').value) # noqa: PTH118
-        self.right_file_path = os.path.join(self.BASE_PATH, self.declare_parameter('right_file_path', '').value) # noqa: PTH118
-        self.disparity_file_path = os.path.join(self.BASE_PATH, # noqa: PTH118
-                                                self.declare_parameter('disparity_file_path', '').value)
+        self.rgb_video_file_path = os.path.join(self.BASE_PATH, self.rgb_video_file_path_param)
+        self.rgb_preview_file_path = os.path.join(self.BASE_PATH, self.rgb_preview_file_path_param)
+        self.left_file_path = os.path.join(self.BASE_PATH, self.left_file_path_param)
+        self.right_file_path = os.path.join(self.BASE_PATH, self.right_file_path_param)
+        self.disparity_file_path = os.path.join(self.BASE_PATH, self.disparity_file_path_param)
+        
+        # Whether to save the streams to files
+        self.save_rgb_video = self.rgb_video_file_path_param != ''
+        self.save_rgb_preview = self.rgb_preview_file_path_param != ''
+        self.save_left = self.left_file_path_param != ''
+        self.save_right = self.right_file_path_param != '' 
+        self.save_disparity = self.disparity_file_path_param != ''
 
         # Whether to convert the saved encoded streams into a video
         self.convert_to_video = self.declare_parameter('convert_to_video', False).value
         # Whether to convert video to QuickTime compatible format
         self.qt_compatible = self.declare_parameter('qt_compatible', False).value
-
-        # Whether to save the streams to files
-        self.save_rgb_video = self.rgb_video_file_path != ''
-        self.save_rgb_preview = self.rgb_preview_file_path != ''
-        self.save_left = self.left_file_path != ''
-        self.save_right = self.right_file_path != ''
-        self.save_disparity = self.disparity_file_path != ''
 
         self.rgb_video_resolution = (1920, 1080)
         self.rgb_preview_resolution = (416, 416)
@@ -174,7 +177,8 @@ class DepthAIStreamsPublisherAndSaver(Node):
 
     def build_pipeline(self) -> None:
         """Build the DepthAI pipeline, which takes the RGB camera feed and retrieves it using an XLinkOut."""
-        self.build_pipeline_cam_LR(self)
+        self.build_pipeline_cam_RGB()
+        self.build_pipeline_cam_LR()
 
         # Setup VideoEncoder and XLinkOut nodes for saving disparity to files
         if self.save_disparity:
@@ -358,116 +362,57 @@ class DepthAIStreamsPublisherAndSaver(Node):
     # Publish newest image off queue to topic every few seconds
     def run(self) -> None:
         """Get rgb images from the camera and publish them to STREAM_TOPIC."""
-        with depthai_camera_connect.connect(self.pipeline) as device:
-            self.setup_output_queue_in_run(self, device)
-            self.save_videos_in_run(self, device)
+        self.device = depthai_camera_connect.connect(self, self.CAMERA, self.pipeline)
+        self.setup_output_queue_in_run()
+        self.save_videos_in_run()
 
-        # Convert encoded video files to playable videos
-        h265_convert_options = '-vcodec libx264 -pix_fmt yuv420p' if self.qt_compatible else '-c copy'
-
-        rgb_video_command = (f"""ffmpeg -framerate {self.framerate} -i {self.rgb_video_file_path}.h265
-                             {h265_convert_options} {self.rgb_video_file_path}.mp4""")
-
-        rgb_preview_command = (f"""ffmpeg -framerate {self.framerate} -i {self.rgb_preview_file_path}.h265
-                               {h265_convert_options} {self.rgb_preview_file_path}.mp4""")
-
-        left_command = (f"""ffmpeg -framerate {self.framerate} -i {self.left_file_path}.h264 -c copy
-                        {self.left_file_path}.mp4""")
-
-        right_command = (f"""ffmpeg -framerate {self.framerate} -i {self.right_file_path}.h264 -c copy
-                         {self.right_file_path}.mp4""")
-
-        disparity_command = (f"""ffmpeg -framerate {self.framerate} -i {self.disparity_file_path}.h265
-                             {h265_convert_options} {self.disparity_file_path}.mp4""")
-
-        if self.convert_to_video:
-            self.get_logger().info('Converting encoded video files to playable videos.')
-            if self.save_rgb_video:
-                subprocess.Popen(rgb_video_command.replace('\n', '').split(' '))  # noqa: S603
-            if self.save_rgb_preview:
-                subprocess.Popen(rgb_preview_command.replace('\n', '').split(' '))  # noqa: S603
-            if self.save_left:
-                subprocess.Popen(left_command.replace('\n', '').split(' '))  # noqa: S603
-            if self.save_right:
-                subprocess.Popen(right_command.replace('\n', '').split(' '))  # noqa: S603
-            if self.save_disparity:
-                subprocess.Popen(disparity_command.replace('\n', '').split(' '))  # noqa: S603
-
-        self.get_logger().info('To convert the encoded video files to a playable videos, run the following commands:')
-        if self.save_rgb_video:
-            self.get_logger().info(rgb_video_command)
-        if self.save_rgb_preview:
-            self.get_logger().info(rgb_preview_command)
-        if self.save_left:
-            self.get_logger().info(left_command)
-        if self.save_right:
-            self.get_logger().info(right_command)
-        if self.save_disparity:
-            self.get_logger().info(disparity_command)
-
-    def setup_output_queue_in_run(self, device: dai.device) -> None:
+    def setup_output_queue_in_run(self) -> None:
         """Set up output queue for run."""
         # Output queue, to receive message on the host from the device (you can send the message
             # on the device with XLinkOut)
 
         if self.publish_rgb_video:
-            self.rgbVideoQueue = device.getOutputQueue(name='rgbVideo', maxSize=4, blocking=False)
+            self.rgbVideoQueue = self.device.getOutputQueue(name='rgbVideo', maxSize=4, blocking=False)
 
         if self.publish_rgb_preview:
-            self.rgbPreviewQueue = device.getOutputQueue(name='rgbPreview', maxSize=4, blocking=False)
+            self.rgbPreviewQueue = self.device.getOutputQueue(name='rgbPreview', maxSize=4, blocking=False)
 
         if self.publish_left:
-            self.leftQueue = device.getOutputQueue(name='left', maxSize=4, blocking=False)
+            self.leftQueue = self.device.getOutputQueue(name='left', maxSize=4, blocking=False)
 
         if self.publish_right:
-            self.rightQueue = device.getOutputQueue(name='right', maxSize=4, blocking=False)
+            self.rightQueue = self.device.getOutputQueue(name='right', maxSize=4, blocking=False)
 
         if self.publish_disparity:
-            self.disparityQueue = device.getOutputQueue(name='disparity', maxSize=4, blocking=False)
+            self.disparityQueue = self.device.getOutputQueue(name='disparity', maxSize=4, blocking=False)
 
         if self.publish_depth:
-            self.depthQueue = device.getOutputQueue(name='depth', maxSize=4, blocking=False)
+            self.depthQueue = self.device.getOutputQueue(name='depth', maxSize=4, blocking=False)
 
 
-    def save_videos_in_run(self, device: dai.device) -> None:
+    def save_videos_in_run(self) -> None:
         """Save videos."""
         if self.save_rgb_video:
-                self.veRgbVideoQueue = device.getOutputQueue(name='veRgbVideo', maxSize=4, blocking=False)
+                self.veRgbVideoQueue = self.device.getOutputQueue(name='veRgbVideo', maxSize=4, blocking=False)
                 self.rgb_video_file = Path.open(self.rgb_video_file_path + '.h265', 'wb')
 
         if self.save_rgb_preview:
-            self.veRgbPreviewQueue = device.getOutputQueue(name='veRgbPreview', maxSize=4, blocking=False)
+            self.veRgbPreviewQueue = self.device.getOutputQueue(name='veRgbPreview', maxSize=4, blocking=False)
             self.rgb_preview_file = Path.open(self.rgb_preview_file_path + '.h265', 'wb')
 
         if self.save_left:
-            self.veLeftQueue = device.getOutputQueue(name='veLeft', maxSize=4, blocking=False)
+            self.veLeftQueue = self.device.getOutputQueue(name='veLeft', maxSize=4, blocking=False)
             self.left_file = Path.open(self.left_file_path + '.h264', 'wb')
 
         if self.save_right:
-            self.veRightQueue = device.getOutputQueue(name='veRight', maxSize=4, blocking=False)
+            self.veRightQueue = self.device.getOutputQueue(name='veRight', maxSize=4, blocking=False)
             self.right_file = Path.open(self.right_file_path + '.h264', 'wb')
 
         if self.save_disparity:
-            self.veDisparityQueue = device.getOutputQueue(name='veDisparity', maxSize=4, blocking=False)
+            self.veDisparityQueue = self.device.getOutputQueue(name='veDisparity', maxSize=4, blocking=False)
             self.disparity_file = Path.open(self.disparity_file_path + '.h265', 'wb')
 
         self.publish_and_save_timer = self.create_timer(1 / LOOP_RATE, self.publish_and_save)
-
-        # Close files
-        if self.save_rgb_video:
-            self.rgb_video_file.close()
-
-        if self.save_rgb_preview:
-            self.rgb_preview_file.close()
-
-        if self.save_left:
-            self.left_file.close()
-
-        if self.save_right:
-            self.right_file.close()
-
-        if self.save_disparity:
-            self.disparity_file.close()
 
     def publish_and_save(self) -> None:
         """Publish and save."""
@@ -526,6 +471,75 @@ class DepthAIStreamsPublisherAndSaver(Node):
 
         while self.save_disparity and self.veDisparityQueue.has():
             self.veDisparityQueue.get().getData().tofile(self.disparity_file)
+
+    def destroy_node(self) -> None:
+        """Destroy node."""
+        # Stop the timer
+        if self.publish_and_save_timer is not None:
+            self.publish_and_save_timer.cancel()
+            self.publish_and_save_timer = None
+        
+        # Close the device
+        if self.device is not None:
+            self.device.close()
+            self.device = None
+
+        # Close files
+        if self.save_rgb_video:
+            self.rgb_video_file.close()
+        if self.save_rgb_preview:
+            self.rgb_preview_file.close()
+        if self.save_left:
+            self.left_file.close()
+        if self.save_right:
+            self.right_file.close()
+        if self.save_disparity:
+            self.disparity_file.close()
+
+        # Convert encoded video files to playable videos
+        h265_convert_options = '-vcodec libx264 -pix_fmt yuv420p' if self.qt_compatible else '-c copy'
+
+        rgb_video_command = (f"""ffmpeg -framerate {self.framerate} -i {self.rgb_video_file_path}.h265
+                             {h265_convert_options} {self.rgb_video_file_path}.mp4""")
+
+        rgb_preview_command = (f"""ffmpeg -framerate {self.framerate} -i {self.rgb_preview_file_path}.h265
+                               {h265_convert_options} {self.rgb_preview_file_path}.mp4""")
+
+        left_command = (f"""ffmpeg -framerate {self.framerate} -i {self.left_file_path}.h264 -c copy
+                        {self.left_file_path}.mp4""")
+
+        right_command = (f"""ffmpeg -framerate {self.framerate} -i {self.right_file_path}.h264 -c copy
+                         {self.right_file_path}.mp4""")
+
+        disparity_command = (f"""ffmpeg -framerate {self.framerate} -i {self.disparity_file_path}.h265
+                             {h265_convert_options} {self.disparity_file_path}.mp4""")
+
+        if self.convert_to_video:
+            self.get_logger().info('Converting encoded video files to playable videos.')
+            if self.save_rgb_video:
+                subprocess.Popen(rgb_video_command.replace('\n', '').split(' '))  # noqa: S603
+            if self.save_rgb_preview:
+                subprocess.Popen(rgb_preview_command.replace('\n', '').split(' '))  # noqa: S603
+            if self.save_left:
+                subprocess.Popen(left_command.replace('\n', '').split(' '))  # noqa: S603
+            if self.save_right:
+                subprocess.Popen(right_command.replace('\n', '').split(' '))  # noqa: S603
+            if self.save_disparity:
+                subprocess.Popen(disparity_command.replace('\n', '').split(' '))  # noqa: S603
+
+            self.get_logger().info('To convert the encoded video files to a playable videos, run the following commands:')
+            if self.save_rgb_video:
+                self.get_logger().info(rgb_video_command)
+            if self.save_rgb_preview:
+                self.get_logger().info(rgb_preview_command)
+            if self.save_left:
+                self.get_logger().info(left_command)
+            if self.save_right:
+                self.get_logger().info(right_command)
+            if self.save_disparity:
+                self.get_logger().info(disparity_command)
+
+        super().destroy_node()
 
 
 def main(args: None = None) -> None:
