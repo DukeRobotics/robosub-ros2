@@ -1,0 +1,9 @@
+int32 start_angle
+int32 end_angle
+
+float64 distance_of_scan
+---
+bool is_object
+
+geometry_msgs/Pose pose
+float64 normal_angle
