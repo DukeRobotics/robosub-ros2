@@ -118,7 +118,7 @@ class TorpedoTargetDetector(Node):
             cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         if lower_cnt is not None:
-            x, y, w, h = cv2.boundingRect(upper_cnt)
+            x, y, w, h = cv2.boundingRect(lower_cnt)
             bbox = (x, y, w, h)
             self.publish_bbox(bbox, self.lower_bounding_box_pub)
 

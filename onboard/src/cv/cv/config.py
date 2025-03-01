@@ -57,8 +57,7 @@ class PinkBins:
     PINK_3_BOT = np.array([155, 100, 150])
     PINK_3_TOP = np.array([175, 255, 255])
 
-class USB_Camera(Enum):
+class USBCamera(Enum):
     """Enum for different USB cameras."""
-
-    FRONT = 0
-    BOTTOM = 1
+    front = 0
+    bottom = 1
