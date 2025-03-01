@@ -2,7 +2,7 @@ import { CustomMsgs } from "@duke-robotics/defs/types";
 import useTheme from "@duke-robotics/theme";
 import { ThemeProvider } from "@emotion/react";
 import { PanelExtensionContext } from "@foxglove/extension";
-import { Typography } from "@mui/material";
+import { ButtonGroup, Stack, Typography } from "@mui/material";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button/Button";
@@ -21,14 +21,14 @@ const DISCRETE_SERVOS: DiscreteServo[] = [
   { name: "Torpedoes", service: "/servos/torpedoes", states: ["left", "right"] },
 ];
 
-type ToggleControlsPanel = {
+type DiscreteServosPanel = {
   error?: Error | undefined; // Error object if service call fails
   response?: string | undefined; // Response from service call
-  lastServiceCall?: { response: string; state: boolean } | undefined; // Last service call
+  lastServiceCall?: { message: string; success: boolean } | undefined; // Last service call
 };
 
-function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
-  const [panelState, setState] = useState<ToggleControlsPanel>({});
+function DiscreteServosPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
+  const [panelState, setState] = useState<DiscreteServosPanel>({});
 
   // Call the /enable_controls service to toggle controls
   const callService = (service: string, state: string) => {
@@ -44,11 +44,11 @@ function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): R
     // Make the service call
     (context.callService(service, request) as Promise<CustomMsgs.SetDiscreteServoResponse>).then(
       (response) => {
-        console.log(JSON.stringify(response)); // Attempt serializing the response, to throw an error on failure
+        JSON.stringify(response); // Attempt serializing the response, to throw an error on failure
 
         setState((oldState) => ({
           ...oldState,
-          lastServiceCall: { response: response.message, state: response.success },
+          lastServiceCall: { message: response.message, success: response.success },
         }));
       },
       (error: unknown) => {
@@ -56,11 +56,12 @@ function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): R
         setState((oldState) => ({
           ...oldState,
           error: error as Error,
-          lastServiceCall: { response: error as string, state: false },
         }));
       },
     );
   };
+
+  console.log("DiscreteServosPanel:", panelState.error);
 
   const theme = useTheme();
   return (
@@ -82,49 +83,42 @@ function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): R
           </Box>
         )}
 
-        {/* Toggle button */}
-        <>
+        <Stack spacing={2}>
           {DISCRETE_SERVOS.map((servo) => (
-            <>
-              <Typography key={servo.name}>{servo.name}</Typography>
-              {servo.states.map((state) => (
-                <Button
-                  key={state}
-                  onClick={() => {
-                    callService(servo.service, state);
-                  }}
-                >
-                  {state}
-                </Button>
-              ))}
-            </>
+            <Box key={servo.name}>
+              <Typography>{servo.name}</Typography>
+              <ButtonGroup variant="outlined" color="primary">
+                {servo.states.map((state) => (
+                  <Button
+                    key={state}
+                    onClick={() => {
+                      callService(servo.service, state);
+                    }}
+                  >
+                    {state}
+                  </Button>
+                ))}
+              </ButtonGroup>
+            </Box>
           ))}
           <>
-            <Alert variant="filled" severity={(panelState.lastServiceCall?.state ?? false) ? "success" : "error"}>
-              {panelState.lastServiceCall?.response}
-            </Alert>
+            {panelState.lastServiceCall?.message && (
+              <Alert variant="filled" severity={panelState.lastServiceCall.success ? "success" : "error"}>
+                {panelState.lastServiceCall.message}
+              </Alert>
+            )}
           </>
-        </>
-        {/*
-        <Button
-          fullWidth
-          variant="contained"
-          color={state.controlsEnabled ? "error" : "success"}
-          onClick={toggleControls}
-          disabled={context.callService == undefined}
-        >
-          {state.controlsEnabled ? "Disable Controls" : "Enable Controls"}
-        </Button> */}
+        </Stack>
       </Box>
     </ThemeProvider>
   );
 }
 
-export function initToggleControlsPanel(context: PanelExtensionContext): () => void {
+export function initDiscreteServosPanel(context: PanelExtensionContext): () => void {
   context.panelElement.style.overflow = "auto"; // Enable scrolling
 
   const root = createRoot(context.panelElement as HTMLElement);
-  root.render(<ToggleControlsPanel context={context} />);
+  root.render(<DiscreteServosPanel context={context} />);
 
   // Return a function to run when the panel is removed
   return () => {

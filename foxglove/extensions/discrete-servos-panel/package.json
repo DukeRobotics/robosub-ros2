@@ -1,7 +1,7 @@
 {
   "name": "@duke-robotics/ros-jazzy-discrete-servos-panel",
-  "displayName": "Toggle Controls Panel (Jazzy)",
-  "description": "Toggle controls on/off",
+  "displayName": "Discrete Servos Panel (Jazzy)",
+  "description": "Control Discrete Servos",
   "publisher": "Duke Robotics",
   "version": "0.0.0",
   "main": "./dist/extension.js",
