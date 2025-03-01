@@ -124,34 +124,20 @@ Each robot has its own udev rules file located in the `robot/udev` directory. Th
     ```
     and check if the symlinks are present. If the symlinks are not present, reboot the robot and check again.
 
-### Set Up Bash Aliases
-Set up bash aliases to make it easier to run common commands associated with this repository _outside_ the Docker container (aliases used _inside_ the Docker container are defined in `docker/ros_bashrc.sh`).
+### Set Up Shell Configuration
+Set up the required shell configuration on the robot, which is used outside of the Docker container.
 
 1. Open the `~/.bashrc` file in a text editor.
-2. Check if the `~/.bash_aliases` file is sourced in the `~/.bashrc` file. If it is not, add the following line to the `~/.bashrc` file
+3. Add the following line to the `~/.bashrc` file to source the `robot/robot_config.sh` file in the repository:
     ```bash
-    source ~/.bash_aliases
-    ```
-    and create a `~/.bash_aliases` file.
-3. Add the following line to the `~/.bash_aliases` file to source the `robot/robot_aliases.sh` file in the repository:
-    ```bash
-    source /absolute/path/to/robosub-ros2/robot/robot_aliases.sh
+    source /absolute/path/to/robosub-ros2/robot/robot_config.sh
     ```
     - Replace `/absolute/path/to/robosub-ros2` with the absolute path to the `robosub-ros2` repository on the robot.
-
-    > [!NOTE]
-    > It is considered good practice to define aliases separately in `~/.bash_aliases` instead of putting them directly in `~/.bashrc`. However `source .../robosub-ros2/robot/robot_aliases.sh` can be added to the `~/.bashrc` file directly if you prefer not to use a `~/.bash_aliases` file.
 
 4. Source the `~/.bashrc` file by running the following command to apply the changes:
     ```bash
     source ~/.bashrc
     ```
-5. Run the following command to check if the aliases were set up correctly:
-    ```bash
-    alias
-    ```
-    - You should see a list of all aliases set up on the robot. This list should include the aliases defined in the `robot/robot_aliases.sh` file.
-    - If the aliases are not present, check the `~/.bash_aliases` file and the `~/.bashrc` file to ensure they are set up correctly.
 
 ## Set Up the Docker Container
 The Docker container is used to develop and run the code in a consistent environment. It is configured with all the necessary dependencies and tools to develop the code.
