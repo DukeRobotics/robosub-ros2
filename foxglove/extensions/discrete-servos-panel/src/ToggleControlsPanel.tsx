@@ -19,6 +19,7 @@ const DISCRETE_SERVOS = [
 type ToggleControlsPanel = {
   error?: Error | undefined; // Error object if service call fails
   response?: string | undefined; // Response from service call
+  lastServiceCall?: { response: string; state: boolean } | undefined; // Last service call
 };
 
 function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
@@ -51,13 +52,19 @@ function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): R
     // Request payload to toggle controls
     const request: CustomMsgs.SetDiscreteServoRequest = { state };
     // Make the service call
-    context.callService("/servos/torpedoes", request).then(
+    (context.callService(service, request) as Promise<CustomMsgs.SetDiscreteServoResponse>).then(
       (response) => {
         console.log(JSON.stringify(response)); // Attempt serializing the response, to throw an error on failure
+
+        setState((oldState) => ({ ...oldState, lastServiceCall: { response: response.message, state: response.success } }));
       },
       (error: unknown) => {
         // Handle service call errors (e.g., service is not advertised)
-        setState((oldState) => ({ ...oldState, error: error as Error }));
+        setState((oldState) => ({
+          ...oldState,
+          error: error as Error,
+          lastServiceCall: { response: error as string, state: false },
+        }));
       },
     );
   };
@@ -99,6 +106,11 @@ function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): R
               ))}
             </>
           ))}
+          <>
+            <Alert variant="filled" severity={(panelState.lastServiceCall?.state ?? false) ? "success" : "error"}>
+              {panelState.lastServiceCall?.response}
+            </Alert>
+          </>
         </>
         {/*
         <Button
