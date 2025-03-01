@@ -29,7 +29,7 @@ If you don't see the changes applied:
 The `docker-compose.yml` file in the `robot` directory extends the `docker-compose.yml` file in the repository root. It includes additional configurations for the robot's Docker container that enable the container to access devices connected to the robot.
 
 ## `robot_config.sh`
-The `robot_config.sh` script defines enviornment variables, aliases, and other configuration needed on the robot. It should be sourced in the robot's `.bashrc` file to make the configuration available in the robot's shell.
+The `robot_config.sh` script defines environment variables, aliases, and other configuration needed on the robot. It should be sourced in the robot's `.bashrc` file to make the configuration available in the robot's shell.
 - `onboard2`: Alias for running `docker-build.sh`.
 - `bashon2`: Alias for opening a bash shell in the Docker container.
 - `dkill`: Alias for stopping all running Docker containers.
