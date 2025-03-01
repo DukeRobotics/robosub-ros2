@@ -13,7 +13,7 @@ from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String
 
-from cv import correct, depthai_camera_connect
+from cv import depthai_camera_connect
 from cv.image_tools import ImageTools
 from cv.utils import DetectionVisualizer, calculate_relative_pose
 
@@ -36,7 +36,7 @@ ISP_IMG_SHAPE = (4056, 3040)  # Size of ISP image
 
 class DepthAISpatialDetector(Node):
     """Compute detections on live camera feed and publish spatial coordinates for detected objects."""
-    def __init__(self) -> None:
+    def __init__(self, run: bool = True) -> None:
         """Initialize the ROS node. Loads the yaml file at cv/models/depthai_models.yaml."""
         super().__init__('depthai_spatial_detection')
         self.running_model = self.declare_parameter('running_model', 'yolov7_tiny_2023_main').value
@@ -87,7 +87,8 @@ class DepthAISpatialDetector(Node):
         self.desired_detection_feature = self.create_subscription(
             String, TASK_PLANNING_REQUESTS_PATH, self.update_priority,qos_profile)
 
-        self.run()
+        if run:
+            self.run()
 
     def build_pipeline(self, nn_blob_path: Path, sync_nn: bool) -> dai.Pipeline:  # noqa: ARG002
         """
@@ -277,14 +278,14 @@ class DepthAISpatialDetector(Node):
         self.detection_visualizer = DetectionVisualizer(self.classes, self.colors,
                                                         self.show_class_name, self.show_confidence)
 
-    def detect(self) -> None:
+    def detect(self, output_queue: str = "rgb") -> None:
         """Get current detections from output queues and publish."""
         # init_output_queues must be called before detect
         if not self.connected:
             self.get_logger().warn('Output queues are not initialized so cannot detect. Call init_output_queues first.')
             return
         
-        inpreview = self.output_queues['rgb'].get()
+        inpreview = self.output_queues[output_queue].get()
         frame = inpreview.getCvFrame()
 
         # Publish raw RGB feed
@@ -432,7 +433,7 @@ class DepthAISpatialDetector(Node):
         """
         self.current_priority = obj
 
-    def run(self) -> bool:
+    def run(self, use_depthai: bool) -> bool:
         """
         Run the selected model on the connected device.
 
@@ -447,8 +448,11 @@ class DepthAISpatialDetector(Node):
         self.init_model(self.running_model)
         self.init_publishers(self.running_model)
 
-        self.device = depthai_camera_connect.connect(self, self.camera, self.pipeline)
-        self.init_queues(self.device)
+        if use_depthai:
+            self.device = depthai_camera_connect.connect(self, self.camera, self.pipeline)
+            self.init_queues(self.device)
+        else:
+            self.connected = True
 
         self.detect_timer = self.create_timer(1 / LOOP_RATE, self.detect)
 
