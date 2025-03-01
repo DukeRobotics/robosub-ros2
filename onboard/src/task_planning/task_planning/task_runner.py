@@ -1,6 +1,6 @@
 # ruff: noqa: ERA001
-import time
 import os
+import time
 
 import rclpy
 import tf2_ros
@@ -9,8 +9,6 @@ from rclpy.duration import Duration
 from rclpy.node import Node
 
 from task_planning import tasks_crush, tasks_oogway
-import task_planning.tasks_oogway as tasks_oogway
-import task_planning.tasks_crush as tasks_crush
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.marker_dropper import MarkerDropper
@@ -73,7 +71,8 @@ class TaskPlanning(Node):
         elif robot_name == 'CRUSH':
             self.tasks = tasks_crush.get_tasks()
         else:
-            raise ValueError(f"Unknown robot name: {robot_name}")
+            msg = f'Unknown robot name: {robot_name}'
+            raise ValueError(msg)
 
         self.current_task = 0
         self.started_running_tasks = False

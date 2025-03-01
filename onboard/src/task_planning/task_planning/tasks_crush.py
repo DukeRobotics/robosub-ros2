@@ -1,11 +1,12 @@
-from task_planning.task import Task
-import task_planning.comp_tasks as comp_tasks
-import task_planning.move_tasks as move_tasks
-import task_planning.test_tasks as test_tasks
-import task_planning.prequal_tasks as prequal_tasks
+# ruff: noqa: ERA001, F401
 from math import radians
 
-def get_tasks():
+from task_planning import comp_tasks, move_tasks, prequal_tasks, test_tasks
+from task_planning.task import Task
+
+
+def get_tasks() -> list[Task]:
+    """Define the task sequence to be performed by Crush."""
     return [
             # comp_tasks.initial_submerge(-0.7, parent=Task.MAIN_ID),
             # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=Task.MAIN_ID),
