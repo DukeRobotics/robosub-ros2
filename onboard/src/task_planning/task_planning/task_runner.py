@@ -43,24 +43,23 @@ class TaskPlanning(Node):
         # Initialize the task update publisher
         TaskUpdatePublisher(self)
 
-        # Wait one second for all publishers and subscribers to start
-        time.sleep(1)
-
         # Ensure transform from odom to base_link is available
         if not self.bypass:
-            try:
-                _ = tf_buffer.lookup_transform('odom', 'base_link', Clock().now(), Duration(seconds=15))
-            except (
-                tf2_ros.LookupException,
-                tf2_ros.ConnectivityException,
-                tf2_ros.ExtrapolationException,
-            ):
-                self.get_logger().error('Failed to get transform')
-                return
+            current_time = Clock().now()
+            while rclpy.ok():
+                try:
+                    _ = tf_buffer.lookup_transform('odom', 'base_link', current_time)
+                    break
+                except (
+                    tf2_ros.LookupException,
+                    tf2_ros.ConnectivityException,
+                    tf2_ros.ExtrapolationException,
+                ):
+                    rclpy.spin_once(self)
 
             # Ensure state is available
             while not State().state:
-                pass
+                rclpy.spin_once(self)
 
         # Determine the robot name
         robot_name = os.getenv('ROBOT_NAME', '').upper()
