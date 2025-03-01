@@ -46,7 +46,10 @@ function ToggleControlsPanel({ context }: { context: PanelExtensionContext }): R
       (response) => {
         console.log(JSON.stringify(response)); // Attempt serializing the response, to throw an error on failure
 
-        setState((oldState) => ({ ...oldState, lastServiceCall: { response: response.message, state: response.success } }));
+        setState((oldState) => ({
+          ...oldState,
+          lastServiceCall: { response: response.message, state: response.success },
+        }));
       },
       (error: unknown) => {
         // Handle service call errors (e.g., service is not advertised)
