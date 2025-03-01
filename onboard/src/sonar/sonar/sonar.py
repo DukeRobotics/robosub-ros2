@@ -117,8 +117,8 @@ class Sonar(Node):
         From a given range determines the sample_period.
 
         Sample_period is the time between each sample. Given a distance we can calculate the sample period using the
-        formula: 2 * range / (number_of_samples * speed_of_sound_in_water * 25e-9) where number of samples is the 
-        number of samples taken between 0m and the set range, speed of sound in water is 1480m/s and 25e-9 is the 
+        formula: 2 * range / (number_of_samples * speed_of_sound_in_water * 25e-9) where number of samples is the
+        number of samples taken between 0m and the set range, speed of sound in water is 1480m/s and 25e-9 is the
         sample period tick duration.
 
         https://discuss.bluerobotics.com/t/please-provide-some-answer-regards-ping360/6393/3
@@ -150,7 +150,7 @@ class Sonar(Node):
         Returns:
             transmit_duration (int): max transmit duration in ms.
         """
-        # 1 
+        # 1
         transmit_duration = 8000 * range / self.SPEED_OF_SOUND_IN_WATER
         # 2 (transmit duration is microseconds, samplePeriod() is nanoseconds)
         transmit_duration = max(self.range_to_period(range) / 40, transmit_duration)
@@ -257,7 +257,7 @@ class Sonar(Node):
         y_pos = -1 * self.get_distance_of_sample(index)*np.sin(
             sonar_utils.centered_gradians_to_radians(angle))
         pos_of_point = Pose()
-        pos_of_point.position.x = x_pos        
+        pos_of_point.position.x = x_pos
         pos_of_point.position.y = y_pos
         pos_of_point.position.z = 0  # z cord is not really 0 but we don't care
         pos_of_point.orientation.x = 0
@@ -284,7 +284,7 @@ class Sonar(Node):
         sonar_index, normal_angle, plot = sonar_image_processing.find_center_point_and_angle(
             sonar_sweep_array, self.VALUE_THRESHOLD, self.DBSCAN_EPS,
             self.DBSCAN_MIN_SAMPLES, True)
-        
+
         color_image = sonar_image_processing.build_color_sonar_image_from_int_array(sonar_sweep_array)
 
         if sonar_index is None:
@@ -397,7 +397,7 @@ class Sonar(Node):
         if self.debug:
             self.create_timer(1.0 / self.LOOP_RATE, self.constant_sweep)
         else:
-            self.create_service(SonarSweepRequest, 'sonar/request', self.preform_sonar_request)
+            self.create_service(SonarSweepRequest, 'sonar/request', self.perform_sonar_request)
 
 
 def main(args: list[str] | None = None) -> None:

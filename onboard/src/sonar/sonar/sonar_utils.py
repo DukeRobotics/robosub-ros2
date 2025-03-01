@@ -22,11 +22,6 @@ def transform_pose(buffer, pose, source_frame, target_frame):
     Returns:
         Pose: Pose in the target reference frame.
     """
-    pose_stamped = PoseStamped()
-    pose_stamped.pose = pose
-    pose_stamped.header.frame_id = source_frame
-    pose_stamped.header.stamp = rclpy.time.Time().to_msg()  # Correct ROS2 timestamping
-
     try:
         # Wait for transform to be available
         transform = buffer.lookup_transform(
@@ -34,8 +29,8 @@ def transform_pose(buffer, pose, source_frame, target_frame):
         )
 
         # Transform the pose
-        transformed_pose = tf2_geometry_msgs.do_transform_pose(pose_stamped, transform)
-        return transformed_pose.pose
+        transformed_pose = tf2_geometry_msgs.do_transform_pose(pose, transform)
+        return transformed_pose
 
     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
         raise RuntimeError(f"Failed to transform pose: {e}")
