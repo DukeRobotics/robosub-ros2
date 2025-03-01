@@ -115,13 +115,11 @@ function PIDPanel({ context }: { context: PanelExtensionContext }): JSX.Element 
       return;
     }
 
-    context.callService(serviceName, request).then(
+    (context.callService(serviceName, request) as Promise<CustomMsgs.SetPidGainsResponse>).then(
       (response) => {
-        const typedResponse = response as CustomMsgs.SetPidGainsResponse;
-
         // Update the state based on the service response
         // If the service responds with failure, display the response message as an error
-        const error = typedResponse.success ? undefined : Error(typedResponse.message);
+        const error = response.success ? undefined : Error(response.message);
         setState((prevState) => ({
           ...prevState,
           error,
