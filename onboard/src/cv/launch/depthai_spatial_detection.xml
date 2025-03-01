@@ -7,16 +7,14 @@
     <arg name="using_sonar" default="False" description='{"type":"bool","allowEmpty":false,"help":"Whether to use sonar to estimate depth instead of stereo."}'/>
     <arg name="show_class_name" default="True" description='{"type":"bool","allowEmpty":false,"help":"Whether to show the class name."}'/>
     <arg name="show_confidence" default="True" description='{"type":"bool","allowEmpty":false,"help":"Whether to show the confidence value."}'/>
-    <arg name="correct_color" default="True" description='{"type":"bool","allowEmpty":false,"help":"Whether to apply underwater color correction."}'/>
     <node name="depthai_spatial_detection" exec="depthai_spatial_detection" pkg="cv" output="screen">
-        <param name="running_model" type="string" value="$(var model)" />
-        <param name="rgb_raw" type="bool" value="$(var rgb_raw)" />
-        <param name="rgb_detections" type="bool" value="$(var rgb_detections)" />
-        <param name="queue_depth" type="bool" value="$(var depth)" />
-        <param name="sync_nn" type="bool" value="$(var sync_nn)" />
-        <param name="using_sonar" type="bool" value="$(var using_sonar)" />
-        <param name="show_class_name" type="bool" value="$(var show_class_name)" />
-        <param name="show_confidence" type="bool" value="$(var show_confidence)" />
-        <param name="correct_color" type="bool" value="$(var correct_color)" />
+        <param name="running_model" value="$(var model)" />
+        <param name="rgb_raw" value="$(var rgb_raw)" />
+        <param name="rgb_detections" value="$(var rgb_detections)" />
+        <param name="queue_depth" value="$(var depth)" />
+        <param name="sync_nn" value="$(var sync_nn)" />
+        <param name="using_sonar" value="$(var using_sonar)" />
+        <param name="show_class_name" value="$(var show_class_name)" />
+        <param name="show_confidence" value="$(var show_confidence)" />
     </node>
 </launch>

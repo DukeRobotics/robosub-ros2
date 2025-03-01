@@ -47,7 +47,6 @@ class DepthAISpatialDetector(Node):
         self.using_sonar = self.declare_parameter('using_sonar', False).value
         self.show_class_name = self.declare_parameter('show_class_name', True).value
         self.show_confidence = self.declare_parameter('show_confidence', True).value
-        self.correct_color = self.declare_parameter('correct_color', False).value
 
         with Path.open(rr.get_filename(DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH,
                                   use_protocol=False)) as f:
@@ -124,43 +123,43 @@ class DepthAISpatialDetector(Node):
 
         # Define sources and outputs
         cam_rgb = pipeline.create(dai.node.ColorCamera)
-        spatial_detection_network = pipeline.create(dai.node.YoloDetectionNetwork)
-        image_manip = pipeline.create(dai.node.ImageManip)
+        spatial_detection_network = pipeline.create(dai.node.YoloSpatialDetectionNetwork)
+        mono_left = pipeline.create(dai.node.MonoCamera)
+        mono_right = pipeline.create(dai.node.MonoCamera)
+        stereo = pipeline.create(dai.node.StereoDepth)
 
         xout_nn = pipeline.create(dai.node.XLinkOut)
-        xout_nn.setStreamName('detections')
+        xout_nn.setStreamName("detections")
 
         xout_rgb = pipeline.create(dai.node.XLinkOut)
-        xout_rgb.setStreamName('rgb')
-        cam_rgb.video.link(xout_rgb.input)
+        xout_rgb.setStreamName("rgb")
 
-        xin_nn_input = pipeline.create(dai.node.XLinkIn)
-        xin_nn_input.setStreamName('nn_input')
-        xin_nn_input.setNumFrames(2)
-        xin_nn_input.setMaxDataSize(416*416*3)
+        if self.queue_depth:
+            xout_depth = pipeline.create(dai.node.XLinkOut)
+            xout_depth.setStreamName("depth")
 
         # Camera properties
         cam_rgb.setPreviewSize(model['input_size'])
-        cam_rgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_12_MP)
+        cam_rgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
         cam_rgb.setInterleaved(False)
         cam_rgb.setColorOrder(dai.ColorCameraProperties.ColorOrder.BGR)
-        cam_rgb.setPreviewKeepAspectRatio(False)
 
-        cam_rgb.setIspNumFramesPool(3)  # keep this high default
-        cam_rgb.setPreviewNumFramesPool(1)  # breaks if <1
-        cam_rgb.setRawNumFramesPool(2)  # breaks if <2
-        cam_rgb.setStillNumFramesPool(0)
-        cam_rgb.setVideoNumFramesPool(1)  # breaks if <1
+        mono_left.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
+        mono_left.setBoardSocket(dai.CameraBoardSocket.CAM_B)
+        mono_right.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
+        mono_right.setBoardSocket(dai.CameraBoardSocket.CAM_C)
 
-        image_manip.initialConfig.setResize(model['input_size'])
-        image_manip.initialConfig.setKeepAspectRatio(False)
-        image_manip.setMaxOutputFrameSize(model['input_size'][0] * model['input_size'][1] * 3)
-        image_manip.setNumFramesPool(1)
+        # Stereo properties
+        stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
+        stereo.setDepthAlign(dai.CameraBoardSocket.CAM_A)
 
         # General spatial detection network parameters
         spatial_detection_network.setBlobPath(nn_blob_path)
         spatial_detection_network.setConfidenceThreshold(model['confidence_threshold'])
         spatial_detection_network.input.setBlocking(False)
+        spatial_detection_network.setBoundingBoxScaleFactor(0.5)
+        spatial_detection_network.setDepthLowerThreshold(100)
+        spatial_detection_network.setDepthUpperThreshold(5000)
 
         # Yolo specific parameters
         spatial_detection_network.setNumClasses(len(model['classes']))
@@ -169,12 +168,24 @@ class DepthAISpatialDetector(Node):
         spatial_detection_network.setAnchorMasks(model['anchor_masks'])
         spatial_detection_network.setIouThreshold(model['iou_threshold'])
 
-        xin_nn_input.out.link(spatial_detection_network.input)
+        # Linking
+        mono_left.out.link(stereo.left)
+        mono_right.out.link(stereo.right)
 
-        cam_rgb.isp.link(image_manip.inputImage)
-        image_manip.out.link(xout_rgb.input)
+        cam_rgb.preview.link(spatial_detection_network.input)
+
+        # To sync RGB frames with NN, link passthrough to xout instead of preview
+        if sync_nn:
+            spatial_detection_network.passthrough.link(xout_rgb.input)
+        else:
+            cam_rgb.preview.link(xout_rgb.input)
 
         spatial_detection_network.out.link(xout_nn.input)
+
+        if self.queue_depth:
+            spatial_detection_network.passthroughDepth.link(xout_depth.input)
+
+        stereo.depth.link(spatial_detection_network.inputDepth)
 
         return pipeline
 
@@ -261,8 +272,6 @@ class DepthAISpatialDetector(Node):
 
         self.output_queues['detections'] = self.device.getOutputQueue(name='detections', maxSize=1, blocking=False)
 
-        self.input_queue = self.device.getInputQueue(name='nn_input', maxSize=1, blocking=False)
-
         self.connected = True  # Flag that the output queues have been initialized
 
         self.detection_visualizer = DetectionVisualizer(self.classes, self.colors,
@@ -274,11 +283,7 @@ class DepthAISpatialDetector(Node):
         if not self.connected:
             self.get_logger().warn('Output queues are not initialized so cannot detect. Call init_output_queues first.')
             return
-
-        # Format a cv2 image to be sent to the device
-        def to_planar(arr: np.ndarray, shape: tuple) -> np.ndarray:
-            return cv2.resize(arr, shape).transpose(2, 0, 1).flatten()
-
+        
         inpreview = self.output_queues['rgb'].get()
         frame = inpreview.getCvFrame()
 
@@ -286,19 +291,6 @@ class DepthAISpatialDetector(Node):
         if self.rgb_raw:
             frame_img_msg = self.image_tools.convert_to_ros_compressed_msg(frame)
             self.rgb_preview_publisher.publish(frame_img_msg)
-
-        # Underwater color correction
-        if self.correct_color:
-            mat = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame = correct.correct(mat)
-
-        # Send a message to the ColorCamera to capture a still image
-        img = dai.ImgFrame()
-        img.setType(dai.ImgFrame.Type.BGR888p)
-        img.setData(to_planar(frame, (416, 416)))
-        img.setWidth(416)
-        img.setHeight(416)
-        self.input_queue.send(img)
 
         # Get detections from output queues
         indet = self.output_queues['detections'].tryGet()
@@ -553,7 +545,7 @@ def main(args: list[str] | None = None) -> None:
     try:
         rclpy.spin(depthai_spatial_detector)
     except KeyboardInterrupt:
-        depthai_spatial_detector.device.close()
+        pass
     finally:
         depthai_spatial_detector.device.close()
         depthai_spatial_detector.destroy_node()
