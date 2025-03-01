@@ -28,11 +28,12 @@ If you don't see the changes applied:
 ## `docker-compose.yml`
 The `docker-compose.yml` file in the `robot` directory extends the `docker-compose.yml` file in the repository root. It includes additional configurations for the robot's Docker container that enable the container to access devices connected to the robot.
 
-## `robot_aliases.sh`
-The `robot_aliases.sh` script contains aliases that make it easier to run common commands on the robot outside of the Docker container. It should be sourced in the robot's `.bashrc` or `.bash_aliases` file to make the aliases available in the robot's shell.
+## `robot_config.sh`
+The `robot_config.sh` script defines environment variables, aliases, and other configuration needed on the robot. It should be sourced in the robot's `.bashrc` file to make the configuration available in the robot's shell.
 - `onboard2`: Alias for running `docker-build.sh`.
 - `bashon2`: Alias for opening a bash shell in the Docker container.
 - `dkill`: Alias for stopping all running Docker containers.
+- `ROBOSUB_ROS2_COMPOSE_FILE_PATH`: Environment variable that specifies the path to the Docker compose file used by the robot. Used in `devcontainer.json`.
 
 ## `robot_names`
 The `robot_names` file contains a list of valid values for the `ROBOT_NAME` environment variable. It has one valid value per line must include a blank line at the end. It should not include any other blank lines, leading/trailing whitespace, or comments.
