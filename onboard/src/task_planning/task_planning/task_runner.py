@@ -1,12 +1,11 @@
-# ruff: noqa: ERA001
 import os
-import time
 
 import rclpy
 import tf2_ros
-from rclpy.clock import Clock
+from rclpy.clock import Clock, ClockType
 from rclpy.duration import Duration
 from rclpy.node import Node
+from rclpy.time import Time
 
 from task_planning import tasks_crush, tasks_oogway
 from task_planning.interface.controls import Controls
@@ -43,31 +42,48 @@ class TaskPlanning(Node):
         # Initialize the task update publisher
         TaskUpdatePublisher(self)
 
-        # Ensure transform from odom to base_link is available
         if not self.bypass:
-            current_time = Clock().now()
+
+            # Ensure transform from odom to base_link is available
+            min_transform_time = Clock(clock_type=ClockType.ROS_TIME).now()
+            last_message_time = Clock().now()
             while rclpy.ok():
+                # Log message every second
+                if Clock().now() - last_message_time >= Duration(seconds=1):
+                    self.get_logger().info('Waiting for transform from base_link to odom...')
+                    last_message_time = Clock().now()
+
                 try:
-                    _ = tf_buffer.lookup_transform('odom', 'base_link', current_time)
-                    break
-                except (
-                    tf2_ros.LookupException,
-                    tf2_ros.ConnectivityException,
-                    tf2_ros.ExtrapolationException,
-                ):
-                    rclpy.spin_once(self)
+                    # Get latest available transform
+                    transform = tf_buffer.lookup_transform('odom', 'base_link', Time())
+                    transform_time = Time.from_msg(transform.header.stamp)
+
+                    # Ensure transform is recent
+                    if transform_time >= min_transform_time:
+                        break
+                except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                    pass
+
+                rclpy.spin_once(self, timeout_sec=0.1)
 
             # Ensure state is available
+            last_message_time = Clock().now()
             while not State().state:
-                rclpy.spin_once(self)
+
+                # Log message every second
+                if Clock().now() - last_message_time >= Duration(seconds=1):
+                    self.get_logger().info('Waiting for state...')
+                    last_message_time = Clock().now()
+
+                rclpy.spin_once(self, timeout_sec=0.1)
 
         # Determine the robot name
-        robot_name = os.getenv('ROBOT_NAME', '').upper()
+        robot_name = os.getenv('ROBOT_NAME')
 
         # Tasks to run
-        if robot_name == 'OOGWAY':
+        if robot_name in ('oogway', 'oogway_shell'):
             self.tasks = tasks_oogway.get_tasks()
-        elif robot_name == 'CRUSH':
+        elif robot_name == 'crush':
             self.tasks = tasks_crush.get_tasks()
         else:
             msg = f'Unknown robot name: {robot_name}'

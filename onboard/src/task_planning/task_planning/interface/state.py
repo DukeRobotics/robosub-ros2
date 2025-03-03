@@ -43,8 +43,8 @@ class State:
         self.received_depth = False
         self.received_imu = False
 
-        self._state = Odometry()
-        self._orig_state = Odometry()
+        self._state = None
+        self._orig_state = None
         self._depth = 0
         self._orig_depth = 0
         self._imu = Imu()
