@@ -29,6 +29,14 @@ class LaneMarker:
     """Lane marker color constants."""
     LANE_MARKER_BOT = np.array([100, 150, 50])
     LANE_MARKER_TOP = np.array([140, 255, 255])
+class Torpoedo:
+    """Torpedo dimension and color constants."""
+    WIDTH = 0.2032 # TODO update this when dimensions are released  # noqa: TD004
+
+class BlueRect:
+    """BlueRect color constants."""
+    BLUE_BOT = np.array([100, 150, 50])
+    BLUE_TOP = np.array([140, 255, 255])
 
 class PathMarker:
     """Path marker color bounds and contour parameters."""
