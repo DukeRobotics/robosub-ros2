@@ -1,8 +1,8 @@
 #include "Robot.hpp"
 
 #define VOLTAGE_PIN 3
-#define BTH_PIN 2
-#define STH_PIN 4
+#define THB_PIN 2
+#define THS_PIN 4
 
 class Crush : public Robot {
 private:
@@ -20,8 +20,8 @@ public:
 
         voltage_sensor = new Voltage(VOLTAGE_PIN, 4.655, "");
         pressure_sensor = new Pressure("");
-        battery_temp_humidity_sensor = new TempHumidity(BTH_PIN, "B");
-        signal_temp_humidity_sensor = new TempHumidity(STH_PIN, "S");
+        battery_temp_humidity_sensor = new TempHumidity(THB_PIN, "B");
+        signal_temp_humidity_sensor = new TempHumidity(THS_PIN, "S");
 
         addVoltageSensor(voltage_sensor);
         addPressureSensor(pressure_sensor);
