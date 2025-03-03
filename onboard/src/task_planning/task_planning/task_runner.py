@@ -3,11 +3,12 @@ import os
 import rclpy
 import tf2_ros
 from rclpy.clock import Clock, ClockType
+from typing import ClassVar
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.time import Time
 
-from task_planning import tasks_crush, tasks_oogway
+from task_planning import tasks_crush, tasks_oogway, tasks_oogway_shell
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.marker_dropper import MarkerDropper
@@ -20,6 +21,12 @@ class TaskPlanning(Node):
     NODE_NAME = 'task_planning'
     TASK_RATE_SECS = 1 / 30
     COUNTDOWN_SECS = 10
+
+    ROBOT_NAME_TO_TASKS: ClassVar[dict] = {
+        'oogway': tasks_oogway,
+        'oogway_shell': tasks_oogway_shell,
+        'crush': tasks_crush,
+    }
 
     def __init__(self) -> None:
         """Set up the task planning node."""
@@ -80,11 +87,9 @@ class TaskPlanning(Node):
         # Determine the robot name
         robot_name = os.getenv('ROBOT_NAME')
 
-        # Tasks to run
-        if robot_name in ('oogway', 'oogway_shell'):
-            self.tasks = tasks_oogway.get_tasks()
-        elif robot_name == 'crush':
-            self.tasks = tasks_crush.get_tasks()
+        # Get the tasks for the robot
+        if robot_name in self.ROBOT_NAME_TO_TASKS:
+            self.tasks = self.ROBOT_NAME_TO_TASKS[robot_name].get_tasks()
         else:
             msg = f'Unknown robot name: {robot_name}'
             raise ValueError(msg)
