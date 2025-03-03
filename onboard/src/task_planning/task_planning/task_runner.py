@@ -1,9 +1,9 @@
 import os
+from typing import ClassVar
 
 import rclpy
 import tf2_ros
 from rclpy.clock import Clock, ClockType
-from typing import ClassVar
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.time import Time
