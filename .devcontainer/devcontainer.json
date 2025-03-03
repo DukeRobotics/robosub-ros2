@@ -1,6 +1,6 @@
 {
     "name": "RoboSub ROS2",
-    "dockerComposeFile": "../docker-compose.yml",
+    "dockerComposeFile": "${localEnv:ROBOSUB_ROS2_COMPOSE_FILE_PATH:../docker-compose.yml}",
     "service": "robosub-ros2",
     "workspaceFolder": "/home/ubuntu/robosub-ros2",
     "initializeCommand": "bash ./docker-build.sh skip-wsl",
