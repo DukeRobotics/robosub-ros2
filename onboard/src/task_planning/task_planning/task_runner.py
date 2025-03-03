@@ -75,11 +75,11 @@ class TaskPlanning(Node):
 
             # Ensure state is available
             last_message_time = Clock().now()
-            while not State().state:
+            while rclpy.ok() and not State().received_state:
 
                 # Log message every second
                 if Clock().now() - last_message_time >= Duration(seconds=1):
-                    self.get_logger().info('Waiting for state...')
+                    self.get_logger().info('Waiting to receive state...')
                     last_message_time = Clock().now()
 
                 rclpy.spin_once(self, timeout_sec=0.1)
