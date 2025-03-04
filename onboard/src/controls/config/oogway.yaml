@@ -209,42 +209,42 @@ power_scale_factor: 1
 thrusters:
   - name: bottom_front_left
     type: T200
-    pos: [0.20528, 0.397763, -0.033285]
+    pos: [-0.013795, 0.7073255, -0.23092875]
     rpy: [0, 90, 0]
     flipped: false
   - name: top_front_left
     type: T200
-    pos: [0.342119, 0.378052, 0.041947]
+    pos: [0.123044, 0.6876145, -0.15569675]
     rpy: [0, 0, -45]
     flipped: true
   - name: top_front_right
     type: T200
-    pos: [0.342146, -0.32021, 0.041947]
+    pos: [0.123071, -0.0106475, -0.15569675]
     rpy: [0, 0, 45]
     flipped: true
   - name: bottom_front_right
     type: T200
-    pos: [0.205315, -0.341812, -0.033285]
+    pos: [-0.01376, -0.0322495, -0.23092875]
     rpy: [0, 90, 0]
     flipped: true
   - name: bottom_back_left
     type: T200
-    pos: [-0.204592, 0.397763, -0.032393]
+    pos: [-0.423667, 0.7073255, -0.23003675]
     rpy: [0, 90, 0]
     flipped: false
   - name: top_back_left
     type: T200
-    pos: [-0.342897, 0.378061, 0.041947]
+    pos: [-0.561972, 0.6876235, -0.15569675]
     rpy: [0, 0, -135]
     flipped: true
   - name: bottom_back_right
     type: T200
-    pos: [-0.204592, -0.341812, -0.033285]
+    pos: [-0.423667, -0.0322495, -0.23092875]
     rpy: [0, 90, 0]
     flipped: false
   - name: top_back_right
     type: T200
-    pos: [-0.342925, -0.320244, 0.041947]
+    pos: [-0.5612, -0.0106815, -0.15569675]
     rpy: [0, 0, 135]
     flipped: true
 wrench_matrix_file_path: data/oogway_wrench.csv
