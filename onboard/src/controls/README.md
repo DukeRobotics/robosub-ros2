@@ -290,8 +290,8 @@ The [`power_scale_factor`](#power-scale-factor) field contains the factor by whi
 The `thrusters` field contains information about each thruster. From top to bottom, the thrusters in this file should be in the _same order that is expected by offboard comms,_ in the `allocs` part of the `custom_msgs/msg/ThrusterAllocs` message. Each thruster config contains the following subfields:
 - `name`: The uniquely identifying  name of the thruster. Not used by the system; included for human use only.
 - `type`: The thruster's model type, such as T200. Not used by the system; included for human use only.
-- `pos`: The position of the thruster in the `base_link` frame. In other words, the position of the thruster relative to the robot's center of mass. The x, y, and z coordinates are given in that order in meters.
-- `rpy`: The orientation of the thruster in the `base_link` frame, using extrinsic Euler angles. The rotations are performed in the order: roll, pitch, yaw. They are also given in that order in degrees. For example:
+- `pos`: The position of the thruster in the `corner_link` frame. In other words, the position of the thruster relative to the robot's center of mass. The x, y, and z coordinates are given in that order in meters.
+- `rpy`: The orientation of the thruster in the `corner_link` frame, using extrinsic Euler angles. The rotations are performed in the order: roll, pitch, yaw. They are also given in that order in degrees. For example:
     - An orientation of `[0, 0, 0]` means when the thruster is commanded to exert positive power, it will push the robot in the positive x direction.
     - An orientation of `[0, 0, 180]` means the thruster is rotated 180 degrees around the z axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative x direction.
     - An orientation of `[0, 90, 0]` means the thruster is rotated 90 degrees around the y axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative z direction.

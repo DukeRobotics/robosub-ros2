@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 
+import contextlib
 import os
 from pathlib import Path
 
-import geometry_msgs.msg
 import numpy as np
 import pandas as pd
 import rclpy
 import resource_retriever as rr
+import tf2_ros
 import yaml
+from rclpy.clock import Clock
+from rclpy.duration import Duration
 from rclpy.node import Node
+from rclpy.time import Time
 from sympy import Matrix, rad
 from sympy.core.numbers import Float
 from sympy.matrices import rot_ccw_axis1, rot_ccw_axis2, rot_ccw_axis3
@@ -51,37 +55,14 @@ def rotation_matrix(roll: Float, pitch: Float, yaw: Float) -> Matrix:
     yaw_matrix = rot_ccw_axis3(yaw)
     return yaw_matrix * pitch_matrix * roll_matrix
 
-def get_transform(tf_buffer: Buffer, target_frame: str, source_frame: str):
-    """
-    Get the transform from source_frame to target_frame.
-
-    Args:
-        tf_buffer (Buffer): The TF2 buffer.
-        target_frame (str): The target frame.
-        source_frame (str): The source frame.
-
-    Returns:
-        Matrix: The translation vector as a SymPy Matrix.
-    """
-    try:
-        transform = tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
-        translation = transform.transform.translation
-        return Matrix([translation.x, translation.y, translation.z])
-    except Exception as e:
-        print(f'Could not get transform from {source_frame} to {target_frame}. '
-            'Try launching the static_transforms node with ros2 launch static_transforms static_transforms.launch.py\n'
-            f'Error: {e}',
-        )
-        return Matrix([0, 0, 0])
-
 # Compute the force and torque vectors for a given thruster
-def compute_force_torque(thruster: dict, tf_buffer: Buffer) -> tuple[Matrix, Matrix]:
+def compute_force_torque(thruster: dict, corner_to_base_link_transform: Matrix) -> tuple[Matrix, Matrix]:
     """
     Compute the force and torque vectors for a given thruster.
 
     Args:
         thruster (dict): The thruster data.
-        tf_buffer (tf2_ros.Buffer): The tf2 buffer for static transforms
+        corner_to_base_link_transform (Matrix): The transfrom needed to find base link position of thrusters
 
     Returns:
         Tuple[Matrix, Matrix]: The force and torque vectors.
@@ -92,8 +73,7 @@ def compute_force_torque(thruster: dict, tf_buffer: Buffer) -> tuple[Matrix, Mat
     flipped = -1 if thruster['flipped'] else 1
 
     # Transform thrusted position from corner_link to base_link
-    transform_pos = get_transform(tf_buffer, 'base_link', 'corner_link')
-    pos += transform_pos
+    pos += corner_to_base_link_transform
 
     # Compute force vector
     rpy_radians = map(rad, rpy)
@@ -126,7 +106,32 @@ def main() -> None:
 
     # Start listening to tf_buffer to find static transforms
     tf_buffer = Buffer()
-    tf_listener = TransformListener(tf_buffer, node)
+    _ = TransformListener(tf_buffer, node)
+
+    # Spin the node and wait to recieve a static transform
+    starting_time = Clock().now()
+    last_message_time = Clock().now()
+    translation_matrix = None
+    while rclpy.ok():
+        # Log message every second
+        if Clock().now() - last_message_time >= Duration(seconds=1):
+            print('Waiting for transform from base_link to corner_link...')
+            last_message_time = Clock().now()
+
+        # Return error if transform isn't found
+        if Clock().now() - starting_time >= Duration(seconds=10):
+            print('Error: Could not find base_link to corner_link transform. Try launching the static_transforms'
+                  'node with ros2 launch static_transforms static_transforms.launch.py')
+            return
+
+        with contextlib.suppress(tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            # Get the needed static transform
+            transform = tf_buffer.lookup_transform('base_link', 'corner_link', Time())
+            translation = transform.transform.translation
+            translation_matrix = Matrix([translation.x, translation.y, translation.z])
+            break
+
+        rclpy.spin_once(node, timeout_sec=0.1)
 
     # Get the path to the config file for the robot the user would like to compute the wrench matrix for
     robot_name = get_robot_name()
@@ -141,7 +146,7 @@ def main() -> None:
 
     # Compute force and torque vectors and add them to the wrench matrix
     for idx, thruster in enumerate(vehicle['thrusters']):
-        force, torque = compute_force_torque(thruster, tf_buffer)
+        force, torque = compute_force_torque(thruster, translation_matrix)
 
         # Add force and torque to the wrench matrix
         wrench_matrix[0:3, idx] = force
