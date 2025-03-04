@@ -99,19 +99,20 @@ def to_csv(data: pd.DataFrame, file_path: Path) -> None:
     with file_path.open('wb') as file:
         file.write(file_data[:-1])
 
-def main() -> None:
-    """Compute the wrench matrix and its pseudoinverse for a robot using symbolic math. Save the matrices as CSVs."""
-    rclpy.init()
-    node = Node('wrench_matrix_computation')
+def get_translation_matrix(node: Node, tf_buffer: Buffer) -> Matrix:
+    """
+    Spins the ROS2 node and waits to receive a static transform from `base_link` to `corner_link`.
 
-    # Start listening to tf_buffer to find static transforms
-    tf_buffer = Buffer()
-    _ = TransformListener(tf_buffer, node)
+    Args:
+        node (Node): The ROS2 node.
+        tf_buffer (Buffer): The TF2 buffer for transform lookup.
 
-    # Spin the node and wait to recieve a static transform
+    Returns:
+        Matrix: The translation matrix from `corner_link` to `base_link`.
+    """
     starting_time = Clock().now()
     last_message_time = Clock().now()
-    translation_matrix = None
+
     while rclpy.ok():
         # Log message every second
         if Clock().now() - last_message_time >= Duration(seconds=1):
@@ -119,19 +120,31 @@ def main() -> None:
             last_message_time = Clock().now()
 
         # Return error if transform isn't found
-        if Clock().now() - starting_time >= Duration(seconds=10):
+        if Clock().now() - starting_time >= Duration(seconds=5):
             print('Error: Could not find base_link to corner_link transform. Try launching the static_transforms'
-                  'node with ros2 launch static_transforms static_transforms.launch.py')
-            return
+                  ' node with ros2 launch static_transforms static_transforms.launch.py')
+            return None
 
-        with contextlib.suppress(tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            # Get the needed static transform
+        with contextlib.suppress(tf2_ros.LookupException, tf2_ros.ConnectivityException):
             transform = tf_buffer.lookup_transform('base_link', 'corner_link', Time())
             translation = transform.transform.translation
-            translation_matrix = Matrix([translation.x, translation.y, translation.z])
-            break
+            return Matrix([translation.x, translation.y, translation.z])
 
         rclpy.spin_once(node, timeout_sec=0.1)
+
+    return None
+
+def main() -> None:
+    """Compute the wrench matrix and its pseudoinverse for a robot using symbolic math. Save the matrices as CSVs."""
+    rclpy.init()
+    node = Node('wrench_matrix_computation')
+
+    # Spin the node and wait to recieve a static transform
+    tf_buffer = Buffer()
+    _ = TransformListener(tf_buffer, node)
+    translation_matrix = get_translation_matrix(node, tf_buffer)
+    if translation_matrix is None:
+        return
 
     # Get the path to the config file for the robot the user would like to compute the wrench matrix for
     robot_name = get_robot_name()
