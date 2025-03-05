@@ -244,7 +244,7 @@ thrusters:
     flipped: false
   - name: top_back_right
     type: T200
-    pos: [-0.5612, -0.0106815, -0.15569675]
+    pos: [-0.562, -0.0106815, -0.15569675]
     rpy: [0, 0, 135]
     flipped: true
 wrench_matrix_file_path: data/oogway_wrench.csv
