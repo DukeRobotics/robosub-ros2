@@ -192,6 +192,12 @@ This file defines the `Controls` class, as well as the `main` function. It takes
 #### compute_wrench_matrix.py
 This is a Python script that computes the [wrench matrix](#wrench-matrix) and its [pseudoinverse](#wrench-matrix-pseudoinverse) for a given robot, given the thruster configuration in the [robot config file](#robot-config-file). It is used to generate the [CSV files](#csv-files) in the `data` directory.
 
+> [!NOTE]
+> This script requires the `corner_link_static_transform` node to be running, which publishes the static transform between the `corner_link` frame and the `base_link` frame. This is because the thruster positions and orientations are defined in the `corner_link` frame but the wrench matrix is defined in the `base_link` frame, so the script needs to transform the thruster positions and orientations to the `base_link` frame.
+
+> [!IMPORTANT]
+> This script must be run whenever the thruster configuration is changed or the `base_link` to `corner_link` transform is changed.
+
 It performs all computations symbolically using the [SymPy](https://www.sympy.org) library, and only converts the results to numerical values at the end. This is done to ensure that the computations are as accurate as possible.
 
 ## Config
