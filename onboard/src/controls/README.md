@@ -290,7 +290,7 @@ The [`power_scale_factor`](#power-scale-factor) field contains the factor by whi
 The `thrusters` field contains information about each thruster. From top to bottom, the thrusters in this file should be in the _same order that is expected by offboard comms,_ in the `allocs` part of the `custom_msgs/msg/ThrusterAllocs` message. Each thruster config contains the following subfields:
 - `name`: The uniquely identifying  name of the thruster. Not used by the system; included for human use only.
 - `type`: The thruster's model type, such as T200. Not used by the system; included for human use only.
-- `pos`: The position of the thruster in the `corner_link` frame. In other words, the position of the thruster relative to the robot's center of mass. The x, y, and z coordinates are given in that order in meters.
+- `pos`: The position of the thruster in the `corner_link` frame. The x, y, and z coordinates are given in that order in meters.
 - `rpy`: The orientation of the thruster in the `corner_link` frame, using extrinsic Euler angles. The rotations are performed in the order: roll, pitch, yaw. They are also given in that order in degrees. For example:
     - An orientation of `[0, 0, 0]` means when the thruster is commanded to exert positive power, it will push the robot in the positive x direction.
     - An orientation of `[0, 0, 180]` means the thruster is rotated 180 degrees around the z axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative x direction.
@@ -908,14 +908,14 @@ The `setpoint` is the desired value of the robot's [state](#state). It is the va
 The robot's `state` is a combination of its position and velocity, published by the sensor fusion package to topic `/state`. Position is defined in the `odom` (Earth-fixed) frame, whereas velocity is defined in the `base_link` frame.
 
 ### Static Power Global
-The `static power global` is a fixed amount of power, regardless of the desired state, added to the power applied along the linear axes. It is a vector whose origin is the robot's center of mass and whose direction is defined relative to the [initial orientation](#initial-orientation) of the robot.
+The `static power global` is a fixed amount of power, regardless of the desired state, added to the power applied along the linear axes. It is a vector whose origin is `base_link` and whose direction is defined relative to the [initial orientation](#initial-orientation) of the robot.
 
 For example, if the [initial orientation](#initial-orientation) of the robot is level with the bottom of the pool and the `static power global` is set to
 - x: 0
 - y: 0
 - z: -0.5
 
-then the robot will exert an additional downwards force of 0.5, at all times, directly towards the bottom of the pool, regardless of the orientation of the robot, [desired state](#desired-state).
+then the robot will exert an additional downwards force of 0.5, at all times, directly towards the bottom of the pool, regardless of the orientation of the robot or [desired state](#desired-state).
 
 The `static power global` is set in the [robot config file](#robot-config-file) and is used to counteract constant external forces such as buoyancy or water currents.
 
