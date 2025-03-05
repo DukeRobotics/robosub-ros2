@@ -292,9 +292,9 @@ The `thrusters` field contains information about each thruster. From top to bott
 - `type`: The thruster's model type, such as T200. Not used by the system; included for human use only.
 - `pos`: The position of the thruster in the `corner_link` frame. The x, y, and z coordinates are given in that order in meters.
 - `rpy`: The orientation of the thruster in the `corner_link` frame, using extrinsic Euler angles. The rotations are performed in the order: roll, pitch, yaw. They are also given in that order in degrees. For example:
-    - An orientation of `[0, 0, 0]` means when the thruster is commanded to exert positive power, it will push the robot in the positive x direction.
-    - An orientation of `[0, 0, 180]` means the thruster is rotated 180 degrees around the z axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative x direction.
-    - An orientation of `[0, 90, 0]` means the thruster is rotated 90 degrees around the y axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative z direction.
+    - An orientation of `[0, 0, 0]` means when the thruster is commanded to exert positive power, it will push the robot in the positive x direction relative to the `corner_link` frame.
+    - An orientation of `[0, 0, 180]` means the thruster is rotated 180 degrees around the z axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative x direction relative to the `corner_link` frame.
+    - An orientation of `[0, 90, 0]` means the thruster is rotated 90 degrees around the y axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative z direction relative to the `corner_link` frame.
 > [!NOTE]
 > Specifying a non-zero roll will not affect the direction the thruster pushes the robot in. This is because relative to itself, the force exerted by the thruster is always in the positive x direction. Thus, rotation about the x axis does not affect the axis of thrust.
 - `flipped`: Whether the thruster is flipped. This is used to account for ESCs that are wired in reverse. If `true`, when the thruster is commanded to exert positive power, it will push the robot in the direction opposite to what is expected based on its orientation.
