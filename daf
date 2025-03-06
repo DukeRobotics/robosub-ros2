@@ -1,0 +1,269 @@
+[33mcommit 445365a405647efb90f13f999d0f1e2b64e2675a[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+[41mgpg: Signature made Thu Oct 31 18:39:03 2024 EDT[m
+[41mgpg:                using RSA key B5690EEEBB952194[m
+[41mgpg: Can't check signature: No public key[m
+Author: Will Denton <92223701+Will-Denton@users.noreply.github.com>
+Date:   Thu Oct 31 18:39:02 2024 -0400
+
+    Migrate static transforms (#15)
+    
+    😈
+    
+    ---------
+    
+    Co-authored-by: Oogway <oogway@duke-robotics.com>
+
+[33mcommit 2ba7a88d55ec3f48e356fa014cca3274c2b8aec7[m
+[41mgpg: Signature made Thu Oct 24 19:46:38 2024 EDT[m
+[41mgpg:                using RSA key B5690EEEBB952194[m
+[41mgpg: Can't check signature: No public key[m
+Author: Will Denton <92223701+Will-Denton@users.noreply.github.com>
+Date:   Thu Oct 24 19:46:38 2024 -0400
+
+    Small changes and launch file for datapub (#12)
+    
+    Small changes and launch file
+
+[33mcommit aef81d01ae3aa413d9ef96b8595b61f60dda9b59[m
+[41mgpg: Signature made Sun Oct 20 23:31:07 2024 EDT[m
+[41mgpg:                using RSA key B5690EEEBB952194[m
+[41mgpg: Can't check signature: No public key[m
+Author: vedarshshah <33162616+vedarshshah@users.noreply.github.com>
+Date:   Sun Oct 20 23:31:07 2024 -0400
+
+    Dev Container Windows Fix (#11)
+    
+    * Added skip-wsl to docker build
+    
+    * Added comment to docker build
+    
+    * Added period to README.md
+    
+    * Added windows-specific documentation in readme for dev container
+    
+    * Added note in README about onboard2 is already in use error
+    
+    ---------
+    
+    Co-authored-by: Lab Computer <lab-computer@duke-robotics.com>
+    Co-authored-by: Raul Galvez <raul.galvez@duke.edu>
+
+[33mcommit 5639c765da9d8f5527c68d180b885d396a4728b6[m
+[41mgpg: Signature made Sun Oct 20 21:33:09 2024 EDT[m
+[41mgpg:                using RSA key B5690EEEBB952194[m
+[41mgpg: Can't check signature: No public key[m
+Author: Will Denton <92223701+Will-Denton@users.noreply.github.com>
+Date:   Sun Oct 20 21:33:09 2024 -0400
+
+    Fixes to get both datapub and vectornav working on the robot (#10)
+    
+    moved changes off of robot because I dont like signing it makes me angry
+
+[33mcommit ac4520ba53934c86f81d0a3a6f401075c9b7eb00[m
+[41mgpg: Signature made Sat Oct  5 16:20:29 2024 EDT[m
+[41mgpg:                using RSA key B5690EEEBB952194[m
+[41mgpg: Can't check signature: No public key[m
+Author: vedarshshah <33162616+vedarshshah@users.noreply.github.com>
+Date:   Sat Oct 5 16:20:29 2024 -0400
+
+    Fixed dev container initializeCommand (#8)
+
+[33mcommit 1a1628d5551c38cf685c0c34b27dffc80146610f[m
+[41mgpg: Signature made Thu Oct  3 20:22:18 2024 EDT[m
+[41mgpg:                using RSA key B5690EEEBB952194[m
+[41mgpg: Can't check signature: No public key[m
+Author: vedarshshah <33162616+vedarshshah@users.noreply.github.com>
+Date:   Thu Oct 3 20:22:18 2024 -0400
+
+    Dev Container (#7)
+    
+    * Modified devcontainer
+    
+    * Added dotenv to gitignore
+    
+    * Removed .vscode folder and added to gitignore
+    
+    * Reorganized and formatted devcontainer.json
+    
+    * Modified docker to enable git commits, signing, and authentication inside container. Also refactored entrypoint to properly handle SIGTERM.
+    
+    * Added allowed signers, authorized keys, and changed image and container names
+    
+    * Fixed bug with allowed signers
+    
+    * Added pyserial to dockerfile
+    
+    * Fixed typo in ros2_migration folder name
+    
+    * Added docker compose file without git signing
+    
+    * Added startup.sh and removed readonly from docker compose SSH mounts
+    
+    * Refactored SSH key mounting to copy keys into image
+    
+    * Refactored dockerfile and removed authorized keys
+    
+    * Compatability fixes for Max :)
+    
+    * Installed nano in container
+    
+    * Added support for NO_GIT arg in dockerfile
+    
+    * Add comment
+    
+    * Removed no git docker compose
+    
+    * Test commit
+    
+    * Second test
+    
+    * Test 3
+    
+    * test signed commit inside devcontainer
+    
+    * Test
+    
+    * Test
+    
+    * Created separate docker compose file for git config
+    
+    * Updated devcontainer to use docker compose with git, added markdown alert extension, and modified ruler to only show in Python files
+    
+    * Added options to build.sh to selectively build workspaces and to clean workspaces
+    
+    * Added checks in ros_bashrc to source setup files only if they exist
+    
+    * Added introduction, set up, and build instructions to main README
+    
+    * Revised README
+    
+    * Fix md formatting issue on github.com
+    
+    ---------
+    
+    Co-authored-by: Maxwell Lin <28914712+maxwellmlin@users.noreply.github.com>
+    Co-authored-by: Raul Galvez <raul.galvez@duke.edu>
+
+[33mcommit b2baa72027b58ccf0dc56dcd752bb2774b1a2ead[m
+[41mgpg: Signature made Thu Sep 26 19:45:38 2024 EDT[m
+[41mgpg:                using RSA key B5690EEEBB952194[m
+[41mgpg: Can't check signature: No public key[m
+Author: Will Denton <92223701+Will-Denton@users.noreply.github.com>
+Date:   Thu Sep 26 19:45:38 2024 -0400
+
+    Migrate data pub (#5)
+    
+    * Set up Dockerfile
+    
+    * Rename core2 to core, onboard2 to onboard
+    
+    * Rename onboard2 to onboard
+    
+    * added vectornav yippie
+    
+    * small changes
+    
+    * removed clrf
+    
+    * clrf
+    
+    * more crlf
+    
+    * built vectornav
+    
+    * removed install and build folders
+    
+    * Removed cairrage return from build.sh
+    
+    * Changed onboard port to 2202
+    
+    * Added source bashrc to build.sh
+    
+    * Added recommeneded extensions and settings for vscode
+    
+    * Added Docker extension
+    
+    * dvl_ raw initial commit
+    
+    * Added devcontainer configuration
+    
+    * created setup
+    
+    * Added core to build.sh
+    
+    * setup default packages for ROS2 migration
+    
+    * updated dvl_raw.py
+    
+    * updated dvl_to_odom
+    
+    * migrated data pub🧏
+    
+    ---------
+    
+    Co-authored-by: Maxwell Lin <28914712+maxwellmlin@users.noreply.github.com>
+    Co-authored-by: Vedarsh Shah <vedarsh.shah@gmail.com>
+
+[33mcommit 6419902f291eba45a47f4c66702d5ec3bc5fad41[m
+[41mgpg: Signature made Thu Sep 26 19:39:30 2024 EDT[m
+[41mgpg:                using RSA key B5690EEEBB952194[m
+[41mgpg: Can't check signature: No public key[m
+Author: Will Denton <92223701+Will-Denton@users.noreply.github.com>
+Date:   Thu Sep 26 19:39:30 2024 -0400
+
+    Setup initial packages for ROS2 migration (#4)
+    
+    * Set up Dockerfile
+    
+    * Rename core2 to core, onboard2 to onboard
+    
+    * Rename onboard2 to onboard
+    
+    * added vectornav yippie
+    
+    * small changes
+    
+    * removed clrf
+    
+    * clrf
+    
+    * more crlf
+    
+    * built vectornav
+    
+    * removed install and build folders
+    
+    * Removed cairrage return from build.sh
+    
+    * Changed onboard port to 2202
+    
+    * Added source bashrc to build.sh
+    
+    * Added recommeneded extensions and settings for vscode
+    
+    * Added Docker extension
+    
+    * dvl_ raw initial commit
+    
+    * Added devcontainer configuration
+    
+    * created setup
+    
+    * Added core to build.sh
+    
+    * setup default packages for ROS2 migration
+    
+    * removed data_pub
+    
+    ---------
+    
+    Co-authored-by: Maxwell Lin <28914712+maxwellmlin@users.noreply.github.com>
+    Co-authored-by: Vedarsh Shah <vedarsh.shah@gmail.com>
+
+[33mcommit 29563e44b3b1f9d60a5f6873258a84b7e51255ee[m
+[41mGood "git" signature with ED25519 key SHA256:K9lxJU+S7zxkfo12qnJAdXUjdWnyxQlG6QeN/eWoScI[m
+[41mNo principal matched.[m
+Author: Maxwell Lin <28914712+maxwellmlin@users.noreply.github.com>
+Date:   Sat Sep 7 12:50:05 2024 -0400
+
+    Initial commit
