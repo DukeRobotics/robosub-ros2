@@ -8,8 +8,10 @@ import numpy as np
 import pandas as pd
 import rclpy
 import resource_retriever as rr
+import tf2_geometry_msgs
 import tf2_ros
 import yaml
+from geometry_msgs.msg import Point, Pose, Quaternion
 from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.node import Node
@@ -19,6 +21,7 @@ from sympy.core.numbers import Float
 from sympy.matrices import rot_ccw_axis1, rot_ccw_axis2, rot_ccw_axis3
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
+from transforms3d.euler import euler2quat, quat2euler
 
 CONTROLS_PACKAGE_PATH = 'package://controls/'
 CONFIG_FILE_PATH_TEMPLATE = CONTROLS_PACKAGE_PATH + 'config/%s.yaml'
@@ -56,24 +59,31 @@ def rotation_matrix(roll: Float, pitch: Float, yaw: Float) -> Matrix:
     return yaw_matrix * pitch_matrix * roll_matrix
 
 # Compute the force and torque vectors for a given thruster
-def compute_force_torque(thruster: dict, corner_to_base_link_transform: Matrix) -> tuple[Matrix, Matrix]:
+def compute_force_torque(thruster: dict, corner_to_base_link_transform: Pose) -> tuple[Matrix, Matrix]:
     """
     Compute the force and torque vectors for a given thruster.
 
     Args:
         thruster (dict): The thruster data.
-        corner_to_base_link_transform (Matrix): The transfrom needed to find base link position of thrusters
+        corner_to_base_link_transform (Pose): The transfrom needed to find base link position of thrusters
 
     Returns:
         Tuple[Matrix, Matrix]: The force and torque vectors.
     """
-    # Get thruster data
-    pos = Matrix(thruster['pos'])
-    rpy = thruster['rpy']
-    flipped = -1 if thruster['flipped'] else 1
+    # Create pose message for thruster's position
+    pose = Pose()
+    pose.position = Point(x=thruster['pos'][0], y=thruster['pos'][1], z=thruster['pos'][2])
+    quat = euler2quat(thruster['rpy'][0], thruster['rpy'][1], thruster['rpy'][2])
+    pose.orientation = Quaternion(x=quat[1], y=quat[2], z=quat[3], w=quat[0])
 
     # Transform thrusted position from corner_link to base_link
-    pos += corner_to_base_link_transform
+    tf2_geometry_msgs.do_transform_pose(pose, corner_to_base_link_transform)
+
+    # Convert Pose message to Matrix
+    pos = Matrix([pose.position.x, pose.position.y, pose.position.z])
+    quat = pose.orientation
+    rpy = Matrix(quat2euler([quat.w, quat.x, quat.y, quat.z]))
+    flipped = -1 if thruster['flipped'] else 1
 
     # Compute force vector
     rpy_radians = map(rad, rpy)
@@ -99,7 +109,7 @@ def to_csv(data: pd.DataFrame, file_path: Path) -> None:
     with file_path.open('wb') as file:
         file.write(file_data[:-1])
 
-def get_translation_matrix(node: Node, tf_buffer: Buffer) -> Matrix:
+def get_transform(node: Node, tf_buffer: Buffer) -> Matrix:
     """
     Spins the ROS2 node and waits to receive a static transform from `base_link` to `corner_link`.
 
@@ -113,38 +123,43 @@ def get_translation_matrix(node: Node, tf_buffer: Buffer) -> Matrix:
     starting_time = Clock().now()
     last_message_time = Clock().now()
 
-    while rclpy.ok():
+    # Loops for 5 seconds to check for transformation
+    while rclpy.ok() and Clock().now() - starting_time < Duration(seconds=5):
         # Log message every second
         if Clock().now() - last_message_time >= Duration(seconds=1):
             print('Waiting for transform from base_link to corner_link...')
             last_message_time = Clock().now()
 
-        # Return error if transform isn't found
-        if Clock().now() - starting_time >= Duration(seconds=5):
-            print('Error: Could not find base_link to corner_link transform. Try launching the static_transforms'
-                  ' node with ros2 launch static_transforms static_transforms.launch.py')
-            return None
-
+        # Attempt to recieve transformation
         with contextlib.suppress(tf2_ros.LookupException, tf2_ros.ConnectivityException):
-            transform = tf_buffer.lookup_transform('base_link', 'corner_link', Time())
-            translation = transform.transform.translation
-            return Matrix([translation.x, translation.y, translation.z])
+            return tf_buffer.lookup_transform('base_link', 'corner_link', Time())
 
         rclpy.spin_once(node, timeout_sec=0.1)
 
-    return None
+    # Raise error if transformation not found
+    error_msg = (
+        'Could not find base_link to corner_link transform. Try launching the static_transforms'
+        ' node with ros2 launch static_transforms static_transforms.launch.py'
+    )
+    raise RuntimeError(error_msg)
 
 def main() -> None:
     """Compute the wrench matrix and its pseudoinverse for a robot using symbolic math. Save the matrices as CSVs."""
     rclpy.init()
     node = Node('wrench_matrix_computation')
 
+    # Check if static_transforms node is running
+    if 'corner_link_static_tranform' not in node.get_node_names():
+        error_msg = (
+            'Static Transforms node is not running and corner_link transform not found. Try launching the'
+            ' static_transforms node with ros2 launch static_transforms static_transforms.launch.py'
+        )
+        raise RuntimeError(error_msg)
+
     # Spin the node and wait to recieve a static transform
     tf_buffer = Buffer()
     _ = TransformListener(tf_buffer, node)
-    translation_matrix = get_translation_matrix(node, tf_buffer)
-    if translation_matrix is None:
-        return
+    transformation = get_transform(node, tf_buffer)
 
     # Get the path to the config file for the robot the user would like to compute the wrench matrix for
     robot_name = get_robot_name()
@@ -159,50 +174,50 @@ def main() -> None:
 
     # Compute force and torque vectors and add them to the wrench matrix
     for idx, thruster in enumerate(vehicle['thrusters']):
-        force, torque = compute_force_torque(thruster, translation_matrix)
+        force, torque = compute_force_torque(thruster, transformation)
 
         # Add force and torque to the wrench matrix
         wrench_matrix[0:3, idx] = force
         wrench_matrix[3:6, idx] = torque
 
     # Compute pseudoinverse of wrench matrix
-    wrench_matrix_pinv = wrench_matrix.pinv()
+    # wrench_matrix_pinv = wrench_matrix.pinv()
 
     # Convert sympy matrices to numpy matrices
     wrench_matrix_array = np.array(wrench_matrix).astype(np.float64)
-    wrench_matrix_pinv_array = np.array(wrench_matrix_pinv).astype(np.float64)
+    # wrench_matrix_pinv_array = np.array(wrench_matrix_pinv).astype(np.float64)
 
     # Convert numpy matrices to pandas dataframes
     wrench_matrix_df = pd.DataFrame(wrench_matrix_array)
-    wrench_matrix_pinv_df = pd.DataFrame(wrench_matrix_pinv_array)
+    # wrench_matrix_pinv_df = pd.DataFrame(wrench_matrix_pinv_array)
 
     # Set all values less than e-10 to 0
     wrench_matrix_df = wrench_matrix_df.round(10)
-    wrench_matrix_pinv_df = wrench_matrix_pinv_df.round(10)
+    # wrench_matrix_pinv_df = wrench_matrix_pinv_df.round(10)
 
     # Convert negative zeroes to positive zeroes
     wrench_matrix_df = wrench_matrix_df.replace(-0.0, 0.0)
-    wrench_matrix_pinv_df = wrench_matrix_pinv_df.replace(-0.0, 0.0)
+    # wrench_matrix_pinv_df = wrench_matrix_pinv_df.replace(-0.0, 0.0)
 
     # Get full paths to CSV files
     wrench_matrix_file_path = Path(rr.get_filename(CONTROLS_PACKAGE_PATH + vehicle['wrench_matrix_file_path'],
                                                    use_protocol=False))
-    wrench_matrix_pinv_file_path = Path(rr.get_filename(CONTROLS_PACKAGE_PATH + vehicle['wrench_matrix_pinv_file_path'],
-                                                        use_protocol=False))
+    # wrench_matrix_pinv_file_path = Path(rr.get_filename(CONTROLS_PACKAGE_PATH + vehicle['wrench_matrix_pinv_file_path'],
+    #                                                     use_protocol=False))
 
     # Export data to CSV files
     to_csv(wrench_matrix_df, wrench_matrix_file_path)
-    to_csv(wrench_matrix_pinv_df, wrench_matrix_pinv_file_path)
+    # to_csv(wrench_matrix_pinv_df, wrench_matrix_pinv_file_path)
 
     # Print data to console
     print('Wrench matrix:')
     print(wrench_matrix_df)
     print()
     print('Wrench matrix pseudoinverse:')
-    print(wrench_matrix_pinv_df)
+    # print(wrench_matrix_pinv_df)
     print()
     print(f'Saved wrench matrix to {wrench_matrix_file_path}')
-    print(f'Saved wrench matrix pseudoinverse to {wrench_matrix_pinv_file_path}')
+    # print(f'Saved wrench matrix pseudoinverse to {wrench_matrix_pinv_file_path}')
 
     node.destroy_node()
     rclpy.shutdown()
