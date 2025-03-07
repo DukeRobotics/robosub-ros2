@@ -1,6 +1,8 @@
 import os
 import time
 import struct
+import time
+
 
 from offboard_comms.serial_node import SerialNode
 
@@ -19,7 +21,7 @@ class ModemPublisher(SerialNode):
     DIAGNOSTIC_PACKET_SIZE = 18
 
     modem_ready = True
-    change_channel_timer = time()
+    change_setting_timer = time.time()
 
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME, True,
@@ -34,14 +36,13 @@ class ModemPublisher(SerialNode):
         """
         return self._config['modem']['ftdi']
 
-    def process_line(self, line: str) -> None:
+    def process_line(self, line: str | bytes) -> None:
         """
         Process a line of serial data from the WaterLinked Modem-M16.
 
         Args:
             line (str): line to process
         """
-        data = bytes(line)
         if len(data) != self.DIAGNOSTIC_PACKET_SIZE or data[0] != ord('$') or data[-1] != ord('\n'):
             return self.process_data
         return self.process_diagnostic_report
@@ -90,23 +91,56 @@ class ModemPublisher(SerialNode):
             'LEVEL': (decoded[12] & 0b00001100) >> 2,
         }
 
-    def change_channel(self, channel: int) -> None:
+    def change_setting(self, setting: int, char_to_send: str = '') -> None:
         """
         Change the channel the modem is on if the modem is ready for commands.
 
         Args:
             channel (int): New channel value for the modem to operate on.
+            setting (int): Setting to change. 1 - Comm Channel, 2 - Op Mode, 3 - Report Request, 4 - Power Level
+            char_to_send (str): Value to change setting to. i.e. channel #, power level
         """
-        if channel < 1 or channel > 12:
-            self.get_logger().error('Invalid channel, please input an int within [1, 12]')
-            return
-
-        byte_to_send = 
         if self.modem_ready:
-            self.change_channel_timer = time()
-            self.writebytes(ord('c'))
-            while self.change_channel_timer < 1000:
-                continue
-            self.writebytes(ord('c'))
-            self.writebytes(ord())
+            if (setting == 1 and char_to_send.isdigit()):
+                    channel = int(char_to_send)
+                    if channel < 1 or channel > 12:
+                        self.get_logger().error('Invalid channel, please input an int within [1, 12]')
+                        return
+                    if (channel < 10):
+                        true_char = str(channel)
+                    else:
+                        true_char = ["a","b","c"][channel-10]
 
+                    self.change_setting_timer = time.time()
+                    self.writebytes(ord('c'))
+                    while time.time() < self.change_setting_timer + 1:
+                        continue
+                    self.writebytes(ord('c'))
+                    self.writebytes(ord(true_char))
+                    return
+            if (setting == 2):
+                self.change_setting_timer = time.time()
+                self.writebytes(ord('m'))
+                while time.time() < self.change_setting_timer + 1:
+                    continue
+                self.writebytes(ord('m'))
+                return
+            if (setting == 3):
+                self.change_setting_timer = time.time()
+                self.writebytes(ord('r'))
+                while time.time() < self.change_setting_timer + 1:
+                    continue
+                self.writebytes(ord('r'))
+                return
+            if (setting == 4 and char_to_send.isdigit()):
+                power_lvl = int(char_to_send)
+                if power_lvl < 1 or power_lvl > 4:
+                        self.get_logger().error('Invalid power level, please input an int within [1, 4]')
+                        return
+                self.change_setting_timer = time.time()
+                self.writebytes(ord('l'))
+                while time.time() < self.change_setting_timer + 1:
+                    continue
+                self.writebytes(ord('l'))
+                self.writebytes(ord(char_to_send))
+                return

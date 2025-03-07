@@ -15,7 +15,7 @@ class SerialNode(Node, ABC):
 
     def __init__(self, node_name: str, baudrate: int, config_file_path: str, serial_device_name: str,
                  read_from_serial: bool, connection_retry_period: int=1, loop_rate: int=10,
-                 use_nonblocking: bool = False, max_num_consecutive_empty_lines: int = 5) -> None:
+                 use_nonblocking: bool = False, max_num_consecutive_empty_lines: int = 5, data_return_type: int = 0) -> None:
         """
         Initialize SerialNode.
 
@@ -30,6 +30,7 @@ class SerialNode(Node, ABC):
             use_nonblocking (bool): Whether to use non-blocking read from serial.
             max_num_consecutive_empty_lines (int): Maximum number of consecutive empty lines to read before resetting
                 serial connection.
+            data_return_type (int): 0 - String, Other - Bytes
         """
         self._node_name = node_name
         self._baud = baudrate
@@ -93,11 +94,16 @@ class SerialNode(Node, ABC):
         """
         start = time.time()
         buff = b''
+
         while ((time.time() - start) < tout) and (b'\r\n' not in buff):
             with suppress(serial.SerialException):
                 buff += self._serial.read(1)
 
-        return buff.decode('utf-8', errors='ignore')
+        if (data_return_type == 0):
+            return buff.decode('utf-8', errors='ignore')
+        else:
+            return buff
+
 
     def writebytes(self, data: bytes) -> bool:
         """
@@ -135,13 +141,18 @@ class SerialNode(Node, ABC):
         """
         return self.writebytes((line + '\r\n').encode('utf-8'))
 
-    def process_line(self, _: str) -> None:
+    def process_line(self, _: str | bytes) -> None:
         """
         Process line read from serial.
 
         Args:
             _ (str): Line to process.
         """
+        if (not isinstance(_, str) and not isinstance(_,bytes)):
+            error_msg = 'Input line must be either of type string or bytes'
+            raise TypeError(error_msg)
+
+
         if self._read_from_serial:
             error_msg = 'Subclasses must implement this method if read_from_serial is True.'
             raise NotImplementedError(error_msg)
@@ -158,10 +169,16 @@ class SerialNode(Node, ABC):
         """Read from serial port and process the line."""
         try:
             if self._read_from_serial:
-                if self._use_nonblocking:
-                    line = self.readline_nonblocking().strip()
+                if (data_return_type == 0):
+                    if self._use_nonblocking:
+                        line = self.readline_nonblocking().strip()
+                    else:
+                        line = self._serial.readline().decode('utf-8', errors='ignore').strip()
                 else:
-                    line = self._serial.readline().decode('utf-8', errors='ignore').strip()
+                    if self._use_nonblocking:
+                        line = self.readline_nonblocking()
+                    else:
+                        line = self._serial.readline()
 
                 if line:
                     self._num_consecutive_empty_lines = 0
