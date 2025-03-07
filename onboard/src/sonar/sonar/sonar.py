@@ -1,22 +1,20 @@
-#!/usr/bin/env python3
-
-import rclpy
-from brping import Ping360
 import numpy as np
-from sonar import sonar_utils, sonar_image_processing
-import serial.tools.list_ports as list_ports
-from geometry_msgs.msg import Pose
-from std_msgs.msg import String
-from custom_msgs.srv import SonarSweepRequest
-from sensor_msgs.msg import CompressedImage
+import rclpy
 import tf2_ros
+from brping import Ping360
+from custom_msgs.srv import SonarSweepRequest
 from cv_bridge import CvBridge
+from geometry_msgs.msg import Pose
 from rclpy.node import Node
+from sensor_msgs.msg import CompressedImage
+from serial.tools import list_ports
+from std_msgs.msg import String
+
+from sonar import sonar_image_processing, sonar_utils
+
 
 class Sonar(Node):
-    """
-    Class to interface with the Sonar device.
-    """
+    """Class to interface with the Sonar device."""
     BAUD_RATE = 2000000  # hz
     SAMPLE_PERIOD_TICK_DURATION = 25e-9  # s
     SPEED_OF_SOUND_IN_WATER = 1482  # m/s
@@ -26,7 +24,7 @@ class Sonar(Node):
     prev_range = DEFAULT_RANGE
     DEFAULT_NUMER_OF_SAMPLES = 1200  # 1200 is max resolution
 
-    SONAR_FTDI_OOGWAY = "DK0C1WF7"
+    SONAR_FTDI_OOGWAY = 'DK0C1WF7'
     _serial_port = None
     CONNECTION_RETRY_RATE = 5  # s
     LOOP_RATE = 10  # Hz
@@ -36,7 +34,7 @@ class Sonar(Node):
     SONAR_REQUEST_TOPIC = 'sonar/request'
     SONAR_IMAGE_TOPIC = 'sonar/image/compressed'
 
-    NODE_NAME = "sonar"
+    NODE_NAME = 'sonar'
 
     CONSTANT_SWEEP_START = 100
     CONSTANT_SWEEP_END = 300
@@ -71,31 +69,27 @@ class Sonar(Node):
         try:
             self._serial_port = next(list_ports.grep(self.SONAR_FTDI_OOGWAY)).device
         except StopIteration:
-            self.get_logger().error("Sonar not found.")
+            self.get_logger().error('Sonar not found.')
             rclpy.shutdown()
 
         self.connect_timer = self.create_timer(1.0 / self.CONNECTION_RETRY_RATE, self.connect)
         self.status_publisher_timer = self.create_timer(1.0 / self.STATUS_LOOP_RATE, self.publish_status)
 
     def connect(self) -> None:
-        """
-        Read FTDI strings of all ports in list_ports.grep.
-        """
+        """Read FTDI strings of all ports in list_ports.grep."""
         try:
             self.ping360.connect_serial(str(self._serial_port), self.BAUD_RATE)
             self.ping360.initialize()
             self.connect_timer.cancel()
-            self.get_logger().info(f'Connected to sonar.')
+            self.get_logger().info('Connected to sonar.')
             self.init_sonar()
             self.run()
         except StopIteration:
             self.get_logger().error(f'Error in connecting to sonar, trying again in '
                                     f'{self.CONNECTION_RETRY_PERIOD} seconds.')
 
-    def init_sonar(self):
-        """
-        Setup default parameters for the sonar device.
-        """
+    def init_sonar(self) -> None:
+        """Set up default parameters for the sonar device."""
         self.number_of_samples = self.DEFAULT_NUMER_OF_SAMPLES
         self.ping360.set_number_of_samples(self.number_of_samples)
 
@@ -105,14 +99,12 @@ class Sonar(Node):
         self.transmit_duration = self.range_to_transmit(self.DEFAULT_RANGE)
         self.ping360.set_transmit_duration(self.transmit_duration)
 
-    def publish_status(self):
-        """
-        Publish the status of the sonar device.
-        """
+    def publish_status(self) -> None:
+        """Publish the status of the sonar device."""
         # make string type std_msgs String
-        self.status_publisher.publish(String(data="Sonar Running"))
+        self.status_publisher.publish(String(data='Sonar Running'))
 
-    def range_to_period(self, range):
+    def range_to_period(self, sonar_range: int) -> int:
         """
         From a given range determines the sample_period.
 
@@ -124,15 +116,16 @@ class Sonar(Node):
         https://discuss.bluerobotics.com/t/please-provide-some-answer-regards-ping360/6393/3
 
         Args:
-            range (int): max range in meters of the sonar scan.
+            sonar_range (int): max range in meters of the sonar scan.
 
         Returns:
             sample_period (int): sample period in ms.
         """
-        period = 2 * range / (self.number_of_samples * self.SPEED_OF_SOUND_IN_WATER * self.SAMPLE_PERIOD_TICK_DURATION)
+        period = 2 * sonar_range / (self.number_of_samples * self.SPEED_OF_SOUND_IN_WATER
+                                    * self.SAMPLE_PERIOD_TICK_DURATION)
         return round(period)
 
-    def range_to_transmit(self, range):
+    def range_to_transmit(self, sonar_range: int) -> int:
         """
         From a given range determines the transmit_duration.
 
@@ -145,45 +138,46 @@ class Sonar(Node):
         https://discuss.bluerobotics.com/t/please-provide-some-answer-regards-ping360/6393/3
 
         Args:
-            range (int): max range in meters of the sonar scan.
+            sonar_range (int): max range in meters of the sonar scan.
 
         Returns:
             transmit_duration (int): max transmit duration in ms.
         """
         # 1
-        transmit_duration = 8000 * range / self.SPEED_OF_SOUND_IN_WATER
+        transmit_duration = 8000 * sonar_range / self.SPEED_OF_SOUND_IN_WATER
         # 2 (transmit duration is microseconds, samplePeriod() is nanoseconds)
-        transmit_duration = max(self.range_to_period(range) / 40, transmit_duration)
+        transmit_duration = max(self.range_to_period(sonar_range) / 40, transmit_duration)
         # 3 min_transmit is 5 and max_transmit is 500
         return round(max(5, min(500, transmit_duration)))
 
-    def set_new_range(self, range):
+    def set_new_range(self, sonar_range: int) -> None:
         """
-        Sets a new sample_period and transmit_duration.
+        Set a new sample_period and transmit_duration.
 
         Args:
-            range (int): max range in meters of the sonar scan.
+            sonar_range (int): max range in meters of the sonar scan.
         """
-        self.prev_range = range
-        self.sample_period = self.range_to_period(range)
+        self.prev_range = sonar_range
+        self.sample_period = self.range_to_period(sonar_range)
         self.ping360.set_sample_period(self.sample_period)
 
-        self.transmit_duration = self.range_to_transmit(range)
+        self.transmit_duration = self.range_to_transmit(sonar_range)
         self.ping360.set_transmit_duration(self.transmit_duration)
 
-    def meters_per_sample(self):
+    def meters_per_sample(self) -> float:
         """
-        Returns the target distance per sample, in meters.
+        Return the target distance per sample, in meters.
+
         https://discuss.bluerobotics.com/t/access-ping360-data-for-post-processing-python/10416/2
 
         Returns:
-            float: distance per sample.
+            float: Distance per sample.
         """
         # sample_period is in 25ns increments
         # time of flight includes there and back, so divide by 2
         return self.SPEED_OF_SOUND_IN_WATER * self.sample_period * self.SAMPLE_PERIOD_TICK_DURATION / 2.0
 
-    def get_distance_of_sample(self, sample_index):
+    def get_distance_of_sample(self, sample_index: int) -> float:
         """
         Get the distance in meters of a sample given its index in the data array returned from the device.
 
@@ -191,7 +185,8 @@ class Sonar(Node):
         https://bluerobotics.com/learn/understanding-and-using-scanning-sonars/.
 
         Args:
-            sample_index (int | float): Index of the sample in the data array, from 0 to N-1, where N = number of samples.
+            sample_index (int | float): Index of the sample in the data array, from 0 to N-1,
+            where N = number of samples.
 
         Returns:
             float: Distance in meters of the sample from the sonar device.
@@ -199,7 +194,7 @@ class Sonar(Node):
         # 0.5 for the average distance of sample
         return (sample_index + 0.5) * self.meters_per_sample()
 
-    def request_data_at_angle(self, angle_in_gradians):
+    def request_data_at_angle(self, angle_in_gradians: float) -> list:
         """
         Set sonar device to provided angle and retrieve data.
 
@@ -217,10 +212,9 @@ class Sonar(Node):
         """
         response = self.ping360.transmitAngle(angle_in_gradians)
         response_to_int_array = [int(item) for item in response.data]  # converts bytestring to int array
-        filtered_sonar_scan = [int(0)] * self.FILTER_INDEX + response_to_int_array[self.FILTER_INDEX:]
-        return filtered_sonar_scan
+        return [0] * self.FILTER_INDEX + response_to_int_array[self.FILTER_INDEX:]
 
-    def get_sweep(self, range_start=100, range_end=300):
+    def get_sweep(self, range_start: int = 100, range_end: int = 300) -> np.ndarray:
         """
         Get data along a range of angles.
 
@@ -239,9 +233,9 @@ class Sonar(Node):
             sonar_sweep_data.append(sonar_scan)
         return np.vstack(sonar_sweep_data)
 
-    def to_robot_position(self, angle, index):
+    def to_robot_position(self, angle: float, index: int) -> Pose:
         """
-        Converts a point in sonar space to a robot global position.
+        Convert a point in sonar space to a robot global position.
 
         Args:
             angle (float): Angle in gradians of the point relative to in front
@@ -265,13 +259,11 @@ class Sonar(Node):
         pos_of_point.orientation.z = 0
         pos_of_point.orientation.w = 1
 
-        transformed_pose = sonar_utils.transform_pose(self.tf_buffer, pos_of_point, "sonar_link", "cameras_link")
+        return sonar_utils.transform_pose(self.tf_buffer, pos_of_point, 'sonar_link', 'cameras_link')
 
-        return transformed_pose
-
-    def get_xy_of_object_in_sweep(self, start_angle, end_angle):
+    def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int) -> tuple[Pose, np.ndarray, float]:
         """
-        Gets the depth of the sweep of a detected object. For now uses mean value.
+        Get the depth of the sweep of a detected object. For now uses mean value.
 
         Args:
             start_angle (int): Angle to start sweep in gradians.
@@ -294,7 +286,8 @@ class Sonar(Node):
 
         return (self.to_robot_position(sonar_angle, sonar_index), plot, normal_angle)
 
-    def convert_to_ros_compressed_img(self, sonar_sweep, compressed_format='jpg', is_color=False):
+    def convert_to_ros_compressed_img(self, sonar_sweep: np.ndarray, compressed_format: str = 'jpg',
+                                      is_color: bool = False) -> CompressedImage:
         """
         Convert any kind of image to ROS Compressed Image.
 
@@ -310,7 +303,7 @@ class Sonar(Node):
             sonar_sweep = sonar_image_processing.build_color_sonar_image_from_int_array(sonar_sweep)
         return self.cv_bridge.cv2_to_compressed_imgmsg(sonar_sweep, dst_format=compressed_format)
 
-    def constant_sweep(self):
+    def constant_sweep(self) -> None:
         """
         In debug mode, scan indefinitely and publish images.
 
@@ -319,22 +312,23 @@ class Sonar(Node):
             end_angle (int): Angle to end sweep in gradians.
             distance_of_scan (int): Distance in meters to scan.
         """
-        self.get_logger().info("Starting constant sweep")
+        self.get_logger().info('Starting constant sweep')
         self.set_new_range(self.DEFAULT_RANGE)
 
         # Perform a Scan
         try:
-            self.get_logger().info(f"Starting sweep from {self.CONSTANT_SWEEP_START} to {self.CONSTANT_SWEEP_END}")
+            self.get_logger().info(f'Starting sweep from {self.CONSTANT_SWEEP_START} to {self.CONSTANT_SWEEP_END}')
             sonar_sweep = self.get_sweep(self.CONSTANT_SWEEP_START, self.CONSTANT_SWEEP_END)
-            self.get_logger().info("Finishng sweep")
+            self.get_logger().info('Finishng sweep')
             if self.stream:
                 compressed_image = self.convert_to_ros_compressed_img(sonar_sweep)
                 self.sonar_image_publisher.publish(compressed_image)
-        except Exception as e:
-            self.get_logger().error(f"Error during constant sweep: {e}")
+        except (RuntimeError, ValueError) as e:
+            self.get_logger().error(f'Error during constant sweep: {e}')
             rclpy.shutdown()
 
-    def perform_sonar_request(self, request, response):
+    def perform_sonar_request(self, request: SonarSweepRequest.Request,
+                              response: SonarSweepRequest.Response) -> SonarSweepRequest.Response:
         """
         Perform a sonar request.
 
@@ -364,11 +358,11 @@ class Sonar(Node):
         left_gradians = sonar_utils.degrees_to_centered_gradians(left_degrees)
         right_gradians = sonar_utils.degrees_to_centered_gradians(right_degrees)
 
-        self.get_logger().info(f"Recieved Sonar request: {left_gradians}, {right_gradians}, {new_range}")
+        self.get_logger().info(f'Recieved Sonar request: {left_gradians}, {right_gradians}, {new_range}')
 
         # Angle must be between 0 and 400 and range must be positive
-        if left_gradians < 0 or right_gradians < 0 or right_gradians > 400 or new_range < 0:
-            self.get_logger().error("Bad sonar request")
+        if left_gradians < 0 or right_gradians < 0 or right_gradians > 400 or new_range < 0: # noqa: PLR2004
+            self.get_logger().error('Bad sonar request')
             return response
 
         if new_range != self.prev_range:
@@ -382,7 +376,7 @@ class Sonar(Node):
             response.is_object = True
 
         if object_pose is None:
-            self.get_logger().error("No object found")
+            self.get_logger().error('No object found')
 
         if self.stream:
             sonar_image = self.convert_to_ros_compressed_img(plot, is_color=True)
@@ -390,10 +384,8 @@ class Sonar(Node):
 
         return response
 
-    def run(self):
-        """
-        Main loop of the node.
-        """
+    def run(self) -> None:
+        """Run the main loop of the node."""
         if self.debug:
             self.create_timer(1.0 / self.LOOP_RATE, self.constant_sweep)
         else:
@@ -401,6 +393,7 @@ class Sonar(Node):
 
 
 def main(args: list[str] | None = None) -> None:
+    """Initialize and run the Sonar node."""
     rclpy.init(args=args)
     sonar = Sonar()
 

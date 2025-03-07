@@ -1,10 +1,10 @@
 import math
-import os
+from pathlib import Path
 
 import cv2
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import numpy as np
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from sklearn.cluster import DBSCAN
 from sklearn.linear_model import LinearRegression
 
@@ -13,8 +13,8 @@ from sonar import decode_ping_python_360
 SONAR_IMAGE_WIDTH = 16
 SONAR_IMAGE_HEIGHT = 2
 
-
-def build_color_sonar_image_from_int_array(int_array: list, npy_save_path: str = None, jpeg_save_path: str = None) -> np.ndarray:
+def build_color_sonar_image_from_int_array(int_array: list, npy_save_path: str | None = None,
+                                           jpeg_save_path: str | None = None) -> np.ndarray:
     """
     Build a sonar image from a list of data messages.
 
@@ -38,8 +38,8 @@ def build_color_sonar_image_from_int_array(int_array: list, npy_save_path: str =
 
     return sonar_img
 
-
-def find_center_point_and_angle(array, threshold, eps, min_samples, get_plot=True):
+def find_center_point_and_angle(array: np.ndarray, threshold: int, eps: float,
+                                min_samples: int, get_plot: bool = True) -> tuple:
     """
     Find the center point and angle of the largest cluster in the array.
 
@@ -85,10 +85,10 @@ def find_center_point_and_angle(array, threshold, eps, min_samples, get_plot=Tru
     average_column_index = np.mean(max_clust_points[:, 1])
 
     # Linear regression to find slope
-    X = max_clust_points[:, 0].reshape(-1, 1)
-    Y = max_clust_points[:, 1]
+    x = max_clust_points[:, 0].reshape(-1, 1)
+    y = max_clust_points[:, 1]
     linreg_sklearn = LinearRegression()
-    linreg_sklearn.fit(X, Y)
+    linreg_sklearn.fit(x, y)
 
     slope_sklearn = linreg_sklearn.coef_[0]
     intercept_sklearn = linreg_sklearn.intercept_
@@ -100,11 +100,11 @@ def find_center_point_and_angle(array, threshold, eps, min_samples, get_plot=Tru
         y_vals_plot = intercept_sklearn + slope_sklearn * x_vals_plot
         plt.plot(
             y_vals_plot, x_vals_plot, 'r', linewidth=4,
-            label=f'Line: y = {slope_sklearn:.2f}x + {intercept_sklearn:.2f}'
+            label=f'Line: y = {slope_sklearn:.2f}x + {intercept_sklearn:.2f}',
         )
         plt.scatter(
             average_column_index, array.shape[0]/2,
-            color='k', s=150, zorder=3, label='Center Point'
+            color='k', s=150, zorder=3, label='Center Point',
         )
         plt.xticks([])
         plt.yticks([])
@@ -120,8 +120,7 @@ def find_center_point_and_angle(array, threshold, eps, min_samples, get_plot=Tru
 
     return average_column_index, angle, array
 
-
-def build_sonar_img_from_log_file(filename, start_index=49, end_index=149):
+def build_sonar_img_from_log_file(filename: str, start_index: int = 49, end_index: int = 149) -> np.ndarray:
     """
     Build a sonar image from a .bin file.
 
@@ -140,23 +139,16 @@ def build_sonar_img_from_log_file(filename, start_index=49, end_index=149):
     parser = decode_ping_python_360.get_bin_file_parser(filename)
 
     data_list = []
-    for index, (timestamp, decoded_message) in enumerate(parser):
+    for index, (_, decoded_message) in enumerate(parser):
         if start_index <= index <= end_index:
             data_list.append(decoded_message.data)
 
-    jpeg_save_path = os.path.join(
-        os.path.dirname(__file__),
-        'sampleData',
-        'Sonar_Image.jpeg'
-    )
+    jpeg_save_path = Path(__file__).parent / 'sampleData' / 'Sonar_Image.jpeg'
 
-    sonar_img = build_sonar_image(
-        data_list, display_results=True, jpeg_save_path=jpeg_save_path
-    )
-    return sonar_img
+    return build_sonar_image(data_list, display_results=True, jpeg_save_path=jpeg_save_path)
 
-
-def build_sonar_image(data_list, display_results=False, npy_save_path=None, jpeg_save_path=None):
+def build_sonar_image(data_list: list, display_results: bool = False, npy_save_path: str | None = None,
+                      jpeg_save_path: str | None = None) -> np.ndarray:
     """
     Build a sonar image from a list of data messages.
 
@@ -179,17 +171,14 @@ def build_sonar_image(data_list, display_results=False, npy_save_path=None, jpeg
         split_bytes = [data[i:i+1] for i in range(len(data))]
         split_bytes = split_bytes[100:]
 
-        byte_val = int.from_bytes(split_bytes[0], "big")
+        byte_val = int.from_bytes(split_bytes[0], 'big')
         intarray = np.array([byte_val])
 
         for i in range(len(split_bytes) - 1):
-            byte_val = int.from_bytes(split_bytes[i+1], "big")
+            byte_val = int.from_bytes(split_bytes[i+1], 'big')
             intarray = np.append(intarray, [byte_val])
 
-        if sonar_img is None:
-            sonar_img = np.asarray(intarray)
-        else:
-            sonar_img = np.vstack((sonar_img, intarray))
+        sonar_img = np.asarray(intarray) if sonar_img is None else np.vstack((sonar_img, intarray))
 
     sonar_img = sonar_img.astype(np.uint8)
 
@@ -199,7 +188,7 @@ def build_sonar_image(data_list, display_results=False, npy_save_path=None, jpeg
         np.save(npy_save_path, sonar_img)
 
     if display_results:
-        cv2.imshow("sonar_img", sonar_img)
+        cv2.imshow('sonar_img', sonar_img)
         cv2.waitKey(0)
 
     return sonar_img
