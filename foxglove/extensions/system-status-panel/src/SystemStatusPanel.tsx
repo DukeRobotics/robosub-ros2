@@ -15,9 +15,8 @@ import {
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
-interface SensorConfig {
+interface Status {
   name: string;
-  topic: string;
   suffix: string;
   // Extract a numeric value from an incoming ROS message event.
   parse: (event: MessageEvent) => number;
@@ -25,70 +24,69 @@ interface SensorConfig {
   warn: (value: number | undefined) => boolean;
 }
 
-// Array of all sensors we want to listen to and display
-const sensorConfigs: SensorConfig[] = [
-  {
-    name: "CPU",
-    topic: "/system/usage",
-    suffix: "%",
-    parse: (event) => {
-      const msgEvent = event as MessageEvent<CustomMsgs.SystemUsage>;
-      return msgEvent.message.cpu_percent;
+// Map topic to status array
+const topicToStatus: Record<string, Status[]> = {
+  "/system/usage": [
+    {
+      name: "CPU",
+      suffix: "%",
+      parse: (event) => {
+        const msgEvent = event as MessageEvent<CustomMsgs.SystemUsage>;
+        return msgEvent.message.cpu_percent;
+      },
+      warn: (value) => value != undefined && value >= 90,
     },
-    warn: (value) => value != undefined && value >= 90,
-  },
-  {
-    name: "RAM",
-    topic: "/system/usage",
-    suffix: "%",
-    parse: (event) => {
-      const msgEvent = event as MessageEvent<CustomMsgs.SystemUsage>;
-      return msgEvent.message.ram.percentage;
+    {
+      name: "RAM",
+      suffix: "%",
+      parse: (event) => {
+        const msgEvent = event as MessageEvent<CustomMsgs.SystemUsage>;
+        return msgEvent.message.ram.percentage;
+      },
+      warn: (value) => value != undefined && value >= 90,
     },
-    warn: (value) => value != undefined && value >= 90,
-  },
-  {
-    name: "Voltage",
-    topic: "/sensors/voltage",
-    suffix: "V",
-    parse: (event) => {
-      const msgEvent = event as MessageEvent<StdMsgs.Float64>;
-      return msgEvent.message.data;
+  ],
+  "/sensors/voltage": [
+    {
+      name: "Voltage",
+      suffix: "V",
+      parse: (event) => {
+        const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+        return msgEvent.message.data;
+      },
+      warn: (value) => value != undefined && value <= 15,
     },
-    warn: (value) => value != undefined && value <= 15,
-  },
-  {
-    name: "Humidity",
-    topic: "/sensors/humidity",
-    suffix: "%",
-    parse: (event) => {
-      const msgEvent = event as MessageEvent<StdMsgs.Float64>;
-      return msgEvent.message.data;
+  ],
+  "/sensors/humidity": [
+    {
+      name: "Humidity",
+      suffix: "%",
+      parse: (event) => {
+        const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+        return msgEvent.message.data;
+      },
+      warn: (value) => value != undefined && value >= 80,
     },
-    warn: (value) => value != undefined && value >= 80,
-  },
-  {
-    name: "Temperature",
-    topic: "/sensors/temperature",
-    suffix: "F",
-    parse: (event) => {
-      const msgEvent = event as MessageEvent<StdMsgs.Float64>;
-      return msgEvent.message.data;
+  ],
+  "/sensors/temperature": [
+    {
+      name: "Temperature",
+      suffix: "F",
+      parse: (event) => {
+        const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+        return msgEvent.message.data;
+      },
+      warn: (value) => value != undefined && value >= 100,
     },
-    warn: (value) => value != undefined && value >= 100,
-  },
-];
-
-// A mapping from the sensor’s name to its last known value.
-type SensorValues = Record<string, number | undefined>;
+  ],
+};
 
 function SystemStatusPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
-  const [sensorValues, setSensorValues] = useState<SensorValues>({});
+  const [sensorValues, setSensorValues] = useState<Record<string, number | undefined>>({}); // Map sensor name to last known value
 
-  // Subscribe to all topics used by the sensor configs
-  const uniqueTopics = Array.from(new Set(sensorConfigs.map((sc) => sc.topic)));
-  context.subscribe(uniqueTopics.map((topic) => ({ topic })));
+  // Subscribe to all topics
+  context.subscribe(Object.keys(topicToStatus).map((topic) => ({ topic })));
 
   // Watch system usage topic and update state
   useEffect(() => {
@@ -105,19 +103,15 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
         // Get last message
         const latestFrame = renderState.currentFrame.at(-1);
         if (latestFrame) {
-          // Find all configs that match the latest frame’s topic
-          const matchingConfigs = sensorConfigs.filter((sc) => sc.topic === latestFrame.topic);
-
-          if (matchingConfigs.length > 0) {
-            // For each matching config, parse the value and store it
-            matchingConfigs.forEach((config) => {
-              const parsedValue = config.parse(latestFrame);
-              setSensorValues((prevValues) => ({
-                ...prevValues,
-                [config.name]: parsedValue,
-              }));
-            });
-          }
+          // Access the status array for this topic
+          const allStatus = topicToStatus[latestFrame.topic] ?? [];
+          allStatus.forEach((status) => {
+            const parsedValue = status.parse(latestFrame);
+            setSensorValues((prev) => ({
+              ...prev,
+              [status.name]: parsedValue,
+            }));
+          });
         }
       }
     };
@@ -131,13 +125,14 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
   }, [renderDone]);
 
   // Construct table rows based on the config array and sensorValues state
-  const rows = sensorConfigs.map((config) => {
-    const value = sensorValues[config.name];
+  const allStatus: Status[] = Object.values(topicToStatus).flat();
+  const rows = allStatus.map((status) => {
+    const value = sensorValues[status.name];
     return {
-      name: config.name,
+      name: status.name,
       value,
-      suffix: config.suffix,
-      warn: config.warn(value),
+      suffix: status.suffix,
+      warn: status.warn(value),
     };
   });
 
