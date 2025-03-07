@@ -4,12 +4,11 @@ from geometry_msgs.msg import Pose, Twist
 from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.logging import get_logger
-from transforms3d.euler import euler2quat, quat2euler
-
 from task_planning.interface.controls import Controls
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield, task
 from task_planning.utils import coroutine_utils, geometry_utils
+from transforms3d.euler import euler2quat, quat2euler
 
 logger = get_logger('move_tasks')
 

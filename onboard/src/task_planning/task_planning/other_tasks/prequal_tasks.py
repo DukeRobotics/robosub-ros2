@@ -4,10 +4,9 @@ import math
 from collections.abc import Coroutine
 
 from rclpy.logging import get_logger
-
-from task_planning.other_tasks import move_tasks
 from task_planning.interface.cv import CV
 from task_planning.interface.state import State
+from task_planning.other_tasks import move_tasks
 from task_planning.task import Task, task
 from task_planning.utils import geometry_utils
 

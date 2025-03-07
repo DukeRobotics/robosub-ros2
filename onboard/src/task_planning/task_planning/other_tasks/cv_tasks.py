@@ -1,5 +1,4 @@
 from rclpy.logging import get_logger
-
 from task_planning import move_tasks
 from task_planning.interface.cv import CV
 from task_planning.other_tasks.move_tasks import move_to_pose_local
