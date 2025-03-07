@@ -8,11 +8,12 @@ from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.node import Node
 
-from robot_tasks import tasks_crush, tasks_oogway
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.marker_dropper import MarkerDropper
 from task_planning.interface.state import State
+from task_planning.robot_tasks import tasks_crush
+from task_planning.robot_tasks import tasks_oogway
 from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
 
 class TaskPlanning(Node):
