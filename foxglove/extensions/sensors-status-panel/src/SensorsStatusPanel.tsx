@@ -72,7 +72,7 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
   const [state, setState] = useState<SensorsStatusPanelState>(initState());
 
-  // Subscribe to all
+  // Subscribe to all topics
   context.subscribe(TOPICS_LIST);
 
   // Watch currentFrame for messages from each sensor
