@@ -73,7 +73,7 @@ def compute_force_torque(thruster: dict, corner_to_base_link_transform: Pose) ->
     """
     # Create pose message for thruster's position
     pose = Pose()
-    pose.position = Point(*thruster['pos'])
+    pose.position = Point(x=thruster['pos'][0], y=thruster['pos'][1], z=thruster['pos'][2])
     quat = euler2quat(*(math.radians(a) for a in thruster['rpy']))
     pose.orientation = Quaternion(x=quat[1], y=quat[2], z=quat[3], w=quat[0])
 
