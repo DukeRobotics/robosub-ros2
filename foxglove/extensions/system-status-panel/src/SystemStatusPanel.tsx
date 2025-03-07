@@ -57,9 +57,9 @@ const topicToStatus: Record<string, Status[]> = {
       warn: (value) => value != undefined && value <= 15,
     },
   ],
-  "/sensors/humidity": [
+  "/sensors/humidity/signal": [
     {
-      name: "Humidity",
+      name: "Humidity (Signal)",
       suffix: "%",
       parse: (event) => {
         const msgEvent = event as MessageEvent<StdMsgs.Float64>;
@@ -68,9 +68,31 @@ const topicToStatus: Record<string, Status[]> = {
       warn: (value) => value != undefined && value >= 80,
     },
   ],
-  "/sensors/temperature": [
+  "/sensors/humidity/battery": [
     {
-      name: "Temperature",
+      name: "Humidity (Battery)",
+      suffix: "%",
+      parse: (event) => {
+        const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+        return msgEvent.message.data;
+      },
+      warn: (value) => value != undefined && value >= 80,
+    },
+  ],
+  "/sensors/temperature/signal": [
+    {
+      name: "Temperature (Signal)",
+      suffix: "F",
+      parse: (event) => {
+        const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+        return msgEvent.message.data;
+      },
+      warn: (value) => value != undefined && value >= 100,
+    },
+  ],
+  "/sensors/temperature/battery": [
+    {
+      name: "Temperature (Battery)",
       suffix: "F",
       parse: (event) => {
         const msgEvent = event as MessageEvent<StdMsgs.Float64>;
