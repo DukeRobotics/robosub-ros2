@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 import contextlib
+import math
 import os
 from pathlib import Path
 
-import math
 import numpy as np
 import pandas as pd
 import rclpy
