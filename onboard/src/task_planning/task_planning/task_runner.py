@@ -15,7 +15,6 @@ from task_planning.interface.marker_dropper import MarkerDropper
 from task_planning.interface.state import State
 from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
 
-
 class TaskPlanning(Node):
     """Node for running tasks."""
     NODE_NAME = 'task_planning'
