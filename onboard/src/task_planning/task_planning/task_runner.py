@@ -12,7 +12,7 @@ from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.marker_dropper import MarkerDropper
 from task_planning.interface.state import State
-from task_planning.robot_tasks import tasks_crush, tasks_oogway, tasks_oogway_shell
+from task_planning.robot import crush, oogway, oogway_shell
 from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
 
 
@@ -23,9 +23,9 @@ class TaskPlanning(Node):
     COUNTDOWN_SECS = 10
 
     ROBOT_NAME_TO_TASKS: ClassVar[dict] = {
-        'oogway': tasks_oogway,
-        'oogway_shell': tasks_oogway_shell,
-        'crush': tasks_crush,
+        'oogway': oogway,
+        'oogway_shell': oogway_shell,
+        'crush': crush,
     }
 
     def __init__(self) -> None:
