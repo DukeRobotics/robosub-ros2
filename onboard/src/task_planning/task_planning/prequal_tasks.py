@@ -117,7 +117,9 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
                 logger.info('Touching top correction: Moved 0.2 to the left')
 
                 # If the lane marker touched the top of the frame in the previous step as well despite the yaw
-                # correction, then it means the robot's yaw has drifted significantly to the right, so rotate left
+                # correction, then it means the robot's yaw has drifted significantly.
+                # If the robot is moving forward, this means the yaw has drifted to the right, so rotate left.
+                # If the robot is moving backward, this means the yaw has drifted to the left, so rotate right.
                 if prev_touching_top and not prev_touching_bottom:
                     await rotate_deg(20 * direction_sign, depth_level=DEPTH_LEVEL)
 
@@ -131,7 +133,9 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
                 logger.info('Touching bottom correction: Moved 0.2 to the right')
 
                 # If the lane marker touched the bottom of the frame in the previous step as well despite the yaw
-                # correction, then it means the robot's yaw has drifted significantly to the left, so rotate right
+                # correction, then it means the robot's yaw has drifted significantly.
+                # If the robot is moving forward, this means the yaw has drifted to the left, so rotate right.
+                # If the robot is moving backward, this means the yaw has drifted to the right, so rotate left.
                 if not prev_touching_top and prev_touching_bottom:
                     await rotate_deg(-20 * direction_sign, depth_level=DEPTH_LEVEL)
 
