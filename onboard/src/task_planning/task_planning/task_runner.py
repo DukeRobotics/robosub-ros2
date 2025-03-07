@@ -1,14 +1,14 @@
-# ruff: noqa: ERA001
 import os
-import time
+from typing import ClassVar
 
 import rclpy
 import tf2_ros
-from rclpy.clock import Clock
+from rclpy.clock import Clock, ClockType
 from rclpy.duration import Duration
 from rclpy.node import Node
+from rclpy.time import Time
 
-from task_planning import tasks_crush, tasks_oogway
+from task_planning import tasks_crush, tasks_oogway, tasks_oogway_shell
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.marker_dropper import MarkerDropper
@@ -21,6 +21,12 @@ class TaskPlanning(Node):
     NODE_NAME = 'task_planning'
     TASK_RATE_SECS = 1 / 30
     COUNTDOWN_SECS = 10
+
+    ROBOT_NAME_TO_TASKS: ClassVar[dict] = {
+        'oogway': tasks_oogway,
+        'oogway_shell': tasks_oogway_shell,
+        'crush': tasks_crush,
+    }
 
     def __init__(self) -> None:
         """Set up the task planning node."""
@@ -43,33 +49,47 @@ class TaskPlanning(Node):
         # Initialize the task update publisher
         TaskUpdatePublisher(self)
 
-        # Wait one second for all publishers and subscribers to start
-        time.sleep(1)
-
-        # Ensure transform from odom to base_link is available
         if not self.bypass:
-            try:
-                _ = tf_buffer.lookup_transform('odom', 'base_link', Clock().now(), Duration(seconds=15))
-            except (
-                tf2_ros.LookupException,
-                tf2_ros.ConnectivityException,
-                tf2_ros.ExtrapolationException,
-            ):
-                self.get_logger().error('Failed to get transform')
-                return
+
+            # Ensure transform from odom to base_link is available
+            min_transform_time = Clock(clock_type=ClockType.ROS_TIME).now()
+            last_message_time = Clock().now()
+            while rclpy.ok():
+                # Log message every second
+                if Clock().now() - last_message_time >= Duration(seconds=1):
+                    self.get_logger().info('Waiting for transform from base_link to odom...')
+                    last_message_time = Clock().now()
+
+                try:
+                    # Get latest available transform
+                    transform = tf_buffer.lookup_transform('odom', 'base_link', Time())
+                    transform_time = Time.from_msg(transform.header.stamp)
+
+                    # Ensure transform is recent
+                    if transform_time >= min_transform_time:
+                        break
+                except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                    pass
+
+                rclpy.spin_once(self, timeout_sec=0.1)
 
             # Ensure state is available
-            while not State().state:
-                pass
+            last_message_time = Clock().now()
+            while rclpy.ok() and not State().received_state:
+
+                # Log message every second
+                if Clock().now() - last_message_time >= Duration(seconds=1):
+                    self.get_logger().info('Waiting to receive state...')
+                    last_message_time = Clock().now()
+
+                rclpy.spin_once(self, timeout_sec=0.1)
 
         # Determine the robot name
-        robot_name = os.getenv('ROBOT_NAME', '').upper()
+        robot_name = os.getenv('ROBOT_NAME')
 
-        # Tasks to run
-        if robot_name == 'OOGWAY':
-            self.tasks = tasks_oogway.get_tasks()
-        elif robot_name == 'CRUSH':
-            self.tasks = tasks_crush.get_tasks()
+        # Get the tasks for the robot
+        if robot_name in self.ROBOT_NAME_TO_TASKS:
+            self.tasks = self.ROBOT_NAME_TO_TASKS[robot_name].get_tasks()
         else:
             msg = f'Unknown robot name: {robot_name}'
             raise ValueError(msg)
