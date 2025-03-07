@@ -1,6 +1,10 @@
-# Toggle Controls Panel
-This is a panel to control the discrete servos (for marker dropper and torpedoes) on the robot.
+# Discrete Servos Panel
+This is a panel to control discrete servos.
 
 ## Usage
-Ensure that the `/servos/marker_dropper` and `/servos/torpedoes` service is running. Click the buttons to control servos.
-If the call fails, an alert is displayed.
+Launch the offboard_comms `peripheral` node to advertise the discrete servo services.
+```
+ros2 launch offboard_comms peripheral.xml
+```
+
+Click the buttons to control the servos. If the call fails, an alert is displayed.
