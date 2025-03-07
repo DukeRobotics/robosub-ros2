@@ -15,70 +15,80 @@ import {
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
-// Topic to watch for system usage data
-const SYSTEM_USAGE_TOPIC = "/system/usage";
-const VOLTAGE_TOPIC = "/sensors/voltage";
-const HUMIDITY_TOPIC = "/sensors/humidity";
-const TEMPERATURE_TOPIC = "/sensors/temperature";
+interface SensorConfig {
+  name: string;
+  topic: string;
+  suffix: string;
+  // Extract a numeric value from an incoming ROS message event.
+  parse: (event: MessageEvent) => number;
+  // Return whether the sensor reading should trigger a "warning" styling.
+  warn: (value: number | undefined) => boolean;
+}
 
-type SystemStatusPanelState = {
-  cpuUsage?: number;
-  ramUsage?: number;
-  voltage?: number;
-  humidity?: number;
-  temperature?: number;
-};
+// Array of all sensors we want to listen to and display
+const sensorConfigs: SensorConfig[] = [
+  {
+    name: "CPU",
+    topic: "/system/usage",
+    suffix: "%",
+    parse: (event) => {
+      const msgEvent = event as MessageEvent<CustomMsgs.SystemUsage>;
+      return msgEvent.message.cpu_percent;
+    },
+    warn: (value) => value != undefined && value >= 90,
+  },
+  {
+    name: "RAM",
+    topic: "/system/usage",
+    suffix: "%",
+    parse: (event) => {
+      const msgEvent = event as MessageEvent<CustomMsgs.SystemUsage>;
+      return msgEvent.message.ram.percentage;
+    },
+    warn: (value) => value != undefined && value >= 90,
+  },
+  {
+    name: "Voltage",
+    topic: "/sensors/voltage",
+    suffix: "V",
+    parse: (event) => {
+      const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+      return msgEvent.message.data;
+    },
+    warn: (value) => value != undefined && value <= 15,
+  },
+  {
+    name: "Humidity",
+    topic: "/sensors/humidity",
+    suffix: "%",
+    parse: (event) => {
+      const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+      return msgEvent.message.data;
+    },
+    warn: (value) => value != undefined && value >= 80,
+  },
+  {
+    name: "Temperature",
+    topic: "/sensors/temperature",
+    suffix: "F",
+    parse: (event) => {
+      const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+      return msgEvent.message.data;
+    },
+    warn: (value) => value != undefined && value >= 100,
+  },
+];
+
+// A mapping from the sensor’s name to its last known value.
+type SensorValues = Record<string, number | undefined>;
 
 function SystemStatusPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
-  const [state, setState] = useState<SystemStatusPanelState>({});
+  const [sensorValues, setSensorValues] = useState<SensorValues>({});
 
-  context.subscribe([
-    { topic: SYSTEM_USAGE_TOPIC },
-    { topic: VOLTAGE_TOPIC },
-    { topic: HUMIDITY_TOPIC },
-    { topic: TEMPERATURE_TOPIC },
-  ]);
-
-  // Define values in table
-  const rows = [
-    {
-      statusName: "CPU",
-      value: state.cpuUsage,
-      suffix: "%",
-      warn: () => state.cpuUsage != undefined && state.cpuUsage >= 90,
-    },
-    {
-      statusName: "RAM",
-      value: state.ramUsage,
-      suffix: "%",
-      warn: () => state.ramUsage != undefined && state.ramUsage >= 90,
-    },
-    {
-      statusName: "Voltage",
-      value: state.voltage,
-      suffix: "V",
-      warn: () => {
-        return state.voltage != undefined && state.voltage <= 15;
-      },
-    },
-    {
-      statusName: "Humidity",
-      value: state.humidity,
-      suffix: "%",
-      warn: () => {
-        return state.humidity != undefined && state.humidity >= 80;
-      },
-    },
-    {
-      statusName: "Temperature",
-      value: state.temperature,
-      suffix: "F",
-      warn: () => {
-        return state.temperature != undefined && state.temperature >= 100;
-      },
-    },
-  ];
+  // Subscribe to all topics used by the sensor configs
+  const uniqueTopics = Array.from(new Set(sensorConfigs.map((sc) => sc.topic)));
+  context.subscribe(uniqueTopics.map((topic) => ({ topic })));
 
   // Watch system usage topic and update state
   useEffect(() => {
@@ -87,37 +97,27 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
 
       // Reset state when the user seeks the video
       if (renderState.didSeek ?? false) {
-        setState({});
+        setSensorValues({});
       }
 
-      // Update system usage state
+      // Check for new messages
       if (renderState.currentFrame && renderState.currentFrame.length > 0) {
-        const latestFrame = renderState.currentFrame.at(-1) as MessageEvent;
-        if (latestFrame.topic === SYSTEM_USAGE_TOPIC) {
-          const systemUsagelatestFrame = latestFrame as MessageEvent<CustomMsgs.SystemUsage>;
-          setState((prevState) => ({
-            ...prevState,
-            cpuUsage: systemUsagelatestFrame.message.cpu_percent,
-            ramUsage: systemUsagelatestFrame.message.ram.percentage,
-          }));
-        } else if (latestFrame.topic === VOLTAGE_TOPIC) {
-          const voltageLatestFrame = latestFrame as MessageEvent<StdMsgs.Float64>;
-          setState((prevState) => ({
-            ...prevState,
-            voltage: voltageLatestFrame.message.data,
-          }));
-        } else if (latestFrame.topic === HUMIDITY_TOPIC) {
-          const humidityLatestFrame = latestFrame as MessageEvent<StdMsgs.Float64>;
-          setState((prevState) => ({
-            ...prevState,
-            humidity: humidityLatestFrame.message.data,
-          }));
-        } else if (latestFrame.topic === TEMPERATURE_TOPIC) {
-          const temperatureLatestFrame = latestFrame as MessageEvent<StdMsgs.Float64>;
-          setState((prevState) => ({
-            ...prevState,
-            temperature: temperatureLatestFrame.message.data,
-          }));
+        // Get last message
+        const latestFrame = renderState.currentFrame.at(-1);
+        if (latestFrame) {
+          // Find all configs that match the latest frame’s topic
+          const matchingConfigs = sensorConfigs.filter((sc) => sc.topic === latestFrame.topic);
+
+          if (matchingConfigs.length > 0) {
+            // For each matching config, parse the value and store it
+            matchingConfigs.forEach((config) => {
+              const parsedValue = config.parse(latestFrame);
+              setSensorValues((prevValues) => ({
+                ...prevValues,
+                [config.name]: parsedValue,
+              }));
+            });
+          }
         }
       }
     };
@@ -125,12 +125,22 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
     context.watch("didSeek");
   }, [context]);
 
-  // Call our done function at the end of each render
+  // Call the done function after each render
   useEffect(() => {
     renderDone?.();
   }, [renderDone]);
 
-  // Render a table with the current system usage data
+  // Construct table rows based on the config array and sensorValues state
+  const rows = sensorConfigs.map((config) => {
+    const value = sensorValues[config.name];
+    return {
+      name: config.name,
+      value,
+      suffix: config.suffix,
+      warn: config.warn(value),
+    };
+  });
+
   const theme = useTheme();
   return (
     <ThemeProvider theme={theme}>
@@ -140,12 +150,13 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
             <TableBody>
               {rows.map((row) => (
                 <TableRow
-                  key={row.statusName}
+                  key={row.name}
                   style={{
                     backgroundColor: (() => {
+                      // If no value has ever been set for this sensor, show error color
                       if (row.value == undefined) {
                         return theme.palette.error.dark;
-                      } else if (row.warn()) {
+                      } else if (row.warn) {
                         return theme.palette.warning.main;
                       }
                       return theme.palette.success.dark;
@@ -154,7 +165,7 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
                 >
                   <TableCell>
                     <Typography variant="subtitle2" color={theme.palette.common.white}>
-                      {row.statusName}
+                      {row.name}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
