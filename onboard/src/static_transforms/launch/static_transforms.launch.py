@@ -42,7 +42,7 @@ def generate_launch_description() -> LaunchDescription:
     """
     ld = LaunchDescription()
 
-    robot_name = os.getenv('ROBOT_NAME', 'oogway')
+    robot_name = os.getenv('ROBOT_NAME')
     config_yaml_path = f'package://static_transforms/config/{robot_name}.yaml'
     config_file_resolved_path = rr.get_filename(config_yaml_path, use_protocol=False)
 

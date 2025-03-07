@@ -65,7 +65,7 @@ def compute_force_torque(thruster: dict, corner_to_base_link_transform: Pose) ->
 
     Args:
         thruster (dict): The thruster data.
-        corner_to_base_link_transform (Pose): The transfrom needed to find base link position of thrusters
+        corner_to_base_link_transform (Pose): The transform needed to find base link position of thrusters.
 
     Returns:
         Tuple[Matrix, Matrix]: The force and torque vectors.
