@@ -27,7 +27,7 @@ class State:
     IMU_TOPIC = '/vectornav/imu'
     RESET_POSE_SERVICE = '/set_pose'
 
-    def __init__(self, node: Node, bypass: bool = False, tf_buffer: Buffer = None) -> None:
+    def __init__(self, node: Node, bypass: bool = False, tf_buffer: Buffer | None = None) -> None:
         """
         Initialize the state.
 
@@ -67,12 +67,12 @@ class State:
         return self._received_state
 
     @property
-    def state(self) -> Odometry:
+    def state(self) -> Odometry | None:
         """The state."""
         return self._state
 
     @property
-    def orig_state(self) -> Odometry:
+    def orig_state(self) -> Odometry | None:
         """The first state message received."""
         return self._orig_state
 
