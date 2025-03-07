@@ -1,4 +1,3 @@
-
 from rclpy.logging import get_logger
 from std_msgs.msg import String
 

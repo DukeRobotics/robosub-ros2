@@ -1,7 +1,7 @@
 # ruff: noqa: ERA001, F401
 from math import radians
 
-from task_planning import comp_tasks, move_tasks, prequal_tasks, test_tasks
+from task_planning.other_tasks import comp_tasks, move_tasks, prequal_tasks, test_tasks
 from task_planning.task import Task
 
 

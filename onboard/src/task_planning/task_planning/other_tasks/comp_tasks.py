@@ -13,7 +13,7 @@ from rclpy.duration import Duration
 from rclpy.logging import get_logger
 from transforms3d.euler import quat2euler
 
-from task_planning import cv_tasks, move_tasks
+from task_planning.other_tasks import cv_tasks, move_tasks
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.marker_dropper import MarkerDropper, MarkerDropperStates
