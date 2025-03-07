@@ -14,14 +14,14 @@ arduino:
         tag: V
         topic: /sensors/voltage
       - type: temperature
-        tag: TC
-        topic: /sensors/temperature/computer
+        tag: TS
+        topic: /sensors/temperature/signal
       - type: temperature
         tag: TB
         topic: /sensors/temperature/battery
       - type: humidity
-        tag: HC
-        topic: /sensors/humidity/computer
+        tag: HS
+        topic: /sensors/humidity/signal
       - type: humidity
         tag: HB
         topic: /sensors/humidity/battery
