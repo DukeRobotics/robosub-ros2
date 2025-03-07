@@ -4,6 +4,7 @@ import contextlib
 import os
 from pathlib import Path
 
+import math
 import numpy as np
 import pandas as pd
 import rclpy
@@ -73,16 +74,16 @@ def compute_force_torque(thruster: dict, corner_to_base_link_transform: Pose) ->
     # Create pose message for thruster's position
     pose = Pose()
     pose.position = Point(x=thruster['pos'][0], y=thruster['pos'][1], z=thruster['pos'][2])
-    quat = euler2quat(thruster['rpy'][0], thruster['rpy'][1], thruster['rpy'][2])
+    quat = euler2quat(math.radians(thruster['rpy'][0]), math.radians(thruster['rpy'][1]), math.radians(thruster['rpy'][2]))
     pose.orientation = Quaternion(x=quat[1], y=quat[2], z=quat[3], w=quat[0])
 
     # Transform thrusted position from corner_link to base_link
-    tf2_geometry_msgs.do_transform_pose(pose, corner_to_base_link_transform)
+    pose = tf2_geometry_msgs.do_transform_pose(pose, corner_to_base_link_transform)
 
     # Convert Pose message to Matrix
     pos = Matrix([pose.position.x, pose.position.y, pose.position.z])
-    quat = pose.orientation
-    rpy = Matrix(quat2euler([quat.w, quat.x, quat.y, quat.z]))
+    rpy_radians = quat2euler([pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z])
+    rpy = Matrix([math.degrees(rpy_radians[i]) for i in range(3)])
     flipped = -1 if thruster['flipped'] else 1
 
     # Compute force vector
@@ -202,8 +203,8 @@ def main() -> None:
     # Get full paths to CSV files
     wrench_matrix_file_path = Path(rr.get_filename(CONTROLS_PACKAGE_PATH + vehicle['wrench_matrix_file_path'],
                                                    use_protocol=False))
-    # wrench_matrix_pinv_file_path = Path(rr.get_filename(CONTROLS_PACKAGE_PATH + vehicle['wrench_matrix_pinv_file_path'],
-    #                                                     use_protocol=False))
+    wrench_matrix_pinv_file_path = Path(rr.get_filename(CONTROLS_PACKAGE_PATH + vehicle['wrench_matrix_pinv_file_path'],
+                                                        use_protocol=False))
 
     # Export data to CSV files
     to_csv(wrench_matrix_df, wrench_matrix_file_path)
@@ -217,7 +218,7 @@ def main() -> None:
     # print(wrench_matrix_pinv_df)
     print()
     print(f'Saved wrench matrix to {wrench_matrix_file_path}')
-    # print(f'Saved wrench matrix pseudoinverse to {wrench_matrix_pinv_file_path}')
+    print(f'Saved wrench matrix pseudoinverse to {wrench_matrix_pinv_file_path}')
 
     node.destroy_node()
     rclpy.shutdown()
