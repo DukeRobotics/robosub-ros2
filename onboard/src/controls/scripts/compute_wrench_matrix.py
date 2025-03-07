@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import contextlib
-import math
 import os
 from pathlib import Path
 
@@ -17,7 +16,7 @@ from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.time import Time
-from sympy import Matrix, rad
+from sympy import Matrix, deg, rad
 from sympy.core.numbers import Float
 from sympy.matrices import rot_ccw_axis1, rot_ccw_axis2, rot_ccw_axis3
 from tf2_ros.buffer import Buffer
@@ -74,7 +73,7 @@ def compute_force_torque(thruster: dict, corner_to_base_link_transform: Pose) ->
     # Create pose message for thruster's position
     pose = Pose()
     pose.position = Point(x=thruster['pos'][0], y=thruster['pos'][1], z=thruster['pos'][2])
-    quat = euler2quat(*(math.radians(a) for a in thruster['rpy']))
+    quat = euler2quat(*map(rad, thruster['rpy']))
     pose.orientation = Quaternion(x=quat[1], y=quat[2], z=quat[3], w=quat[0])
 
     # Transform thrusted position from corner_link to base_link
@@ -83,7 +82,7 @@ def compute_force_torque(thruster: dict, corner_to_base_link_transform: Pose) ->
     # Convert Pose message to Matrix
     pos = Matrix([pose.position.x, pose.position.y, pose.position.z])
     rpy_radians = quat2euler([pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z])
-    rpy = Matrix([math.degrees(rpy_radians[i]) for i in range(3)])
+    rpy = Matrix(list(map(deg, rpy_radians)))
     flipped = -1 if thruster['flipped'] else 1
 
     # Compute force vector
