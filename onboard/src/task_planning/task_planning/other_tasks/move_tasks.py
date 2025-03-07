@@ -52,7 +52,7 @@ async def move_to_pose_global(_self: Task, pose: Pose, timeout: int = 30) -> Tas
 
 
 @task
-async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False,
+async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False, depth_level: float | None = None,
                              time_limit: int = 30) -> Task[None, Pose | None, None]:
     """
     Move to a local pose in the "base_link" frame.
@@ -66,6 +66,8 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False,
         pose (Pose): The local pose to move to, specified in the "base_link" frame.
         keep_level (bool, optional): If True, maintains the robot's level orientation during movement. Defaults to
             False.
+        depth_level (float, optional): The depth, as provided by the pressure sensor, the robot should move to. If this
+            is not None, the Z value of the provided pose will be overridden. Defaults to None.
         time_limit (int, optional): The time limit (in seconds) for reaching the pose. Defaults to 30.
 
     Returns:
@@ -75,6 +77,11 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False,
     Send:
         Pose: A new local pose to move to.
     """
+    if depth_level is not None:
+        if pose.position.z != 0:
+            logger.warning(f'Depth level of {depth_level} provided but Z value of pose is not zero: {pose.position.z}')
+        depth_delta = depth_level - State().depth
+        pose.position.z = depth_delta
     global_pose = geometry_utils.local_pose_to_global(State().tf_buffer, pose)
 
     if keep_level:
