@@ -1,7 +1,7 @@
 from rclpy.logging import get_logger
-from task_planning import move_tasks
 from task_planning.interface.cv import CV
 from task_planning.task import Task, Yield, task
+from task_planning.tasks import move_tasks
 from task_planning.tasks.move_tasks import move_to_pose_local
 from task_planning.utils import geometry_utils
 
