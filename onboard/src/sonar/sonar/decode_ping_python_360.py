@@ -1,5 +1,5 @@
 # ruff: noqa
-# File used from https://github.com/bluerobotics/ping-python
+# File from https://github.com/bluerobotics/ping-python
 #!/usr/bin/env python3
 
 import struct

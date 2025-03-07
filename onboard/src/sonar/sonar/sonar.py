@@ -315,7 +315,7 @@ class Sonar(Node):
         self.get_logger().info('Starting constant sweep')
         self.set_new_range(self.DEFAULT_RANGE)
 
-        # Perform a Scan
+        # Perform a scan
         try:
             self.get_logger().info(f'Starting sweep from {self.CONSTANT_SWEEP_START} to {self.CONSTANT_SWEEP_END}')
             sonar_sweep = self.get_sweep(self.CONSTANT_SWEEP_START, self.CONSTANT_SWEEP_END)
@@ -332,14 +332,14 @@ class Sonar(Node):
         """
         Perform a sonar request.
 
-        Takes in a SonarSweepRequest service and preforms a scan between two angles.
+        Takes in a SonarSweepRequest service and performs a scan between two angles.
         It returns the position of the largest object detected in the scan. Since the
         scan should be a small angle, the returned pose should be the physical position
         of the object in the world.
 
         Args:
             request (SonarSweepRequest.Request): Request containing the start angle,
-                end angle, and distance of scan
+                end angle, and distance of scan.
             response (SonarSweepRequest.Response): Response containing the pose of
                 the object, the normal angle, and if an object was detected.
 
