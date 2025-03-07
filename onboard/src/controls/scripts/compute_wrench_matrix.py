@@ -182,23 +182,23 @@ def main() -> None:
         wrench_matrix[3:6, idx] = torque
 
     # Compute pseudoinverse of wrench matrix
-    # wrench_matrix_pinv = wrench_matrix.pinv()
+    wrench_matrix_pinv = wrench_matrix.pinv()
 
     # Convert sympy matrices to numpy matrices
     wrench_matrix_array = np.array(wrench_matrix).astype(np.float64)
-    # wrench_matrix_pinv_array = np.array(wrench_matrix_pinv).astype(np.float64)
+    wrench_matrix_pinv_array = np.array(wrench_matrix_pinv).astype(np.float64)
 
     # Convert numpy matrices to pandas dataframes
     wrench_matrix_df = pd.DataFrame(wrench_matrix_array)
-    # wrench_matrix_pinv_df = pd.DataFrame(wrench_matrix_pinv_array)
+    wrench_matrix_pinv_df = pd.DataFrame(wrench_matrix_pinv_array)
 
     # Set all values less than e-10 to 0
     wrench_matrix_df = wrench_matrix_df.round(10)
-    # wrench_matrix_pinv_df = wrench_matrix_pinv_df.round(10)
+    wrench_matrix_pinv_df = wrench_matrix_pinv_df.round(10)
 
     # Convert negative zeroes to positive zeroes
     wrench_matrix_df = wrench_matrix_df.replace(-0.0, 0.0)
-    # wrench_matrix_pinv_df = wrench_matrix_pinv_df.replace(-0.0, 0.0)
+    wrench_matrix_pinv_df = wrench_matrix_pinv_df.replace(-0.0, 0.0)
 
     # Get full paths to CSV files
     wrench_matrix_file_path = Path(rr.get_filename(CONTROLS_PACKAGE_PATH + vehicle['wrench_matrix_file_path'],
@@ -208,14 +208,14 @@ def main() -> None:
 
     # Export data to CSV files
     to_csv(wrench_matrix_df, wrench_matrix_file_path)
-    # to_csv(wrench_matrix_pinv_df, wrench_matrix_pinv_file_path)
+    to_csv(wrench_matrix_pinv_df, wrench_matrix_pinv_file_path)
 
     # Print data to console
     print('Wrench matrix:')
     print(wrench_matrix_df)
     print()
     print('Wrench matrix pseudoinverse:')
-    # print(wrench_matrix_pinv_df)
+    print(wrench_matrix_pinv_df)
     print()
     print(f'Saved wrench matrix to {wrench_matrix_file_path}')
     print(f'Saved wrench matrix pseudoinverse to {wrench_matrix_pinv_file_path}')
