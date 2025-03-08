@@ -1,31 +1,32 @@
+import os
+from pathlib import Path
+
+import resource_retriever as rr
+import yaml
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
-# Static transforms
-CORNER_LINK_TRANSFORM = [0.219075, -0.3095625, 0.19764375, 0, 0, 0, 'base_link', 'corner_link']
-DVL_LINK_TRANSFORM = [-0.20955, 0.0809625, -0.276225, 0, 0, 0, 'corner_link', 'dvl_link']
-IMU_LINK_TRANSFORM = [-0.219075, 0.3095625, -0.11241875, 0, 0, 0, 'corner_link', 'imu_link']
-SONAR_LINK_TRANSFORM = [0.067, 0.31, 0.05, 0, 0, 0, 'corner_link', 'sonar_link']
-CAMERAS_LINK_TRANSFORM = [0, 0.0362, 0, 0, 0, 0, 'corner_link', 'cameras_link']
 
-def make_transform_publisher(transform: list) -> Node:
+def make_transform_publisher(node_name: str, transform: dict) -> Node:
     """
     Create a tf2 static transform publisher node for a given transform.
 
     Args:
-        transform (list): Transform values and frame names, in the form
-            [x, y, z, roll, pitch, yaw, frame_id, child_frame_id].
+        node_name (str): The name of the transform
+        transform (dict): A dict containing transform values and frame names with labels 'x', 'y', 'z', 'roll', 'pitch'
+                          'yaw', 'frame_id', and 'child_frame'.
     """
-    return Node(package='tf2_ros',
+    return Node(name=node_name,
+                package='tf2_ros',
                 executable='static_transform_publisher',
-                arguments=['--x', str(transform[0]),
-                           '--y', str(transform[1]),
-                           '--z', str(transform[2]),
-                           '--roll', str(transform[3]),
-                           '--pitch', str(transform[4]),
-                           '--yaw', str(transform[5]),
-                           '--frame-id', transform[6],
-                           '--child-frame-id', transform[7]])
+                arguments=['--x', str(transform['x']),
+                           '--y', str(transform['y']),
+                           '--z', str(transform['z']),
+                           '--roll', str(transform['roll']),
+                           '--pitch', str(transform['pitch']),
+                           '--yaw', str(transform['yaw']),
+                           '--frame-id', transform['frame_id'],
+                           '--child-frame-id', transform['child_frame']])
 
 def generate_launch_description() -> LaunchDescription:
     """
@@ -41,10 +42,14 @@ def generate_launch_description() -> LaunchDescription:
     """
     ld = LaunchDescription()
 
-    ld.add_action(make_transform_publisher(CORNER_LINK_TRANSFORM))
-    ld.add_action(make_transform_publisher(DVL_LINK_TRANSFORM))
-    ld.add_action(make_transform_publisher(IMU_LINK_TRANSFORM))
-    ld.add_action(make_transform_publisher(SONAR_LINK_TRANSFORM))
-    ld.add_action(make_transform_publisher(SONAR_LINK_TRANSFORM))
-    ld.add_action(make_transform_publisher(CAMERAS_LINK_TRANSFORM))
+    robot_name = os.getenv('ROBOT_NAME')
+    config_yaml_path = f'package://static_transforms/config/{robot_name}.yaml'
+    config_file_resolved_path = rr.get_filename(config_yaml_path, use_protocol=False)
+
+    with Path(config_file_resolved_path).open() as f:
+        transforms = yaml.safe_load(f)['transforms']
+
+        for transform_name, transform_info in transforms.items():
+            ld.add_action(make_transform_publisher(transform_name + '_static_tranform', transform_info))
+
     return ld
