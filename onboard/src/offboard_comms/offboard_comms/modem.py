@@ -44,11 +44,11 @@ class ModemPublisher(SerialNode):
             line (byte): line to process
         """
         if len(line) != self.DIAGNOSTIC_PACKET_SIZE or line[0] != ord('$') or line[-1] != ord('\n'):
-            self.process_data
+            self.process_data(line)
         else:
-            self.process_diagnostic_report
+            self.process_diagnostic_report(line)
 
-    def process_data(self, packet: bytes) -> str:
+    def process_data(self, packet: bytes) -> bytes:
         """
         Process the message report received from the WaterLinked Modem-M16.
         This will be further implemented later on when a data transfer protocol is established.
