@@ -15,7 +15,7 @@ class SerialNode(Node, ABC):
 
     def __init__(self, node_name: str, baudrate: int, config_file_path: str, serial_device_name: str,
                  read_from_serial: bool, connection_retry_period: int=1, loop_rate: int=10,
-                 use_nonblocking: bool = False, max_num_consecutive_empty_lines: int = 5, data_return_type: int = 0) -> None:
+                 use_nonblocking: bool = False, max_num_consecutive_empty_lines: int = 5, return_byte: bool = False) -> None:
         """
         Initialize SerialNode.
 
@@ -30,7 +30,7 @@ class SerialNode(Node, ABC):
             use_nonblocking (bool): Whether to use non-blocking read from serial.
             max_num_consecutive_empty_lines (int): Maximum number of consecutive empty lines to read before resetting
                 serial connection.
-            data_return_type (int): 0 - String, Other - Bytes
+            return_byte (bool): Whether to return bytes or string when reading from serial.
         """
         self._node_name = node_name
         self._baud = baudrate
@@ -40,6 +40,7 @@ class SerialNode(Node, ABC):
         self._loop_rate = loop_rate
         self._use_nonblocking = use_nonblocking
         self._max_num_consecutive_empty_lines = max_num_consecutive_empty_lines
+        self._return_byte = return_byte
 
         with Path(rr.get_filename(config_file_path, use_protocol=False)).open() as f:
             self._config = yaml.safe_load(f)
@@ -99,7 +100,7 @@ class SerialNode(Node, ABC):
             with suppress(serial.SerialException):
                 buff += self._serial.read(1)
 
-        if (data_return_type == 0):
+        if (self._return_byte):
             return buff.decode('utf-8', errors='ignore')
         else:
             return buff
@@ -146,7 +147,7 @@ class SerialNode(Node, ABC):
         Process line read from serial.
 
         Args:
-            _ (str): Line to process.
+            _ (str | bytes): Line to process.
         """
         if (not isinstance(_, str) and not isinstance(_,bytes)):
             error_msg = 'Input line must be either of type string or bytes'
@@ -169,7 +170,7 @@ class SerialNode(Node, ABC):
         """Read from serial port and process the line."""
         try:
             if self._read_from_serial:
-                if (data_return_type == 0):
+                if (self._return_byte):
                     if self._use_nonblocking:
                         line = self.readline_nonblocking().strip()
                     else:

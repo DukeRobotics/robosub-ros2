@@ -11,7 +11,7 @@ class ModemPublisher(SerialNode):
     """Serial publisher to publish and send data from WaterLinked M16 modems."""
 
     SERIAL_DEVICE_NAME = 'wlmodem-m16'
-    CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME", "oogway")}.yaml'
+    CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
 
     BAUDRATE = 9600
     NODE_NAME = 'wlmodem'
@@ -25,7 +25,7 @@ class ModemPublisher(SerialNode):
 
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME, True,
-                         self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE, use_nonblocking=True)
+                         self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE, use_nonblocking=True, return_byte=True)
 
     def get_ftdi_string(self) -> str:
         """
@@ -36,28 +36,30 @@ class ModemPublisher(SerialNode):
         """
         return self._config['modem']['ftdi']
 
-    def process_line(self, line: str | bytes) -> None:
+    def process_line(self, line: bytes) -> None:
         """
         Process a line of serial data from the WaterLinked Modem-M16.
 
         Args:
-            line (str): line to process
+            line (byte): line to process
         """
-        if len(data) != self.DIAGNOSTIC_PACKET_SIZE or data[0] != ord('$') or data[-1] != ord('\n'):
-            return self.process_data
-        return self.process_diagnostic_report
+        if len(line) != self.DIAGNOSTIC_PACKET_SIZE or line[0] != ord('$') or line[-1] != ord('\n'):
+            self.process_data
+        else:
+            self.process_diagnostic_report
 
     def process_data(self, packet: bytes) -> str:
         """
         Process the message report received from the WaterLinked Modem-M16.
+        This will be further implemented later on when a data transfer protocol is established.
 
         Args:
             packet (bytes): raw data packet.
 
         Returns:
-            str: the raw data in string format.
+            byte: the raw data.
         """
-        return str(packet)
+        return packet
 
     def process_diagnostic_report(self, packet: bytes) -> dict[str, any]:
         r"""
@@ -100,47 +102,36 @@ class ModemPublisher(SerialNode):
             setting (int): Setting to change. 1 - Comm Channel, 2 - Op Mode, 3 - Report Request, 4 - Power Level
             char_to_send (str): Value to change setting to. i.e. channel #, power level
         """
-        if self.modem_ready:
-            if (setting == 1 and char_to_send.isdigit()):
-                    channel = int(char_to_send)
-                    if channel < 1 or channel > 12:
-                        self.get_logger().error('Invalid channel, please input an int within [1, 12]')
-                        return
-                    if (channel < 10):
-                        true_char = str(channel)
-                    else:
-                        true_char = ["a","b","c"][channel-10]
+        setting_char = ''
+        true_char_to_send = ''
 
-                    self.change_setting_timer = time.time()
-                    self.writebytes(ord('c'))
-                    while time.time() < self.change_setting_timer + 1:
-                        continue
-                    self.writebytes(ord('c'))
-                    self.writebytes(ord(true_char))
-                    return
-            if (setting == 2):
-                self.change_setting_timer = time.time()
-                self.writebytes(ord('m'))
-                while time.time() < self.change_setting_timer + 1:
-                    continue
-                self.writebytes(ord('m'))
+        if (setting == 1 and char_to_send.isdigit()):
+            setting_char = 'c'
+            channel = int(char_to_send)
+            if channel < 1 or channel > 12:
+                self.get_logger().error('Invalid channel, please input an int within [1, 12]')
                 return
-            if (setting == 3):
-                self.change_setting_timer = time.time()
-                self.writebytes(ord('r'))
-                while time.time() < self.change_setting_timer + 1:
-                    continue
-                self.writebytes(ord('r'))
+            if (channel < 10):
+                true_char_to_send = chr(channel)
+            else:
+                true_char_to_send = ['a','b','c'][channel-10]
+        elif (setting == 2):
+            setting_char = 'm'
+        elif (setting == 3):
+            setting_char = 'r'
+        elif (setting == 4 and char_to_send.isdigit()):
+            setting_char = 'l'
+            power_lvl = int(char_to_send)
+            true_char_to_send = char_to_send
+            if power_lvl < 1 or power_lvl > 4:
+                self.get_logger().error('Invalid power level, please input an int within [1, 4]')
                 return
-            if (setting == 4 and char_to_send.isdigit()):
-                power_lvl = int(char_to_send)
-                if power_lvl < 1 or power_lvl > 4:
-                        self.get_logger().error('Invalid power level, please input an int within [1, 4]')
-                        return
-                self.change_setting_timer = time.time()
-                self.writebytes(ord('l'))
-                while time.time() < self.change_setting_timer + 1:
-                    continue
-                self.writebytes(ord('l'))
-                self.writebytes(ord(char_to_send))
-                return
+            
+        if self.modem_ready and setting_char != '':
+            self.change_setting_timer = time.time()
+            self.writebytes(ord(setting_char))
+            while time.time() < self.change_setting_timer + 1:
+                continue
+            self.writebytes(ord(setting_char))
+            if setting == 1 or setting == 4:
+                self.writebytes(ord(true_char_to_send))
