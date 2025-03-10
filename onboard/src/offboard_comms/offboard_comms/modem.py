@@ -105,6 +105,11 @@ class ModemPublisher(SerialNode):
         setting_char = ''
         true_char_to_send = ''
 
+        if ((setting == 1 or setting == 4) and not char_to_send.isdigit()){
+            self.get_logger().error('Invalid char_to_send, must be a number')
+            return
+        }
+
         if (setting == 1 and char_to_send.isdigit()):
             setting_char = 'c'
             channel = int(char_to_send)
@@ -112,7 +117,7 @@ class ModemPublisher(SerialNode):
                 self.get_logger().error('Invalid channel, please input an int within [1, 12]')
                 return
             if (channel < 10):
-                true_char_to_send = chr(channel)
+                true_char_to_send = str(channel)
             else:
                 true_char_to_send = ['a','b','c'][channel-10]
         elif (setting == 2):
