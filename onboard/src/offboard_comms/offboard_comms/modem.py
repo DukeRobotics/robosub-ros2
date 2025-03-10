@@ -126,7 +126,7 @@ class ModemPublisher(SerialNode):
             if power_lvl < 1 or power_lvl > 4:
                 self.get_logger().error('Invalid power level, please input an int within [1, 4]')
                 return
-            
+
         if self.modem_ready and setting_char != '':
             self.change_setting_timer = time.time()
             self.writebytes(ord(setting_char))

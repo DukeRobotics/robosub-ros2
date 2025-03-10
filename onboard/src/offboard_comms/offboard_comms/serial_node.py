@@ -83,7 +83,7 @@ class SerialNode(Node, ABC):
             self.get_logger().error(f'Error in connecting to {self._serial_device_name} over serial, trying again in '
                                     f'{self._connection_retry_period} seconds.')
 
-    def readline_nonblocking(self, tout: int = 1) -> str:
+    def readline_nonblocking(self, tout: int = 1) -> str | bytes:
         """
         Read line from serial port without blocking.
 
@@ -149,11 +149,6 @@ class SerialNode(Node, ABC):
         Args:
             _ (str | bytes): Line to process.
         """
-        if (not isinstance(_, str) and not isinstance(_,bytes)):
-            error_msg = 'Input line must be either of type string or bytes'
-            raise TypeError(error_msg)
-
-
         if self._read_from_serial:
             error_msg = 'Subclasses must implement this method if read_from_serial is True.'
             raise NotImplementedError(error_msg)
