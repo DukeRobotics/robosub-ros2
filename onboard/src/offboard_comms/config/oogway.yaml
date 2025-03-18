@@ -15,10 +15,10 @@ arduino:
         topic: /sensors/depth
       - type: temperature
         tag: T
-        topic: /sensors/temperature
+        topic: /sensors/temperature/signal
       - type: humidity
         tag: H
-        topic: /sensors/humidity
+        topic: /sensors/humidity/signal
     servos:
       - name: marker dropper
         tag: M
