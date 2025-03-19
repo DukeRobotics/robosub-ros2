@@ -44,3 +44,5 @@ dvl:
   negate_x_vel: false
   negate_y_vel: false
   negate_z_vel: false
+gyro:
+  ftdi: FT81SKA0
