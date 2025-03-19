@@ -12,7 +12,7 @@ from ament_index_python.packages import get_package_share_directory
 from custom_msgs.msg import PWMAllocs, ThrusterAllocs
 from std_msgs.msg import Float64
 
-from offboard_comms.serial_node import SerialNode
+from offboard_comms.serial_node import SerialNode, SerialReadType
 
 
 @dataclass
@@ -60,7 +60,7 @@ class Thrusters(SerialNode):
     def __init__(self) -> None:
         """Initialize the thruster node with all necessary components."""
         super().__init__(self.NODE_NAME, self.BAUDERATE, self.OFFBOARD_COMMS_CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
-                         False, self.CONNECTION_RETRY_PERIOD)
+                         SerialReadType.NONE, self.CONNECTION_RETRY_PERIOD)
 
         with Path(rr.get_filename(self.CONTROLS_CONFIG_FILE_PATH, use_protocol=False)).open() as f:
             controls_config = yaml.safe_load(f)

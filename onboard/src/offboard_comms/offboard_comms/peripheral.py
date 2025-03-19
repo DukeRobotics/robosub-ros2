@@ -14,7 +14,7 @@ from offboard_comms.peripheral_sensors import (
     TemperatureSensor,
     VoltageSensor,
 )
-from offboard_comms.serial_node import SerialNode
+from offboard_comms.serial_node import SerialNode, SerialReadType
 
 
 @dataclass
@@ -89,8 +89,8 @@ class PeripheralPublisher(SerialNode):
     }
 
     def __init__(self) -> None:
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME, True,
-                         self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE, use_nonblocking=True)
+        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
+                         SerialReadType.LINE_NONBLOCKING, self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE)
 
         self.sensors: dict[str, PeripheralSensor] = {}
         self.setup_sensors()
