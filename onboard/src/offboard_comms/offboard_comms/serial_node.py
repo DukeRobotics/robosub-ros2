@@ -183,7 +183,7 @@ class SerialNode(Node, ABC):
                     case SerialReadType.BYTES:
                         data = self._serial.read(1)
                         if data:
-                            self.process_data(data)
+                            self.process_bytes(data)
                         return
                     case SerialReadType.LINE_BLOCKING:
                         line = self._serial.readline().decode('utf-8', errors='ignore').strip()
