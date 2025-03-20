@@ -192,6 +192,12 @@ This file defines the `Controls` class, as well as the `main` function. It takes
 #### compute_wrench_matrix.py
 This is a Python script that computes the [wrench matrix](#wrench-matrix) and its [pseudoinverse](#wrench-matrix-pseudoinverse) for a given robot, given the thruster configuration in the [robot config file](#robot-config-file). It is used to generate the [CSV files](#csv-files) in the `data` directory.
 
+> [!NOTE]
+> This script requires the `corner_link_static_transform` node to be running, which publishes the static transform between the `corner_link` frame and the `base_link` frame. This is because the thruster positions and orientations are defined in the `corner_link` frame but the wrench matrix is defined in the `base_link` frame, so the script needs to transform the thruster positions and orientations to the `base_link` frame.
+
+> [!IMPORTANT]
+> This script must be run whenever the thruster configuration is changed or the `base_link` to `corner_link` transform is changed.
+
 It performs all computations symbolically using the [SymPy](https://www.sympy.org) library, and only converts the results to numerical values at the end. This is done to ensure that the computations are as accurate as possible.
 
 ## Config
@@ -290,11 +296,11 @@ The [`power_scale_factor`](#power-scale-factor) field contains the factor by whi
 The `thrusters` field contains information about each thruster. From top to bottom, the thrusters in this file should be in the _same order that is expected by offboard comms,_ in the `allocs` part of the `custom_msgs/msg/ThrusterAllocs` message. Each thruster config contains the following subfields:
 - `name`: The uniquely identifying  name of the thruster. Not used by the system; included for human use only.
 - `type`: The thruster's model type, such as T200. Not used by the system; included for human use only.
-- `pos`: The position of the thruster in the `base_link` frame. In other words, the position of the thruster relative to the robot's center of mass. The x, y, and z coordinates are given in that order in meters.
-- `rpy`: The orientation of the thruster in the `base_link` frame, using extrinsic Euler angles. The rotations are performed in the order: roll, pitch, yaw. They are also given in that order in degrees. For example:
-    - An orientation of `[0, 0, 0]` means when the thruster is commanded to exert positive power, it will push the robot in the positive x direction.
-    - An orientation of `[0, 0, 180]` means the thruster is rotated 180 degrees around the z axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative x direction.
-    - An orientation of `[0, 90, 0]` means the thruster is rotated 90 degrees around the y axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative z direction.
+- `pos`: The position of the thruster in the `corner_link` frame. The x, y, and z coordinates are given in that order in meters.
+- `rpy`: The orientation of the thruster in the `corner_link` frame, using extrinsic Euler angles. The rotations are performed in the order: roll, pitch, yaw. They are also given in that order in degrees. For example:
+    - An orientation of `[0, 0, 0]` means when the thruster is commanded to exert positive power, it will push the robot in the positive x direction relative to the `corner_link` frame.
+    - An orientation of `[0, 0, 180]` means the thruster is rotated 180 degrees around the z axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative x direction relative to the `corner_link` frame.
+    - An orientation of `[0, 90, 0]` means the thruster is rotated 90 degrees around the y axis, so when the thruster is commanded to exert positive power, it will push the robot in the negative z direction relative to the `corner_link` frame.
 > [!NOTE]
 > Specifying a non-zero roll will not affect the direction the thruster pushes the robot in. This is because relative to itself, the force exerted by the thruster is always in the positive x direction. Thus, rotation about the x axis does not affect the axis of thrust.
 - `flipped`: Whether the thruster is flipped. This is used to account for ESCs that are wired in reverse. If `true`, when the thruster is commanded to exert positive power, it will push the robot in the direction opposite to what is expected based on its orientation.
@@ -908,14 +914,14 @@ The `setpoint` is the desired value of the robot's [state](#state). It is the va
 The robot's `state` is a combination of its position and velocity, published by the sensor fusion package to topic `/state`. Position is defined in the `odom` (Earth-fixed) frame, whereas velocity is defined in the `base_link` frame.
 
 ### Static Power Global
-The `static power global` is a fixed amount of power, regardless of the desired state, added to the power applied along the linear axes. It is a vector whose origin is the robot's center of mass and whose direction is defined relative to the [initial orientation](#initial-orientation) of the robot.
+The `static power global` is a fixed amount of power, regardless of the desired state, added to the power applied along the linear axes. It is a vector whose origin is `base_link` and whose direction is defined relative to the [initial orientation](#initial-orientation) of the robot.
 
 For example, if the [initial orientation](#initial-orientation) of the robot is level with the bottom of the pool and the `static power global` is set to
 - x: 0
 - y: 0
 - z: -0.5
 
-then the robot will exert an additional downwards force of 0.5, at all times, directly towards the bottom of the pool, regardless of the orientation of the robot, [desired state](#desired-state).
+then the robot will exert an additional downwards force of 0.5, at all times, directly towards the bottom of the pool, regardless of the orientation of the robot or [desired state](#desired-state).
 
 The `static power global` is set in the [robot config file](#robot-config-file) and is used to counteract constant external forces such as buoyancy or water currents.
 
