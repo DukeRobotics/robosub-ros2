@@ -3,6 +3,8 @@ import time
 import struct
 import time
 
+import rclpy
+
 
 from offboard_comms.serial_node import SerialNode
 
@@ -26,6 +28,11 @@ class ModemPublisher(SerialNode):
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME, True,
                          self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE, use_nonblocking=True, return_byte=True)
+
+        # Create a timer that checks if a second byte needs to be sent
+
+        # Define a custom ROS service type for changing the setting
+        # Create a ROS service that calls the change_setting function
 
     def get_ftdi_string(self) -> str:
         """
@@ -59,6 +66,7 @@ class ModemPublisher(SerialNode):
         Returns:
             byte: the raw data.
         """
+        # Publish this message to a ROS topic
         return packet
 
     def process_diagnostic_report(self, packet: bytes) -> dict[str, any]:
@@ -135,8 +143,29 @@ class ModemPublisher(SerialNode):
         if self.modem_ready and setting_char != '':
             self.change_setting_timer = time.time()
             self.writebytes(ord(setting_char))
+            self.setting_char = setting_char
+            # Set a flag to true, record timestamp of the first byte, and record the content of the byte
             while time.time() < self.change_setting_timer + 1:
                 continue
             self.writebytes(ord(setting_char))
             if setting == 1 or setting == 4:
                 self.writebytes(ord(true_char_to_send))
+
+
+def main(args: list[str] | None = None) -> None:
+    """Create and run the modem publisher node."""
+    rclpy.init(args=args)
+    modem_publisher = ModemPublisher()
+
+    try:
+        rclpy.spin(modem_publisher)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        modem_publisher.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
