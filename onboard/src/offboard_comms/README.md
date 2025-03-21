@@ -153,8 +153,10 @@ The first argument is the command to run. The following commands are available:
 
 After the command, you can specify one or more Arduinos to run the command on. Each Arduino must be a top-level key in `config/arduino.yaml`, or `all`. If `all` is specified, the command will be run on all Arduinos in `config/arduino.yaml`.
 
+If one of the commands run by the CLI returns a non-zero exit code, the CLI will print the output of the failed command to the terminal and exit with the same exit code. Commands that return a zero exit code will not print any output unless the `-p` flag is specified.
+
 The following optional flags can be added to the end of the command:
-- `-p`, `--print-output`: Print the output of the commands being run by the CLI. This is useful for debugging if the script throws an error. This is available with the `install-libs`, `compile`, and `upload` commands.
+- `-p`, `--print-output`: Print the output of all commands being run by the CLI, regardless of if they succeed or fail. This is available with the `install-libs`, `compile`, and `upload` commands.
 - `-nl`, `--no-linebreaks`: Do not print any line breaks, labels, or prefixes; only print the port(s) found. This is available _only_ with the `find-ports` command. It is useful for running the command in a script or for piping the output to another command.
 
 For example, to upload the sketches for all Arduinos, run:
