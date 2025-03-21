@@ -108,10 +108,12 @@ RUN touch /home/ubuntu/.sudo_as_admin_successful
 # Virtual enviornment inherits system packages to ensure compatibility with ROS
 # The commands are ordered alphabetically
 RUN python3 -m venv /home/ubuntu/venv --system-site-packages
+RUN /home/ubuntu/venv/bin/pip install bluerobotics-ping
 RUN /home/ubuntu/venv/bin/pip install depthai
 RUN /home/ubuntu/venv/bin/pip install GitPython
 RUN /home/ubuntu/venv/bin/pip install gputil
 RUN /home/ubuntu/venv/bin/pip install jsonpickle
+RUN /home/ubuntu/venv/bin/pip install matplotlib
 RUN /home/ubuntu/venv/bin/pip install mypy
 RUN /home/ubuntu/venv/bin/pip install pandas
 RUN /home/ubuntu/venv/bin/pip install pyserial
