@@ -1,5 +1,6 @@
 import functools
 import os
+import time
 from dataclasses import dataclass
 from typing import ClassVar
 
@@ -28,12 +29,14 @@ class PeripheralDiscreteServo:
         service_name (str): The name of the service to control the servo.
         states (dict[str, int]): Mapping of servo states to PWM values.
         service (Service): The service to control the servo.
+        last_called_time (float): The time the servo was last called, in seconds since epoch.
     """
     name: str
     tag: str
     service_name: str
     states: dict[str, int]
     service: Service
+    last_called_time: float = 0.0
 
 @dataclass
 class PeripheralContinuousServo:
@@ -81,12 +84,13 @@ class PeripheralPublisher(SerialNode):
     ARDUINO_NAME = 'peripheral'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
     LOOP_RATE = 50.0  # Hz
-    SENSOR_CLASSES: ClassVar[dict[str, PeripheralSensor]] = {
+    SENSOR_CLASSES: ClassVar[dict[str, type[PeripheralSensor]]] = {
         'pressure': PressureSensor,
         'voltage': VoltageSensor,
         'temperature': TemperatureSensor,
         'humidity': HumiditySensor,
     }
+    DISCRETE_SERVO_MIN_DELAY = 3.0  # seconds
 
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME, True,
@@ -189,9 +193,20 @@ class PeripheralPublisher(SerialNode):
         state = request.state
         servo: PeripheralDiscreteServo = self.servos[tag]
 
+        if time.time() - servo.last_called_time < self.DISCRETE_SERVO_MIN_DELAY:
+            error_msg = (f'Minimum delay of {self.DISCRETE_SERVO_MIN_DELAY} seconds not met since last call to '
+                         f'{self.servos[tag].name} servo.')
+
+            response.success = False
+            response.message = error_msg
+
+            self.get_logger().error(error_msg)
+            return response
+
         if state in servo.states:
             pwm = servo.states[state]
             if self.writeline(f'{tag}:{pwm}'):
+                servo.last_called_time = time.time()
                 response.success = True
                 response.message = f'Successfully set {servo.name} servo to state: "{state}"'
             else:
