@@ -405,7 +405,7 @@ def upload(arduino_names: list[str], print_output: bool) -> None:
 # Argument parsing
 
 
-def main(args: list[str] | None = None) -> None:
+def main(_: list[str] | None = None) -> None:
     """Set up the command-line interface (CLI) for managing Arduino devices."""
     # Get the list of arduino names
     arduino_names = list(ARDUINO_DATA.keys())
@@ -484,6 +484,10 @@ def main(args: list[str] | None = None) -> None:
 
     # Parse command line arguments
     args = parser.parse_args()
+
+    if args.command is None:
+        parser.print_help()
+        return
 
     # Replace 'all' with all actual arduino names
     if 'all' in args.arduino_names:
