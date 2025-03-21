@@ -39,3 +39,13 @@ lint.ignore = [
     "FIX002",
     "G004",
 ]
+
+[tool.pyright]
+exclude = [
+    "**/build/*",
+    "**/install/*",
+    "**/log/*",
+    "**/bag_files/*",
+    "**/node_modules/*",
+    "**/dist/*",
+]
