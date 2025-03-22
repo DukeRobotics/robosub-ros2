@@ -16,9 +16,6 @@
 #define TEMP_HUMIDITY_DELAY 1000
 #define SERVO_DELAY 50
 
-#define GYRO_PIN_A 5
-#define GYRO_PIN_B 6
-
 // Baud rate for serial communication with Blue Robotics Bar30 High-Resolution 300m Depth/Pressure Sensor
 #define BAUD_RATE 9600
 
@@ -26,25 +23,20 @@ Robot* robot;
 bool valid_robot = true;
 
 void setupGyroTrigger() {
-  pinMode(GYRO_PIN_A, OUTPUT);
-  pinMode(GYRO_PIN_B, OUTPUT);
+    // Set OC2A (Pin 11) and OC2B (Pin 3) as outputs
+    pinMode(11, OUTPUT); // OC2A
+    pinMode(3, OUTPUT);  // OC2B
 
-  noInterrupts(); // Disable interrupts during timer setup
+    // Stop Timer2
+    TCCR2A = 0;
+    TCCR2B = 0;
+    TCNT2 = 0;
 
-  // Timer2: CTC mode
-  TCCR2A = 0;
-  TCCR2B = 0;
+    // Set CTC mode (Clear Timer on Compare Match)
+    TCCR2A = (1 << COM2A0) | (1 << COM2B0) | (1 << WGM21); // Toggle OC2A and OC2B on match, CTC mode
+    TCCR2B = (1 << CS22); // Prescaler = 64
 
-  TCCR2A |= (1 << WGM21);  // CTC mode
-
-  // Prescaler: 64 → 16MHz / 64 = 250kHz (4 µs per tick)
-  // 500 µs / 4 µs = 125 ticks → OCR2A = 124
-  OCR2A = 124;
-
-  TCCR2B |= (1 << CS22);  // Prescaler 64
-  TIMSK2 |= (1 << OCIE2A); // Enable Timer2 compare match interrupt
-
-  interrupts(); // Enable interrupts
+    OCR2A = 124;
 }
 
 void setup() {
@@ -64,14 +56,6 @@ void setup() {
     default:
       valid_robot = false;
   }
-}
-
-ISR(TIMER2_COMPA_vect) {
-  static bool state = false;
-  state = !state;
-
-  digitalWrite(GYRO_PIN_A, state);
-  digitalWrite(GYRO_PIN_B, !state); // Inverted
 }
 
 void loop() {
