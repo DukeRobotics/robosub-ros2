@@ -149,7 +149,7 @@ def main() -> None:
     node = Node('wrench_matrix_computation')
 
     # Check if static_transforms node is running
-    if 'corner_link_static_tranform' not in node.get_node_names():
+    if 'static_tranform_corner_link' not in node.get_node_names():
         error_msg = (
             'Static Transforms node is not running and corner_link transform not found. Try launching the'
             ' static_transforms node with ros2 launch static_transforms static_transforms.launch.py'
