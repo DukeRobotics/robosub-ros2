@@ -31,7 +31,7 @@ ekf_localization_node:
                   false, false, false]
     pose0_nodelay: true
 
-    twist0: sensors/dvl/angular_velocity_twist
+    twist0: sensors/gyro/angular_velocity_twist
     twist0_config: [false, false, false,
                     false, false, false,
                     false, false, false,
