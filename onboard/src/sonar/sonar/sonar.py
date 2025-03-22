@@ -259,7 +259,7 @@ class Sonar(Node):
         pos_of_point.orientation.z = 0
         pos_of_point.orientation.w = 1
 
-        return sonar_utils.transform_pose(self.tf_buffer, pos_of_point, 'sonar_link', 'cameras_link')
+        return sonar_utils.transform_pose(self.tf_buffer, pos_of_point, 'sonar_ping_360', 'camera_depthai_front')
 
     def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int) -> tuple[Pose, np.ndarray, float]:
         """

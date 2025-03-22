@@ -26,7 +26,7 @@ def make_transform_publisher(node_name: str, transform: dict) -> Node:
                            '--pitch', str(transform['pitch']),
                            '--yaw', str(transform['yaw']),
                            '--frame-id', transform['frame_id'],
-                           '--child-frame-id', transform['child_frame']])
+                           '--child-frame-id', transform['child_frame_id']])
 
 def generate_launch_description() -> LaunchDescription:
     """
@@ -50,6 +50,6 @@ def generate_launch_description() -> LaunchDescription:
         transforms = yaml.safe_load(f)['transforms']
 
         for transform_name, transform_info in transforms.items():
-            ld.add_action(make_transform_publisher(transform_name + '_static_tranform', transform_info))
+            ld.add_action(make_transform_publisher('static_transform_' + transform_name, transform_info))
 
     return ld

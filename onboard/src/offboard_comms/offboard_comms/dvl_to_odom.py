@@ -72,7 +72,7 @@ class DVLOdomPublisher(Node):
         # set pose
         odom.pose.pose = Pose(position=Point(x=0.0, y=0.0, z=0.0),
                               orientation=Quaternion(x=odom_quat[1], y=odom_quat[2], z=odom_quat[3], w=odom_quat[0]))
-        odom.child_frame_id = 'dvl_link'
+        odom.child_frame_id = 'dvl'
 
         # set twist (set angular velocity to (0, 0, 0), should not be used)
         odom.twist.twist = Twist(linear=Vector3(x=vx, y=vy, z=vz), angular=Vector3(x=0.0, y=0.0, z=0.0))

@@ -149,7 +149,7 @@ def main() -> None:
     node = Node('wrench_matrix_computation')
 
     # Check if static_transforms node is running
-    if 'corner_link_static_tranform' not in node.get_node_names():
+    if 'static_tranform_corner_link' not in node.get_node_names():
         error_msg = (
             'The "corner_link_static_tranform" node is not running. Static transforms must be published before running '
             'this script.'
