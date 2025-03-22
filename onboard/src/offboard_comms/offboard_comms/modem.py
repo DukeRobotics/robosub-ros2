@@ -4,9 +4,11 @@ import struct
 import time
 
 import rclpy
+from std_msgs.msg import ByteMultiArray
 
 
 from offboard_comms.serial_node import SerialNode
+
 
 
 class ModemPublisher(SerialNode):
@@ -28,6 +30,7 @@ class ModemPublisher(SerialNode):
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME, True,
                          self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE, use_nonblocking=True, return_byte=True)
+        self._publisher = self.node.create_publisher(ByteMultiArray, '/offboard/ivc', 1)
 
         # Create a timer that checks if a second byte needs to be sent
 
@@ -67,6 +70,9 @@ class ModemPublisher(SerialNode):
             byte: the raw data.
         """
         # Publish this message to a ROS topic
+        msg_to_send = ByteMultiArray()
+        msg_to_send.msg = packet
+        self._publisher.publish(msg_to_send)
         return packet
 
     def process_diagnostic_report(self, packet: bytes) -> dict[str, any]:
@@ -144,12 +150,18 @@ class ModemPublisher(SerialNode):
             self.change_setting_timer = time.time()
             self.writebytes(ord(setting_char))
             self.setting_char = setting_char
+            self.true_char_to_send = true_char_to_send
+            self.modem_ready = False
+            self.setting = setting
+            self.send_timer =  self.create_timer(1.0, self.delayed_write())
             # Set a flag to true, record timestamp of the first byte, and record the content of the byte
-            while time.time() < self.change_setting_timer + 1:
-                continue
+
+    def delayed_write(self):
+        if self.modem_ready == False:
             self.writebytes(ord(setting_char))
-            if setting == 1 or setting == 4:
+            if self.setting == 1 or self.setting == 4:
                 self.writebytes(ord(true_char_to_send))
+            self.modem_ready = True
 
 
 def main(args: list[str] | None = None) -> None:
