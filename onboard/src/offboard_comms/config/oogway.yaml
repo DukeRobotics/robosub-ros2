@@ -27,9 +27,9 @@ arduino:
         states:
           left: 1250
           right: 1750
-      - name: torpedoes
+      - name: torpedo
         tag: T
-        service_name: /servos/torpedoes
+        service_name: /servos/torpedo
         type: discrete
         states:
           left: 1650

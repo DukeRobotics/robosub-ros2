@@ -34,6 +34,7 @@ RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
 RUN apt install -y --no-install-recommends ros-jazzy-vision-msgs
 RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends tini
+RUN apt install -y --no-install-recommends udev
 RUN apt install -y --no-install-recommends valgrind
 
 # Build and install OSQP from source

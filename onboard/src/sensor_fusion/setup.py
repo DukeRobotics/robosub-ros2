@@ -21,4 +21,9 @@ setup(
     maintainer_email='hello@duke-robotics.com',
     description=' Package that combines multiple sources of sensor data and uses an EKF for robot localization',
     license='MIT',
+    entry_points={
+        'console_scripts': [
+            'dummy_state_publisher = sensor_fusion.dummy_state_publisher:main',
+        ],
+    },
 )
