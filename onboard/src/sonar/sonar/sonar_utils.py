@@ -15,8 +15,8 @@ def transform_pose(buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped,
     Args:
         buffer (tf2_ros.Buffer): The tf2 buffer containing transform data.
         pose (Pose): Pose in the source reference frame.
-        source_frame (str): Name of the source frame (e.g., 'sonar_link').
-        target_frame (str): Name of the target frame (e.g., 'cameras_link').
+        source_frame (str): Name of the source frame (e.g., 'sonar_ping_360').
+        target_frame (str): Name of the target frame (e.g., 'camera_depthai_front').
 
     Returns:
         Pose: Pose in the target reference frame.
