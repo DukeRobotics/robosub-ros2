@@ -11,13 +11,12 @@ import resource_retriever as rr
 import tf2_geometry_msgs
 import tf2_ros
 import yaml
-from geometry_msgs.msg import Point, Pose, Quaternion
+from geometry_msgs.msg import Point, Pose, Quaternion, TransformStamped
 from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.time import Time
-from sympy import Matrix, deg, rad
-from sympy.core.numbers import Float
+from sympy import Matrix, rad
 from sympy.matrices import rot_ccw_axis1, rot_ccw_axis2, rot_ccw_axis3
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
@@ -42,24 +41,57 @@ def get_robot_name() -> str:
     # Use the default value if the user input is empty
     return user_robot_name.strip() if user_robot_name.strip() else default_robot_name
 
-def rotation_matrix(roll: Float, pitch: Float, yaw: Float) -> Matrix:
+def get_transform(node: Node, tf_buffer: Buffer) -> TransformStamped:
+    """
+    Spin the ROS2 node and wait to receive a static transform from `base_link` to `corner_link`.
+
+    Args:
+        node (Node): The ROS2 node.
+        tf_buffer (Buffer): The TF2 buffer for transform lookup.
+
+    Returns:
+        TransformStamped: The transform from `base_link` to `corner_link`.
+    """
+    starting_time = Clock().now()
+    last_message_time = Clock().now()
+
+    # Loops for 5 seconds to check for transformation
+    while rclpy.ok() and Clock().now() - starting_time < Duration(seconds=5):
+        # Log message every second
+        if Clock().now() - last_message_time >= Duration(seconds=1):
+            print('Waiting for transform from base_link to corner_link...')
+            last_message_time = Clock().now()
+
+        # Attempt to receive transformation
+        with contextlib.suppress(tf2_ros.LookupException, tf2_ros.ConnectivityException):
+            return tf_buffer.lookup_transform('base_link', 'corner_link', Time())
+
+        rclpy.spin_once(node, timeout_sec=0.1)
+
+    # Raise error if transformation not found
+    error_msg = (
+        'Could not get base_link to corner_link transform. Launch the "corner_link_static_tranform" node and ensure '
+        'that the transform is being published.'
+    )
+    raise RuntimeError(error_msg)
+
+def rotation_matrix(roll: float, pitch: float, yaw: float) -> Matrix:
     """
     Get the rotation matrix for given roll, pitch, and yaw Euler angles.
 
     Order of rotations: roll -> pitch -> yaw. See https://en.wikipedia.org/wiki/Rotation_matrix#In_three_dimensions.
 
     Args:
-        roll (Float): The roll angle in radians.
-        pitch (Float): The pitch angle in radians.
-        yaw (Float): The yaw angle in radians.
+        roll (float): The roll angle in radians.
+        pitch (float): The pitch angle in radians.
+        yaw (float): The yaw angle in radians.
     """
     roll_matrix = rot_ccw_axis1(roll)
     pitch_matrix = rot_ccw_axis2(pitch)
     yaw_matrix = rot_ccw_axis3(yaw)
     return yaw_matrix * pitch_matrix * roll_matrix
 
-# Compute the force and torque vectors for a given thruster
-def compute_force_torque(thruster: dict, corner_to_base_link_transform: Pose) -> tuple[Matrix, Matrix]:
+def compute_force_torque(thruster: dict, corner_to_base_link_transform: TransformStamped) -> tuple[Matrix, Matrix]:
     """
     Compute the force and torque vectors for a given thruster.
 
@@ -76,17 +108,19 @@ def compute_force_torque(thruster: dict, corner_to_base_link_transform: Pose) ->
     quat = euler2quat(*map(rad, thruster['rpy']))
     pose.orientation = Quaternion(x=quat[1], y=quat[2], z=quat[3], w=quat[0])
 
-    # Transform thrusted position from corner_link to base_link
+    # Transform thruster position from corner_link to base_link
     pose = tf2_geometry_msgs.do_transform_pose(pose, corner_to_base_link_transform)
 
-    # Convert Pose message to Matrix
+    # Convert transformed position to Matrix
     pos = Matrix([pose.position.x, pose.position.y, pose.position.z])
+
+    # Convert transformed orientation to Euler angles
     rpy_radians = quat2euler([pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z])
-    rpy = Matrix(list(map(deg, rpy_radians)))
+
+    # Get flipped value of thrusters
     flipped = -1 if thruster['flipped'] else 1
 
     # Compute force vector
-    rpy_radians = map(rad, rpy)
     r_matrix = rotation_matrix(*rpy_radians)
     force = r_matrix * Matrix([1, 0, 0]) * flipped
 
@@ -109,40 +143,6 @@ def to_csv(data: pd.DataFrame, file_path: Path) -> None:
     with file_path.open('wb') as file:
         file.write(file_data[:-1])
 
-def get_transform(node: Node, tf_buffer: Buffer) -> Matrix:
-    """
-    Spins the ROS2 node and waits to receive a static transform from `base_link` to `corner_link`.
-
-    Args:
-        node (Node): The ROS2 node.
-        tf_buffer (Buffer): The TF2 buffer for transform lookup.
-
-    Returns:
-        Matrix: The translation matrix from `corner_link` to `base_link`.
-    """
-    starting_time = Clock().now()
-    last_message_time = Clock().now()
-
-    # Loops for 5 seconds to check for transformation
-    while rclpy.ok() and Clock().now() - starting_time < Duration(seconds=5):
-        # Log message every second
-        if Clock().now() - last_message_time >= Duration(seconds=1):
-            print('Waiting for transform from base_link to corner_link...')
-            last_message_time = Clock().now()
-
-        # Attempt to recieve transformation
-        with contextlib.suppress(tf2_ros.LookupException, tf2_ros.ConnectivityException):
-            return tf_buffer.lookup_transform('base_link', 'corner_link', Time())
-
-        rclpy.spin_once(node, timeout_sec=0.1)
-
-    # Raise error if transformation not found
-    error_msg = (
-        'Could not find base_link to corner_link transform. Try launching the static_transforms'
-        ' node with ros2 launch static_transforms static_transforms.launch.py'
-    )
-    raise RuntimeError(error_msg)
-
 def main() -> None:
     """Compute the wrench matrix and its pseudoinverse for a robot using symbolic math. Save the matrices as CSVs."""
     rclpy.init()
@@ -151,8 +151,8 @@ def main() -> None:
     # Check if static_transforms node is running
     if 'static_tranform_corner_link' not in node.get_node_names():
         error_msg = (
-            'Static Transforms node is not running and corner_link transform not found. Try launching the'
-            ' static_transforms node with ros2 launch static_transforms static_transforms.launch.py'
+            'The "corner_link_static_tranform" node is not running. Static transforms must be published before running '
+            'this script.'
         )
         raise RuntimeError(error_msg)
 

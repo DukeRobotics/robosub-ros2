@@ -153,8 +153,10 @@ The first argument is the command to run. The following commands are available:
 
 After the command, you can specify one or more Arduinos to run the command on. Each Arduino must be a top-level key in `config/arduino.yaml`, or `all`. If `all` is specified, the command will be run on all Arduinos in `config/arduino.yaml`.
 
+If one of the commands run by the CLI returns a non-zero exit code, the CLI will print the output of the failed command to the terminal and exit with the same exit code. Commands that return a zero exit code will not print any output unless the `-p` flag is specified.
+
 The following optional flags can be added to the end of the command:
-- `-p`, `--print-output`: Print the output of the commands being run by the CLI. This is useful for debugging if the script throws an error. This is available with the `install-libs`, `compile`, and `upload` commands.
+- `-p`, `--print-output`: Print the output of all commands being run by the CLI, regardless of whether they succeed or fail. This is available with the `install-libs`, `compile`, and `upload` commands.
 - `-nl`, `--no-linebreaks`: Do not print any line breaks, labels, or prefixes; only print the port(s) found. This is available _only_ with the `find-ports` command. It is useful for running the command in a script or for piping the output to another command.
 
 For example, to upload the sketches for all Arduinos, run:
@@ -217,10 +219,10 @@ For each `ThrusterAllocs` message it receives, the node first validates the mess
 
 To compute the PWMs, the node first finds the closest force value (rounded to 2 decimal precision) in the lookup tables for the two voltages that bound the current voltage reading. Then, it performs linear interpolation between those two values using the current voltage to find the PWM that will result in the thruster exerting the desired force at the current voltage.
 
-The PWMs are then sent to the Thruster Arduino via serial. See the [Thruster Arduino](#thruster-arduino) section for more information on the serial communication format. The PWMs are also published to `/offboard/pwm` of type `custom_msgs/msg/PWMAllocs`; this is for debugging purposes only.
+The PWMs are then sent to the Thruster Arduino via serial in the same order as the original thruster allocations. See the [Thruster Arduino](#thruster-arduino) section for more information on the serial communication format. The PWMs are also published to `/offboard/pwm` of type `custom_msgs/msg/PWMAllocs`; this is for debugging purposes only.
 
 ## Thruster Arduino
-The Thruster Arduino reads the PWM values sent by `thrusters.py` over serial. It expects values to be in the following format: a start flag of two bytes `0xFFFF` followed by pairs of bytes representing the PWM values in big-endian format. The Arduino treats each PWM value as a 16-bit unsigned integer. The Arduino validates the data by making sure that the number of PWM values received matches the number of thrusters, and that each value is within the range [1100, 1900]. If the data are valid, the Arduino sets the PWM values for the thrusters. If the data are invalid, the Arduino does not change the PWM values; the last valid values are retained.
+The Thruster Arduino reads the PWM values sent by `thrusters.py` over serial. It expects values to be in the following format: a start flag of two bytes `0xFFFF` followed by pairs of bytes representing the PWM values in big-endian format. The Arduino treats each PWM value as a 16-bit unsigned integer. The Arduino validates the data by making sure that the number of PWM values received matches the number of thrusters, and that each value is within the range [1100, 1900]. If the data are valid, the Arduino sets the PWM values for the thrusters by assigning the first value to the thruster whose ESC is attached to pin 0 on the multiplexer, the second value to the thruster whose ESC is attached to pin 1, and so on. If the data are invalid, the Arduino does not change the PWM values; the last valid values are retained.
 
 If it has been over 500 miliseconds since the last message was recieved, the Thruster Arduino will stop all thrusters. This is to prevent the robot from continuing to move if controls is disabled or if the connection to the main computer is lost.
 
