@@ -40,6 +40,10 @@ class DummyStatePublisher(Node):
 
         # Dummy velocity
         self.odom_msg.twist.twist.linear.x = 0.0
+        self.odom_msg.twist.twist.linear.y = 0.0
+        self.odom_msg.twist.twist.linear.z = 0.0
+        self.odom_msg.twist.twist.angular.x = 0.0
+        self.odom_msg.twist.twist.angular.y = 0.0
         self.odom_msg.twist.twist.angular.z = 0.0
 
         # Dummy transform
