@@ -1,9 +1,11 @@
+import math
 import os
 import time
 
 import numpy as np
 import rclpy
 import serial
+from geometry_msgs.msg import TwistWithCovarianceStamped
 from std_msgs.msg import Float64
 
 from offboard_comms.serial_node import SerialNode, SerialReadType
@@ -18,6 +20,7 @@ class GyroPublisher(SerialNode):
     BAUDRATE = 460800
     NODE_NAME = 'gyro_pub'
     ANGULAR_VELOCITY_TOPIC_NAME = 'sensors/gyro/angular_velocity'
+    ANGULAR_VELOCITY_TWIST_TOPIC_NAME = 'sensors/gyro/angular_velocity_twist'
     ANGULAR_POSITION_TOPIC_NAME = 'sensors/gyro/angular_position'
     TEMPERATURE_TOPIC_NAME = 'sensors/gyro/temperature'
     LINE_DELIM = ','
@@ -47,10 +50,23 @@ class GyroPublisher(SerialNode):
         self.buffer = bytearray()
 
         self.angular_velocity_publisher = self.create_publisher(Float64, self.ANGULAR_VELOCITY_TOPIC_NAME, 10)
+        self.angular_velocity_twist_publisher = self.create_publisher(TwistWithCovarianceStamped,
+                                                                self.ANGULAR_VELOCITY_TWIST_TOPIC_NAME, 10)
         self.angular_position_publisher = self.create_publisher(Float64, self.ANGULAR_POSITION_TOPIC_NAME, 10)
         self.temperature_publisher = self.create_publisher(Float64, self.TEMPERATURE_TOPIC_NAME, 10)
 
         self.angular_velocity_msg = Float64()
+
+        self.angular_velocity_twist_msg = TwistWithCovarianceStamped()
+        self.angular_velocity_twist_msg.header.frame_id = 'gyro'
+        self.angular_velocity_twist_msg.twist.twist.linear.x = 0.0
+        self.angular_velocity_twist_msg.twist.twist.linear.y = 0.0
+        self.angular_velocity_twist_msg.twist.twist.linear.z = 0.0
+        self.angular_velocity_twist_msg.twist.twist.angular.x = 0.0
+        self.angular_velocity_twist_msg.twist.twist.angular.y = 0.0
+        self.angular_velocity_twist_msg.twist.twist.angular.z = 0.0
+        self.angular_velocity_twist_msg.twist.covariance[35] = 0.01  # Only set the angular z, angular z covariance
+
         self.angular_position_msg = Float64()
         self.temperature_msg = Float64()
 
@@ -138,13 +154,17 @@ class GyroPublisher(SerialNode):
         temp_data = np.int16(self.buffer[start_byte_index + 7] & 0x7F)
         temp_data |= np.int16((self.buffer[start_byte_index + 8] & 0x7F) << 7)
 
-        angular_velocity = gyro_data * self.LOOP_RATE / self.SCALE_FACTOR
+        angular_velocity = gyro_data * self.TRIGGER_RATE / self.SCALE_FACTOR
         temperature = temp_data * 0.0625
 
         self.angular_velocity_msg.data = angular_velocity
         self.angular_velocity_publisher.publish(self.angular_velocity_msg)
 
-        self.angular_position_msg.data += angular_velocity / self.LOOP_RATE
+        self.angular_velocity_twist_msg.header.stamp = self.get_clock().now().to_msg()
+        self.angular_velocity_twist_msg.twist.twist.angular.z = math.radians(angular_velocity)
+        self.angular_velocity_twist_publisher.publish(self.angular_velocity_twist_msg)
+
+        self.angular_position_msg.data += angular_velocity / self.TRIGGER_RATE
         self.angular_position_publisher.publish(self.angular_position_msg)
 
         self.temperature_msg.data = temperature
