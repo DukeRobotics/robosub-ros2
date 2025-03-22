@@ -35,12 +35,11 @@ class GyroPublisher(SerialNode):
 
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
                          SerialReadType.BYTES_ALL, self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE,
-                         parity=serial.PARITY_EVEN, read_timeout=0, num_bytes_to_read=self.FRAME_NUM_BYTES,
-                         flush_input_after_read=True)
+                         parity=serial.PARITY_EVEN, read_timeout=0, flush_input_after_read=False)
 
         self.debug = self.declare_parameter('debug', False).value
 
-        self.trigger_timer = self.create_timer(1.0 / self.TRIGGER_RATE, self.trigger_callback)
+        # self.trigger_timer = self.create_timer(1.0 / self.TRIGGER_RATE, self.trigger_callback)
 
         self.line_num = 1
         self.last_start_line_num = 0
@@ -77,13 +76,14 @@ class GyroPublisher(SerialNode):
 
         # Print line num with width of 4, then bytes as zeroes and ones. If byte is 0x80, then add " - START" to the end
         if self.debug:
-            line = f'{self.line_num:05d} ' + ' '.join(format(byte, '08b') for byte in data)
-            if data[0] == self.FRAME_START_BYTE:
-                line += f' - START {self.line_num - self.last_start_line_num}'
-                self.last_start_line_num = self.line_num
+            for byte in data:
+                line = f'{self.line_num:05d} ' + format(byte, '08b')
+                if byte == self.FRAME_START_BYTE:
+                    line += f' - START {self.line_num - self.last_start_line_num}'
+                    self.last_start_line_num = self.line_num
 
-            self.get_logger().info(line)
-            self.line_num += 1
+                print(line)
+                self.line_num += 1
 
     def process_buffer(self) -> None:
         """Process the buffer of data from the gyro."""
@@ -125,8 +125,8 @@ class GyroPublisher(SerialNode):
 
         # Check if checksums are valid
         if checksum1 != self.buffer[start_byte_index + 6] or checksum2 != self.buffer[start_byte_index + 9]:
-            self.get_logger().info(f'Checksum error: {checksum1} {self.buffer[start_byte_index + 6]} '
-                                   f'{checksum2} {self.buffer[start_byte_index + 9]}')
+            print(f'Checksum error: {format(checksum1, '08b')} {format(self.buffer[start_byte_index + 6], '08b')} '
+                                   f'{format(checksum2, '08b')} {format(self.buffer[start_byte_index + 9], '08b')}')
             return
 
         gyro_data = np.int32(self.buffer[start_byte_index + 1] & 0x7F)
@@ -151,7 +151,7 @@ class GyroPublisher(SerialNode):
         self.temperature_publisher.publish(self.temperature_msg)
 
         if self.debug:
-            self.get_logger().info(f'Angular velocity: {angular_velocity:.9f} deg/s, Temperature: {temperature:.2f} C')
+            print(f'Angular velocity: {angular_velocity:.9f} deg/s, Temperature: {temperature:.2f} C')
 
 
     def trigger_callback(self) -> None:
