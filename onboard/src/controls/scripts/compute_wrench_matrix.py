@@ -43,7 +43,7 @@ def get_robot_name() -> str:
 
 def get_transform(node: Node, tf_buffer: Buffer) -> TransformStamped:
     """
-    Spins the ROS2 node and waits to receive a static transform from `base_link` to `corner_link`.
+    Spin the ROS2 node and wait to receive a static transform from `base_link` to `corner_link`.
 
     Args:
         node (Node): The ROS2 node.
@@ -62,7 +62,7 @@ def get_transform(node: Node, tf_buffer: Buffer) -> TransformStamped:
             print('Waiting for transform from base_link to corner_link...')
             last_message_time = Clock().now()
 
-        # Attempt to recieve transformation
+        # Attempt to receive transformation
         with contextlib.suppress(tf2_ros.LookupException, tf2_ros.ConnectivityException):
             return tf_buffer.lookup_transform('base_link', 'corner_link', Time())
 
@@ -117,7 +117,7 @@ def compute_force_torque(thruster: dict, corner_to_base_link_transform: Transfor
     # Convert transformed orientation to Euler angles
     rpy_radians = quat2euler([pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z])
 
-    # Get flipped value
+    # Get flipped value of thrusters
     flipped = -1 if thruster['flipped'] else 1
 
     # Compute force vector

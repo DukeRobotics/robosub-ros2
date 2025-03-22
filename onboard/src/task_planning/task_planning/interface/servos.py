@@ -28,7 +28,8 @@ class Servos:
         MARKER_DROPPER_SERVICE (str): The name of the service for controlling the marker dropper servo.
         TORPEDO_SERVICE (str): The name of the service for controlling the torpedo servo.
         node (Node): The ROS 2 node instance used to create the service client.
-        drop_marker_client (Client): A client for the service to control the servo.
+        drop_marker_client (Client): A client for the service to control the marker dropper servo.
+        torpedo_client (Client): A client for the service to control the torpedo servo.
     """
 
     MARKER_DROPPER_SERVICE = '/servos/marker_dropper'

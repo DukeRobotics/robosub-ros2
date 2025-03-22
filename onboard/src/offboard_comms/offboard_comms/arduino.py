@@ -95,7 +95,7 @@ def run_command(
     Args:
         command (str | Sequence[str]): Command to run.
         print_output (bool): Whether to allow the command to print directly to stdout. If this is false and the command
-            returns a non-zero exit code, the output will be printed to stdout.
+            returns a non-zero exit code, the output will be printed to stdout regardless.
         env_updates (dict | None): Dictionary of environment variables to update. If None, no environment variables will
             be updated.
         path_to_run_at (str | None): Path to run the command at. If None, the command will be run at the current working
@@ -133,7 +133,7 @@ def run_commands(
     Args:
         commands (Sequence[str]): Sequence of commands to run.
         print_output (bool): Whether to allow the commands to print directly to stdout. If this is false and a command
-            returns a non-zero exit code, the output will be printed to stdout.
+            returns a non-zero exit code, the output will be printed to stdout regardless.
         env_updates (dict | None): Dictionary of environment variables to update. If None, no environment variables will
             be updated.
         path_to_run_at (str | None): Path to run the commands at. If None, the commands will be run at the current

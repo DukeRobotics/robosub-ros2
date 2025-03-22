@@ -137,7 +137,7 @@ class TaskPlanning(Node):
                 self.destroy_node()
                 rclpy.shutdown()
             elif not self.task.done:
-                    self.task.step()
+                self.task.step()
 
         except BaseException as e:
             # Main has errored

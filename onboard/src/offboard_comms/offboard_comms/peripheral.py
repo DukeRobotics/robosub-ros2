@@ -84,13 +84,13 @@ class PeripheralPublisher(SerialNode):
     ARDUINO_NAME = 'peripheral'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
     LOOP_RATE = 50.0  # Hz
+    DISCRETE_SERVO_MIN_DELAY = 3.0  # seconds
     SENSOR_CLASSES: ClassVar[dict[str, type[PeripheralSensor]]] = {
         'pressure': PressureSensor,
         'voltage': VoltageSensor,
         'temperature': TemperatureSensor,
         'humidity': HumiditySensor,
     }
-    DISCRETE_SERVO_MIN_DELAY = 3.0  # seconds
 
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME, True,
