@@ -45,4 +45,4 @@ dvl:
   negate_y_vel: false
   negate_z_vel: false
 gyro:
-  ftdi: FT81SKA0
+  ftdi: FT9DD97Q
