@@ -3,15 +3,17 @@ from math import radians
 
 from task_planning.task import Task
 from task_planning.tasks import comp_tasks, move_tasks, prequal_tasks, test_tasks
+from task_planning.utils import geometry_utils
 
 
 def get_tasks() -> list[Task]:
     """Define the task sequence to be performed by Oogway."""
     return [
+            move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, -0.5, 0, 0, 0), parent=Task.MAIN_ID),
             # comp_tasks.initial_submerge(-0.7, parent=Task.MAIN_ID),
             # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=Task.MAIN_ID),
 
-            prequal_tasks.prequal_task(parent=Task.MAIN_ID),
+            # prequal_tasks.prequal_task(parent=Task.MAIN_ID),
 
             # comp_tasks.coin_flip(parent=Task.MAIN_ID),
             # comp_tasks.yaw_to_cv_object('gate_red_cw', direction=1, yaw_threshold=radians(10),
