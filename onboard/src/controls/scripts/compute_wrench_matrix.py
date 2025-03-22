@@ -16,8 +16,7 @@ from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.time import Time
-from sympy import Matrix, deg, rad
-from sympy.core.numbers import Float
+from sympy import Matrix, rad
 from sympy.matrices import rot_ccw_axis1, rot_ccw_axis2, rot_ccw_axis3
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
