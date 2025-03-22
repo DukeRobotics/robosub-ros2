@@ -13,6 +13,6 @@ source /home/ubuntu/ros_bashrc.sh
 while read -r line; do
     export ROBOT_NAME="$line"
     echo "::group::Compiling Arduino sketches for robot: $ROBOT_NAME"
-    ros2 run offboard_comms arduino compile all -p
+    ros2 run offboard_comms arduino compile all
     echo "::endgroup::"
 done < "/home/ubuntu/robosub-ros2/robot/robot_names"
