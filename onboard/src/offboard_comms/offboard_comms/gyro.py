@@ -212,14 +212,6 @@ class GyroPublisher(SerialNode):
         if self.debug:
             print(f'Angular velocity: {angular_velocity:.9f} deg/s, Temperature: {temperature:.2f} C')
 
-
-    def trigger_callback(self) -> None:
-        """Trigger the gyro to send data."""
-        if self._serial and self._serial.is_open:
-            self.writebytes(b'1')
-            time.sleep((1.0 / self.TRIGGER_RATE) / 2.0)  # Sleep for half the trigger period (50% duty cycle)
-            self.writebytes(b'0')  # Send the stop trigger
-
     def destroy_node(self) -> None:
         """Destroy the node."""
         # Print last twist msg timestamp and angular position msg data
