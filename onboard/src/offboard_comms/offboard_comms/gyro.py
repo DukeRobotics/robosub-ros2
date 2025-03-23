@@ -51,6 +51,9 @@ class GyroPublisher(SerialNode):
         self.line_num = 1
         self.last_start_line_num = 0
 
+        self.angular_position_raw = 0.0
+        self.angular_position = 0.0
+
         self.buffer = bytearray()
 
         self.angular_velocity_publisher = self.create_publisher(Float64, self.ANGULAR_VELOCITY_TOPIC_NAME, 10)
@@ -181,7 +184,8 @@ class GyroPublisher(SerialNode):
         temp_data |= np.int16((self.buffer[start_byte_index + 8] & 0x7F) << 7)
 
         angular_velocity = (gyro_data * self.TRIGGER_RATE / self.SCALE_FACTOR) - self._config['gyro']['error']
-        angular_position = angular_velocity / self.TRIGGER_RATE
+        self.angular_position_raw += angular_velocity / self.TRIGGER_RATE
+        self.angular_position = (self.angular_position_raw + 180) % 360 - 180
         temperature = temp_data * 0.0625
 
         self.angular_velocity_msg.data = angular_velocity
@@ -195,11 +199,11 @@ class GyroPublisher(SerialNode):
             print(self.angular_velocity_twist_msg.header.stamp)
             self.started = True
 
-        self.angular_position_msg.data += angular_position
+        self.angular_position_msg.data = self.angular_position
         self.angular_position_publisher.publish(self.angular_position_msg)
 
         self.angular_position_pose_msg.pose.pose.orientation = self.transforms3d_quat_to_geometry_quat(
-            euler2quat(0, 0, angular_position))
+            euler2quat(0, 0, math.radians(self.angular_position)))
         self.angular_position_pose_publisher.publish(self.angular_position_pose_msg)
 
         self.temperature_msg.data = temperature
@@ -220,7 +224,7 @@ class GyroPublisher(SerialNode):
         """Destroy the node."""
         # Print last twist msg timestamp and angular position msg data
         print(self.angular_velocity_twist_msg.header.stamp)
-        print(self.angular_position_msg.data)
+        print(self.angular_position_raw)
         super().destroy_node()
 
 
