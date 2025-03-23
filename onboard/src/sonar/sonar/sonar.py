@@ -43,6 +43,8 @@ class Sonar(Node):
     DBSCAN_EPS = 3  # DBSCAN epsilon
     DBSCAN_MIN_SAMPLES = 10  # DBSCAN min samples
 
+    NUM_RETRIES = 10
+
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME)
         self.get_logger().info('Sonar planning node initialized')
@@ -210,7 +212,12 @@ class Sonar(Node):
             a distance of MAX_RANGE/number_of_samples * [index] meters from the
             sonar device. The value is the intensity of the ping at that point.
         """
-        response = self.ping360.transmitAngle(angle_in_gradians)
+        for _ in range(self.NUM_RETRIES):
+            response = self.ping360.transmitAngle(angle_in_gradians)
+            if response is not None:
+                break
+            self.get_logger().error(f'Error in getting data at angle {angle_in_gradians}')
+
         response_to_int_array = [int(item) for item in response.data]  # converts bytestring to int array
         return [0] * self.FILTER_INDEX + response_to_int_array[self.FILTER_INDEX:]
 
