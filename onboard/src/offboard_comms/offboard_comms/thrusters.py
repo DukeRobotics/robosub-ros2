@@ -47,7 +47,7 @@ class Thrusters(SerialNode):
     OFFBOARD_COMMS_CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
     ARDUINO_NAME = 'thruster'
     NUM_LOOKUP_ENTRIES = 201  # -1.0 to 1.0 in 0.01 increments
-    VOLTAGE_FILES: ClassVar[list[tuple[int, str]]] = [
+    VOLTAGE_FILES: ClassVar[list[tuple[float, str]]] = [
         (14.0, '14.csv'),
         (16.0, '16.csv'),
         (18.0, '18.csv'),
