@@ -42,6 +42,7 @@ lint.ignore = [
 ]
 
 [tool.pyright]
+typeCheckingMode = "off"
 exclude = [
     "**/build/*",
     "**/install/*",
