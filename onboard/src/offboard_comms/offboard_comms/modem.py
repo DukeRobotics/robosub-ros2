@@ -5,6 +5,7 @@ import time
 
 import rclpy
 from std_msgs.msg import ByteMultiArray
+from custom_msgs.srv import SetModemSettings
 
 
 from offboard_comms.serial_node import SerialNode
@@ -31,6 +32,7 @@ class ModemPublisher(SerialNode):
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME, True,
                          self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE, use_nonblocking=True, return_byte=True)
         self._publisher = self.node.create_publisher(ByteMultiArray, '/offboard/ivc', 1)
+        self.change_setting_srv = self.node.create_service(SetModemSettings, 'offboard/settings', self.)
 
         # Create a timer that checks if a second byte needs to be sent
 
@@ -107,7 +109,7 @@ class ModemPublisher(SerialNode):
             'LEVEL': (decoded[12] & 0b00001100) >> 2,
         }
 
-    def change_setting(self, setting: int, char_to_send: str = '') -> None:
+    def change_setting(self, request: SetModemSettings.Request, response: SetModemSettings.Response) -> SetModemSettings.Response:
         """
         Change the channel the modem is on if the modem is ready for commands.
 
@@ -116,20 +118,20 @@ class ModemPublisher(SerialNode):
             setting (int): Setting to change. 1 - Comm Channel, 2 - Op Mode, 3 - Report Request, 4 - Power Level
             char_to_send (str): Value to change setting to. i.e. channel #, power level
         """
+
+        setting = request.setting
+        char_to_send = request.char_to_send
+
         setting_char = ''
         true_char_to_send = ''
 
-        if ((setting == 1 or setting == 4) and not char_to_send.isdigit()){
-            self.get_logger().error('Invalid char_to_send, must be a number')
-            return
-        }
-
-        if (setting == 1 and char_to_send.isdigit()):
+        if (setting == 1):
             setting_char = 'c'
-            channel = int(char_to_send)
+            channel = char_to_send
             if channel < 1 or channel > 12:
                 self.get_logger().error('Invalid channel, please input an int within [1, 12]')
-                return
+                response.success = False
+                return response
             if (channel < 10):
                 true_char_to_send = str(channel)
             else:
@@ -138,13 +140,13 @@ class ModemPublisher(SerialNode):
             setting_char = 'm'
         elif (setting == 3):
             setting_char = 'r'
-        elif (setting == 4 and char_to_send.isdigit()):
+        elif (setting == 4):
             setting_char = 'l'
-            power_lvl = int(char_to_send)
-            true_char_to_send = char_to_send
+            power_lvl = char_to_send
+            true_char_to_send = str(char_to_send)
             if power_lvl < 1 or power_lvl > 4:
-                self.get_logger().error('Invalid power level, please input an int within [1, 4]')
-                return
+                response.success = False
+                return response
 
         if self.modem_ready and setting_char != '':
             self.change_setting_timer = time.time()
@@ -153,8 +155,13 @@ class ModemPublisher(SerialNode):
             self.true_char_to_send = true_char_to_send
             self.modem_ready = False
             self.setting = setting
-            self.send_timer =  self.create_timer(1.0, self.delayed_write())
-            # Set a flag to true, record timestamp of the first byte, and record the content of the byte
+            self.send_timer = self.create_timer(1.0, self.delayed_write())
+            response.success = True
+            return response
+        else:
+            response.success = False
+            return response
+        # Set a flag to true, record timestamp of the first byte, and record the content of the byte
 
     def delayed_write(self):
         if self.modem_ready == False:

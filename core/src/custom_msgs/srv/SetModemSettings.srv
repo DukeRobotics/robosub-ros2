@@ -1,0 +1,4 @@
+int8 setting
+int8 char_to_send
+---
+bool success
