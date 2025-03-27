@@ -95,17 +95,10 @@ class DepthAISpatialDetector(Node):
 
         Inspiration taken from
         https://docs.luxonis.com/projects/api/en/latest/samples/SpatialDetection/spatial_tiny_yolo/.
-        To understand the DepthAI pipeline structure, please see https://docs.luxonis.com/projects/api/en/latest/.
-        This pipeline computes the depth map using the two mono cameras. This depth map and the RGB feed are fed into
-        the YoloSpatialDetection Node, which detects objects and computes the average depth within the bounding box
-        for any detected object. The object detection model for this node is loaded from the nnBlobPath. For info
-        about the YoloSpatialDetection Node, see
-        https://docs.luxonis.com/projects/api/en/latest/components/nodes/yolo_spatial_detection_network/.
         The output queues available from this pipeline are:
             - "rgb": Contains the images input to the neural network.
-            - "detections": contains SpatialImgDetections messages (https://docs.luxonis.com/projects/api/en/latest/
-            components/messages/spatial_img_detections/#spatialimgdetections), which includes bounding boxes for
-            detections as well as XYZ coordinates of the detected objects.
+            - "detections": Contains SpatialImgDetections messages which includes bounding boxes for detections as well
+                as XYZ coordinates of the detected objects.
 
         Args:
             nn_blob_path (str): Path to blob file used for object detection.

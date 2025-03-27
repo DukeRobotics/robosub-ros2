@@ -13,7 +13,7 @@ from cv.depthai_spatial_detection import DepthAISpatialDetector
 
 USB_CAMERA_CONFIG_PATH = 'package://cv/config/usb_cameras.yaml'
 
-class DepthAIMonoDetector(DepthAISpatialDetector):
+class DepthAIUSBDetector(DepthAISpatialDetector):
     """Using an external camera feed as input, compute detections on a DepthAI camera."""
     def __init__(self) -> None:
         """
@@ -75,21 +75,14 @@ class DepthAIMonoDetector(DepthAISpatialDetector):
 
     def build_pipeline(self, nn_blob_path: Path, sync_nn: bool) -> dai.Pipeline:
         """
-        Get the DepthAI Pipeline performing object detection using an external camera feed.
+        Get the DepthAI pipeline performing object detection using the USB camera feed.
 
         Inspiration taken from
         https://docs.luxonis.com/projects/api/en/latest/samples/SpatialDetection/spatial_tiny_yolo/.
-        To understand the DepthAI pipeline structure, please see https://docs.luxonis.com/projects/api/en/latest/.
-        This pipeline computes the depth map using the two mono cameras. This depth map and the RGB feed are fed into
-        the YoloSpatialDetection Node, which detects objects and computes the average depth within the bounding box
-        for any detected object. The object detection model for this node is loaded from the nnBlobPath. For info
-        about the YoloSpatialDetection Node, see
-        https://docs.luxonis.com/projects/api/en/latest/components/nodes/yolo_spatial_detection_network/.
         The output queues available from this pipeline are:
             - "rgb": Contains the images input to the neural network.
-            - "detections": contains SpatialImgDetections messages (https://docs.luxonis.com/projects/api/en/latest/
-            components/messages/spatial_img_detections/#spatialimgdetections), which includes bounding boxes for
-            detections as well as XYZ coordinates of the detected objects.
+            - "detections": Contains SpatialImgDetections messages which includes bounding boxes for detections as well
+                as XYZ coordinates of the detected objects.
 
         Args:
             nn_blob_path (str): Path to blob file used for object detection.
@@ -158,14 +151,14 @@ class DepthAIMonoDetector(DepthAISpatialDetector):
 def main(args: list[str] | None = None) -> None:
     """Define the main function that initiates the node."""
     rclpy.init(args=args)
-    depthai_mono_detector = DepthAIMonoDetector()
+    depthai_usb_detector = DepthAIUSBDetector()
 
     try:
-        rclpy.spin(depthai_mono_detector)
+        rclpy.spin(depthai_usb_detector)
     except KeyboardInterrupt:
         pass
     finally:
-        depthai_mono_detector.destroy_node()
+        depthai_usb_detector.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
 
