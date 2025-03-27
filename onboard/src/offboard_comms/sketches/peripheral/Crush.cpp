@@ -19,7 +19,7 @@ public:
         : Robot(voltageDelay, pressureDelay, tempHumidityDelay, servoDelay), isShell(isShell) {
 
         voltage_sensor = new Voltage(VOLTAGE_PIN, 4.655, "");
-        pressure_sensor = new Pressure("");
+        pressure_sensor = new Pressure(MS5837::MS5837_30BA, "");
         battery_temp_humidity_sensor = new TempHumidity(THB_PIN, "B");
         signal_temp_humidity_sensor = new TempHumidity(THS_PIN, "S");
 
