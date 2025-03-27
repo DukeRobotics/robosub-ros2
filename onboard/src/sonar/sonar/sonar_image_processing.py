@@ -120,6 +120,74 @@ def find_center_point_and_angle(array: np.ndarray, threshold: int, eps: float,
 
     return average_column_index, angle, array
 
+
+def plot_sonar_polar_gradians(sonar_data: np.ndarray,
+                              max_range: float,
+                              angle_start: float = -100.0,
+                              angle_end: float = 100.0) -> None:
+    """
+    Plots a 2D sonar data array (num_angles x 1200) in polar coordinates,
+    using angles in gradians.
+
+    Args:
+        sonar_data (np.ndarray): 2D array of shape (num_angles, 1200).
+                                 Rows = angles (in gradians), columns = distances.
+        max_range (float):       The maximum physical distance corresponding to 1200 columns.
+        angle_start (float):     Start angle in gradians (default = -100).
+        angle_end (float):       End angle in gradians   (default = 100).
+
+    Note:
+        400 gradians = 360 degrees = 2π radians.
+        => 1 grad = π/200 radians.
+    """
+    # Validate that columns = 1200
+    if sonar_data.shape[1] != 1200:
+        raise ValueError("The sonar_data must have exactly 1200 columns.")
+
+    # Number of angle steps based on sonar_data rows
+    num_angles = sonar_data.shape[0]
+    theta_start = angle_start * np.pi / 200.0
+    theta_end   = angle_end   * np.pi / 200.0
+
+    # Build an array of angle values in radians
+    theta = np.linspace(theta_start, theta_end, num_angles, endpoint=False)
+
+    # Each column corresponds to an increment in distance
+    # from 0 to max_range
+    # columns = 1200, so column i => distance_i = i * (max_range / 1200)
+    distances = np.linspace(0, max_range, sonar_data.shape[1] )
+
+    # Create meshgrid for pcolormesh
+    # We'll have shape (1200, num_angles) after meshgrid
+    R, Theta = np.meshgrid(distances, theta)
+
+    # Transpose the sonar_data so it lines up with (1200, num_angles)
+    Z = sonar_data.T  # shape: (1200, num_angles)
+
+    # Create polar plot
+    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+    c = ax.pcolormesh(Theta, R, Z, shading='auto')
+
+    # Ensure the radial axis goes out to max_range
+    ax.set_ylim([0, max_range])
+
+    # Optionally add a colorbar
+    plt.colorbar(c, ax=ax, label='Sonar Intensity')
+
+    # Title for reference
+    plt.title('Sonar Data (Gradians) in Polar Coordinates')
+    
+    fig = plt.gcf()
+    canvas = FigureCanvas(fig)
+    canvas.draw()
+
+    image = np.frombuffer(canvas.tostring_argb(), dtype='uint8')
+    image = image.reshape(fig.canvas.get_width_height()[::-1] + (4,))
+    array = cv2.cvtColor(image[:, :, 1:], cv2.COLOR_RGB2BGR)
+
+    return array
+
+
 def build_sonar_img_from_log_file(filename: str, start_index: int = 49, end_index: int = 149) -> np.ndarray:
     """
     Build a sonar image from a .bin file.
