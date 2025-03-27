@@ -1,17 +1,17 @@
 <launch>
+    <arg name="camera" default="front" />
     <arg name="running_model" default="2024_gate_glyphs" />
     <arg name="rgb_raw" default="True" />
     <arg name="rgb_detections" default="True" />
-    <arg name="queue_depth" default="False" />
     <arg name="sync_nn" default="True" />
     <arg name="using_sonar" default="False" />
     <arg name="show_class_name" default="True" />
     <arg name="show_confidence" default="True" />
     <node name="depthai_spatial_detection" exec="depthai_spatial_detection" pkg="cv" output="screen">
+        <param name="camera" value="$(var camera)" />
         <param name="running_model" value="$(var running_model)" />
         <param name="rgb_raw" value="$(var rgb_raw)" />
         <param name="rgb_detections" value="$(var rgb_detections)" />
-        <param name="queue_depth" value="$(var queue_depth)" />
         <param name="sync_nn" value="$(var sync_nn)" />
         <param name="using_sonar" value="$(var using_sonar)" />
         <param name="show_class_name" value="$(var show_class_name)" />

@@ -1,7 +1,6 @@
 import math
 from pathlib import Path
 
-import cv2
 import depthai as dai
 import numpy as np
 import rclpy
@@ -25,24 +24,25 @@ SONAR_RANGE = 1.75
 SONAR_REQUESTS_PATH = 'sonar/request'
 SONAR_RESPONSES_PATH = 'sonar/cv/response'
 TASK_PLANNING_REQUESTS_PATH = 'controls/desired_feature'
-LOOP_RATE = 10
+LOOP_RATE = 20
 
-GATE_IMAGE_WIDTH = 0.2452  # Width of gate images in meters
-GATE_IMAGE_HEIGHT = 0.2921  # Height of gate images in meters
-FOCAL_LENGTH = 2.75  # Focal length of camera in mm
-SENSOR_SIZE = (6.2868, 4.712)  # Sensor size in mm
+
 ISP_IMG_SHAPE = (4056, 3040)  # Size of ISP image
 
 
 class DepthAISpatialDetector(Node):
     """Compute detections on live camera feed and publish spatial coordinates for detected objects."""
+
+    FOCAL_LENGTH = 2.75  # Focal length of camera in mm
+    SENSOR_SIZE = (6.2868, 4.712)  # Sensor size in mm
+
     def __init__(self, run: bool = True) -> None:
         """Initialize the ROS node. Loads the yaml file at cv/models/depthai_models.yaml."""
         super().__init__('depthai_spatial_detection')
+        self.camera = self.declare_parameter('camera', 'front').value
         self.running_model = self.declare_parameter('running_model', 'yolov7_tiny_2023_main').value
         self.rgb_raw = self.declare_parameter('rgb_raw', True).value
         self.rgb_detections = self.declare_parameter('rgb_detections', True).value
-        self.queue_depth = self.declare_parameter('queue_depth', False).value  # Whether to output depth map
         self.sync_nn = self.declare_parameter('sync_nn', True).value
         self.using_sonar = self.declare_parameter('using_sonar', False).value
         self.show_class_name = self.declare_parameter('show_class_name', True).value
@@ -52,11 +52,10 @@ class DepthAISpatialDetector(Node):
                                   use_protocol=False)) as f:
             self.models = yaml.safe_load(f)
 
-        self.camera = 'front'
+        self.device = None
         self.pipeline = None
         self.publishers_dict = {}  # Keys are the class names of a given model
         self.output_queues = {}  # Keys are "rgb", "depth", and "detections"
-        self.connected = False
         self.current_model_name = None
         self.classes = None
         self.camera_pixel_width = None
@@ -88,11 +87,11 @@ class DepthAISpatialDetector(Node):
             String, TASK_PLANNING_REQUESTS_PATH, self.update_priority,qos_profile)
 
         if run:
-            self.run(True)
+            self.run()
 
-    def build_pipeline(self, nn_blob_path: Path, sync_nn: bool) -> dai.Pipeline:  # noqa: ARG002
+    def build_pipeline(self, nn_blob_path: Path, sync_nn: bool) -> dai.Pipeline:
         """
-        Get the DepthAI Pipeline for 3D object localization.
+        Get the DepthAI Pipeline for object detection and 3D localization using the camera's own feed.
 
         Inspiration taken from
         https://docs.luxonis.com/projects/api/en/latest/samples/SpatialDetection/spatial_tiny_yolo/.
@@ -103,12 +102,10 @@ class DepthAISpatialDetector(Node):
         about the YoloSpatialDetection Node, see
         https://docs.luxonis.com/projects/api/en/latest/components/nodes/yolo_spatial_detection_network/.
         The output queues available from this pipeline are:
-            - "rgb": contains the 400x400 RGB preview of the camera feed.
+            - "rgb": Contains the images input to the neural network.
             - "detections": contains SpatialImgDetections messages (https://docs.luxonis.com/projects/api/en/latest/
             components/messages/spatial_img_detections/#spatialimgdetections), which includes bounding boxes for
             detections as well as XYZ coordinates of the detected objects.
-            - "depth": contains ImgFrame messages with UINT16 values representing the depth in millimeters by default.
-                See the property depth in https://docs.luxonis.com/projects/api/en/latest/components/nodes/stereo_depth/
 
         Args:
             nn_blob_path (str): Path to blob file used for object detection.
@@ -130,14 +127,10 @@ class DepthAISpatialDetector(Node):
         stereo = pipeline.create(dai.node.StereoDepth)
 
         xout_nn = pipeline.create(dai.node.XLinkOut)
-        xout_nn.setStreamName("detections")
+        xout_nn.setStreamName('detections')
 
         xout_rgb = pipeline.create(dai.node.XLinkOut)
-        xout_rgb.setStreamName("rgb")
-
-        if self.queue_depth:
-            xout_depth = pipeline.create(dai.node.XLinkOut)
-            xout_depth.setStreamName("depth")
+        xout_rgb.setStreamName('rgb')
 
         # Camera properties
         cam_rgb.setPreviewSize(model['input_size'])
@@ -182,9 +175,6 @@ class DepthAISpatialDetector(Node):
             cam_rgb.preview.link(xout_rgb.input)
 
         spatial_detection_network.out.link(xout_nn.input)
-
-        if self.queue_depth:
-            spatial_detection_network.passthroughDepth.link(xout_depth.input)
 
         stereo.depth.link(spatial_detection_network.inputDepth)
 
@@ -247,58 +237,45 @@ class DepthAISpatialDetector(Node):
                                                           10)
         self.publishers_dict = publisher_dict
 
-        # Create CompressedImage publishers for the raw RGB feed, detections feed, and depth feed
+        # Create CompressedImage publishers for the raw RGB feed and detections feed
         if self.rgb_raw:
-            self.rgb_preview_publisher = self.create_publisher(CompressedImage, 'camera/front/rgb/preview/compressed',
-                                                         10)
+            self.rgb_preview_publisher = self.create_publisher(
+                CompressedImage, f'camera/{self.camera}/rgb/preview/compressed', 10)
 
         if self.rgb_detections:
-            self.detection_feed_publisher = self.create_publisher(CompressedImage, 'cv/front/detections/compressed',
-                                                            10)
+            self.detection_feed_publisher = self.create_publisher(
+                CompressedImage, f'cv/{self.camera}/detections/compressed', 10)
 
     def init_queues(self, device: dai.Device) -> None:  # noqa: ARG002
         """
-        Assign output queues from the pipeline to dictionary of queues.
+        Assign queues from the pipeline to dictionary of queues.
 
         Args:
             device (DepthAI.Device): DepthAI.Device object for the connected device.
                 See https://docs.luxonis.com/projects/api/en/latest/components/device/
         """
-        # If the output queues are already set, don't reinitialize
-        if self.connected:
-            return
-
-        # Assign output queues
         self.output_queues['rgb'] = self.device.getOutputQueue(name='rgb', maxSize=1, blocking=False)
-
         self.output_queues['detections'] = self.device.getOutputQueue(name='detections', maxSize=1, blocking=False)
 
-        self.connected = True  # Flag that the output queues have been initialized
-
-        self.detection_visualizer = DetectionVisualizer(self.classes, self.colors,
-                                                        self.show_class_name, self.show_confidence)
-
-    def detect(self, output_queue: str = "rgb") -> None:
+    def detect(self) -> None:
         """Get current detections from output queues and publish."""
-        # init_output_queues must be called before detect
-        if not self.connected:
-            self.get_logger().warn('Output queues are not initialized so cannot detect. Call init_output_queues first.')
-            return
+        # Get RGB preview feed
+        inpreview = self.output_queues['rgb'].tryGet()
+        if inpreview:
+            frame = inpreview.getCvFrame()
 
-        inpreview = self.output_queues[output_queue].get()
-        frame = inpreview.getCvFrame()
+            # Publish raw RGB feed
+            if self.rgb_raw:
+                frame_img_msg = self.image_tools.convert_to_ros_compressed_msg(frame)
+                self.rgb_preview_publisher.publish(frame_img_msg)
 
-        # Publish raw RGB feed
-        if self.rgb_raw:
-            frame_img_msg = self.image_tools.convert_to_ros_compressed_msg(frame)
-            self.rgb_preview_publisher.publish(frame_img_msg)
-
-        # Get detections from output queues
+        # Get NN detections
         indet = self.output_queues['detections'].tryGet()
         if not indet:
             return
         detections = indet.detections
 
+        # For each class, keep only the detection with the highest confidence
         detections_dict = {}
         for detection in detections:
             prev_conf, _ = detections_dict.get(detection.label, (None, None))
@@ -308,8 +285,8 @@ class DepthAISpatialDetector(Node):
         detections = [detection for _, detection in detections_dict.values()]
         model = self.models[self.current_model_name]
 
-        # Publish detections feed
-        if self.rgb_detections:
+        # If an rgb feed is available, visualize the detections
+        if self.rgb_detections and inpreview:
             detections_visualized = self.detection_visualizer.visualize_detections(frame, detections)
             detections_img_msg = self.image_tools.convert_to_ros_compressed_msg(detections_visualized)
             self.detection_feed_publisher.publish(detections_img_msg)
@@ -329,7 +306,7 @@ class DepthAISpatialDetector(Node):
 
             # Calculate relative pose
             det_coords_robot_mm = calculate_relative_pose(bbox, model['input_size'], model['sizes'][label],
-                                                          FOCAL_LENGTH, SENSOR_SIZE, 2)
+                                                          self.FOCAL_LENGTH, self.SENSOR_SIZE, 2)
 
             # Find yaw angle offset
             left_end_compute = self.compute_angle_from_x_offset(detection.xmin * self.camera_pixel_width)
@@ -433,30 +410,30 @@ class DepthAISpatialDetector(Node):
         """
         self.current_priority = obj
 
-    def run(self, use_depthai: bool) -> bool:
-        """
-        Run the selected model on the connected device.
-
-        Returns:
-            bool: False if the model is not in cv/models/depthai_models.yaml. Otherwise, runs the model on the device.
-        """
+    def run(self) -> None:
+        """Run the selected model on the connected device."""
         # Check if model is valid
         if self.running_model not in self.models:
-            return False
+            error_msg = f'Model {self.running_model} not found in models file.'
+            raise ValueError(error_msg)
 
         # Setup pipeline and publishers
         self.init_model(self.running_model)
         self.init_publishers(self.running_model)
 
-        if use_depthai:
-            self.device = depthai_camera_connect.connect(self, self.camera, self.pipeline)
-            self.init_queues(self.device)
-        else:
-            self.connected = True
+        # Connect to camera and initialize queues
+        self.device = depthai_camera_connect.connect(self, self.camera, self.pipeline)
+        self.init_queues(self.device)
+        self.detection_visualizer = DetectionVisualizer(self.classes, self.colors, self.show_class_name,
+                                                        self.show_confidence)
 
         self.detect_timer = self.create_timer(1 / LOOP_RATE, self.detect)
 
-        return True
+    def destroy_node(self) -> None:
+        """Destroy the node and release the device."""
+        if self.device is not None:
+            self.device.close()
+        super().destroy_node()
 
     def compute_angle_from_x_offset(self, x_offset: float) -> float:
         """
@@ -551,7 +528,6 @@ def main(args: list[str] | None = None) -> None:
     except KeyboardInterrupt:
         pass
     finally:
-        depthai_spatial_detector.device.close()
         depthai_spatial_detector.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
