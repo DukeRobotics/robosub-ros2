@@ -88,7 +88,7 @@ class DepthAISpatialDetector(Node):
             String, TASK_PLANNING_REQUESTS_PATH, self.update_priority,qos_profile)
 
         if run:
-            self.run()
+            self.run(True)
 
     def build_pipeline(self, nn_blob_path: Path, sync_nn: bool) -> dai.Pipeline:  # noqa: ARG002
         """
@@ -284,7 +284,7 @@ class DepthAISpatialDetector(Node):
         if not self.connected:
             self.get_logger().warn('Output queues are not initialized so cannot detect. Call init_output_queues first.')
             return
-        
+
         inpreview = self.output_queues[output_queue].get()
         frame = inpreview.getCvFrame()
 
