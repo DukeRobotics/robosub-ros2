@@ -1,0 +1,17 @@
+# Map front and bottom cameras to /dev/video_front and /dev/video_bottom
+# Map only the first channel provided by the cameras to /dev/video_front and /dev/video_bottom
+# NOTE: The cameras don't have any distinguishing information other than the USB port they are connected to, so
+# we have to use the hardware path to distinguish them. If the USB port or hub the cameras are connected to changes,
+# the hardware path will change and the rules below will need to be updated.
+# SUBSYSTEM=="video4linux", ENV{ID_PATH_TAG}=="pci-0000_01_00_0-usb-0_1_1_1_0", ATTR{index}=="0", SYMLINK+="video_front"
+# SUBSYSTEM=="video4linux", ENV{ID_PATH_TAG}=="pci-0000_01_00_0-usb-0_1_1_1_0", ATTR{index}=="4", SYMLINK+="video_front"
+
+# SUBSYSTEM=="video4linux", ENV{ID_PATH_TAG}=="pci-0000_05_00_3-usb-0_2_4_1_0", ATTR{index}=="0", SYMLINK+="video_bottom"
+# SUBSYSTEM=="video4linux", ENV{ID_PATH_TAG}=="pci-0000_05_00_3-usb-0_2_4_1_0", ATTR{index}=="4", SYMLINK+="video_bottom"
+
+# The two rules below were adapted from ntnu-arl/vectornav: https://github.com/ntnu-arl/vectornav
+# Map VN100 IMU to /dev/ttyUSB_VN100
+SUBSYSTEM=="tty", ATTRS{idProduct}=="6001", ATTRS{idVendor}=="0403", ATTRS{serial}=="AU04PK1Q", SYMLINK+="ttyUSB_VN100", GROUP="dialout"
+
+# Set the FTDI USB-to-serial device latency timer to 1ms for lower communication delay; this prevents IMU messages from getting bunched up
+ACTION=="add", SUBSYSTEM=="usb-serial", DRIVER=="ftdi_sio", ATTR{latency_timer}="1"
