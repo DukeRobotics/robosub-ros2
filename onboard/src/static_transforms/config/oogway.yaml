@@ -1,46 +1,163 @@
 transforms:
   corner_link:
-    x: 0.219075
+    x: 0.2304415
     y: -0.3095625
-    z: 0.19764375
-    roll: 0
-    pitch: 0
-    yaw: 0
-    frame_id: 'base_link'
-    child_frame: 'corner_link'
-  dvl_link:
-    x: -0.20955
-    y: 0.0809625
-    z: -0.276225
-    roll: 0
-    pitch: 0
-    yaw: 0
-    frame_id: 'corner_link'
-    child_frame: 'dvl_link'
-  imu_link:
-    x: -0.219075
-    y: 0.3095625
-    z: -0.11241875
-    roll: 0
-    pitch: 0
-    yaw: 0
-    frame_id: 'corner_link'
-    child_frame: 'imu_link'
-  sonar_link:
-    x: 0.067
-    y: 0.31
-    z: 0.05
-    roll: 0
-    pitch: 0
-    yaw: 0
-    frame_id: 'corner_link'
-    child_frame: 'sonar_link'
-  cameras_link:
-    x: 0
-    y: 0.0362
-    z: 0
-    roll: 0
-    pitch: 0
-    yaw: 0
-    frame_id: 'corner_link'
-    child_frame: 'cameras_link'
+    z: 0.1778
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: base_link
+    child_frame_id: corner_link
+  camera_depthai_front:
+    x: 0.06202961683
+    y: 0.3093378453
+    z: -0.08430045883
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: camera_depthai_front
+  camera_depthai_bottom:
+    x: -0.4926114879
+    y: 0.3140623688
+    z: -0.3002218017
+    roll: 0.0
+    pitch: 1.5707963267948966
+    yaw: 3.141592653589793
+    frame_id: corner_link
+    child_frame_id: camera_depthai_bottom
+  camera_mono_front:
+    x: 0.1176809969
+    y: 0.5166097436
+    z: -0.1438393814
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: camera_mono_front
+  camera_mono_bottom:
+    x: -0.1165228228
+    y: 0.600075
+    z: -0.2769725
+    roll: -1.5707963267948966
+    pitch: 1.5707963267948966
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: camera_mono_bottom
+  sonar_ping_360:
+    x: 0.11086996
+    y: 0.30952336
+    z: -0.2371967285
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: sonar_ping_360
+  imu:
+    x: -0.2483482279
+    y: 0.3058974133
+    z: -0.104376395
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: imu
+  dvl:
+    x: -0.2240915
+    y: 0.08255
+    z: -0.2552065
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: dvl
+  marker_dropper:
+    x: -0.2301915
+    y: 0.573675
+    z: -0.2909708718
+    roll: 0.0
+    pitch: 1.5707963267948966
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: marker_dropper
+  hydrophone_right:
+    x: -0.25307925
+    y: -0.04544602448
+    z: -0.2884375
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: hydrophone_right
+  hydrophone_front:
+    x: -0.2171582255
+    y: -0.009525
+    z: -0.2884375
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: hydrophone_front
+  hydrophone_back:
+    x: -0.2890002745
+    y: -0.009525
+    z: -0.2884375
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: hydrophone_back
+  hydrophone_left:
+    x: -0.25307925
+    y: 0.02639602448
+    z: -0.2884375
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: hydrophone_left
+  torpedo_left:
+    x: 0.1776210054
+    y: 0.5656314828
+    z: -0.2167625
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: torpedo_left
+  torpedo_right:
+    x: 0.1776210054
+    y: 0.4676314828
+    z: -0.2167625
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: torpedo_right
+  pressure_sensor:
+    x: -0.335444
+    y: 0.3371482972
+    z: -0.2294875
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: pressure_sensor
+  ivc_modem:
+    x: -0.23015575
+    y: 0.652526
+    z: -0.3200478916
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: ivc_modem
+  gyro:
+    x: 0.2305970366
+    y: 0.3368996133
+    z: -0.0823758395
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: gyro
