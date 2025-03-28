@@ -9,7 +9,7 @@
     <arg name="show_class_name" default="True" />
     <arg name="show_confidence" default="True" />
     <arg name="current_priority" default="" />
-    <node name="depthai_usb_detection" exec="depthai_usb_detection" pkg="cv" output="screen">
+    <node name="depthai_usb_detection_$(var camera)" exec="depthai_usb_detection" pkg="cv" output="screen">
         <param name="usb_camera" value="$(var usb_camera)" />
         <param name="camera" value="$(var camera)" />
         <param name="running_model" value="$(var running_model)" />
