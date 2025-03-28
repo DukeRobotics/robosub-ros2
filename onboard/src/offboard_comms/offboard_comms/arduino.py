@@ -35,8 +35,8 @@ OUTPUT_PREFIX = Path(__file__).name.capitalize()
 
 # Load config YAML file
 error_when_loading_yaml = True
+config_file_resolved_path = rr.get_filename(CONFIG_YAML_PATH, use_protocol=False)
 try:
-    config_file_resolved_path = rr.get_filename(CONFIG_YAML_PATH, use_protocol=False)
     with Path(config_file_resolved_path).open() as f:
         config_data = yaml.safe_load(f)
         ARDUINO_DATA = config_data['arduino']
@@ -90,27 +90,32 @@ def run_command(
     """
     Run a command at a given path.
 
+    If the command returns a non-zero exit code, the script will exit with the exit code.
+
     Args:
         command (str | Sequence[str]): Command to run.
-        print_output (bool): Whether to allow the command to print to stdout.
+        print_output (bool): Whether to allow the command to print directly to stdout. If this is false and the command
+            returns a non-zero exit code, the output will be printed to stdout regardless.
         env_updates (dict | None): Dictionary of environment variables to update. If None, no environment variables will
             be updated.
         path_to_run_at (str | None): Path to run the command at. If None, the command will be run at the current working
             directory.
-
-    Raises:
-        subprocess.CalledProcessError: If command returns non-zero exit code.
     """
     env = os.environ.copy()
     if env_updates:
         for key, value in env_updates.items():
             env[key] = str(value)
 
-    stdout = None if print_output else subprocess.DEVNULL
+    stdout = None if print_output else subprocess.PIPE
 
     print(f'{OUTPUT_PREFIX}: CMD: {command}')
-    subprocess.run(command, shell=True, check=True, stdout=stdout, stderr=subprocess.STDOUT, env=env,
+    result = subprocess.run(command, shell=True, check=False, stdout=stdout, stderr=subprocess.STDOUT, env=env,
                    cwd=path_to_run_at)
+
+    if result.returncode != 0:
+        if not print_output:
+            print(result.stdout.decode())
+        sys.exit(result.returncode)
 
 
 def run_commands(
@@ -122,16 +127,17 @@ def run_commands(
     """
     Run a sequence of commands at a given path.
 
+    If a command returns a non-zero exit code, the script will exit with the
+    exit code.
+
     Args:
         commands (Sequence[str]): Sequence of commands to run.
-        print_output (bool): Whether to allow the commands to print to stdout.
+        print_output (bool): Whether to allow the commands to print directly to stdout. If this is false and a command
+            returns a non-zero exit code, the output will be printed to stdout regardless.
         env_updates (dict | None): Dictionary of environment variables to update. If None, no environment variables will
             be updated.
         path_to_run_at (str | None): Path to run the commands at. If None, the commands will be run at the current
             working directory.
-
-    Raises:
-        subprocess.CalledProcessError: If command returns non-zero exit code.
     """
     for command in commands:
         run_command(command, print_output, env_updates=env_updates, path_to_run_at=path_to_run_at)
@@ -405,7 +411,7 @@ def upload(arduino_names: list[str], print_output: bool) -> None:
 # Argument parsing
 
 
-def main(args: list[str] | None = None) -> None:
+def main(_: list[str] | None = None) -> None:
     """Set up the command-line interface (CLI) for managing Arduino devices."""
     # Get the list of arduino names
     arduino_names = list(ARDUINO_DATA.keys())
@@ -484,6 +490,10 @@ def main(args: list[str] | None = None) -> None:
 
     # Parse command line arguments
     args = parser.parse_args()
+
+    if args.command is None:
+        parser.print_help()
+        return
 
     # Replace 'all' with all actual arduino names
     if 'all' in args.arduino_names:
