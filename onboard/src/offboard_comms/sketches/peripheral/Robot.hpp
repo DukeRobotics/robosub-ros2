@@ -1,3 +1,6 @@
+#ifndef ROBOT_HPP
+#define ROBOT_HPP
+
 #include "Voltage.hpp"
 #include "Pressure.hpp"
 #include "TempHumidity.hpp"
@@ -124,3 +127,5 @@ class Robot {
             }
         }
 };
+
+#endif

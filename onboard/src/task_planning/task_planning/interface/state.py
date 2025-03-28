@@ -27,7 +27,7 @@ class State:
     IMU_TOPIC = '/vectornav/imu'
     RESET_POSE_SERVICE = '/set_pose'
 
-    def __init__(self, node: Node, bypass: bool = False, tf_buffer: Buffer = None) -> None:
+    def __init__(self, node: Node, bypass: bool = False, tf_buffer: Buffer | None = None) -> None:
         """
         Initialize the state.
 
@@ -39,12 +39,12 @@ class State:
         self.bypass = bypass
         self._tf_buffer = tf_buffer if tf_buffer else Buffer()
 
-        self.received_state = False
-        self.received_depth = False
-        self.received_imu = False
+        self._received_state = False
+        self._received_depth = False
+        self._received_imu = False
 
-        self._state = Odometry()
-        self._orig_state = Odometry()
+        self._state = None
+        self._orig_state = None
         self._depth = 0
         self._orig_depth = 0
         self._imu = Imu()
@@ -62,12 +62,17 @@ class State:
         node.create_subscription(Imu, self.IMU_TOPIC, self._on_receive_imu, 10)
 
     @property
-    def state(self) -> Odometry:
+    def received_state(self) -> bool:
+        """Whether the state has been received."""
+        return self._received_state
+
+    @property
+    def state(self) -> Odometry | None:
         """The state."""
         return self._state
 
     @property
-    def orig_state(self) -> Odometry:
+    def orig_state(self) -> Odometry | None:
         """The first state message received."""
         return self._orig_state
 
@@ -99,23 +104,23 @@ class State:
     def _on_receive_state(self, state: Odometry) -> None:
         self._state = state
 
-        if not self.received_state:
+        if not self._received_state:
             self._orig_state = state
-            self.received_state = True
+            self._received_state = True
 
     def _on_receive_depth(self, depth_msg: PoseWithCovarianceStamped) -> None:
         self._depth = depth_msg.pose.pose.position.z
 
-        if not self.received_depth:
+        if not self._received_depth:
             self._orig_depth = depth_msg.pose.pose.position.z
-            self.received_depth = True
+            self._received_depth = True
 
     def _on_receive_imu(self, imu_msg: Imu) -> None:
         self._imu = imu_msg
 
-        if not self.received_imu:
+        if not self._received_imu:
             self._orig_imu = imu_msg
-            self.received_imu = True
+            self._received_imu = True
 
     def reset_pose(self) -> None:
         """Reset the pose."""

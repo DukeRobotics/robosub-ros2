@@ -166,16 +166,14 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
     };
 
     // Make the service call
-    context.callService(SET_CONTROL_TYPES_SERVICE, request).then(
+    (context.callService(SET_CONTROL_TYPES_SERVICE, request) as Promise<CustomMsgs.SetControlTypesResponse>).then(
       (response) => {
-        const typedResponse = response as CustomMsgs.SetControlTypesResponse;
-
         // Update the state based on the service response
         // If the service responds with failure, display the response message as an error
-        if (typedResponse.success) {
+        if (response.success) {
           setState((prevState) => ({ ...prevState, error: undefined, joystickEnabled: !prevState.joystickEnabled }));
         } else {
-          setState((prevState) => ({ ...prevState, error: Error(typedResponse.message) }));
+          setState((prevState) => ({ ...prevState, error: Error(response.message) }));
         }
       },
       (error: unknown) => {

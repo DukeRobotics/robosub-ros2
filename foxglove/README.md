@@ -153,6 +153,7 @@ This command will exit with a non-zero status if any potential problems are foun
 - [`thruster-allocs-panel`](extensions/thruster-allocs-panel/README.md) - Panel that displays the current thruster allocs and publishes desired thruster allocs
 - [`toggle-joystick-panel`](extensions/toggle-joystick-panel/README.md) - Panel to toggle joystick control on/off, as well as publish transformed joystick inputs as a desired power
 - [`pid-panel`](extensions/pid-panel/README.md) - Panel to read/set PID gains
+- [`discrete-servos-panel`](extensions/discrete-servos-panel/README.md) - Panel to control discrete servos
 
 ### Local Dependencies
 Local dependencies are located in the `shared/` directory.
