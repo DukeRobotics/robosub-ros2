@@ -1,6 +1,6 @@
 <launch>
     <arg name="camera" default="front" />
-    <arg name="running_model" default="2024_gate_glyphs" />
+    <arg name="running_model" default="2025_torpedo" />
     <arg name="rgb_raw" default="True" />
     <arg name="rgb_detections" default="True" />
     <arg name="sync_nn" default="True" />
