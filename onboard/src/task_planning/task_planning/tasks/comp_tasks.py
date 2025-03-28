@@ -13,12 +13,12 @@ from rclpy.duration import Duration
 from rclpy.logging import get_logger
 from transforms3d.euler import quat2euler
 
-from task_planning import cv_tasks, move_tasks
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
-from task_planning.interface.marker_dropper import MarkerDropper, MarkerDropperStates
+from task_planning.interface.servos import Servos, MarkerDropperStates
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield, task
+from task_planning.tasks import cv_tasks, move_tasks
 from task_planning.utils import geometry_utils
 from task_planning.utils.coroutine_utils import sleep
 
@@ -986,7 +986,7 @@ async def bin_task(self: Task) -> Task[None, None, None]:
 
     start_time = Clock().now()
 
-    drop_marker = MarkerDropper().drop_marker
+    drop_marker = Servos().drop_marker
 
     async def correct_x(target: float) -> None:
         await cv_tasks.correct_x(prop=target, parent=self)
