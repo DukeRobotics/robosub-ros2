@@ -7,6 +7,7 @@
     <arg name="using_sonar" default="False" />
     <arg name="show_class_name" default="True" />
     <arg name="show_confidence" default="True" />
+    <arg name="current_priority" default="" />
     <node name="depthai_spatial_detection" exec="depthai_spatial_detection" pkg="cv" output="screen">
         <param name="camera" value="$(var camera)" />
         <param name="running_model" value="$(var running_model)" />
@@ -16,5 +17,6 @@
         <param name="using_sonar" value="$(var using_sonar)" />
         <param name="show_class_name" value="$(var show_class_name)" />
         <param name="show_confidence" value="$(var show_confidence)" />
+        <param name="current_priority" value="$(var current_priority)" />
     </node>
 </launch>

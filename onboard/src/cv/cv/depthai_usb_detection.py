@@ -1,3 +1,4 @@
+import os
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -11,22 +12,18 @@ from sensor_msgs.msg import CompressedImage
 
 from cv.depthai_spatial_detection import DepthAISpatialDetector
 
-USB_CAMERA_CONFIG_PATH = 'package://cv/config/usb_cameras.yaml'
+CV_CONFIG_PATH = f'package://cv/config/{os.getenv('ROBOT_NAME')}.yaml'
 
 class DepthAIUSBDetector(DepthAISpatialDetector):
     """Using an external camera feed as input, compute detections on a DepthAI camera."""
     def __init__(self) -> None:
-        """
-        Initialize the ROS node.
-
-        Loads the yaml file at cv/models/depthai_models.yaml.
-        """
+        """Initialize the ROS node."""
         super().__init__(run=False)
         self.usb_camera = self.declare_parameter('usb_camera', 'front').value
 
-        with Path.open(rr.get_filename(USB_CAMERA_CONFIG_PATH, use_protocol=False)) as f:
-            usb_cameras = yaml.safe_load(f)
-        usb_camera_config = usb_cameras[self.usb_camera]
+        with Path.open(rr.get_filename(CV_CONFIG_PATH, use_protocol=False)) as f:
+            cv_config = yaml.safe_load(f)
+        usb_camera_config = cv_config['usb_cameras'][self.usb_camera]
 
         # Update camera constants
         self.FOCAL_LENGTH = usb_camera_config['focal_length']

@@ -4,9 +4,9 @@ from pathlib import Path
 import depthai as dai
 import nmap
 import rclpy
-from rclpy.node import Node
 import resource_retriever as rr
 import yaml
+from rclpy.node import Node
 
 
 def connect(node: Node, camera: str, pipeline: dai.Pipeline) -> dai.Device:
@@ -33,7 +33,7 @@ def connect(node: Node, camera: str, pipeline: dai.Pipeline) -> dai.Device:
         config = yaml.safe_load(f)
 
     # Check if the camera is valid
-    if camera not in config["depthai"]["devices"]:
+    if camera not in config['depthai']['devices']:
         error_msg = f'Invalid camera: "{camera}". Valid cameras are: {list(config["depthai"]["devices"].keys())}'
         raise ValueError(error_msg)
 
@@ -44,24 +44,27 @@ def connect(node: Node, camera: str, pipeline: dai.Pipeline) -> dai.Device:
         if not rclpy.ok():
             break
 
-        node.get_logger().info(f'Attempting to connect to DepthAI camera {camera}, try {i + 1}...')
+        node.get_logger().info(f'Attempt {i + 1} to connect to DepthAI camera {camera}...')
 
         try:
             # Scan for camera IP address using custom autodiscovery
             ip = custom_autodiscovery(
-                config["depthai"]["devices"][camera]["mac"],
-                config["depthai"]["ip_range"]
+                config['depthai']['devices'][camera]['mac'],
+                config['depthai']['ip_range'],
             )
 
             # Try connecting with the discovered IP address
             # If the execution reaches the following return statement, the lines above did not raise an exception, so a
             # successful camera connection was made, and device should be returned
             device = dai.Device(pipeline, dai.DeviceInfo(ip))
-            node.get_logger().info(f'Connected to DepthAI camera {camera} at IP {ip}')
-            return device
 
         except RuntimeError:
             pass
+
+        else:
+            node.get_logger().info(f'Connected to DepthAI camera {camera} at IP {ip}')
+            return device
+
 
         # Wait two seconds before trying again
         # This ensures the script does not terminate if the camera is just temporarily unavailable

@@ -17,7 +17,7 @@ from cv.image_tools import ImageTools
 from cv.utils import DetectionVisualizer, calculate_relative_pose
 
 MM_IN_METER = 1000
-DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH = 'package://cv/models/depthai_models.yaml'
+DEPTHAI_MODELS_PATH = 'package://cv/models/depthai_models.yaml'
 HORIZONTAL_FOV = 95
 SONAR_DEPTH = 10
 SONAR_RANGE = 1.75
@@ -37,7 +37,7 @@ class DepthAISpatialDetector(Node):
     SENSOR_SIZE = (6.2868, 4.712)  # Sensor size in mm
 
     def __init__(self, run: bool = True) -> None:
-        """Initialize the ROS node. Loads the yaml file at cv/models/depthai_models.yaml."""
+        """Initialize the ROS node."""
         super().__init__('depthai_spatial_detection')
         self.camera = self.declare_parameter('camera', 'front').value
         self.running_model = self.declare_parameter('running_model', 'yolov7_tiny_2023_main').value
@@ -47,9 +47,9 @@ class DepthAISpatialDetector(Node):
         self.using_sonar = self.declare_parameter('using_sonar', False).value
         self.show_class_name = self.declare_parameter('show_class_name', True).value
         self.show_confidence = self.declare_parameter('show_confidence', True).value
+        self.current_priority = self.declare_parameter('current_priority', '').value
 
-        with Path.open(rr.get_filename(DEPTHAI_OBJECT_DETECTION_MODELS_FILEPATH,
-                                  use_protocol=False)) as f:
+        with Path.open(rr.get_filename(DEPTHAI_MODELS_PATH, use_protocol=False)) as f:
             self.models = yaml.safe_load(f)
 
         self.device = None
@@ -68,9 +68,6 @@ class DepthAISpatialDetector(Node):
 
         self.sonar_response = (0, 0)
         self.in_sonar_range = True
-
-        # By default the first task is going through the gate
-        self.current_priority = 'buoy_abydos_serpenscaput'
 
         qos_profile = QoSProfile(
             reliability=QoSReliabilityPolicy.RELIABLE,
