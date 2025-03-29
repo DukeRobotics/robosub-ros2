@@ -1,19 +1,19 @@
 <launch>
-	<arg name="framerate" default="30"  />
-	<arg name="rgb_video" default="False"  />
-	<arg name="rgb_video_file_path" default=""  />
-	<arg name="rgb_preview" default="False"  />
-	<arg name="rgb_preview_file_path" default=""  />
-	<arg name="left" default="False"  />
-	<arg name="left_file_path" default=""  />
-	<arg name="right" default="False"  />
-	<arg name="right_file_path" default=""  />
-	<arg name="disparity" default="False"  />
-	<arg name="disparity_file_path" default=""  />
-	<arg name="depth" default="False"  />
-	<arg name="convert_to_video" default="False"  />
-	<arg name="qt_compatible" default="False"  />
-	<node name="depthai_publish_save_streams" pkg="cv" exec="depthai_publish_save_streams" output="screen">
+	<arg name="camera" default="front" description="Name of DepthAI camera to use." />
+	<arg name="framerate" default="60" description="Framerate of the camera." />
+	<arg name="rgb_video" default="False" description="Whether to publish the RGB video stream." />
+	<arg name="rgb_video_file_path" default="" description="File path to save the RGB video stream to. Must be writable and must not include the file extension. If this is empty, the RGB video stream will not be saved." />
+	<arg name="rgb_preview" default="True" description="Whether to publish the RGB preview stream." />
+	<arg name="rgb_preview_file_path" default="" description="File path to save the RGB preview stream to. Must be writable and must not include the file extension. If this is empty, the RGB preview stream will not be saved." />
+	<arg name="left" default="False" description="Whether to publish the left mono camera stream." />
+	<arg name="left_file_path" default="" description="File path to save the left mono camera stream to. Must be writable and must not include the file extension. If this is empty, the left mono camera stream will not be saved." />
+	<arg name="right" default="False" description="Whether to publish the right mono camera stream." />
+	<arg name="right_file_path" default="" description="File path to save the right mono camera stream to. Must be writable and must not include the file extension. If this is empty, the right mono camera stream will not be saved." />
+	<arg name="disparity" default="False" description="Whether to publish the disparity stream." />
+	<arg name="disparity_file_path" default="" description="File path to save the disparity stream to. Must be writable and must not include the file extension. If this is empty, the disparity stream will not be saved." />
+	<arg name="depth" default="False" description="Whether to publish the depth stream." />
+	<node name="depthai_publish_save_streams_$(var camera)" pkg="cv" exec="depthai_publish_save_streams" output="screen">
+		<param name="camera" value="$(var camera)" />
 		<param name="framerate" value="$(var framerate)" />
 		<param name="rgb_video" value="$(var rgb_video)" />
 		<param name="rgb_video_file_path" value="$(var rgb_video_file_path)" />
@@ -26,7 +26,5 @@
 		<param name="disparity" value="$(var disparity)" />
 		<param name="disparity_file_path" value="$(var disparity_file_path)" />
 		<param name="depth" value="$(var depth)" />
-		<param name="convert_to_video" value="$(var convert_to_video)" />
-		<param name="qt_compatible" value="$(var qt_compatible)" />
 	</node>
 </launch>
