@@ -1,0 +1,24 @@
+<launch>
+    <arg name="usb_camera" default="front" />
+    <arg name="camera" default="front" />
+    <arg name="running_model" default="2024_gate_glyphs" />
+    <arg name="rgb_raw" default="True" />
+    <arg name="rgb_detections" default="True" />
+    <arg name="sync_nn" default="True" />
+    <arg name="using_sonar" default="False" />
+    <arg name="show_class_name" default="True" />
+    <arg name="show_confidence" default="True" />
+    <arg name="current_priority" default="" />
+    <node name="depthai_usb_detection_$(var camera)" exec="depthai_usb_detection" pkg="cv" output="screen">
+        <param name="usb_camera" value="$(var usb_camera)" />
+        <param name="camera" value="$(var camera)" />
+        <param name="running_model" value="$(var running_model)" />
+        <param name="rgb_raw" value="$(var rgb_raw)" />
+        <param name="rgb_detections" value="$(var rgb_detections)" />
+        <param name="sync_nn" value="$(var sync_nn)" />
+        <param name="using_sonar" value="$(var using_sonar)" />
+        <param name="show_class_name" value="$(var show_class_name)" />
+        <param name="show_confidence" value="$(var show_confidence)" />
+        <param name="current_priority" value="$(var current_priority)" />
+    </node>
+</launch>

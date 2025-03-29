@@ -8,25 +8,33 @@ from custom_msgs.msg import CVObject
 from geometry_msgs.msg import Point
 
 
-def check_file_writable(filepath: str) -> bool:
-    """Check if a file can be created or overwritten."""
-    if Path.exists(filepath):
-        # path exists
-        if Path.is_file(filepath):
-            # also works when file is a link and the target is writable
+def check_file_writable(filepath: Path) -> bool:
+    """
+    Check if a file can be created or overwritten.
+
+    Args:
+        filepath (Path): The path to the file to check.
+
+    Returns:
+        bool: True if the file can be created or overwritten, False otherwise.
+    """
+    if filepath.exists():
+        # Path exists
+        if filepath.is_file():
+            # Path is a file, check if it is writable
             return os.access(filepath, os.W_OK)
-        # path is a dir, so cannot write as a file
+        # Path is a dir, so cannot write as a file
         return False
-    # target does not exist, check perms on parent dir
-    pdir = Path.parent(filepath)
+    # Path does not exist, check permissions on parent directory
+    pdir = filepath.parent
     if not pdir:
         pdir = '.'
-    # target is creatable if parent dir is writable
+    # Target is creatable if parent dir is writable
     return os.access(pdir, os.W_OK)
 
 
 def cam_dist_with_obj_width(width_pixels: float, width_meters: float,
-                             focal_length: float, img_shape: list[int], sensor_size: float,
+                             focal_length: float, img_shape: list[int], sensor_size: tuple[float, float],
                              adjustment_factor: int = 1) -> float:
     """Note that adjustment factor is 1 for mono camera and 2 for depthAI camera."""
     return (focal_length * width_meters * img_shape[0]) \
@@ -34,7 +42,7 @@ def cam_dist_with_obj_width(width_pixels: float, width_meters: float,
 
 
 def cam_dist_with_obj_height(height_pixels: float, height_meters: float,
-                             focal_length: float, img_shape: list[int], sensor_size: float,
+                             focal_length: float, img_shape: list[int], sensor_size: tuple[float, float],
                              adjustment_factor: int = 1) -> float:
     """Return camera distance with object height."""
     return (focal_length * height_meters * img_shape[1]) \
@@ -68,7 +76,7 @@ def compute_angle_from_x_offset(x_offset: float, camera_pixel_width: float) -> f
 
 
 def calculate_relative_pose(bbox_bounds: object, input_size: list[float], label_shape: list[float], focal_length: float,
-                             sensor_size: float, adjustment_factor: int) -> list[float]:
+                             sensor_size: tuple[float, float], adjustment_factor: int) -> list[float]:
     """
     Return relative pose, to be used as a part of the CVObject.
 
@@ -77,7 +85,7 @@ def calculate_relative_pose(bbox_bounds: object, input_size: list[float], label_
         input_size (list[float]): Array with input size, where [0] is width and [1] is height.
         label_shape (list[float]): The label shape, where [0] is width (only this is accessed) and [1] is height.
         focal_length (float): The distance between the lens and the image sensor when the lens is focused on a subject.
-        sensor_size (float): The physical size of the camera's image sensor.
+        sensor_size (tuple[float, float]): The physical size of the camera's image sensor.
         adjustment_factor (int): 1 if mono, 2 if depthai.
 
     Returns:

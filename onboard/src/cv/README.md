@@ -20,7 +20,7 @@ The following are the folders and files in the CV package:
 * `config.py`: Constants.
 * `correct.py`: Auxiliary functions that correct any distortion.
 * `depthai_camera_connect.py`: Connects to the OAK camera and uploads the image pipeline. Used by all other DepthAI scripts.
-* `depthai_mono_detection.py`: Publishes detections using a specified model in `depthai_models.yaml` on a mono camera image feed.
+* `depthai_usb_detection.py`: Publishes detections using a specified model in `depthai_models.yaml` on a mono camera image feed.
 * `depthai_publish_save_streams.py`: Publishes a preview of the image feed from the OAK camera and saves encoded streams. This can be used to verify connection to the camera and to check if there are any issues with the camera feed.
 * `depthai_spatial_detection.py`: Publishes live detections using a specified model in `depthai_models.yaml`.
 * `image_tools.py`: Auxiliary functions to convert ROS image messages to other types and vice versa.
@@ -35,9 +35,9 @@ The following are the folders and files in the CV package:
 * `lane_marker_detector.xml`: Runs the lane marker detector script.
 * `buoy_detector_contour_matching.xml`: Runs the buoy detector contour matching script.
 * `depthai_camera_connect.xml`: Runs the DepthAI camera connect script.
-* `depthai_mono_detection.xml`: Runs the DepthAI mono detection script.
 * `depthai_publish_save_streams.xml`: Runs the DepthAI publish and save streams script.
 * `depthai_spatial_detection.xml`: Runs the DepthAI spatial detection script.
+* `depthai_usb_detection.xml`: Runs the DepthAI usb detection script.
 * `path_marker_detector.xml`: Runs the path marker detector script.
 * `pink_bins_detector.xml`: Runs the pink bins detector script.
 * `usb_camera_connect_all.xml`: Runs the USB camera connect script.
