@@ -1,10 +1,10 @@
 import math
 import os
-import time
 
 import numpy as np
 import rclpy
 import serial
+from builtin_interfaces.msg import Time
 from geometry_msgs.msg import PoseWithCovarianceStamped, Quaternion, TwistWithCovarianceStamped
 from std_msgs.msg import Float64
 from transforms3d.euler import euler2quat
@@ -27,7 +27,7 @@ class GyroPublisher(SerialNode):
     TEMPERATURE_TOPIC_NAME = 'sensors/gyro/temperature'
     LINE_DELIM = ','
 
-    CONNECTION_RETRY_PERIOD = 1.0 #S
+    CONNECTION_RETRY_PERIOD = 1.0 # seconds
     LOOP_RATE = 1000.0 #Hz
     TRIGGER_RATE = 1000.0 #Hz
 
@@ -42,14 +42,10 @@ class GyroPublisher(SerialNode):
                          SerialReadType.BYTES_ALL, self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE,
                          parity=serial.PARITY_EVEN, read_timeout=0, flush_input_after_read=False)
 
-        self.debug = self.declare_parameter('debug', False).value
+        self.print_error = self.declare_parameter('print_error', False).value
 
         self.started = False
-
-        # self.trigger_timer = self.create_timer(1.0 / self.TRIGGER_RATE, self.trigger_callback)
-
-        self.line_num = 1
-        self.last_start_line_num = 0
+        self.started_time = None
 
         self.angular_position_raw = 0.0
         self.angular_position = 0.0
@@ -109,6 +105,18 @@ class GyroPublisher(SerialNode):
         """
         return Quaternion(x=quat[1], y=quat[2], z=quat[3], w=quat[0])
 
+    def ros_time_msg_to_float(self, ros_time_msg: Time) -> float:
+        """
+        Convert a ROS time message to a float.
+
+        Args:
+            ros_time_msg (Time): The ROS time to convert.
+
+        Returns:
+            float: The converted time in seconds.
+        """
+        return ros_time_msg.sec + ros_time_msg.nanosec * 1e-9
+
     def process_bytes(self, data: bytes) -> None:
         """
         Process the data from the gyro.
@@ -118,17 +126,6 @@ class GyroPublisher(SerialNode):
         """
         self.buffer.extend(bytearray(data))
         self.process_buffer()
-
-        # Print line num with width of 4, then bytes as zeroes and ones. If byte is 0x80, then add " - START" to the end
-        if self.debug:
-            for byte in data:
-                line = f'{self.line_num:05d} ' + format(byte, '08b')
-                if byte == self.FRAME_START_BYTE:
-                    line += f' - START {self.line_num - self.last_start_line_num}'
-                    self.last_start_line_num = self.line_num
-
-                print(line)
-                self.line_num += 1
 
     def process_buffer(self) -> None:
         """Process the buffer of data from the gyro."""
@@ -196,7 +193,7 @@ class GyroPublisher(SerialNode):
         self.angular_velocity_twist_publisher.publish(self.angular_velocity_twist_msg)
 
         if not self.started:
-            print(self.angular_velocity_twist_msg.header.stamp)
+            self.started_time = self.ros_time_msg_to_float(self.angular_velocity_twist_msg.header.stamp)
             self.started = True
 
         self.angular_position_msg.data = self.angular_position
@@ -209,14 +206,21 @@ class GyroPublisher(SerialNode):
         self.temperature_msg.data = temperature
         self.temperature_publisher.publish(self.temperature_msg)
 
-        if self.debug:
-            print(f'Angular velocity: {angular_velocity:.9f} deg/s, Temperature: {temperature:.2f} C')
-
     def destroy_node(self) -> None:
         """Destroy the node."""
         # Print last twist msg timestamp and angular position msg data
-        print(self.angular_velocity_twist_msg.header.stamp)
-        print(self.angular_position_raw)
+        if self.print_error:
+            if self.started:
+                end_time = self.ros_time_msg_to_float(self.angular_velocity_twist_msg.header.stamp)
+                elapsed_time = end_time - self.started_time
+                error_rate = self.angular_position_raw / elapsed_time
+                self.get_logger().info(f'Started time: {self.started_time:.9f} s')
+                self.get_logger().info(f'End time:     {end_time:.9f} s')
+                self.get_logger().info(f'Elapsed time: {elapsed_time:.9f} s')
+                self.get_logger().info(f'Accumulated error: {self.angular_position_raw:.9f} deg')
+                self.get_logger().info(f'Error rate:        {error_rate:.9f} deg/s')
+            else:
+                self.get_logger().info('Did not receive data from gyro.')
         super().destroy_node()
 
 

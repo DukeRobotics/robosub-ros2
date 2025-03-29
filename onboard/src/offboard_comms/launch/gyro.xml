@@ -1,3 +1,6 @@
 <launch>
-	<node name="gyro" pkg="offboard_comms" exec="gyro" output="screen" />
+	<arg name="print_error" default="False" />
+	<node name="gyro" pkg="offboard_comms" exec="gyro" output="screen">
+		<param name="print_error" type="bool" value="$(var print_error)" />
+	</node>
 </launch>
