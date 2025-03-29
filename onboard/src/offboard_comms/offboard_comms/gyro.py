@@ -194,6 +194,7 @@ class GyroPublisher(SerialNode):
 
         if not self.started:
             self.started_time = self.ros_time_msg_to_float(self.angular_velocity_twist_msg.header.stamp)
+            self.get_logger().info(f'Received first frame from gyro')
             self.started = True
 
         self.angular_position_msg.data = self.angular_position
