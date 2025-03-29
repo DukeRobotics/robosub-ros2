@@ -8,20 +8,28 @@ from custom_msgs.msg import CVObject
 from geometry_msgs.msg import Point
 
 
-def check_file_writable(filepath: str) -> bool:
-    """Check if a file can be created or overwritten."""
-    if Path.exists(filepath):
-        # path exists
-        if Path.is_file(filepath):
-            # also works when file is a link and the target is writable
+def check_file_writable(filepath: Path) -> bool:
+    """
+    Check if a file can be created or overwritten.
+
+    Args:
+        filepath (Path): The path to the file to check.
+
+    Returns:
+        bool: True if the file can be created or overwritten, False otherwise.
+    """
+    if filepath.exists():
+        # Path exists
+        if filepath.is_file():
+            # Path is a file, check if it is writable
             return os.access(filepath, os.W_OK)
-        # path is a dir, so cannot write as a file
+        # Path is a dir, so cannot write as a file
         return False
-    # target does not exist, check perms on parent dir
-    pdir = Path.parent(filepath)
+    # Path does not exist, check permissions on parent directory
+    pdir = filepath.parent
     if not pdir:
         pdir = '.'
-    # target is creatable if parent dir is writable
+    # Target is creatable if parent dir is writable
     return os.access(pdir, os.W_OK)
 
 
