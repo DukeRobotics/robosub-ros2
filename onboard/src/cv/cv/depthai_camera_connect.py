@@ -70,8 +70,7 @@ def connect(node: Node, camera: str, pipeline: dai.Pipeline) -> dai.Device:
         # This ensures the script does not terminate if the camera is just temporarily unavailable
         rclpy.spin_once(node, timeout_sec=2)
 
-    error_message = f'{total_tries} attempts were made to connect to the DepthAI camera using autodiscovery and static \
-          IP address specification. All attempts failed.'
+    error_message = f'{total_tries} attempts were made to connect to the DepthAI camera. All attempts failed.'
 
     raise RuntimeError(error_message)
 
