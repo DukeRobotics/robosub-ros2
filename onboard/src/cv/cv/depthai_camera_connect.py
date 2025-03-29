@@ -33,8 +33,8 @@ def connect(node: Node, camera: str, pipeline: dai.Pipeline) -> dai.Device:
         config = yaml.safe_load(f)
 
     # Check if the camera is valid
-    if camera not in config['depthai']['devices']:
-        error_msg = f'Invalid camera: "{camera}". Valid cameras are: {list(config["depthai"]["devices"].keys())}'
+    if camera not in config['depthai']['cameras']:
+        error_msg = f'Invalid camera: "{camera}". Valid cameras are: {list(config["depthai"]["cameras"].keys())}'
         raise ValueError(error_msg)
 
     # Number of attempts that will be made to connect to the camera
@@ -49,7 +49,7 @@ def connect(node: Node, camera: str, pipeline: dai.Pipeline) -> dai.Device:
         try:
             # Scan for camera IP address using custom autodiscovery
             ip = custom_autodiscovery(
-                config['depthai']['devices'][camera]['mac'],
+                config['depthai']['cameras'][camera]['mac'],
                 config['depthai']['ip_range'],
             )
 

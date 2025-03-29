@@ -1,4 +1,3 @@
-import os
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -6,13 +5,10 @@ import cv2
 import depthai as dai
 import numpy as np
 import rclpy
-import resource_retriever as rr
-import yaml
 from sensor_msgs.msg import CompressedImage
 
 from cv.depthai_spatial_detection import DepthAISpatialDetector
 
-CV_CONFIG_PATH = f'package://cv/config/{os.getenv('ROBOT_NAME')}.yaml'
 
 class DepthAIUSBDetector(DepthAISpatialDetector):
     """Using an external camera feed as input, compute detections on a DepthAI camera."""
@@ -20,18 +16,23 @@ class DepthAIUSBDetector(DepthAISpatialDetector):
         """Initialize the ROS node."""
         super().__init__(run=False)
         self.usb_camera = self.declare_parameter('usb_camera', 'front').value
-
-        with Path.open(rr.get_filename(CV_CONFIG_PATH, use_protocol=False)) as f:
-            cv_config = yaml.safe_load(f)
-        usb_camera_config = cv_config['usb_cameras'][self.usb_camera]
-
-        # Update camera constants
-        self.FOCAL_LENGTH = usb_camera_config['focal_length']
-        self.SENSOR_SIZE = (usb_camera_config['sensor_size']['width'], usb_camera_config['sensor_size']['height'])
-
-        self.create_subscription(CompressedImage, usb_camera_config['topic'], self._update_latest_img, 1)
-
+        self.create_subscription(CompressedImage, self.cv_config['usb_cameras'][self.usb_camera]['topic'],
+                                 self._update_latest_img, 1)
         self.run()
+
+    def get_camera_constants(self) -> tuple[float, float, tuple[float, float]]:
+        """
+        Set camera constants based on the camera being used.
+
+        Returns:
+            tuple[float, float, tuple[float, float]]: Tuple containing the horizontal field of view, focal length, and
+                sensor size.
+        """
+        usb_camera_config = self.cv_config['usb_cameras'][self.usb_camera]
+        horizontal_fov = usb_camera_config['horizontal_fov']
+        focal_length = usb_camera_config['focal_length']
+        sensor_size = (usb_camera_config['sensor_size']['width'], usb_camera_config['sensor_size']['height'])
+        return horizontal_fov, focal_length, sensor_size
 
     # Format a cv2 image to be sent to the device
     def to_planar(self, arr: np.ndarray, shape: Sequence) -> np.ndarray:

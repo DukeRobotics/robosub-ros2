@@ -1,4 +1,5 @@
 import math
+import os
 from pathlib import Path
 
 import depthai as dai
@@ -17,24 +18,19 @@ from cv.image_tools import ImageTools
 from cv.utils import DetectionVisualizer, calculate_relative_pose
 
 MM_IN_METER = 1000
+CV_CONFIG_PATH = f'package://cv/config/{os.getenv('ROBOT_NAME')}.yaml'
 DEPTHAI_MODELS_PATH = 'package://cv/models/depthai_models.yaml'
-HORIZONTAL_FOV = 95
 SONAR_DEPTH = 10
 SONAR_RANGE = 1.75
 SONAR_REQUESTS_PATH = 'sonar/request'
 SONAR_RESPONSES_PATH = 'sonar/cv/response'
 TASK_PLANNING_REQUESTS_PATH = 'controls/desired_feature'
-LOOP_RATE = 20
-
-
-ISP_IMG_SHAPE = (4056, 3040)  # Size of ISP image
 
 
 class DepthAISpatialDetector(Node):
     """Compute detections on live camera feed and publish spatial coordinates for detected objects."""
 
-    FOCAL_LENGTH = 2.75  # Focal length of camera in mm
-    SENSOR_SIZE = (6.2868, 4.712)  # Sensor size in mm
+    LOOP_RATE = 30
 
     def __init__(self, run: bool = True) -> None:
         """Initialize the ROS node."""
@@ -49,7 +45,12 @@ class DepthAISpatialDetector(Node):
         self.show_confidence = self.declare_parameter('show_confidence', True).value
         self.current_priority = self.declare_parameter('current_priority', '').value
 
-        with Path.open(rr.get_filename(DEPTHAI_MODELS_PATH, use_protocol=False)) as f:
+        with Path(rr.get_filename(CV_CONFIG_PATH, use_protocol=False)).open() as f:
+            self.cv_config = yaml.safe_load(f)
+
+        self.horizontal_fov, self.focal_length, self.sensor_size = self.get_camera_constants()
+
+        with Path(rr.get_filename(DEPTHAI_MODELS_PATH, use_protocol=False)).open() as f:
             self.models = yaml.safe_load(f)
 
         self.device = None
@@ -85,6 +86,20 @@ class DepthAISpatialDetector(Node):
 
         if run:
             self.run()
+
+    def get_camera_constants(self) -> tuple[float, float, tuple[float, float]]:
+        """
+        Set camera constants based on the camera being used.
+
+        Returns:
+            tuple[float, float, tuple[float, float]]: Tuple containing the horizontal field of view, focal length, and
+                sensor size.
+        """
+        camera_config = self.cv_config['depthai']['cameras'][self.camera]
+        horizontal_fov = camera_config['horizontal_fov']
+        focal_length = camera_config['focal_length']
+        sensor_size = (camera_config['sensor_size']['width'], camera_config['sensor_size']['height'])
+        return horizontal_fov, focal_length, sensor_size
 
     def build_pipeline(self, nn_blob_path: Path, sync_nn: bool) -> dai.Pipeline:
         """
@@ -296,7 +311,7 @@ class DepthAISpatialDetector(Node):
 
             # Calculate relative pose
             det_coords_robot_mm = calculate_relative_pose(bbox, model['input_size'], model['sizes'][label],
-                                                          self.FOCAL_LENGTH, self.SENSOR_SIZE, 2)
+                                                          self.focal_length, self.sensor_size, 2)
 
             # Find yaw angle offset
             left_end_compute = self.compute_angle_from_x_offset(detection.xmin * self.camera_pixel_width)
@@ -417,7 +432,7 @@ class DepthAISpatialDetector(Node):
         self.detection_visualizer = DetectionVisualizer(self.classes, self.colors, self.show_class_name,
                                                         self.show_confidence)
 
-        self.detect_timer = self.create_timer(1 / LOOP_RATE, self.detect)
+        self.detect_timer = self.create_timer(1 / self.LOOP_RATE, self.detect)
 
     def destroy_node(self) -> None:
         """Destroy the node and release the device."""
@@ -469,7 +484,7 @@ class DepthAISpatialDetector(Node):
             tuple[float, float]: Tuple containing the minimum and maximum angle to sweep sonar.
         """
         distance_to_screen = self.camera_pixel_width / 2 * \
-            1/math.tan(math.radians(HORIZONTAL_FOV/2))
+            1/math.tan(math.radians(self.horizontal_fov/2))
         min_angle = math.degrees(np.arctan(min_x/distance_to_screen))
         max_angle = math.degrees(np.arctan(max_x/distance_to_screen))
         return min_angle, max_angle
