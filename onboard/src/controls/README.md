@@ -316,6 +316,8 @@ The `data` directory contains [CSV files](#csv-files) for all robots' [wrench ma
 One pair of CSV files is required for each robot. They should be located in the `data` directory. The files are generated automatically by the `compute_wrench_matrix.py` script. The script will output the CSV files to the paths specified in the [robot config file](#robot-config-file) and they will be read by the system at those paths.
 
 > [!IMPORTANT]
+> If the CSV files do not exist in the `data` directory and the `compute_wrench_matrix.py` script is run, the script will save the CSV files in the `onboard/install` directory and they will not show up in the `data` directory. To see the CSV files in the `data` directory, create empty files with the same names in the `data` directory, build the controls package, and run the `compute_wrench_matrix.py` script. The script will still save the CSV files in the `onboard/install` directory, but they will be symlinked to the `data` directory.
+>
 > The CSV files should be _regenerated_ whenever the thruster configuration changes. This includes adding, removing, repositioning, or reorienting thrusters.
 >
 > Additionally, the CSV files should _not_ contain any leading or trailing whitespace, column or row headers, and the values should be separated by commas.

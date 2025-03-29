@@ -70,7 +70,7 @@ def get_transform(node: Node, tf_buffer: Buffer) -> TransformStamped:
 
     # Raise error if transformation not found
     error_msg = (
-        'Could not get base_link to corner_link transform. Launch the "corner_link_static_tranform" node and ensure '
+        'Could not get base_link to corner_link transform. Launch the "static_tranform_corner_link" node and ensure '
         'that the transform is being published.'
     )
     raise RuntimeError(error_msg)
@@ -147,14 +147,6 @@ def main() -> None:
     """Compute the wrench matrix and its pseudoinverse for a robot using symbolic math. Save the matrices as CSVs."""
     rclpy.init()
     node = Node('wrench_matrix_computation')
-
-    # Check if static_transforms node is running
-    if 'static_tranform_corner_link' not in node.get_node_names():
-        error_msg = (
-            'The "corner_link_static_tranform" node is not running. Static transforms must be published before running '
-            'this script.'
-        )
-        raise RuntimeError(error_msg)
 
     # Spin the node and wait to recieve a static transform
     tf_buffer = Buffer()
