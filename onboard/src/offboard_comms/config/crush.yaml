@@ -26,7 +26,7 @@ arduino:
         tag: HB
         topic: /sensors/humidity/battery
   thruster:
-    ftdi: B0004VDI
+    ftdi: B0015XL0
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketches/thruster
