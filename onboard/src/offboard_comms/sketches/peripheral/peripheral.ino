@@ -32,11 +32,11 @@ void setupGyroTrigger() {
     TCCR2B = 0;
     TCNT2 = 0;
 
-    // Set CTC mode (Clear Timer on Compare Match)
-    TCCR2A = (1 << COM2A0) | (1 << COM2B0) | (1 << WGM21); // Toggle OC2A and OC2B on match, CTC mode
-    TCCR2B = (1 << CS22); // Prescaler = 64
+    TCCR2A = (1 << COM2A0) | (1 << COM2B0) | (1 << WGM21);
+    TCCR2B = (1 << CS22) | (1 << FOC2B); // Prescaler of 64
 
     OCR2A = 124;
+    OCR2B = 124;
 }
 
 void setup() {
