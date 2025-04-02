@@ -163,12 +163,12 @@ class SerialNode(Node, ABC):
         error_msg = 'Subclasses must implement this method to process the line read from serial.'
         raise NotImplementedError(error_msg)
 
-    def process_bytes(self, _: bytes) -> None:
+    def process_bytes(self, data: bytes) -> None:
         """
         Process bytes read from serial.
 
         Args:
-            _ (bytes): Data to process.
+            data (bytes): Data to process.
         """
         error_msg = 'Subclasses must implement this method to process the bytes read from serial.'
         raise NotImplementedError(error_msg)

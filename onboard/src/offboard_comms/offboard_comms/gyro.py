@@ -20,16 +20,17 @@ class GyroPublisher(SerialNode):
 
     BAUDRATE = 460800
     NODE_NAME = 'gyro_pub'
-    ANGULAR_VELOCITY_TOPIC_NAME = 'sensors/gyro/angular_velocity'
-    ANGULAR_VELOCITY_TWIST_TOPIC_NAME = 'sensors/gyro/angular_velocity_twist'
-    ANGULAR_POSITION_TOPIC_NAME = 'sensors/gyro/angular_position'
-    ANGULAR_POSITION_POSE_TOPIC_NAME = 'sensors/gyro/angular_position_pose'
+    ANGULAR_VELOCITY_TOPIC_NAME = 'sensors/gyro/angular_velocity/raw'
+    ANGULAR_VELOCITY_TWIST_TOPIC_NAME = 'sensors/gyro/angular_velocity/twist'
+    ANGULAR_POSITION_TOPIC_NAME = 'sensors/gyro/angular_position/raw'
+    ANGULAR_POSITION_POSE_TOPIC_NAME = 'sensors/gyro/angular_position/pose'
     TEMPERATURE_TOPIC_NAME = 'sensors/gyro/temperature'
-    LINE_DELIM = ','
 
     CONNECTION_RETRY_PERIOD = 1.0 # seconds
     LOOP_RATE = 1000.0 #Hz
     TRIGGER_RATE = 1000.0 #Hz
+
+    TF_FRAME_ID = 'gyro'
 
     FRAME_START_BYTE = 0x80
     FRAME_NUM_BYTES = 10
@@ -42,28 +43,30 @@ class GyroPublisher(SerialNode):
                          SerialReadType.BYTES_ALL, self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE,
                          parity=serial.PARITY_EVEN, read_timeout=0, flush_input_after_read=False)
 
-        self.print_error = self.declare_parameter('print_error', False).value
+        self.compute_avg_angular_velocity = self.declare_parameter('compute_avg_angular_velocity', False).value
+        self.log_checksum_errors = self.declare_parameter('log_checksum_errors', False).value
 
-        self.started = False
-        self.started_time = None
+        self.error_rate = self._config['gyro']['error']
+
+        self.first_msg_time = None
 
         self.angular_position_raw = 0.0
         self.angular_position = 0.0
 
         self.buffer = bytearray()
 
-        self.angular_velocity_publisher = self.create_publisher(Float64, self.ANGULAR_VELOCITY_TOPIC_NAME, 10)
+        self.angular_velocity_raw_publisher = self.create_publisher(Float64, self.ANGULAR_VELOCITY_TOPIC_NAME, 10)
         self.angular_velocity_twist_publisher = self.create_publisher(TwistWithCovarianceStamped,
                                                                 self.ANGULAR_VELOCITY_TWIST_TOPIC_NAME, 10)
-        self.angular_position_publisher = self.create_publisher(Float64, self.ANGULAR_POSITION_TOPIC_NAME, 10)
+        self.angular_position_raw_publisher = self.create_publisher(Float64, self.ANGULAR_POSITION_TOPIC_NAME, 10)
         self.angular_position_pose_publisher = self.create_publisher(PoseWithCovarianceStamped,
                                                                      self.ANGULAR_POSITION_POSE_TOPIC_NAME, 10)
         self.temperature_publisher = self.create_publisher(Float64, self.TEMPERATURE_TOPIC_NAME, 10)
 
-        self.angular_velocity_msg = Float64()
+        self.angular_velocity_raw_msg = Float64()
 
         self.angular_velocity_twist_msg = TwistWithCovarianceStamped()
-        self.angular_velocity_twist_msg.header.frame_id = 'gyro'
+        self.angular_velocity_twist_msg.header.frame_id = self.TF_FRAME_ID
         self.angular_velocity_twist_msg.twist.twist.linear.x = 0.0
         self.angular_velocity_twist_msg.twist.twist.linear.y = 0.0
         self.angular_velocity_twist_msg.twist.twist.linear.z = 0.0
@@ -72,10 +75,10 @@ class GyroPublisher(SerialNode):
         self.angular_velocity_twist_msg.twist.twist.angular.z = 0.0
         self.angular_velocity_twist_msg.twist.covariance[35] = 0.01  # Only set the angular z, angular z covariance
 
-        self.angular_position_msg = Float64()
+        self.angular_position_raw_msg = Float64()
 
         self.angular_position_pose_msg = PoseWithCovarianceStamped()
-        self.angular_position_pose_msg.header.frame_id = 'gyro'
+        self.angular_position_pose_msg.header.frame_id = self.TF_FRAME_ID
         self.angular_position_pose_msg.pose.pose.position.x = 0.0
         self.angular_position_pose_msg.pose.pose.position.y = 0.0
         self.angular_position_pose_msg.pose.pose.position.z = 0.0
@@ -155,7 +158,7 @@ class GyroPublisher(SerialNode):
             start_byte_index (int): Index of the start byte in the buffer. The buffer must have at least FRAME_NUM_BYTES
                 bytes in it, starting from this index.
         """
-        # Generate two checksums
+        # Compute two checksums
         # First checksum is XOR of second through sixth bytes
         # Second checksum is XOR of second through ninth bytes
         checksum1 = 0
@@ -165,39 +168,49 @@ class GyroPublisher(SerialNode):
                 checksum1 ^= self.buffer[start_byte_index + i]
             checksum2 ^= self.buffer[start_byte_index + i]
 
-        # Check if checksums are valid
+        # If checksums are invalid, don't process the frame
         if checksum1 != self.buffer[start_byte_index + 6] or checksum2 != self.buffer[start_byte_index + 9]:
-            print(f'Checksum error: {format(checksum1, '08b')} {format(self.buffer[start_byte_index + 6], '08b')} '
-                                   f'{format(checksum2, '08b')} {format(self.buffer[start_byte_index + 9], '08b')}')
+            if self.log_checksum_errors:
+                self.get_logger().info(
+                    f'Checksum error: {format(checksum1, '08b')} {format(self.buffer[start_byte_index + 6], '08b')} '
+                    f'{format(checksum2, '08b')} {format(self.buffer[start_byte_index + 9], '08b')}')
             return
 
+        # Convert the gyro data (angular velocity) into a signed 32 bit integer
         gyro_data = np.int32(self.buffer[start_byte_index + 1] & 0x7F)
         gyro_data |= np.int32((self.buffer[start_byte_index + 2] & 0x7F) << 7)
         gyro_data |= np.int32((self.buffer[start_byte_index + 3] & 0x7F) << 14)
         gyro_data |= np.int32((self.buffer[start_byte_index + 4] & 0x7F) << 21)
         gyro_data |= np.int32((self.buffer[start_byte_index + 5] & 0x0F) << 28)
 
+        # Convert the temperature data into a signed 16 bit integer
         temp_data = np.int16(self.buffer[start_byte_index + 7] & 0x7F)
         temp_data |= np.int16((self.buffer[start_byte_index + 8] & 0x7F) << 7)
 
-        angular_velocity = (gyro_data * self.TRIGGER_RATE / self.SCALE_FACTOR) - self._config['gyro']['error']
-        self.angular_position_raw += angular_velocity / self.TRIGGER_RATE
-        self.angular_position = (self.angular_position_raw + 180) % 360 - 180
+        # Scale the gyro data and temperature data, and subtract the error rate
+        # The gyro data is in degrees per second, and the temperature data is in degrees Celsius
+        angular_velocity = (gyro_data * self.TRIGGER_RATE / self.SCALE_FACTOR) - self.error_rate
         temperature = temp_data * 0.0625
 
-        self.angular_velocity_msg.data = angular_velocity
-        self.angular_velocity_publisher.publish(self.angular_velocity_msg)
+        # Compute the angular position in degrees
+        # Raw angular position is simply the integral of the angular velocity
+        self.angular_position_raw += angular_velocity / self.TRIGGER_RATE
+
+        # Angular position normalized between -180 and 180 degrees
+        self.angular_position = (self.angular_position_raw + 180.0) % 360.0 - 180.0
+
+        self.angular_velocity_raw_msg.data = angular_velocity
+        self.angular_velocity_raw_publisher.publish(self.angular_velocity_raw_msg)
 
         self.angular_velocity_twist_msg.header.stamp = self.get_clock().now().to_msg()
         self.angular_velocity_twist_msg.twist.twist.angular.z = math.radians(angular_velocity)
         self.angular_velocity_twist_publisher.publish(self.angular_velocity_twist_msg)
 
-        if not self.started:
-            self.started_time = self.ros_time_msg_to_float(self.angular_velocity_twist_msg.header.stamp)
-            self.started = True
+        if not self.first_msg_time:
+            self.first_msg_time = self.ros_time_msg_to_float(self.angular_velocity_twist_msg.header.stamp)
 
-        self.angular_position_msg.data = self.angular_position
-        self.angular_position_publisher.publish(self.angular_position_msg)
+        self.angular_position_raw_msg.data = self.angular_position
+        self.angular_position_raw_publisher.publish(self.angular_position_raw_msg)
 
         self.angular_position_pose_msg.pose.pose.orientation = self.transforms3d_quat_to_geometry_quat(
             euler2quat(0, 0, math.radians(self.angular_position)))
@@ -208,17 +221,17 @@ class GyroPublisher(SerialNode):
 
     def destroy_node(self) -> None:
         """Destroy the node."""
-        # Print last twist msg timestamp and angular position msg data
-        if self.print_error:
-            if self.started:
-                end_time = self.ros_time_msg_to_float(self.angular_velocity_twist_msg.header.stamp)
-                elapsed_time = end_time - self.started_time
-                error_rate = self.angular_position_raw / elapsed_time
-                self.get_logger().info(f'Started time: {self.started_time:.9f} s')
-                self.get_logger().info(f'End time:     {end_time:.9f} s')
-                self.get_logger().info(f'Elapsed time: {elapsed_time:.9f} s')
-                self.get_logger().info(f'Accumulated error: {self.angular_position_raw:.9f} deg')
-                self.get_logger().info(f'Error rate:        {error_rate:.9f} deg/s')
+        # Compute average angular velocity
+        if self.compute_avg_angular_velocity:
+            if self.first_msg_time:
+                last_msg_time = self.ros_time_msg_to_float(self.angular_velocity_twist_msg.header.stamp)
+                elapsed_time = last_msg_time - self.first_msg_time
+                avg_angular_velocity = self.angular_position_raw / elapsed_time
+                self.get_logger().info(f'First msg time: {self.first_msg_time:.9f} s')
+                self.get_logger().info(f'Last msg time:  {last_msg_time:.9f} s')
+                self.get_logger().info(f'Elapsed time:   {elapsed_time:.9f} s')
+                self.get_logger().info(f'Angular position:         {self.angular_position_raw:.9f} deg')
+                self.get_logger().info(f'Average angular velocity: {avg_angular_velocity:.9f} deg/s')
             else:
                 self.get_logger().info('Did not receive data from gyro.')
         super().destroy_node()
