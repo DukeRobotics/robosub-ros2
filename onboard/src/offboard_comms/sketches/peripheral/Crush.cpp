@@ -1,8 +1,8 @@
 #include "Robot.hpp"
 
 #define VOLTAGE_PIN 3
-#define THB_PIN 2
-#define THS_PIN 4
+#define THB_PIN 7
+#define THS_PIN 8
 
 class Crush : public Robot {
 private:
