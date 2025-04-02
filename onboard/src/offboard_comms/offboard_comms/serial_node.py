@@ -24,7 +24,7 @@ class SerialNode(Node, ABC):
     """Abstract ROS node to read and write to serial."""
 
     def __init__(self, node_name: str, baudrate: int, config_file_path: str, serial_device_name: str,
-                 read_type: SerialReadType, connection_retry_period: int=1, loop_rate: int=10,
+                 read_type: SerialReadType, connection_retry_period: float = 1, loop_rate: float = 10,
                  max_num_consecutive_empty_lines: int = 5, parity: str = serial.PARITY_NONE,
                  read_timeout: float = 1.0, num_bytes_to_read: int = 1, flush_input_after_read: bool = False) -> None:
         """
@@ -153,16 +153,15 @@ class SerialNode(Node, ABC):
         """
         return self.writebytes((line + '\r\n').encode('utf-8'))
 
-    def process_line(self, _: str) -> None:
+    def process_line(self, line: str) -> None:
         """
         Process line read from serial.
 
         Args:
-            _ (str): Line to process.
+            line (str): Line to process.
         """
-        if self._read_type in [SerialReadType.LINE_BLOCKING, SerialReadType.LINE_NONBLOCKING]:
-            error_msg = 'Subclasses must implement this method to process the line read from serial.'
-            raise NotImplementedError(error_msg)
+        error_msg = 'Subclasses must implement this method to process the line read from serial.'
+        raise NotImplementedError(error_msg)
 
     def process_bytes(self, _: bytes) -> None:
         """
@@ -171,9 +170,8 @@ class SerialNode(Node, ABC):
         Args:
             _ (bytes): Data to process.
         """
-        if self._read_type == SerialReadType.BYTES:
-            error_msg = 'Subclasses must implement this method to process the bytes read from serial.'
-            raise NotImplementedError(error_msg)
+        error_msg = 'Subclasses must implement this method to process the bytes read from serial.'
+        raise NotImplementedError(error_msg)
 
     def reset_serial(self) -> None:
         """Reset the serial connection."""
