@@ -30,3 +30,8 @@ arduino:
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketches/thruster
+dvl:
+  ftdi: DN04A9W9
+  negate_x_vel: false
+  negate_y_vel: false
+  negate_z_vel: false
