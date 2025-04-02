@@ -1,8 +1,9 @@
 import functools
 import os
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import rclpy
 from custom_msgs.srv import SetContinuousServo, SetDiscreteServo
@@ -70,7 +71,7 @@ class ServoTypeInfo:
     """
     servo_dataclass: type[PeripheralDiscreteServo] | type[PeripheralContinuousServo]
     service_msg_type: type[SetDiscreteServo] | type[SetContinuousServo]
-    callback: callable
+    callback: Callable[..., Any]
 
 
 class PeripheralPublisher(SerialNode):
