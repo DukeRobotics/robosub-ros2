@@ -52,6 +52,55 @@ logger = get_logger('comp_tasks')
 
 RECT_HEIGHT_METERS = 0.3048
 
+@task
+async def torpedo_task(depth_level=0.9, angle_to_shoot_at=0, animal="shark_front") -> Task[None, None, None]:
+    step_size = 1
+    shooting_distance = 1
+
+
+    async def correct_depth() -> None:
+        await move_tasks.correct_depth(desired_depth=depth_level, parent=self)
+
+    async def yaw_to_torpedo_tarp() -> None:
+        await yaw_to_cv_object('torpedo_tarp', direction=1, yaw_threshold=math.radians(15),
+                        depth_level=depth_level, parent=Task.MAIN_ID)
+
+    def get_step_size(dist: float) -> float:
+        return min(dist - step_size, shooting_distance)
+
+    async def correct_y() -> Coroutine[None, None, None]:
+        await cv_tasks.correct_y('torpedo_banner', parent=self)
+
+    async def correct_z() -> Coroutine[None, None, None]:
+        await cv_tasks.correct_z(prop='torpedo_banner', parent=self)
+
+
+    async def move_to_torpedo_banner(banner_dist=1,):
+        banner_dist = CV().cv_data['torpedo_banner'].coords.x
+        await yaw_to_torpedo_banner()
+        await correct_depth()
+
+        while banner_dist > shooting_distance:
+            await move_x(step=get_step_size(banner_dist, shooting_distance))
+            await yaw_to_torpedo_banner()
+            logger.info(f"Torpedo banner dist: {CV().cv_data['torpedo_banner'].coords.x}")
+            await correct_y()
+            if banner_dist < 3:
+                await correct_z()
+            else:
+                await correct_depth()
+
+            await Yield()
+            banner_dist = CV().cv_data['torpedo_banner'].coords.x
+            logger.info(f"Torpedo banner dist: {CV().cv_data['torpedo_banner'].coords.x}")
+
+
+    await move_to_torpedo_banner()
+
+    async def center_with_torpedo_target():
+        await yaw_to_torpedo_tarp()
+
+
 
 @task
 async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]:
