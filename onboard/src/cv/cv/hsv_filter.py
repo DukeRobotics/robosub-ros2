@@ -14,24 +14,23 @@ from cv.utils import compute_yaw
 
 class HSVFilter(Node):
     """Quick maths."""
-    def __init__(self, name: str, camera: USB_Camera, mask_ranges: list, filtering: callable = lambda x: x[0],
-                 morphology: callable = lambda x: x, retrieval: cv2.RetrievalModes = cv2.RETR_TREE,
-                 approx: cv2.ContourApproximationNodes = cv2.CHAIN_APPROX_SIMPLE) -> None:
-        super().__init__(f'{name}_hsv_filter')
+    def __init__(self) -> None:
+        super().__init__(f'{self.name}_hsv_filter')
+
+        set_params(self)
 
         self.bridge = CvBridge()
-        self.mask_ranges = mask_ranges
-        self.morphology = morphology
-        self.filtering = filtering
-        self.retrieval = retrieval
-        self.approx = approx
-        self.image_sub = self.create_subscription(CompressedImage, f'/camera/usb/{camera.name}/compressed',
+        self.image_sub = self.create_subscription(CompressedImage, f'/camera/usb/{self.camera.name}/compressed',
                                                   self.image_callback, 10)
         self.bounding_box_pub = self.create_publisher(list,
-                                                            f'/cv/{camera.name}_usb/{name}/upper/bounding_box', 1)
-        self.hsv_filtered_pub = self.create_publisher(Image, f'/cv/{camera.name}_usb/{name}/hsv_filtered', 1)
-        self.contour_image_pub = self.create_publisher(Image, f'/cv/{camera.name}_usb/{name}/contour_image', 1)
-        self.contour_image_with_bbox_pub = self.create_publisher(Image, f'/cv/{camera.name}_usb/{name}/detections', 1)
+                                                            f'/cv/{self.camera.name}_usb/{self.name}/upper/bounding_box'
+                                                            , 1)
+        self.hsv_filtered_pub = self.create_publisher(Image, f'/cv/{self.camera.name}_usb/{self.name}/hsv_filtered', 1)
+        self.contour_image_pub = self.create_publisher(Image, f'/cv/{self.camera.name}_usb/{self.name}/contour_image'
+                                                       , 1)
+        self.contour_image_with_bbox_pub = self.create_publisher(Image,
+                                                                 f'/cv/{self.camera.name}_usb/{self.name}/detections'
+                                                                 , 1)
 
 def image_callback(self, data: CompressedImage) -> None:
     """Attemp to convert image and apply contours."""
@@ -52,17 +51,17 @@ def image_callback(self, data: CompressedImage) -> None:
     mask = reduce(cv2.bitwise_or, masks)
 
     # Apply morphological filters as necessary to clean up binary image
-    final_hsv = self.morphology(mask)
+    final_hsv = morphology(mask)
 
     # Publish the HSV filtered image
     hsv_filtered_msg = self.bridge.cv2_to_imgmsg(final_hsv, 'mono8')
     self.hsv_filtered_pub.publish(hsv_filtered_msg)
 
     # Find contours in the image
-    contours, _ = cv2.findContours(final_hsv, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(final_hsv, self.retrieval, self.approx)
 
     # Filter contours as desired
-    final_contours = self.filtering(contours)
+    final_contours = filtering(contours)
 
     image_with_contours = image.copy()
     cv2.drawContours(image_with_contours, contours, -1, (255, 0, 0), 2)
@@ -102,6 +101,25 @@ def image_callback(self, data: CompressedImage) -> None:
     # Convert the image with the bounding box to ROS Image message and publish
     image_msg = self.bridge.cv2_to_imgmsg(image, 'bgr8')
     self.contour_image_with_bbox_pub.publish(image_msg)
+
+def morphology(mask: np.ndarray) -> np.ndarray:
+    """Apply morphological transforms to mask."""
+    kernel = np.ones((5, 5), np.uint8)
+    return cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+
+def filtering(contours: np.ndarray) -> np.ndarray:
+    """Filter out bad contours."""
+    return contours
+
+def set_params(self) -> None:
+    """Set file parameters."""
+    self.name = 'test_camera'
+    self.camera = USB_Camera(0)
+    self.mask_ranges = None
+    self.retrieval = cv2.RetrievalModes = cv2.RETR_TREE,
+    self.approx = cv2.ContourApproximationNodes = cv2.CHAIN_APPROX_SIMPLE
+
+
 
 def main(args: list[str] | None = None) -> None:
     """Run the node."""
