@@ -18,8 +18,8 @@ class Bins:
     RED_HIGH_TOP = np.array([179, 255, 255])
 
     # Define the range for HSV filtering on the blue bin
-    lower_blue = np.array([90, 150, 50])
-    upper_blue = np.array([125, 255, 255])
+    LOWER_BLUE = np.array([90, 150, 50])
+    UPPER_BLUE = np.array([125, 255, 255])
 
 class Buoy:
     """Buoy dimension and color constants."""
@@ -29,9 +29,10 @@ class LaneMarker:
     """Lane marker color constants."""
     LANE_MARKER_BOT = np.array([100, 150, 50])
     LANE_MARKER_TOP = np.array([140, 255, 255])
-class Torpoedo:
+
+class Torpedo:
     """Torpedo dimension and color constants."""
-    WIDTH = 0.2032 # TODO update this when dimensions are released  # noqa: TD004
+    WIDTH = 0.2032  # TODO: update this when dimensions are released  # noqa: TD004
 
 class BlueRect:
     """BlueRect color constants."""
@@ -50,7 +51,9 @@ class PinkBins:
     """Pink bins color bounds."""
     PINK_1_BOT = np.array([110, 50, 130])
     PINK_1_TOP = np.array([130, 100, 200])
+
     PINK_2_BOT = np.array([130, 80, 130])
     PINK_2_TOP = np.array([160, 150, 255])
+
     PINK_3_BOT = np.array([155, 100, 150])
     PINK_3_TOP = np.array([175, 255, 255])

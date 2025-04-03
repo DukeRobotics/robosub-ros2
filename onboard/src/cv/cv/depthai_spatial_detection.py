@@ -80,9 +80,9 @@ class DepthAISpatialDetector(Node):
         self.sonar_requests_publisher = self.create_publisher(
             SonarSweepRequest, SONAR_REQUESTS_PATH, 10)
         self.sonar_response_subscriber = self.create_subscription(
-            SonarSweepResponse, SONAR_RESPONSES_PATH, self.update_sonar,qos_profile)
+            SonarSweepResponse, SONAR_RESPONSES_PATH, self.update_sonar, qos_profile)
         self.desired_detection_feature = self.create_subscription(
-            String, TASK_PLANNING_REQUESTS_PATH, self.update_priority,qos_profile)
+            String, TASK_PLANNING_REQUESTS_PATH, self.update_priority, qos_profile)
 
         if run:
             self.run()
@@ -237,9 +237,7 @@ class DepthAISpatialDetector(Node):
         publisher_dict = {}
         for model_class in model['classes']:
             publisher_name = f'{model['topic']}/{self.camera}/{model_class}'
-            publisher_dict[model_class] = self.create_publisher(CVObject,
-                                                          publisher_name,
-                                                          10)
+            publisher_dict[model_class] = self.create_publisher(CVObject, publisher_name, 10)
         self.publishers_dict = publisher_dict
 
         # Create CompressedImage publishers for the raw RGB feed and detections feed
@@ -310,7 +308,8 @@ class DepthAISpatialDetector(Node):
             confidence = detection.confidence
 
             # Calculate relative pose
-            det_coords_robot_mm = calculate_relative_pose(bbox, model['input_size'], model['sizes'][label],
+            det_coords_robot_mm = calculate_relative_pose(bbox, tuple(model['input_size']),
+                                                          tuple(model['sizes'][label]),
                                                           self.focal_length, self.sensor_size, 2)
 
             # Find yaw angle offset
@@ -387,7 +386,7 @@ class DepthAISpatialDetector(Node):
             self.get_logger().debug('Publishing')
             self.publishers_dict[label].publish(object_msg)
 
-    def update_sonar(self, sonar_results: object) -> None:
+    def update_sonar(self, sonar_results: SonarSweepResponse) -> None:
         """
         Listen to sonar response.
 
@@ -484,7 +483,7 @@ class DepthAISpatialDetector(Node):
             tuple[float, float]: Tuple containing the minimum and maximum angle to sweep sonar.
         """
         distance_to_screen = self.camera_pixel_width / 2 * \
-            1/math.tan(math.radians(self.horizontal_fov/2))
+            1 / math.tan(math.radians(self.horizontal_fov / 2))
         min_angle = math.degrees(np.arctan(min_x/distance_to_screen))
         max_angle = math.degrees(np.arctan(max_x/distance_to_screen))
         return min_angle, max_angle

@@ -319,7 +319,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
             xout_ve_disparity = self.pipeline.create(dai.node.XLinkOut)
             xout_ve_disparity.setStreamName('veDisparity')
 
-        # Link nodesf
+        # Link nodes
         if self.publish_left:
             cam_left.out.link(xout_left.input)
 
