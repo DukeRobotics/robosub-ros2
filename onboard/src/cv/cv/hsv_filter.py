@@ -18,6 +18,8 @@ class HSVFilter(Node):
                     approx: int = cv2.CHAIN_APPROX_SIMPLE) -> None:
         super().__init__(f'{name}_hsv_filter')
 
+        set_params(self)
+
         self.bridge = CvBridge()
 
         # Up to child classes to define
