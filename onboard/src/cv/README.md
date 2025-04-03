@@ -1,9 +1,6 @@
 # Computer Vision
 
-The computer vision package listens for images/frames coming from multiple cameras. The package
-will then run pre-trained machine learning models or an HSV filtering algorithm on frames from each camera and output bounding boxes for the various objects
-in the frames. These objects could be the gate, buoys, etc. The package will publish to different topics depending
-on which classes are being detected and which cameras are being used.
+The computer vision package listens for images/frames coming from multiple cameras. The package will then run pre-trained machine learning models or an HSV filtering algorithm on frames from each camera and output bounding boxes for the various objects in the frames. These objects could be the gate, buoys, etc. The package will publish to different topics depending on which classes are being detected and which cameras are being used.
 
 ## Structure
 
@@ -11,54 +8,71 @@ The following are the folders and files in the CV package:
 
 `assets`: Additional assets (usually images) that the scripts may use.
 
-`config`: Configuration files that contain information about how various parts of the pipeline are configured.
+`config`: Robot-specific configuration files for the CV package. See [config](#config) for more details.
 
-`cv`: This is the "meat" of our package that contains all of the files that connects to the camera and/or performs detection.
+`cv`: Contains scripts that connect to the camera and perform detection.
 * `bin_detector.py`: Detects bins using HSV filtering.
-* `lane_marker_detector.py`: Detects the lane marker in Taishoff Aquatics Pavillion using HSV filtering.
-* `buoy_detector_contour_matching`: Detects buoy using HSV filtering.
-* `config.py`: Constants.
-* `correct.py`: Auxiliary functions that correct any distortion.
-* `depthai_camera_connect.py`: Connects to the OAK camera and uploads the image pipeline. Used by all other DepthAI scripts.
-* `depthai_usb_detection.py`: Publishes detections using a specified model in `depthai_models.yaml` on a mono camera image feed.
+* `lane_marker_detector.py`: Detects the lane marker in Taishoff Aquatics Pavilion using HSV filtering.
+* `buoy_detector_contour_matching.py`: Detects the buoy using HSV filtering.
+* `config.py`: Constants used throughout the CV package.
+* `depthai_camera_connect.py`: Connects to the OAK camera and uploads the image pipeline. Used by other DepthAI scripts.
+* `depthai_usb_detection.py`: Publishes detections using a specified model in `depthai_models.yaml` on a USB camera image feed.
 * `depthai_publish_save_streams.py`: Publishes a preview of the image feed from the OAK camera and saves encoded streams. This can be used to verify connection to the camera and to check if there are any issues with the camera feed.
 * `depthai_spatial_detection.py`: Publishes live detections using a specified model in `depthai_models.yaml`.
 * `image_tools.py`: Auxiliary functions to convert ROS image messages to other types and vice versa.
+* `torpedo_target_detector.py`: Detects the torpedo target using HSV filtering.
 * `path_marker_detector.py`: Detects path marker using HSV filtering.
 * `pink_bins_detector.py`: Detects pink bins using HSV filtering.
-* `usb_camera_connect_all.py`: Connects and opens USB cameras.
-* `usb_camera.py`: Publishes images coming from USB cameras.
-* `utils.py`: Auxiliary functions that visualize detections on an image feed and modularize certain repeated calculations such as distance.
+* `usb_camera_connect_all.py`: Launches `usb_camera.py` on all cameras specified in the config.
+* `usb_camera.py`: Publishes frames coming from a USB camera.
+* `utils.py`: Auxiliary functions that visualize detections on an image feed and modularize certain repeated calculations.
 
-`launch`: Contains the various launch files for our CV package. There are specific launch files for each script in `cv`.
-* `bin_detector.xml`: Runs the bin detector script.
-* `lane_marker_detector.xml`: Runs the lane marker detector script.
-* `buoy_detector_contour_matching.xml`: Runs the buoy detector contour matching script.
-* `depthai_camera_connect.xml`: Runs the DepthAI camera connect script.
-* `depthai_publish_save_streams.xml`: Runs the DepthAI publish and save streams script.
-* `depthai_spatial_detection.xml`: Runs the DepthAI spatial detection script.
-* `depthai_usb_detection.xml`: Runs the DepthAI usb detection script.
-* `path_marker_detector.xml`: Runs the path marker detector script.
-* `pink_bins_detector.xml`: Runs the pink bins detector script.
-* `usb_camera_connect_all.xml`: Runs the USB camera connect script.
+`launch`: Contains the various launch files for our CV package. There are specific launch files for each script in `cv` in addition to the following:
 * `usb_camera_detectors.xml`: Runs the USB camera connect script, along with all detectors that use the USB camera feed.
-* `usb_camera.xml`: Runs the USB camera script.
 
-`models`: Contains our pre-trained models and a `.yaml` file that specifies the details of each model (classes predicted, topic name, and the path to the model weights).
-* `depthai_models.yaml`: contains models for object detection. A model is specified by a name, what classes it predicts, and the path to a .blob file, as well as other configuration parameters. `input_size` is [width, height]. The blob file format is specific to the processors that the OAK cameras use.
+`models`: Contains our pre-trained models and a `.yaml` file that specifies the details of each model.
+* `depthai_models.yaml`: Specifies models for object detection. A model is specified by a name, what classes it predicts, the path to a `.blob` file, as well as other configuration parameters. The blob file format is specific to the processors that the OAK cameras use. See [DepthAI Cameras](#depthai-cameras) for more details.
 
-`CMakeLists.txt`: A text file stating the necessary package dependencies and the files in our package.
+The CV package also has dependencies in the `core/src/custom_msgs` folder.
 
-`package.xml`: A xml file stating the basic information about the CV package.
+## Config
+The `config` directory contains robot-specific `.yaml` files. The format is as follows:
+```yaml
+depthai:
+  ip_range: IP range to scan (CIDR format)
+  cameras:
+    front:
+      number: human-readable label
+      mac: MAC address of the camera
+      horizontal_fov: horizontal fov
+      focal_length: focal length
+      sensor_size:
+        width: width
+        height: height
+    ...
 
-The CV package also has dependencies in the `core/catkin_ws/src/custom_msgs` folder.
+usb_cameras:
+  front:
+    device_path: path to device to read the stream from (e.g., /dev/video0); can be a symlinked path
+    topic: topic to publish detections to
+    horizontal_fov: horizontal_fov
+    focal_length: focal_length
+    sensor_size:
+      width: width
+      height: height
+    img_size:
+      width: width
+      height: height
+```
 
 ## DepthAI Cameras
 This package contains code for the Luxonis OAK-D PoE camera, which uses a python package called [depthai](https://docs.luxonis.com/en/latest/). This camera handles neural network and image processing on the camera's processor, which necessitates a different code structure. Because of this, we have DepthAI-specific scripts and launch files that can be run for any Luxonis / DepthAI camera. For running other cameras, see the section below, titled [Non-DepthAI Cameras](#non-depthai-cameras).
 
+For a full walkthrough to training and uploading a new DepthAI model to the CV package see [Computer Vision Workflow](https://wiki.duke-robotics.com/#/computer_vision/workflow) on our wiki.
+
 ### Setup
 
-The DepthAI camera scripts only support YOLO models. After you train a YOLO model, you will receive a `.pt` file contianing the weights of the model. You will also receive other information about the model, such as the classes it predicts, the input size, the anchor masks, and the anchors, which must be included in the `depthai_models.yaml` file.
+The DepthAI camera scripts only support YOLO models. After you train a YOLO model, you will receive a `.pt` file containing the weights of the model. You will also receive other information about the model, such as the classes it predicts, the input size, the anchor masks, and the anchors, which must be included in the `depthai_models.yaml` file.
 
 1. Convert the weights file to a `.blob` file, which is necessary to run the model on the DepthAI camera. Go to [tools.luxonis.com](https://tools.luxonis.com/) and upload your `.pt` file. This will generate a `.blob` file that you can download.
 2. Place the `.blob` file in the `cv/models` folder.
@@ -81,7 +95,7 @@ model_name:
 
 * `model_name`: A unique name for the model.
 * `classes`: A list of the classes that the model predicts. Must be in the same order as the model's output.
-* `sizes`: A dictionary mapping each class to its size. Provided by the model's output.
+* `sizes`: A dictionary mapping each class to its physical size in meters (width, height).
 * `topic`: The first part of the topic to which the model's detections will be published. It should **not** include a trailing slash. For example, if the topic is `cv`, the model will publish to `cv/<camera>/<class>`.
 * `weights`: The name of the `.blob` file containing the model's weights. Must be in the `cv/models` folder.
 * `input_size`: The size of the input image to the model.
@@ -122,7 +136,7 @@ ros2 launch cv <file_name>.xml
 
 where `<file_name>` refers to the file name one is trying to launch (for more details about the files, see the section titled [Structure](#Structure)).
 
-No further arugments are required in the command line -- additional parameters can be modified in the `.xml` files and `config.py`.
+No further arguments are required in the command line -- additional parameters can be modified in the `.xml` files and `config.py`.
 
 ## Topics
 
@@ -154,4 +168,4 @@ could be anywhere from like 0.2 to 10 FPS depending on computing power/the GPU/o
 
 The `utils.py` file contains the `DetectionVisualizer` class which provides functions to draw bounding boxes and their labels onto images. It is used by DepthAI files when publishing visualized detections.
 
-The `image_tools.py` file contains the `ImageTools` class which provides functions to convert between OpenCV, ROS Image, and ROS CompressedImage formats. All scripts in this package use `ImageTools` to perform conversions between these types. `cv_bridge` is not used by any file or class in this package other than `ImageTools` itself.
+The `image_tools.py` file contains the `ImageTools` class which provides functions to convert between OpenCV, ROS Image, and ROS CompressedImage formats. Scripts in this package use `ImageTools` to perform conversions between these types. `cv_bridge` is not used by any file or class in this package other than `ImageTools` itself.
