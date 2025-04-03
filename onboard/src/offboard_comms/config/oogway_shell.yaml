@@ -46,3 +46,4 @@ dvl:
   negate_z_vel: false
 gyro:
   ftdi: FT81SKA0
+  error: 0.0023055327
