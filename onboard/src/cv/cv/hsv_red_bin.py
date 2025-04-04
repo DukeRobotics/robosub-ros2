@@ -1,12 +1,12 @@
 import cv2
 import numpy as np
 import rclpy
-from rclpy.node import Node
 
 import cv.config as cv_constants
+from cv import hsv_filter
 
 
-class HSVFilter(Node):
+class HSVRedBin(hsv_filter.HSVFilter):
     """Parent class for all HSV filtering scripts."""
     def __init__(self) -> None:
         super().__init__(
@@ -16,13 +16,13 @@ class HSVFilter(Node):
                 [cv_constants.Bins.RED_LOW_BOT, cv_constants.Bins.RED_LOW_TOP],
                 [cv_constants.Bins.RED_HIGH_BOT, cv_constants.Bins.RED_HIGH_TOP],
             ],
+            width=cv_constants.Bins.WIDTH,
         )
 
     def filter(self, contours: list) -> list:
         """Pick the largest contour only."""
         final_contours = sorted(contours, key=cv2.contourArea, reverse=True)
-        return [final_contours[0]]
-
+        return final_contours[0]
 
     def morphology(self, mask: np.ndarray) -> np.ndarray:
         """Apply a kernel morphology."""
@@ -32,7 +32,7 @@ class HSVFilter(Node):
 def main(args: list[str] | None = None) -> None:
     """Run the node."""
     rclpy.init(args=args)
-    hsv_filter = HSVFilter()
+    hsv_filter = HSVRedBin()
 
     try:
         rclpy.spin(hsv_filter)
