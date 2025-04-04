@@ -36,6 +36,7 @@ setup(
             'peripheral = offboard_comms.peripheral:main',
             'test_thrusters = offboard_comms.test_thrusters:main',
             'thrusters = offboard_comms.thrusters:main',
+            'dvl_wayfinder = offboard_comms.dvl_wayfinder:main',
         ],
     },
 )
