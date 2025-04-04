@@ -1,5 +1,5 @@
 # Offboard Communications
-This package provides communications and functionality for serial devices to be integrated with our main ROS system. The Thruster Arduino handles thruster controls. The Peripheral Arduino provides voltage, pressure (depth), temperature, and humidity readings, and also enables control of servos. The DVL (Doppler Velocity Log) provides velocity measurements.
+This package provides communications and functionality for serial devices to be integrated with our main ROS system. The Thruster Arduino handles thruster controls. The Peripheral Arduino provides voltage, pressure (depth), temperature, and humidity readings, and also enables control of servos. The DVL (Doppler Velocity Log) provides velocity measurements. The fiber optic gyroscope provides angular velocity measurements on the robot's yaw axis.
 
 Each serial device is paired with a ROS node that interfaces with it. The nodes are responsible for parsing the data from the serial device and publishing it to ROS topics. The nodes also subscribe to ROS topics and/or advertise ROS services to receive commands, which they then send to the serial device.
 
@@ -81,6 +81,10 @@ dvl:
   negate_x_vel: true or false
   negate_y_vel: true or false
   negate_z_vel: true or false
+gyro:
+  ftdi: Gyro_FTDI_string
+  error_rate: gyro_error_rate
+  scale_factor: gyro_scale_factor
 ```
 - `arduino`
     - `arduino_1`, `arduino_2`, etc. are the names of the Arduinos. These names are used to refer to the Arduinos in the [CLI](#command-line-interface) and in other files. They can be any string, but should be descriptive of the Arduino. They must be unique. `all` is a special name used by the CLI to refer to all Arduinos; do **_not_** use it as an Arduino name in this file. The names do not necessarily correspond to any names recognized by the Arduino CLI or operating system.
@@ -111,6 +115,13 @@ dvl:
 - `dvl`
     - `ftdi` is the FTDI string of the DVL. This is a unique identifier for the DVL and is used to find the port that the DVL is connected to. To find the FTDI string, see the [Obtain FTDI String](#obtain-ftdi-string) section.
     - `negate_x_vel`, `negate_y_vel`, and `negate_z_vel` are boolean values that determine whether the DVL's velocity readings should be negated. These values are used to correct for the orientation of the DVL on the robot. If the DVL is mounted in a way that causes the velocity readings along one or more axes to have an incorrect sign, set the corresponding value(s) to `true`. Otherwise, set them to `false`.
+- `gyro`
+  - `ftdi` is the FTDI string of the gyro. This is a unique identifier for the gyro and is used to find the port that the gyro is connected to. To find the FTDI string, see the [Obtain FTDI String](#obtain-ftdi-string) section.
+  - `error_rate` is the rate in degrees per second that the gyro accumulates angular error when it is at rest (not moving with respect to the surface of the Earth). The gyro measures angular velocity relative to an inertial frame of reference. The rotation of the Earth and other cosmic forces accelerate the gyro by a small amount. The effect of these forces must be compensated for to obtain accurate readings.
+    > [!IMPORTANT]
+    > The gyro's error rate depends on the latitude at whiich it is located. If the gyro is moved to a different latitude, the error rate must be remeasured and updated in the robot config file.
+  - `scale_factor` is a constant factor that the gyro readings are divided by to obtain the angular velocity. This value is provided by the manufacturer of the gyro and is different for each individual gyro, even if they are the same model.
+
 
 ### CSV Files
 The `data` directory contains CSV files that are used to store lookup tables for the thrusters. These tables are used to convert thruster allocations to PWM signals, given the current system voltage. They contain two columns: `force` and `pwm`. The `force` column has values ranging from `-1.00` to `1.00` in increments of `0.01`, and the `pwm` column has the corresponding PWM values needed to exert the given force at the given voltage. The CSV files are named `<voltage>.csv`, where `<voltage>` is the voltage the thrusters need to receive for the table to be accurate. The tables are generated using the Blue Robotics T200 Thruster performance data, found on [this page](https://bluerobotics.com/store/thrusters/t100-t200-thrusters/t200-thruster-r2-rp/) under "Technical Details".
@@ -262,6 +273,15 @@ The `dvl_to_odom` script converts the raw DVL data and publishes it to `/sensors
 
 You can launch both scripts using the `dvl.xml` launch file.
 
+## Gyro
+We use the [Memsmag G-F60-C](https://www.memsmag.com/G-F60) fiber optic gyroscope to measure angular velocity about the Z axis (yaw).
+
+The gyro uses the RS-422 communication protocol, so it has four wires: TX+ and TX- for transmitting data, and RX+ and RX- for receiving data, where the data sent/received is obtained by measuring the voltage difference between the two transmit/receive wires, respectively.
+
+It requires a 1000Hz square wave signal to be sent to the RX+ and RX- wires to trigger the gyro to send data. This signal is sent by the peripheral Arduino; see the [Gyro Trigger Signal](#gyro-trigger-signal) section for more information.
+
+Every time the gyro detects the falling edge of the square wave, it sends one frame of data containing the change in the gyro's angular position since the last frame and the current internal temperature of the gyro.
+
 ## Peripheral Arduino
 The Peripheral Arduino obtains data from the following sensors:
 - Generic voltage sensor
@@ -324,6 +344,8 @@ The servo is controlled by sending a message to the Arduino over serial in the f
 > From the Peripheral Arduino's perspective, all servos are continuous servos. The Arduino does not differentiate between continuous and discrete servos; for any servo, it will accept any PWM value that is within its range. The distinction between discrete and continuous servos is made in the [robot config file](#robot-config-file) and [Peripheral Publisher](#peripheral-publisher) script, which requires discrete servos to be set to one of a predefined set of states and continuous servos to be set to any PWM value within a range.
 
 If a servo command is sent, then the servo will not accept any other commands until the servo has returned to its original position. Thus, if you wish to send multiple commands to the same servo in quick succession, you must wait for at least 3 seconds between commands.
+
+## Gyro Trigger Signal
 
 ## Peripheral Publisher
 The `peripheral.py` script starts a ROS node that interfaces with the Peripheral Arduino. It publishes all sensor data received from the Arduino to the appropriate ROS topics. It also advertises services to control the servos connected to the Arduino.
