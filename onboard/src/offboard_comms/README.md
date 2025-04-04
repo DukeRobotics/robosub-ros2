@@ -345,7 +345,7 @@ The servo is controlled by sending a message to the Arduino over serial in the f
 
 If a servo command is sent, then the servo will not accept any other commands until the servo has returned to its original position. Thus, if you wish to send multiple commands to the same servo in quick succession, you must wait for at least 3 seconds between commands.
 
-## Gyro Trigger Signal
+### Gyro Trigger Signal
 
 ## Peripheral Publisher
 The `peripheral.py` script starts a ROS node that interfaces with the Peripheral Arduino. It publishes all sensor data received from the Arduino to the appropriate ROS topics. It also advertises services to control the servos connected to the Arduino.
