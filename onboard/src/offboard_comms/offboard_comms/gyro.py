@@ -35,8 +35,6 @@ class GyroPublisher(SerialNode):
     FRAME_START_BYTE = 0x80
     FRAME_NUM_BYTES = 10
 
-    SCALE_FACTOR = 15143697.0
-
     def __init__(self) -> None:
 
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
@@ -46,7 +44,8 @@ class GyroPublisher(SerialNode):
         self.compute_avg_angular_velocity = self.declare_parameter('compute_avg_angular_velocity', False).value
         self.log_checksum_errors = self.declare_parameter('log_checksum_errors', False).value
 
-        self.error_rate = self._config['gyro']['error']
+        self.error_rate = self._config['gyro']['error_rate']
+        self.scale_factor = self._config['gyro']['scale_factor']
 
         self.first_msg_time = None
 
@@ -189,7 +188,7 @@ class GyroPublisher(SerialNode):
 
         # Scale the gyro data and temperature data, and subtract the error rate
         # The gyro data is in degrees per second, and the temperature data is in degrees Celsius
-        angular_velocity = (gyro_data * self.TRIGGER_RATE / self.SCALE_FACTOR) - self.error_rate
+        angular_velocity = (gyro_data * self.TRIGGER_RATE / self.scale_factor) - self.error_rate
         temperature = temp_data * 0.0625
 
         # Compute the angular position in degrees

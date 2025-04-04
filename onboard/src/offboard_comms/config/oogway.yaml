@@ -46,4 +46,5 @@ dvl:
   negate_z_vel: false
 gyro:
   ftdi: FT9DD97Q
-  error: 0.0023055327
+  error_rate: 0.0023055327
+  scale_factor: 15143697.0
