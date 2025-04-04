@@ -3,6 +3,7 @@ import numpy as np
 import rclpy
 from custom_msgs.msg import RectInfo
 from cv_bridge import CvBridge, CvBridgeError
+from geometry_msgs.msg import Point
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float64
@@ -18,8 +19,8 @@ class LaneMarkerDetector(Node):
         self.bridge = CvBridge()
         self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/bottom/compressed', self.image_callback,
                                                    10)
-        self.angle_pub = self.create_publisher(Float64, '/cv/bottom/lane_marker_angle', 10)
-        self.distance_pub = self.create_publisher(Float64, '/cv/bottom/lane_marker_dist', 10)
+        self.angle_pub = self.create_publisher(Float64, '/cv/bottom/lane_marker/angle', 10)
+        self.distance_pub = self.create_publisher(Point, '/cv/bottom/lane_marker/distance', 10)
         self.detections_pub = self.create_publisher(CompressedImage, '/cv/bottom/detections/compressed', 10)
         self.rect_info_pub = self.create_publisher(RectInfo, '/cv/bottom/lane_marker', 10)
 
@@ -38,8 +39,8 @@ class LaneMarkerDetector(Node):
                 self.angle_pub.publish(angle_msg)
 
             if distance is not None:
-                distance_msg = Float64()
-                distance_msg.data = distance
+                distance_msg = Point()
+                distance_msg.y = distance
                 self.distance_pub.publish(distance_msg)
 
             if rect_info is not None:
