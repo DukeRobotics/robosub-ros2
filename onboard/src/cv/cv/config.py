@@ -32,7 +32,7 @@ class LaneMarker:
 
 class Torpedo:
     """Torpedo dimension and color constants."""
-    WIDTH = 0.2032  # TODO: update this when dimensions are released  # noqa: TD004
+    WIDTH = 0.2032  # TODO: update this when dimensions are released
 
 class BlueRect:
     """BlueRect color constants."""

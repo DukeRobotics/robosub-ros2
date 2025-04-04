@@ -63,6 +63,7 @@ usb_cameras:
     img_size:
       width: width
       height: height
+  ...
 ```
 
 ## DepthAI Cameras
