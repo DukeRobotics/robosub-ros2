@@ -1,5 +1,5 @@
 from rclpy.logging import get_logger
-from task_planning.interface.cv import CV
+from task_planning.interface.cv import CV, CVObjectType
 from task_planning.task import Task, Yield, task
 from task_planning.tasks import move_tasks
 from task_planning.tasks.move_tasks import move_to_pose_local
@@ -44,7 +44,8 @@ async def move_to_cv_obj(self: Task, name: str) -> Task[None, str | None, None]:
 
 
 @task
-async def correct_x(self: Task, prop: str, add_factor: float = 0, mult_factor: float = 1) -> Task[None, None, None]:
+async def correct_x(self: Task, prop: CVObjectType,
+                    add_factor: float = 0, mult_factor: float = 1) -> Task[None, None, None]:
     """
     Correct x-coordinate based on CV data.
 
@@ -54,13 +55,14 @@ async def correct_x(self: Task, prop: str, add_factor: float = 0, mult_factor: f
         add_factor: Additive offset. Defaults to 0.
         mult_factor: Multiplicative offset. Defaults to 1.
     """
-    x = (CV().cv_data[prop].coords.x + add_factor) * mult_factor
+    x = (CV().bounding_boxes[prop].coords.x + add_factor) * mult_factor
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(x, 0, 0, 0, 0, 0), parent=self)
     logger.info(f'Corrected x {x}')
 
 
 @task
-async def correct_y(self: Task, prop: str, add_factor: float = 0, mult_factor: float = 1) -> Task[None, None, None]:
+async def correct_y(self: Task, prop: CVObjectType,
+                    add_factor: float = 0, mult_factor: float = 1) -> Task[None, None, None]:
     """
     Correct y-coordinate based on CV data.
 
@@ -70,13 +72,13 @@ async def correct_y(self: Task, prop: str, add_factor: float = 0, mult_factor: f
         add_factor: Additive offset. Defaults to 0.
         mult_factor: Multiplicative offset. Defaults to 1.
     """
-    y = (CV().cv_data[prop].coords.y + add_factor) * mult_factor
+    y = (CV().bounding_boxes[prop].coords.y + add_factor) * mult_factor
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, y, 0, 0, 0, 0), parent=self)
     logger.info(f'Corrected y {y}')
 
 
 @task
-async def correct_z(self: Task, prop: str) -> Task[None, None, None]:
+async def correct_z(self: Task, prop: CVObjectType) -> Task[None, None, None]:
     """
     Correct z-coordinate based on CV data.
 
@@ -84,6 +86,6 @@ async def correct_z(self: Task, prop: str) -> Task[None, None, None]:
         self: Task instance.
         prop: The CV object to use for correction.
     """
-    z = CV().cv_data[prop].coords.z
+    z = CV().bounding_boxes[prop].coords.z
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, z, 0, 0, 0), parent=self)
     logger.info(f'Corrected z {z}')

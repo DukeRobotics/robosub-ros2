@@ -4,7 +4,7 @@ import math
 from collections.abc import Coroutine
 
 from rclpy.logging import get_logger
-from task_planning.interface.cv import CV
+from task_planning.interface.cv import CV, CVObjectType
 from task_planning.interface.state import State
 from task_planning.task import Task, task
 from task_planning.tasks import move_tasks
@@ -96,10 +96,10 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
             # then one or both of these flags will be true
 
             # If lane marker detection is touching the top of the frame
-            touching_top = CV().cv_data['lane_marker_touching_top']
+            touching_top = CV().lane_marker_data['touching_top']
 
              # If lane marker detection is touching the bottom of the frame
-            touching_bottom = CV().cv_data['lane_marker_touching_bottom']
+            touching_bottom = CV().lane_marker_data['touching_bottom']
 
             # If the lane marker is touching both the top and bottom of the frame,
             # then the robot is very close to the pool floor, but it is still centered on the lane marker.
@@ -139,8 +139,8 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
                     await rotate_deg(-20 * direction_sign, depth_level=DEPTH_LEVEL)
 
             # Y correction so the robot is centered on the lane marker
-            dist_pixels = CV().cv_data['lane_marker_dist']
-            height_pixels = CV().cv_data['lane_marker_height']
+            dist_pixels = CV().distances[CVObjectType.LANE_MARKER].y
+            height_pixels = CV().lane_marker_data['height']
             dist_meters = dist_pixels * LANE_MARKER_HEIGHT_METERS / height_pixels
             if abs(dist_meters) > 0:
                 await move_tasks.move_to_pose_local(
@@ -155,7 +155,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
             # (left) relative to the lane marker, then the angle is positive. If the robot has rotated clockwise
             # (right) relative to the lane marker, then the angle is negative. To correct the robot's yaw, the robot
             # must rotate in the opposite direction of the angle, hence the angle is negated.
-            angle = (CV().cv_data['lane_marker_angle'] * -1)
+            angle = (CV().angles[CVObjectType.LANE_MARKER] * -1)
             if abs(angle) > 0:
                 await rotate_deg(angle, 'Yaw correction', DEPTH_LEVEL)
 
