@@ -1,6 +1,6 @@
 <launch>
-	<arg name="print_error" default="False" />
+	<arg name="compute_avg_angular_velocity" default="False" />
 	<node name="gyro" pkg="offboard_comms" exec="gyro" output="screen">
-		<param name="print_error" type="bool" value="$(var print_error)" />
+		<param name="compute_avg_angular_velocity" type="bool" value="$(var compute_avg_angular_velocity)" />
 	</node>
 </launch>
