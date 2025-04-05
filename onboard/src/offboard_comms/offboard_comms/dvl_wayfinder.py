@@ -38,7 +38,6 @@ class DVLWayfinderPublisher(Node):
             self._config_data = yaml.safe_load(f)
 
         ftdi = self._config_data['dvl']['ftdi']
-        self.get_logger().info(f'FTDI: {ftdi}')
 
         try:
             self._serial_port = next(list_ports.grep(ftdi)).device
