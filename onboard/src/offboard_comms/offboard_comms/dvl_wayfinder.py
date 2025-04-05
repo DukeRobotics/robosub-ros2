@@ -23,7 +23,7 @@ class DVLWayfinderPublisher(Node):
     """A class to read and publish Teledyne Wayfinder DVL data from a serial port."""
     CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
 
-    # Wayfinder DVL orientation in degrees
+    # DVL orientation in degrees
     WAYFINDER_ROLL = 180
     WAYFINDER_PITCH = 0
     WAYFINDER_YAW = 135
