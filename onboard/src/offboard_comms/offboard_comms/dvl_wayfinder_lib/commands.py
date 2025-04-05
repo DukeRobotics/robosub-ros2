@@ -4,9 +4,9 @@ from enum import Enum
 import datetime
 import struct
 from queue import Queue, Empty
-from dvl.packets import PhysicalLayerPacket, AppLayerPacket, PacketDecoder, AppLayerIdType
-from dvl.util import DataLogger, SerialPort
-from dvl.system import SystemInfo, SystemFeatures, SystemSetup, SystemTests,\
+from offboard_comms.dvl_wayfinder_lib.packets import PhysicalLayerPacket, AppLayerPacket, PacketDecoder, AppLayerIdType
+from offboard_comms.dvl_wayfinder_lib.util import DataLogger, SerialPort
+from offboard_comms.dvl_wayfinder_lib.system import SystemInfo, SystemFeatures, SystemSetup, SystemTests,\
    SystemComponents, SystemUpdate, DateTime, FftTest, OutputData, FftData
 
 class CommandIdType(Enum):

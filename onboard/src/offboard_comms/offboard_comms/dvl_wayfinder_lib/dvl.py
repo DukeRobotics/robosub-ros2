@@ -1,11 +1,11 @@
 """Contains main Dvl class to connect to Wayfinder.
 """
 import datetime
-from dvl.packets import AppLayerPacket
-from dvl.commands import BinaryCommands, check_response
-from dvl.system import SystemInfo, SystemComponents, SystemFeatures, SystemSetup, \
+from offboard_comms.dvl_wayfinder_lib.packets import AppLayerPacket
+from offboard_comms.dvl_wayfinder_lib.commands import BinaryCommands, check_response
+from offboard_comms.dvl_wayfinder_lib.system import SystemInfo, SystemComponents, SystemFeatures, SystemSetup, \
     SystemTests, FftData
-from dvl.commands import ResponseStatusType, CommandIdType
+from offboard_comms.dvl_wayfinder_lib.commands import ResponseStatusType, CommandIdType
 
 class Dvl():
     """Main class to connect to Wayfinder.
@@ -146,7 +146,7 @@ class Dvl():
             return date_time
         return None
 
-    def set_time(self, date_time: datetime) ->bool:
+    def set_time(self, date_time: datetime.datetime) ->bool:
         """Sets system time.
 
         Parameters
