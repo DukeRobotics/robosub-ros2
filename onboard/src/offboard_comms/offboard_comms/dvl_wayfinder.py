@@ -23,9 +23,10 @@ class DVLWayfinderPublisher(Node):
     """A class to read and publish Teledyne Wayfinder DVL data from a serial port."""
     CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
 
-    WAYFINDER_ROLL = np.radians(180)
-    WAYFINDER_PITCH = np.radians(0)
-    WAYFINDER_YAW = np.radians(135)
+    # Wayfinder DVL orientation in degrees
+    WAYFINDER_ROLL = 180
+    WAYFINDER_PITCH = 0
+    WAYFINDER_YAW = 135
 
     NODE_NAME = 'dvl_wayfinder'
 
@@ -61,7 +62,8 @@ class DVLWayfinderPublisher(Node):
         self._sensor.exit_command_mode()
 
         # Set up rotation matrix
-        self._rotMatrix = euler2mat(self.WAYFINDER_ROLL, self.WAYFINDER_PITCH, self.WAYFINDER_YAW, axes='sxyz')
+        self._rotMatrix = euler2mat(math.radians(self.WAYFINDER_ROLL), math.radians(self.WAYFINDER_PITCH),
+                                    math.radians(self.WAYFINDER_YAW))
 
         self._pub = self.create_publisher(Odometry, self.DVL_ODOM_TOPIC, 50)
 
