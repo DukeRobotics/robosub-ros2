@@ -92,10 +92,10 @@ async def torpedo_task(depth_level=0.9, angle_to_shoot_at=0, animal="shark_front
 
 
     async def move_to_torpedo_banner(banner_dist=1,):
-        banner_dist = CV().cv_data['torpedo_banner'].coords.x
         await yaw_to_torpedo_banner()
         await correct_depth()
 
+        banner_dist = CV().cv_data['torpedo_banner'].coords.x
         while banner_dist > shooting_distance:
             await move_x(step=get_step_size(banner_dist, shooting_distance))
             await yaw_to_torpedo_banner()
@@ -116,14 +116,15 @@ async def torpedo_task(depth_level=0.9, angle_to_shoot_at=0, animal="shark_front
 
     async def center_with_torpedo_target():
         await correct_yaw_with_depthai() # Hopefully we know we are normal to the torpedo banner now and also centered with the banner.
-        target_dist_y = CV().cv_data['torpedo_banner'].coords.y
-        target_dist_z = CV().cv_data['torpedo_banner'].coords.z
+        await correct_depth()
+        target_dist_y = CV().cv_data[animal].coords.y
+        target_dist_z = CV().cv_data[animal].coords.z
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, target_dist_z, target_dist_z, 0, 0, 0),
             keep_level=True,
             parent=self,
         )
-        logger.info(f'Centered on torpedo target, y: {CV().cv_data["torpedo_banner"].coords.y}, z: {CV().cv_data["torpedo_banner"].coords.z}')
+        logger.info(f'Centered on torpedo target, y: {CV().cv_data[animal].coords.y}, z: {CV().cv_data[animal].coords.z}')
         # do transform stuff here,
         await cv_tasks.launch_torpedo() # 
 
