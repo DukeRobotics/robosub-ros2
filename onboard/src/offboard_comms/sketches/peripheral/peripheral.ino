@@ -25,15 +25,8 @@ bool valid_robot = true;
 void setupGyroTrigger() {
   // Set up Timer2 to generate two complementary 1000Hz square waves on OC2A (pin D11) and OC2B (pin D3)
   // When OC2A is high, OC2B is low, and when OC2A is low, OC2B is high
-  //
-  // See https://www.gammon.com.au/images/Arduino/Timer_2.png for a diagram of how to configure Timer2
-  // See https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7810-Automotive-Microcontrollers-ATmega328P_Datasheet.pdf for the official documentation
-  //
-  // Hardware timers are used to generate precise timing signals, such as PWM signals, or in this case a trigger signal for the gyro.
-  //
-  // The ATmega328P has three hardware timers: Timer0, Timer1, and Timer2.
-  // Timer0 is used for the Arduino's millis() and delay() functions, and Timer1 is used for the Servo library. Thus, Timer2 is available for use in this sketch.
-  //
+
+  // Set D11 and D3 to output mode
   pinMode(11, OUTPUT); // OC2A
   pinMode(3, OUTPUT);  // OC2B
 
@@ -61,6 +54,11 @@ void setupGyroTrigger() {
   // Set the OCR2A register to 124 so timer counts from 0 to 124, which is 125 counts
   // Thus, the timer will toggle the outputs 250,000 / 125 = 2000 times per second
   OCR2A = 124;
+
+  // Timer2 is now fully configured and will generate complementary 1000Hz square waves on OC2A (pin D11) and OC2B (pin D3)
+  // The timer will start counting as soon as this function returns
+  // This happens asynchronously to the rest of the program, so there is no need to call any functions to start the timer
+  // The timer will continue to run until the Arduino is powered off or reset
 }
 
 void setup() {
