@@ -123,20 +123,16 @@ class DVLWayfinderPublisher(Node):
         header_stamp.sec = sec
         header_stamp.nanosec = nanosec
 
-        vx = data_obj.vel_x
-        vy = data_obj.vel_y
-        vz = data_obj.vel_z
-
         if self._config_data['dvl']['negate_x_vel']:
-            vx = -vx
+            vels[0] = -vels[0]
         if self._config_data['dvl']['negate_y_vel']:
-            vy = -vy
+            vels[1] = -vels[1]
         if self._config_data['dvl']['negate_z_vel']:
-            vz = -vz
+            vels[2] = -vels[2]
 
         # Publish the data
         self.odom.header.stamp = header_stamp
-        self.odom.twist.twist.linear = Vector3(x=vx, y=vy, z=vz)
+        self.odom.twist.twist.linear = Vector3(x=vels[0], y=vels[1], z=vels[2])
         self._pub.publish(self.odom)
 
 def main(args: list[str] | None = None) -> None:
