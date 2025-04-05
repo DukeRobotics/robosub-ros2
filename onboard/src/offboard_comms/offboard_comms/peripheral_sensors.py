@@ -8,8 +8,8 @@ from std_msgs.msg import Float64
 class PeripheralSensor(ABC):
     """Abstract class for peripheral sensors."""
 
-    def __init__(self, node: Node, tag: str, topic: str, min_value: float, max_value: float,
-                 median_filter_size: int) -> None:
+    def __init__(self, node: Node, tag: str, topic: str, min_value: float = float('-inf'),
+                 max_value: float = float('inf'), median_filter_size: int = 0) -> None:
         self.node = node
         self.tag = tag
         self.topic = topic

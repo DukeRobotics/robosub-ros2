@@ -13,7 +13,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         (str(Path('share') / package_name / 'launch'), list(map(str, Path('./launch').glob('*.launch.py')))),
-        (str(Path('share') / package_name / 'params'), list(map(str, Path('./params').glob('*.yaml')))),
+        (str(Path('share') / package_name / 'config'), list(map(str, Path('./config').glob('*.yaml')))),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
