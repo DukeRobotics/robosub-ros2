@@ -105,7 +105,7 @@ const topicToStatus: Record<string, Status[]> = {
   "/sensors/gyro/temperature": [
     {
       name: "Temp (Gyro)",
-      suffix: "F",
+      suffix: "C",
       parse: (event) => {
         const msgEvent = event as MessageEvent<StdMsgs.Float64>;
         return msgEvent.message.data;
