@@ -46,4 +46,5 @@ dvl:
   negate_z_vel: false
 gyro:
   ftdi: FT81SKA0
-  error: 0.0023055327
+  zero_bias: 0.0023055327
+  scale_factor: 15143697.0
