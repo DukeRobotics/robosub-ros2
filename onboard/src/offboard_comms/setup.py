@@ -14,7 +14,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/config', [str(file) for file in Path('./config').glob('*.yaml')]),
         ('share/' + package_name + '/data', [str(file) for file in Path('./data').glob('*.csv')]),
-        ('share/' + package_name + '/launch', [str(file) for file in Path('./launch').glob('*')]),
+        ('share/' + package_name + '/launch', [str(file) for file in Path('./launch').glob('*.xml')]),
         ('share/' + package_name + '/sketches',
          [str(file) for file in Path('./sketches').glob('*') if file.is_file()]),
         ('share/' + package_name + '/sketches/peripheral',

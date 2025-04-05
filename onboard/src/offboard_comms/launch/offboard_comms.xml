@@ -1,0 +1,6 @@
+<launch>
+    <include file="$(find-pkg-share offboard_comms)/launch/dvl.xml"/>
+    <include file="$(find-pkg-share offboard_comms)/launch/gyro.xml"/>
+    <include file="$(find-pkg-share offboard_comms)/launch/peripheral.xml"/>
+    <include file="$(find-pkg-share offboard_comms)/launch/thrusters.xml"/>
+</launch>
