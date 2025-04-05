@@ -6,10 +6,10 @@ from custom_msgs.msg import DVLRaw
 from offboard_comms.serial_node import SerialNode
 
 
-class DVLRawPublisher(SerialNode):
-    """A class to read and publish raw DVL data from a serial port."""
+class DVLPathfinderRawPublisher(SerialNode):
+    """A class to read and publish raw Teledyne Pathfinder DVL data from a serial port."""
 
-    SERIAL_DEVICE_NAME = 'DVL'
+    SERIAL_DEVICE_NAME = 'DVL Pathfinder'
     CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
 
     BAUDRATE = 115200
@@ -179,7 +179,7 @@ class DVLRawPublisher(SerialNode):
 def main(args: list[str] | None = None) -> None:
     """Create and run the DVL raw data publisher node."""
     rclpy.init(args=args)
-    dvl_raw = DVLRawPublisher()
+    dvl_raw = DVLPathfinderRawPublisher()
 
     try:
         rclpy.spin(dvl_raw)
