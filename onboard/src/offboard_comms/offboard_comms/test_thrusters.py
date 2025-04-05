@@ -43,9 +43,6 @@ class ThrusterTester(Node):
         """
         super().__init__('thruster_tester')
 
-        if 'thrusters' not in self.get_node_names():
-            self.get_logger().error('Thrusters node is not running.')
-
         self.publisher_ = self.create_publisher(ThrusterAllocs, '/controls/thruster_allocs', 10)
         self.num_thrusters = self.get_thruster_count()
         self.thrust_speed = speed
@@ -78,7 +75,7 @@ class ThrusterTester(Node):
 
 def main(args: list[str] | None = None) -> None:
     """
-    Run main entry point for the thrusters node.
+    Run main entry point for the thruster tester node.
 
     Args:
         args (list[str] | None): Command-line arguments.
