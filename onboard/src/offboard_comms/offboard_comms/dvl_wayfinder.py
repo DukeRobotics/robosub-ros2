@@ -106,10 +106,11 @@ class DVLWayfinderPublisher(Node):
                                 data_obj.second, tzinfo=dt.UTC)
         formatted_date = dvl_time.strftime('%Y-%m-%d %H:%M:%S')
 
-        self.get_logger().info(f'{vels[0]:9.3f} {vels[1]:9.3f} {vels[2]:9.3f} | {data_obj.vel_err:9.3f} | '
-                                f'{data_obj.range_beam1:9.3f} {data_obj.range_beam2:9.3f} '
-                                f'{data_obj.range_beam3:9.3f} {data_obj.range_beam4:9.3f} | {data_obj.bit_code} | '
-                                f'{data_obj.coordinate_system} | {formatted_date}')
+        # Uncomment the following line for debugging
+        # self.get_logger().info(f'{vels[0]:9.3f} {vels[1]:9.3f} {vels[2]:9.3f} | {data_obj.vel_err:9.3f} | '
+        #                         f'{data_obj.range_beam1:9.3f} {data_obj.range_beam2:9.3f} '
+        #                         f'{data_obj.range_beam3:9.3f} {data_obj.range_beam4:9.3f} | {data_obj.bit_code} | '
+        #                         f'{data_obj.coordinate_system} | {formatted_date}')
 
         # Convert to Unix timestamp (as float in seconds)
         unix_timestamp = dvl_time.timestamp()
