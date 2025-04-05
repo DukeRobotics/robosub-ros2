@@ -64,10 +64,13 @@ class DVLPathfinderRawPublisher(SerialNode):
         except IndexError:
             self.get_logger().warn(f'Failed to parse data type from line: {line}')
 
-        if data_type in self._dvl_line_parsers:
-            self._dvl_line_parsers[data_type](self._clean_line(line))
-        else:
-            self.get_logger().warn(f'Unknown data type: {data_type}')
+        try:
+            if data_type in self._dvl_line_parsers:
+                self._dvl_line_parsers[data_type](self._clean_line(line))
+            else:
+                self.get_logger().warn(f'Unknown data type: {data_type}')
+        except ValueError:
+            self.get_logger().warn(f'Failed to parse line: {line}')
 
     def _clean_line(self, line: str) -> str:
         """
