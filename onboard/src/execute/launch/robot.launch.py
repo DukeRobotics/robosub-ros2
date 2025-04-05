@@ -34,7 +34,7 @@ def generate_launch_description() -> LaunchDescription:
         XMLLaunchDescriptionSource(str(pkg_controls / 'launch' / 'controls.xml')),
     ))
     ld.add_action(IncludeLaunchDescription(
-        XMLLaunchDescriptionSource(str(pkg_cv / 'launch' / 'usb_camera_detectors.xml')),
+        PythonLaunchDescriptionSource(str(pkg_cv / 'launch' / 'cv.launch.py')),
     ))
     ld.add_action(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'offboard_comms.launch.py')),
