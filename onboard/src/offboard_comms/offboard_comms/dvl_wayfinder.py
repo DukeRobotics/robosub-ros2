@@ -24,9 +24,9 @@ class DVLWayfinderPublisher(Node):
     CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
 
     # DVL orientation in degrees
-    WAYFINDER_ROLL = 180
+    WAYFINDER_ROLL = 0
     WAYFINDER_PITCH = 0
-    WAYFINDER_YAW = 135
+    WAYFINDER_YAW = 225
 
     NODE_NAME = 'dvl_wayfinder'
 
