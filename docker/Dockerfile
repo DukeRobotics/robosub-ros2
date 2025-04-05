@@ -15,6 +15,7 @@ USER root
 RUN apt-get update
 RUN apt install -y --no-install-recommends clang
 RUN apt install -y --no-install-recommends clang-format
+RUN apt install -y --no-install-recommends ffmpeg
 RUN apt install -y --no-install-recommends gdb
 RUN apt install -y --no-install-recommends gdbserver
 RUN apt install -y --no-install-recommends iputils-ping

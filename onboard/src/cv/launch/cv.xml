@@ -1,0 +1,6 @@
+<launch>
+    <include file="$(find-pkg-share cv)/launch/depthai_spatial_detection.xml">
+        <arg name="camera" value="front"/>
+    </include>
+    <include file="$(find-pkg-share cv)/launch/usb_camera_detectors.xml"/>
+</launch>
