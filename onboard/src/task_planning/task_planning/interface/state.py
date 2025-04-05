@@ -1,4 +1,5 @@
-from geometry_msgs.msg import PoseWithCovarianceStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped, Vector3
+from task_planning.utils import geometry_utils
 from nav_msgs.msg import Odometry
 from rclpy.logging import get_logger
 from rclpy.node import Node
@@ -95,6 +96,11 @@ class State:
     def orig_imu(self) -> Imu:
         """The first IMU message received."""
         return self._orig_imu
+    
+    @property
+    def imu_euler_angles(self) -> Vector3:
+        """Euler angles of IMU orientation in radians."""
+        return self._imu_euler_angles
 
     @property
     def tf_buffer(self) -> Buffer:
@@ -121,6 +127,8 @@ class State:
         if not self._received_imu:
             self._orig_imu = imu_msg
             self._received_imu = True
+        
+        self._imu_euler_angles = geometry_utils.geometry_quat_to_euler_angles(self._imu.orientation)
 
     def reset_pose(self) -> None:
         """Reset the pose."""
