@@ -15,7 +15,7 @@ from transforms3d.euler import quat2euler
 
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
-from task_planning.interface.servos import Servos, MarkerDropperStates
+from task_planning.interface.servos import Servos, MarkerDropperStates, TorpedoStates
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield, task
 from task_planning.tasks import cv_tasks, move_tasks
@@ -119,13 +119,22 @@ async def torpedo_task(depth_level=0.9, angle_to_shoot_at=0, animal="shark_front
         target_dist_y = CV().cv_data['torpedo_banner'].coords.y
         target_dist_z = CV().cv_data['torpedo_banner'].coords.z
         await move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, target_dist_z, target_dist_z, 0, 0, 0),
+            geometry_utils.create_pose(0, target_dist_y, target_dist_z, 0, 0, 0),
             keep_level=True,
             parent=self,
         )
         logger.info(f'Centered on torpedo target, y: {CV().cv_data["torpedo_banner"].coords.y}, z: {CV().cv_data["torpedo_banner"].coords.z}')
-        # do transform stuff here,
-        await cv_tasks.launch_torpedo() # 
+
+        # Move the Z to account for distance between camera and torpedo launcher
+        offset = -0.05
+        await move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, 0, offset, 0, 0, 0),
+            keep_level=True,
+            parent=self,
+        )
+
+        await Servos().fire_torpedo(TorpedoStates.RIGHT)
+
 
 
     await center_with_torpedo_target()
