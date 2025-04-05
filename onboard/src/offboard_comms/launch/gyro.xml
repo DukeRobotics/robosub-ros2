@@ -1,6 +1,8 @@
 <launch>
 	<arg name="compute_avg_angular_velocity" default="False" />
+	<arg name="log_checksum_errors" default="False" />
 	<node name="gyro" pkg="offboard_comms" exec="gyro" output="screen">
 		<param name="compute_avg_angular_velocity" type="bool" value="$(var compute_avg_angular_velocity)" />
+		<param name="log_checksum_errors" type="bool" value="$(var log_checksum_errors)" />
 	</node>
 </launch>
