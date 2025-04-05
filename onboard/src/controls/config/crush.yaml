@@ -41,9 +41,9 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     pitch:
-      Kp: 0.2
+      Kp: 0
       Ki: 0
-      Kd: 0.4
+      Kd: 0
       Ff: 0
       control_effort:
         min: -1
@@ -102,9 +102,9 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     pitch:
-      Kp: 0.8
+      Kp: 0
       Ki: 0
-      Kd: 0.4
+      Kd: 0
       Ff: 0
       control_effort:
         min: -1
@@ -163,9 +163,9 @@ pid:
       derivative_type: 0
       error_ramp_rate: 1000
     pitch:
-      Kp: 0.1
-      Ki: 0.001
-      Kd: 0.01
+      Kp: 0
+      Ki: 0
+      Kd: 0
       Ff: 0
       control_effort:
         min: -1
