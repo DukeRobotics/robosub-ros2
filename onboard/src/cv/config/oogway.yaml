@@ -1,0 +1,44 @@
+depthai:
+  ip_range: 192.168.110.0/24
+  cameras:
+    front:
+      number: 3
+      mac: 44:A9:2C:3E:1F:05
+      horizontal_fov: 95
+      focal_length: 2.75
+      sensor_size:
+        width: 6.2868
+        height: 4.712
+    bottom:
+      number: 1
+      mac: 44:A9:2C:30:DC:B0
+      horizontal_fov: 95
+      focal_length: 2.75
+      sensor_size:
+        width: 6.2868
+        height: 4.712
+
+usb_cameras:
+  front:
+    device_path: /dev/video_front
+    topic: /camera/usb/front/compressed
+    horizontal_fov: 82
+    focal_length: 2.65
+    sensor_size:
+      width: 3.054
+      height: 1.718
+    img_size:
+      width: 640
+      height: 480
+
+  bottom:
+    device_path: /dev/video_bottom
+    topic: /camera/usb/bottom/compressed
+    horizontal_fov: 82
+    focal_length: 2.65
+    sensor_size:
+      width: 3.054
+      height: 1.718
+    img_size:
+      width: 640
+      height: 480

@@ -6,5 +6,6 @@ services:
     image: robosub-ros2:latest
     tty: true
     privileged: true
+    network_mode: host
     volumes:
       - /dev:/dev

@@ -77,10 +77,9 @@ class PinkBinsDetector(Node):
             return
 
         sorted_cluster_labels = sorted(cluster_counts, key=cluster_counts.get, reverse=True)
-        colors = [(0, 0, 255), (0, 255, 255), (255, 0, 0)]
         final_x, final_y = 0, 0
         chosen_label_score = None
-        for label in zip(sorted_cluster_labels[:3], colors, strict=False):
+        for label in sorted_cluster_labels[:3]:
             class_member_mask = (labels == label)
             max_clust_points = points[class_member_mask]
 
@@ -114,10 +113,10 @@ class PinkBinsDetector(Node):
         self.pink_bins_detections_pub.publish(frame_msg)
 
         # Publish the bounding box of the bin
-        final_x_normalized = final_x / MonoCam.MONO_CAM_IMG_SHAPE[0]
+        final_x_normalized = final_x / MonoCam.IMG_SHAPE[0]
         cv_object = CVObject()
         cv_object.header.stamp.sec, cv_object.header.stamp.nanosec  = self.get_clock().now().seconds_nanoseconds()
-        cv_object.yaw = -compute_yaw(final_x_normalized, final_x_normalized, MonoCam.MONO_CAM_IMG_SHAPE[0])
+        cv_object.yaw = -compute_yaw(final_x_normalized, final_x_normalized, MonoCam.IMG_SHAPE[0])
         cv_object.score = float(chosen_label_score)
         self.pink_bins_bounding_box_pub.publish(cv_object)
 
