@@ -1,3 +1,4 @@
+# ruff: noqa
 """Contains several utilities classes.
 """
 import math

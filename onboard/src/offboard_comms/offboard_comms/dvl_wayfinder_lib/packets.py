@@ -1,3 +1,4 @@
+# ruff: noqa
 """Contains several classes that implement binary packet interface.
 """
 from enum import Enum

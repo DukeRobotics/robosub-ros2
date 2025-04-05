@@ -1,3 +1,4 @@
+# ruff: noqa
 """Contains several classes related to sending commands to Wayfinder.
 """
 from enum import Enum

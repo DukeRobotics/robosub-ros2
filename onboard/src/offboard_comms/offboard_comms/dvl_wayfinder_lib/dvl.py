@@ -1,3 +1,4 @@
+# ruff: noqa
 """Contains main Dvl class to connect to Wayfinder.
 """
 import datetime
