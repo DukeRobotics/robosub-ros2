@@ -19,7 +19,7 @@ class GyroPublisher(SerialNode):
     CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
 
     BAUDRATE = 460800
-    NODE_NAME = 'gyro_pub'
+    NODE_NAME = 'gyro'
     ANGULAR_VELOCITY_TOPIC_NAME = 'sensors/gyro/angular_velocity/raw'
     ANGULAR_VELOCITY_TWIST_TOPIC_NAME = 'sensors/gyro/angular_velocity/twist'
     ANGULAR_POSITION_TOPIC_NAME = 'sensors/gyro/angular_position/raw'
