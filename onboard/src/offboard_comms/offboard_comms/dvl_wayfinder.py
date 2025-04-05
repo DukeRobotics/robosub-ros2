@@ -9,10 +9,11 @@ import rclpy
 import resource_retriever as rr
 import yaml
 from builtin_interfaces.msg import Time
-from geometry_msgs.msg import Twist, Vector3
+from geometry_msgs.msg import Vector3
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from serial.tools import list_ports
+from transforms3d.euler import euler2mat
 
 from offboard_comms.dvl_wayfinder_lib.dvl import Dvl
 from offboard_comms.dvl_wayfinder_lib.system import OutputData
@@ -60,18 +61,26 @@ class DVLWayfinderPublisher(Node):
         self._sensor.set_time(dt.datetime.now(dt.UTC))
         self._sensor.exit_command_mode()
 
-        #setup rotation matrix
-        self._rotMatrix = np.array([[np.cos(self.WAYFINDER_YAW) * np.cos(self.WAYFINDER_PITCH), np.cos(self.WAYFINDER_YAW) * np.sin(self.WAYFINDER_PITCH) * np.sin(self.WAYFINDER_ROLL) - np.sin(self.WAYFINDER_YAW) * np.cos(self.WAYFINDER_ROLL), np.cos(self.WAYFINDER_YAW) * np.sin(self.WAYFINDER_PITCH) * np.cos(self.WAYFINDER_ROLL) + np.sin(self.WAYFINDER_YAW) * np.sin(self.WAYFINDER_ROLL)],
-                            [np.sin(self.WAYFINDER_YAW) * np.cos(self.WAYFINDER_PITCH), np.sin(self.WAYFINDER_YAW) * np.sin(self.WAYFINDER_PITCH) * np.sin(self.WAYFINDER_ROLL) + np.cos(self.WAYFINDER_YAW) * np.cos(self.WAYFINDER_ROLL), np.sin(self.WAYFINDER_YAW) * np.sin(self.WAYFINDER_PITCH) * np.cos(self.WAYFINDER_ROLL) - np.cos(self.WAYFINDER_YAW) * np.sin(self.WAYFINDER_ROLL)],
-                            [ -np.sin(self.WAYFINDER_PITCH), np.cos(self.WAYFINDER_PITCH) * np.sin(self.WAYFINDER_ROLL), np.cos(self.WAYFINDER_PITCH) * np.cos(self.WAYFINDER_ROLL)]])
+        # Set up rotation matrix
+        self._rotMatrix = euler2mat(self.WAYFINDER_ROLL, self.WAYFINDER_PITCH, self.WAYFINDER_YAW, axes='sxyz')
 
         self._pub = self.create_publisher(Odometry, self.DVL_ODOM_TOPIC, 50)
+
+        # Set up the odometry message
+        self.odom = Odometry()
+        self.odom.header.frame_id = 'odom'
+        self.odom.child_frame_id = 'dvl'
+
+        # Only set the covariance for (linear x, linear x), (linear y, linear y), (linear z, linear z)
+        self.odom.twist.covariance[0] = 0.01
+        self.odom.twist.covariance[7] = 0.01
+        self.odom.twist.covariance[14] = 0.01
 
         #enable data callback
         self._sensor.register_ondata_callback(self.wayfinder_data_callback, None)
 
 
-    def wayfinder_data_callback(self, data_obj: OutputData) -> None:
+    def wayfinder_data_callback(self, data_obj: OutputData, *_) -> None:
         """
         Process Wayfinder data.
 
@@ -98,8 +107,8 @@ class DVLWayfinderPublisher(Node):
 
         self.get_logger().info(f'{vels[0]:9.3f} {vels[1]:9.3f} {vels[2]:9.3f} | {data_obj.vel_err:9.3f} | '
                                 f'{data_obj.range_beam1:9.3f} {data_obj.range_beam2:9.3f} '
-                                f'{data_obj.range_beam3:9.3f} {data_obj.range_beam4:9.3f} | {data_obj.bit_code}'
-                                f'{formatted_date}')
+                                f'{data_obj.range_beam3:9.3f} {data_obj.range_beam4:9.3f} | {data_obj.bit_code} | '
+                                f'{data_obj.coordinate_system} | {formatted_date}')
 
         # Convert to Unix timestamp (as float in seconds)
         unix_timestamp = dvl_time.timestamp()
@@ -114,20 +123,9 @@ class DVLWayfinderPublisher(Node):
         header_stamp.nanosec = nanosec
 
         # Publish the data
-        odom = Odometry()
-        odom.header.stamp = header_stamp
-        odom.header.frame_id = 'odom'
-
-        # set pose
-        odom.child_frame_id = 'dvl'
-
-        # set twist (set angular velocity to (0, 0, 0), should not be used)
-        odom.twist.twist = Twist(linear=Vector3(x=data_obj.vel_x, y=data_obj.vel_y, z=data_obj.vel_z),
-                                    angular=Vector3(x=0.0, y=0.0, z=0.0))
-        odom.twist.covariance[0] = 0.01
-        odom.twist.covariance[7] = 0.01
-        odom.twist.covariance[14] = 0.01
-        self._pub.publish(odom)
+        self.odom.header.stamp = header_stamp
+        self.odom.twist.twist.linear = Vector3(x=data_obj.vel_x, y=data_obj.vel_y, z=data_obj.vel_z)
+        self._pub.publish(self.odom)
 
 def main(args: list[str] | None = None) -> None:
     """Initialize and run the Sonar node."""
