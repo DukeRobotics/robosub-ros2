@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import depthai as dai
 import rclpy
@@ -16,8 +16,6 @@ class DepthAIStreamsPublisherAndSaver(Node):
 
     Also saves the RGB video, preview, mono left, mono right, and disparity streams to respective files.
     """
-
-    from typing import ClassVar
 
     # Topic names for publishing the streams
     STREAM_TOPIC_RGB_VIDEO: ClassVar[str] = '/camera/{camera}/rgb/video/compressed'
