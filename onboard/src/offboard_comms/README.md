@@ -82,7 +82,7 @@ dvl:
   negate_y_vel: true or false
   negate_z_vel: true or false
 gyro:
-  ftdi: Gyro_FTDI_string
+  ftdi: gyro_FTDI_string
   zero_bias: gyro_zero_bias
   scale_factor: gyro_scale_factor
 ```
@@ -279,7 +279,7 @@ We use the [Micro-Magic G-F60-C](https://www.memsmag.com/G-F60) fiber optic gyro
 
 It requires a 1000Hz square wave trigger signal to send data. This signal is sent by the peripheral Arduino; see the [Gyro Trigger Signal](#gyro-trigger-signal) section for more information.
 
-Every time the gyro detects the falling edge of the square wave, it sends one frame of data containing the change in the gyro's angular position since the last frame and the current internal temperature of the gyro. This frame is received by the `gyro`.
+Every time the gyro detects the falling edge of the square wave, it sends one frame of data containing the change in the gyro's angular position since the last frame and the current internal temperature of the gyro. This frame is received by the `gyro` node, which parses the data and publishes it to the appropriate topics.
 
 ### Gyro Launch File
 The `gyro.xml` launch file launches the node that receives frames from the gyro and publishes its data.
@@ -307,13 +307,13 @@ The topics published are:
   - Value: The integral of the gyro's angular velocity, which is the change in the gyro's angular position since the node was started. The value is in degrees and normalized to the range [-180, 180].
 - `/sensors/gyro/angular_position/pose`
   - Type: `geometry_msgs/msg/PoseWithCovarianceStamped`
-  - Value: The orientation in the message is a quaternion that represents a rotation of zero roll, zero pitch, and the integral of the gyro's angular velocity as the yaw. The rotation is extrinsic and performed in the order: roll, pitch, yaw. This message type can be used as an input to sensor fusion. The position is set to 0, and all covariance values except the (angular Z, angular Z) covariance are set to 0.
+  - Value: The orientation in the message is a quaternion that represents a rotation of zero roll, zero pitch, and the integral of the gyro's angular velocity as the yaw. Also includes the gyro's frame ID and covariance. The rotation is extrinsic and performed in the order: roll, pitch, yaw. This message type can be used as an input to sensor fusion. The position is set to 0, and all covariance values except the (angular Z, angular Z) covariance are set to 0.
 - `/sensors/gyro/temperature`
   - Type: `std_msgs/msg/Float64`
   - Value: The gyro's internal temperature in degrees Celsius.
 
 ### Gyro Zero Bias
-When the gyro is not moving with respect to the surface of the Earth, it will still indicate that it is consistently rotating with a small, but nonzero, angular velocity. The average rate of this rotation is the zero bias.
+When the gyro is not moving with respect to the surface of the Earth, it will output a small, nonzero, angular velocity. The average rate of this rotation is the zero bias.
 
 The gyro measures angular velocity relative to an inertial frame of reference. The rotation of the Earth and other cosmic forces accelerate the gyro by a small amount. Temperature, electromagnetic interference, vibrations, and other factors also affect the zero bias. The combined effect of these forces must be compensated for to obtain accurate readings.
 
@@ -400,9 +400,9 @@ The gyro requires a 1000Hz square wave trigger signal to send data. This signal 
 
 The gyro uses the RS-422 protocol to send and receive data, which uses differential signaling. This means that the trigger signal is sent over two wires, RX+ and RX-, and the signal is sent as a voltage difference between the two wires. Thus, two complementary 1000Hz square wave signals are sent over the RX+ and RX- wires; when one wire is high, the other wire is low.
 
-The trigger signal must be created with precise timing to obtain accurate data from the gyro. Thus, a hardware timer is required. The Peripheral Arduino uses the Timer2 hardware timer on the Arduino to generate the trigger signal.
+The trigger signal must be created with precise timing to obtain accurate data from the gyro. Thus, a hardware timer is required. The Peripheral Arduino uses the Timer2 hardware timer to generate the trigger signal.
 
-The ATmega328P microcontroller used in the Arduino Nano and Uno has three hardware timers: Timer0, Timer1, and Timer2. Timer0 is used for the Arduino's built-in functions like `delay()` and `millis()`, so it is not available for use in the Peripheral Arduino sketch. Timer1 is a 16-bit timer that is used by the Servo library. Therefore, Timer2 is available to generate the trigger signal.
+The ATmega328P microcontroller used in the Arduino Nano and Uno has three hardware timers: Timer0, Timer1, and Timer2. Timer0 is used for the Arduino's built-in functions like `delay()` and `millis()` and is not availble for other use. Timer1 is used by the Servo library. Timer2 is available to generate the trigger signal.
 
 The official documentation for Timer2 can be found in the [ATmega328P datasheet](https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7810-Automotive-Microcontrollers-ATmega328P_Datasheet.pdf). This [image](https://www.gammon.com.au/images/Arduino/Timer_2.png) provides a helpful overview of how to configure Timer2.
 
