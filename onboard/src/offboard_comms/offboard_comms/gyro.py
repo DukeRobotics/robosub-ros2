@@ -44,12 +44,12 @@ class GyroPublisher(SerialNode):
         self.compute_avg_angular_velocity = self.declare_parameter('compute_avg_angular_velocity', False).value
         self.log_checksum_errors = self.declare_parameter('log_checksum_errors', False).value
 
-        self.error_rate = self._config['gyro']['error_rate']
+        self.zero_bias = self._config['gyro']['zero_bias']
         self.scale_factor = self._config['gyro']['scale_factor']
 
         self.first_msg_time = None
 
-        self.angular_position_raw = 0.0
+        self.angular_velocity_integral = 0.0
         self.angular_position = 0.0
 
         self.buffer = bytearray()
@@ -186,17 +186,17 @@ class GyroPublisher(SerialNode):
         temp_data = np.int16(self.buffer[start_byte_index + 7] & 0x7F)
         temp_data |= np.int16((self.buffer[start_byte_index + 8] & 0x7F) << 7)
 
-        # Scale the gyro data and temperature data, and subtract the error rate
+        # Scale the gyro data and temperature data, and subtract the zero bias
         # The gyro data is in degrees per second, and the temperature data is in degrees Celsius
-        angular_velocity = (gyro_data * self.TRIGGER_RATE / self.scale_factor) - self.error_rate
+        angular_velocity = (gyro_data * self.TRIGGER_RATE / self.scale_factor) - self.zero_bias
         temperature = temp_data * 0.0625
 
         # Compute the angular position in degrees
         # Raw angular position is simply the integral of the angular velocity
-        self.angular_position_raw += angular_velocity / self.TRIGGER_RATE
+        self.angular_velocity_integral += angular_velocity / self.TRIGGER_RATE
 
         # Angular position normalized between -180 and 180 degrees
-        self.angular_position = (self.angular_position_raw + 180.0) % 360.0 - 180.0
+        self.angular_position = (self.angular_velocity_integral + 180.0) % 360.0 - 180.0
 
         self.angular_velocity_raw_msg.data = angular_velocity
         self.angular_velocity_raw_publisher.publish(self.angular_velocity_raw_msg)
@@ -225,11 +225,11 @@ class GyroPublisher(SerialNode):
             if self.first_msg_time:
                 last_msg_time = self.ros_time_msg_to_float(self.angular_velocity_twist_msg.header.stamp)
                 elapsed_time = last_msg_time - self.first_msg_time
-                avg_angular_velocity = self.angular_position_raw / elapsed_time
+                avg_angular_velocity = self.angular_velocity_integral / elapsed_time
                 self.get_logger().info(f'First msg time: {self.first_msg_time:.9f} s')
                 self.get_logger().info(f'Last msg time:  {last_msg_time:.9f} s')
                 self.get_logger().info(f'Elapsed time:   {elapsed_time:.9f} s')
-                self.get_logger().info(f'Angular position:         {self.angular_position_raw:.9f} deg')
+                self.get_logger().info(f'Angular position:         {self.angular_velocity_integral:.9f} deg')
                 self.get_logger().info(f'Average angular velocity: {avg_angular_velocity:.9f} deg/s')
             else:
                 self.get_logger().info('Did not receive data from gyro.')
