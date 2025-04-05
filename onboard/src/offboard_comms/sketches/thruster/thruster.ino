@@ -56,7 +56,7 @@ void setup() {
             break;
         case CRUSH:
             NUM_THRUSTERS = 6;
-            THRUSTER_PWM_OFFSET = 65;
+            THRUSTER_PWM_OFFSET = 63;
             break;
         default:
             valid_robot = false;
