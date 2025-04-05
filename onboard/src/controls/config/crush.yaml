@@ -215,7 +215,7 @@ thrusters:
   - name: front_right
     type: T200
     pos: [3.360246e-05, -0.3867988726, -0.003175]
-    rpy: [0, 0, 45]
+    rpy: [0, 0, -135]
     flipped: false
   - name: back_right
     type: T200
@@ -235,7 +235,7 @@ thrusters:
   - name: front_left
     type: T200
     pos: [3.360246e-05, 0.09409887258, -0.003175]
-    rpy: [0, 0, -45]
+    rpy: [0, 0, 135]
     flipped: false
 wrench_matrix_file_path: data/crush_wrench.csv
 wrench_matrix_pinv_file_path: data/crush_wrench_pinv.csv
