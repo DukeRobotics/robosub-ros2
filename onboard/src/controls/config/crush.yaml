@@ -211,7 +211,7 @@ thrusters:
     type: T200
     pos: [-0.2404152701, -0.42425, -0.003175]
     rpy: [0, 90, 0]
-    flipped: false
+    flipped: true
   - name: front_right
     type: T200
     pos: [3.360246e-05, -0.3867988726, -0.003175]
@@ -221,7 +221,7 @@ thrusters:
     type: T200
     pos: [-0.4808641427, -0.3867988726, -0.003175]
     rpy: [0, 0, 135]
-    flipped: false
+    flipped: true
   - name: back_left
     type: T200
     pos: [-0.4808641427, 0.09409887258, -0.003175]
@@ -231,11 +231,11 @@ thrusters:
     type: T200
     pos: [-0.2404152701, 0.13155, -0.003175]
     rpy: [0, 90, 0]
-    flipped: false
+    flipped: true
   - name: front_left
     type: T200
     pos: [3.360246e-05, 0.09409887258, -0.003175]
     rpy: [0, 0, 135]
-    flipped: false
+    flipped: true
 wrench_matrix_file_path: data/crush_wrench.csv
 wrench_matrix_pinv_file_path: data/crush_wrench_pinv.csv
