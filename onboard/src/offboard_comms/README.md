@@ -310,7 +310,7 @@ The topics published are:
   - Value: The orientation in the message is a quaternion that represents a rotation of zero roll, zero pitch, and the integral of the gyro's angular velocity as the yaw. Also includes the gyro's frame ID and covariance. The rotation is extrinsic and performed in the order: roll, pitch, yaw. This message type can be used as an input to sensor fusion. The position is set to 0, and all covariance values except the (angular Z, angular Z) covariance are set to 0.
 - `/sensors/gyro/temperature`
   - Type: `std_msgs/msg/Float64`
-  - Value: The gyro's internal temperature in degrees Celsius.
+  - Value: The gyro's internal temperature in degrees Fahrenheit.
 
 ### Gyro Zero Bias
 When the gyro is not moving with respect to the surface of the Earth, it will output a small, nonzero, angular velocity. The average rate of this rotation is the zero bias.

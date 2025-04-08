@@ -215,7 +215,8 @@ class GyroPublisher(SerialNode):
             euler2quat(0, 0, math.radians(self.angular_position)))
         self.angular_position_pose_publisher.publish(self.angular_position_pose_msg)
 
-        self.temperature_msg.data = temperature
+        # Convert temperature to Fahrenheit
+        self.temperature_msg.data = temperature * 1.8 + 32.0
         self.temperature_publisher.publish(self.temperature_msg)
 
     def destroy_node(self) -> None:
