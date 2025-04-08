@@ -5,36 +5,44 @@ from pathlib import Path
 import cv2
 import numpy as np
 from custom_msgs.msg import CVObject
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, Polygon
 
 
-def check_file_writable(filepath: str) -> bool:
-    """Check if a file can be created or overwritten."""
-    if Path.exists(filepath):
-        # path exists
-        if Path.is_file(filepath):
-            # also works when file is a link and the target is writable
+def check_file_writable(filepath: Path) -> bool:
+    """
+    Check if a file can be created or overwritten.
+
+    Args:
+        filepath (Path): The path to the file to check.
+
+    Returns:
+        bool: True if the file can be created or overwritten, False otherwise.
+    """
+    if filepath.exists():
+        # Path exists
+        if filepath.is_file():
+            # Path is a file, check if it is writable
             return os.access(filepath, os.W_OK)
-        # path is a dir, so cannot write as a file
+        # Path is a dir, so cannot write as a file
         return False
-    # target does not exist, check perms on parent dir
-    pdir = Path.parent(filepath)
+    # Path does not exist, check permissions on parent directory
+    pdir = filepath.parent
     if not pdir:
         pdir = '.'
-    # target is creatable if parent dir is writable
+    # Target is creatable if parent dir is writable
     return os.access(pdir, os.W_OK)
 
 
 def cam_dist_with_obj_width(width_pixels: float, width_meters: float,
-                             focal_length: float, img_shape: list[int], sensor_size: float,
-                             adjustment_factor: int = 1) -> float:
+                            focal_length: float, img_shape: tuple[float, float], sensor_size: tuple[float, float],
+                            adjustment_factor: int = 1) -> float:
     """Note that adjustment factor is 1 for mono camera and 2 for depthAI camera."""
     return (focal_length * width_meters * img_shape[0]) \
         / (width_pixels * sensor_size[0]) * adjustment_factor
 
 
 def cam_dist_with_obj_height(height_pixels: float, height_meters: float,
-                             focal_length: float, img_shape: list[int], sensor_size: float,
+                             focal_length: float, img_shape: tuple[float, float], sensor_size: tuple[float, float],
                              adjustment_factor: int = 1) -> float:
     """Return camera distance with object height."""
     return (focal_length * height_meters * img_shape[1]) \
@@ -67,8 +75,9 @@ def compute_angle_from_x_offset(x_offset: float, camera_pixel_width: float) -> f
     return math.degrees(math.atan((x_offset - image_center_x) * 0.005246675486))
 
 
-def calculate_relative_pose(bbox_bounds: object, input_size: list[float], label_shape: list[float], focal_length: float,
-                             sensor_size: float, adjustment_factor: int) -> list[float]:
+def calculate_relative_pose(bbox_bounds: list[int | float], input_size: tuple[float, float],
+                            label_shape: tuple[float, float], focal_length: float,
+                            sensor_size: tuple[float, float], adjustment_factor: int) -> list[float]:
     """
     Return relative pose, to be used as a part of the CVObject.
 
@@ -77,7 +86,7 @@ def calculate_relative_pose(bbox_bounds: object, input_size: list[float], label_
         input_size (list[float]): Array with input size, where [0] is width and [1] is height.
         label_shape (list[float]): The label shape, where [0] is width (only this is accessed) and [1] is height.
         focal_length (float): The distance between the lens and the image sensor when the lens is focused on a subject.
-        sensor_size (float): The physical size of the camera's image sensor.
+        sensor_size (tuple[float, float]): The physical size of the camera's image sensor.
         adjustment_factor (int): 1 if mono, 2 if depthai.
 
     Returns:
@@ -101,7 +110,7 @@ def calculate_relative_pose(bbox_bounds: object, input_size: list[float], label_
     return [x_meters, y_meters, z_meters]
 
 
-def compute_bbox_dimensions(polygon: object) -> CVObject:
+def compute_bbox_dimensions(polygon: Polygon) -> CVObject:
     """
     Return a CVObject message, containing the following properties of the given Polygon.
 
@@ -216,18 +225,18 @@ class DetectionVisualizer:
         cv2.rectangle(frame, startpoint, endpoint, color, -1)
         cv2.putText(frame, text, new_coords, self.text_type, 0.75, (255, 255, 255), 2, self.line_type)
 
-    def rectangle(self, frame: np.array, bbox: object, color: tuple[int, int, int]) -> None:
+    def rectangle(self, frame: np.array, bbox: tuple[float, float, float, float], color: tuple[int, int, int]) -> None:
         """Add a rectangle to frame, such as a bounding box."""
         x1, y1, x2, y2 = bbox
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 3)
 
-    def frame_norm(self, frame: np.array, bbox: object) -> int:
+    def frame_norm(self, frame: np.array, bbox: tuple[float, float, float, float]) -> int:
         """Normalize bbox locations between frame width/height."""
         norm_vals = np.full(len(bbox), frame.shape[0])
         norm_vals[::2] = frame.shape[1]
         return (np.clip(np.array(bbox), 0, 1) * norm_vals).astype(int)
 
-    def visualize_detections(self, frame: np.array, detections: object) -> np.array:
+    def visualize_detections(self, frame: np.array, detections: list[object]) -> np.array:
         """Return frame with bounding boxes, classes, and labels of each detection overlaid."""
         frame_copy = frame.copy()
 
