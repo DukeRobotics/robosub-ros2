@@ -18,7 +18,7 @@ public:
     Crush(int voltageDelay, int pressureDelay, int tempHumidityDelay, int servoDelay, bool isShell = false)
         : Robot(voltageDelay, pressureDelay, tempHumidityDelay, servoDelay), isShell(isShell) {
 
-        voltage_sensor = new Voltage(VOLTAGE_PIN, 4.809, "");
+        voltage_sensor = new Voltage(VOLTAGE_PIN, 4.809, 0.966, 0.741, "");
         pressure_sensor = new Pressure(MS5837::MS5837_30BA, "");
         battery_temp_humidity_sensor = new TempHumidity(THB_PIN, "B");
         signal_temp_humidity_sensor = new TempHumidity(THS_PIN, "S");

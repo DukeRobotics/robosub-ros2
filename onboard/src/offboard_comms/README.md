@@ -287,6 +287,8 @@ The Peripheral Arduino publishes voltage at 10 Hz.
 
 The votage is calibrated based on the Peripheral Arduino's voltage. This is important as the generic voltage sensor uses a voltage divider to measure the voltage, so it requires knowledge of its input voltage to provide an accurate reading.
 
+Despite the calibration, the voltage reading may still differ from the true voltage by 0.2-0.3V. This difference varies linearly with the voltage. To correct this difference, obtain a handful of voltage readings from the voltage sensor and a multimeter, and then compute a linear regression to find the slope and intercept of the line that best fits the data. The slope and intercept can then be used to correct the voltage readings from the sensor.
+
 ### Pressure
 The Peripheral Arduino interprets the Blue Robotics Pressure Sensor using the MS5837 library. It sends the data over serial each time the sensor gets a new reading, so the rate is not defined other than "as fast as possible."
 
