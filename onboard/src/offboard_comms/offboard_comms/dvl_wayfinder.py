@@ -22,11 +22,12 @@ from offboard_comms.dvl_wayfinder_lib.system import OutputData
 class DVLWayfinderPublisher(Node):
     """A class to read and publish Teledyne Wayfinder DVL data from a serial port."""
     CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
+    BAUDRATE = 115200
 
     # DVL orientation in degrees
     WAYFINDER_ROLL = 0
     WAYFINDER_PITCH = 0
-    WAYFINDER_YAW = 225
+    WAYFINDER_YAW = -135
 
     NODE_NAME = 'dvl_wayfinder'
 
@@ -38,16 +39,16 @@ class DVLWayfinderPublisher(Node):
         with Path(rr.get_filename(self.CONFIG_FILE_PATH, use_protocol=False)).open() as f:
             self._config_data = yaml.safe_load(f)
 
-        ftdi = self._config_data['dvl']['ftdi']
-
+        # Get the serial port the DVL is connected to
         try:
-            self._serial_port = next(list_ports.grep(ftdi)).device
+            self._serial_port = next(list_ports.grep(self._config_data['dvl']['ftdi'])).device
         except StopIteration:
             self.get_logger().error('Wayfinder DVL not found.')
             rclpy.shutdown()
 
+        # Connect to the DVL
         self._sensor = Dvl()
-        self._sensor.connect(self._serial_port, 115200)
+        self._sensor.connect(self._serial_port, self.BAUDRATE)
 
         self.get_logger().info(f'Connected to DVL Wayfinder at {self._serial_port}.')
 
@@ -77,13 +78,13 @@ class DVLWayfinderPublisher(Node):
         self.odom.twist.covariance[7] = 0.01
         self.odom.twist.covariance[14] = 0.01
 
-        #enable data callback
+        # Set up the callback for the DVL data
         self._sensor.register_ondata_callback(self.wayfinder_data_callback, None)
 
 
-    def wayfinder_data_callback(self, data_obj: OutputData, *_) -> None:
+    def wayfinder_data_callback(self, data_obj: OutputData, _: None) -> None:
         """
-        Process Wayfinder data.
+        Process Wayfinder data. Called when a new frame of data is received.
 
         Args:
             data_obj (OutputData): WayFinder output data
@@ -92,30 +93,34 @@ class DVLWayfinderPublisher(Node):
         if any(math.isnan(val) for val in [data_obj.vel_x, data_obj.vel_y, data_obj.vel_z, data_obj.vel_err]):
             return
 
-        # Apply rotation matrix to velocities
-        vels = np.matmul(self._rotMatrix, [data_obj.vel_x, data_obj.vel_y, data_obj.vel_z])
-
         # Convert DVL time to Unix timestamp (as float in seconds)
         dvl_time = dt.datetime(data_obj.year, data_obj.month, data_obj.day, data_obj.hour, data_obj.minute,
-                                data_obj.second, tzinfo=dt.UTC)
+                    data_obj.second, data_obj.millisecond * 1000, tzinfo=dt.UTC)
         unix_timestamp = dvl_time.timestamp()
 
         # Create the ROS2 Time message
         header_stamp = Time()
         header_stamp.sec = int(unix_timestamp)
-        header_stamp.nanosec = int(int(unix_timestamp) * 1e9)
+        header_stamp.nanosec = int((unix_timestamp - header_stamp.sec) * 1e9)
+
+
+        # Apply rotation matrix to velocities
+        vels = np.matmul(self._rotMatrix, [data_obj.vel_x, data_obj.vel_y, data_obj.vel_z])
+
+        # Convert velocities to Vector3
+        vels = Vector3(x=vels[0], y=vels[1], z=vels[2])
 
         # Negate velocities if configured
         if self._config_data['dvl']['negate_x_vel']:
-            vels[0] = -vels[0]
+            vels.x = -vels.x
         if self._config_data['dvl']['negate_y_vel']:
-            vels[1] = -vels[1]
+            vels.y = -vels.y
         if self._config_data['dvl']['negate_z_vel']:
-            vels[2] = -vels[2]
+            vels.z = -vels.z
 
         # Publish the data
         self.odom.header.stamp = header_stamp
-        self.odom.twist.twist.linear = Vector3(x=vels[0], y=vels[1], z=vels[2])
+        self.odom.twist.twist.linear = vels
         self._pub.publish(self.odom)
 
 def main(args: list[str] | None = None) -> None:
