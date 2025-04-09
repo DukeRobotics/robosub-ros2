@@ -215,13 +215,13 @@ thrusters:
   - name: top_front_left
     type: T200
     pos: [0.1098967042, 0.6602692321, -0.1145125]
-    rpy: [0, 0, -45]
-    flipped: true
+    rpy: [0, 0, 135]
+    flipped: false
   - name: top_front_right
     type: T200
     pos: [0.1098967042, -0.04114423208, -0.1145125]
-    rpy: [0, 0, 45]
-    flipped: true
+    rpy: [0, 0, -135]
+    flipped: false
   - name: bottom_front_right
     type: T200
     pos: [-0.0254, -0.0617, -0.1928687768]
@@ -235,8 +235,8 @@ thrusters:
   - name: top_back_left
     type: T200
     pos: [-0.5707797042, 0.6602692321, -0.1145125]
-    rpy: [0, 0, -135]
-    flipped: true
+    rpy: [0, 0, 45]
+    flipped: false
   - name: bottom_back_right
     type: T200
     pos: [-0.435483, -0.0617, -0.1928687768]
@@ -245,7 +245,7 @@ thrusters:
   - name: top_back_right
     type: T200
     pos: [-0.5707797042, -0.04114423208, -0.1145125]
-    rpy: [0, 0, 135]
-    flipped: true
+    rpy: [0, 0, -45]
+    flipped: false
 wrench_matrix_file_path: data/oogway_wrench.csv
 wrench_matrix_pinv_file_path: data/oogway_wrench_pinv.csv
