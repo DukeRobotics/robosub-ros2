@@ -83,7 +83,7 @@ class DVLPathfinderOdomPublisher(Node):
 
 
 def main(args: list[str] | None = None) -> None:
-    """Create and run the DVL odometry publisher node."""
+    """Create and run the DVL Pathfinder odometry publisher node."""
     rclpy.init(args=args)
     dvl_odom = DVLPathfinderOdomPublisher()
 

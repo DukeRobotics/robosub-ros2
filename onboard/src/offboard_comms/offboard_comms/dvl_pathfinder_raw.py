@@ -13,7 +13,7 @@ class DVLPathfinderRawPublisher(SerialNode):
     CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
 
     BAUDRATE = 115200
-    NODE_NAME = 'dvl_raw_pub'
+    NODE_NAME = 'dvl_pathfinder_raw_pub'
     TOPIC_NAME = 'sensors/dvl/raw'
     LINE_DELIM = ','
 
@@ -180,7 +180,7 @@ class DVLPathfinderRawPublisher(SerialNode):
 
 
 def main(args: list[str] | None = None) -> None:
-    """Create and run the DVL raw data publisher node."""
+    """Create and run the DVL Pathfinder raw data publisher node."""
     rclpy.init(args=args)
     dvl_raw = DVLPathfinderRawPublisher()
 
