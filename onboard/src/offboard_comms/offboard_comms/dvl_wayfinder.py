@@ -88,42 +88,24 @@ class DVLWayfinderPublisher(Node):
         Args:
             data_obj (OutputData): WayFinder output data
         """
-        # Check velocities are valid
+        # Make sure the data is valid
         if any(math.isnan(val) for val in [data_obj.vel_x, data_obj.vel_y, data_obj.vel_z, data_obj.vel_err]):
             return
 
-        vels = np.array([data_obj.vel_x, data_obj.vel_y, data_obj.vel_z])
-        vels =  np.matmul(self._rotMatrix, vels)
+        # Apply rotation matrix to velocities
+        vels = np.matmul(self._rotMatrix, [data_obj.vel_x, data_obj.vel_y, data_obj.vel_z])
 
-        # Confidence calculation
-        vel_err_max = 1
-        vel_err_min = 0.001
-        pct_err_vel = 0.005
-        vel_mean = np.mean(vels)
-        confidence = 1 - (vel_mean - vel_err_min) / (vel_err_max - vel_err_min)
-
+        # Convert DVL time to Unix timestamp (as float in seconds)
         dvl_time = dt.datetime(data_obj.year, data_obj.month, data_obj.day, data_obj.hour, data_obj.minute,
                                 data_obj.second, tzinfo=dt.UTC)
-        formatted_date = dvl_time.strftime('%Y-%m-%d %H:%M:%S')
-
-        # Uncomment the following line for debugging
-        # self.get_logger().info(f'{vels[0]:9.3f} {vels[1]:9.3f} {vels[2]:9.3f} | {data_obj.vel_err:9.3f} | '
-        #                         f'{data_obj.range_beam1:9.3f} {data_obj.range_beam2:9.3f} '
-        #                         f'{data_obj.range_beam3:9.3f} {data_obj.range_beam4:9.3f} | {data_obj.bit_code} | '
-        #                         f'{data_obj.coordinate_system} | {formatted_date}')
-
-        # Convert to Unix timestamp (as float in seconds)
         unix_timestamp = dvl_time.timestamp()
-
-        # Convert to ROS2 Header stamp (sec and nanosec)
-        sec = int(unix_timestamp)
-        nanosec = int((unix_timestamp - sec) * 1e9)
 
         # Create the ROS2 Time message
         header_stamp = Time()
-        header_stamp.sec = sec
-        header_stamp.nanosec = nanosec
+        header_stamp.sec = int(unix_timestamp)
+        header_stamp.nanosec = int(int(unix_timestamp) * 1e9)
 
+        # Negate velocities if configured
         if self._config_data['dvl']['negate_x_vel']:
             vels[0] = -vels[0]
         if self._config_data['dvl']['negate_y_vel']:
@@ -137,7 +119,7 @@ class DVLWayfinderPublisher(Node):
         self._pub.publish(self.odom)
 
 def main(args: list[str] | None = None) -> None:
-    """Initialize and run the Sonar node."""
+    """Initialize and run the DVL Wayfinder node."""
     rclpy.init(args=args)
     dvl_wayfinder = DVLWayfinderPublisher()
 
