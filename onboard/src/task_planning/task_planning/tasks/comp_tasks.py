@@ -384,7 +384,7 @@ async def initial_submerge(self: Task, submerge_dist: float) -> Task[None, None,
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, 0),
                                             parent=self)
 
-    # await correct_roll_and_pitch()
+    await correct_roll_and_pitch()
 
 
 @task
@@ -439,13 +439,15 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
         sign_correction = np.sign(correction)
         desired_yaw = sign_correction * get_step_size(correction)
         logger.info(f'Coinflip: desired_yaw = {desired_yaw}')
-        return desired_yaw
+
+        return correction
+        # return desired_yaw
 
     while abs(yaw_correction := get_yaw_correction()) > math.radians(5):
         logger.info(f'Yaw correction: {yaw_correction}')
-        # sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
+        sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
         await move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),
+            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction + (sign * 0.1)),
             keep_level=True,
             parent=self,
         )
