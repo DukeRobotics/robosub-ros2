@@ -91,7 +91,7 @@ class DVLWayfinderPublisher(Node):
         Process Wayfinder data. Called when a new frame of data is received.
 
         Args:
-            data_obj (OutputData): WayFinder output data
+            data_obj (OutputData): WayFinder output data.
         """
         # Make sure the data is valid
         if any(math.isnan(val) for val in [data_obj.vel_x, data_obj.vel_y, data_obj.vel_z, data_obj.vel_err]):
