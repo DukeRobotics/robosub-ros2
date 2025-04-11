@@ -3,7 +3,7 @@ import os
 import rclpy
 from custom_msgs.msg import DVLRaw
 
-from offboard_comms.serial_node import SerialNode
+from offboard_comms.serial_node import SerialNode, SerialReadType
 
 
 class DVLPathfinderRawPublisher(SerialNode):
@@ -22,8 +22,8 @@ class DVLPathfinderRawPublisher(SerialNode):
 
     def __init__(self) -> None:
 
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME, True,
-                         self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE)
+        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
+                         SerialReadType.LINE_BLOCKING, self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE)
 
         self._dvl_line_parsers = {
             'SA': self._parse_SA,
@@ -48,7 +48,7 @@ class DVLPathfinderRawPublisher(SerialNode):
         """
         return self._config['dvl']['ftdi']
 
-    def _extract_floats(self, num_string: str, start: int, stop: int) -> list[float]:
+    def _extract_floats(self, num_string: str, start: int, stop: int | None) -> list[float]:
         """Return a list of floats from a given string, using LINE_DELIM and going from start to stop."""
         return [float(num) for num in num_string.split(self.LINE_DELIM)[start:stop]]
 
@@ -63,6 +63,7 @@ class DVLPathfinderRawPublisher(SerialNode):
             data_type = line[1:3]
         except IndexError:
             self.get_logger().warn(f'Failed to parse data type from line: {line}')
+            return
 
         try:
             if data_type in self._dvl_line_parsers:
