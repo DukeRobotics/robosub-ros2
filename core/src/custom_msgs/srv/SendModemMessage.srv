@@ -1,4 +1,4 @@
-string modem_message
+string message
 ---
 bool success
 string message

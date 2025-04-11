@@ -2,10 +2,11 @@ import os
 import time
 import struct
 import time
+from typing import ClassVar
 
 import rclpy
 from std_msgs.msg import ByteMultiArray
-from custom_msgs.srv import SetModemSettings, ModemWrite
+from custom_msgs.srv import SetModemSettings, SendModemMessage
 
 
 from offboard_comms.serial_node import SerialNode, SerialReadType
@@ -25,15 +26,31 @@ class ModemPublisher(SerialNode):
 
     DIAGNOSTIC_PACKET_SIZE = 18
 
-    modem_ready = True
-    change_setting_timer = time.time()
+    SETTINGS: ClassVar[list[int]] = [
+        SetModemSettings.Request.TRANSPARENT_MODE,
+        SetModemSettings.Request.DIAGNOSTIC_MODE,
+        SetModemSettings.Request.CHANGE_CHANNEL,
+        SetModemSettings.Request.REQUEST_REPORT,
+        SetModemSettings.Request.SET_POWER_LEVEL
+    ]
+    MIN_SETTING = min(SETTINGS)
+    MAX_SETTING = max(SETTINGS)
+
+    MIN_CHANNEL = 1
+    MAX_CHANNEL = 12
+
+    MIN_POWER_LEVEL = 1
+    MAX_POWER_LEVEL = 4
+
+    modem_ready: ClassVar[bool] = True
+    change_setting_timer: ClassVar[float] = time.time()
 
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
                          SerialReadType.BYTES_ALL, self.CONNECTION_RETRY_PERIOD, loop_rate=self.LOOP_RATE)
         self._publisher = self.create_publisher(ByteMultiArray, '/offboard/ivc/messages', 1)
         self.change_setting_srv = self.create_service(SetModemSettings, '/offboard/ivc/settings', self.change_setting)
-        self.send_message_srv = self.create_service(ModemWrite, 'offboard/ivc/write', self.send_message)
+        self.send_message_srv = self.create_service(SendModemMessage, 'offboard/ivc/send_message', self.send_message)
 
         # Create a timer that checks if a second byte needs to be sent
 
@@ -121,7 +138,8 @@ class ModemPublisher(SerialNode):
             'LEVEL': (decoded[12] & 0b00001100) >> 2,
         }
 
-    def send_message(self, request: ModemWrite.Request, response: ModemWrite.Response) -> ModemWrite.Response:
+    def send_message(self, request: SendModemMessage.Request, response: SendModemMessage.Response) -> \
+            SendModemMessage.Response:
         """
         Send a message to the modem.
 
@@ -132,9 +150,12 @@ class ModemPublisher(SerialNode):
         Returns:
             ModemWrite.Response: The response object with the result of the operation.
         """
-        success = self.send_data(request.modem_message.toBytes())
-        response.success = success
-        response.message = 'Message sent successfully'
+        if self.send_data(request.message):
+            response.success = True
+            response.message = 'Sent message successfully'
+        else:
+            response.success = False
+            response.message = 'Failed to send message.'
 
         return response
 
@@ -148,45 +169,68 @@ class ModemPublisher(SerialNode):
             setting (int): Setting to change. 1 - Comm Channel, 2 - Op Mode, 3 - Report Request, 4 - Power Level
             char_to_send (str): Value to change setting to. i.e. channel #, power level
         """
+        if not self.modem_ready:
+            error_msg = 'Modem not ready for commands.'
+            self.get_logger().error(error_msg)
+            response.success = False
+            response.message = error_msg
+            return response
+
         setting = request.setting
         char_to_send = request.char_to_send
 
         setting_char = ''
         true_char_to_send = ''
 
-        if (setting == 1):
-            setting_char = 'c'
-            channel = char_to_send
-            if channel < 1 or channel > 12:
-                self.get_logger().error('Invalid channel, please input an int within [1, 12]')
+        match request.setting:
+            case SetModemSettings.Request.TRANSPARENT_MODE:
+                setting_char = 't'
+            case SetModemSettings.Request.DIAGNOSTIC_MODE:
+              setting_char = 'd'
+
+            case SetModemSettings.Request.CHANGE_CHANNEL:
+                setting_char = 'c'
+                channel = char_to_send
+                if not (self.MIN_CHANNEL <= channel <= self.MAX_CHANNEL):
+                    error_msg = f'Invalid channel {channel}. Must be in range [{self.MIN_CHANNEL}, {self.MAX_CHANNEL}]'
+                    self.get_logger().error(error_msg)
+                    response.success = False
+                    response.message = error_msg
+                    return response
+
+                true_char_to_send = format(channel, 'x')
+
+            case SetModemSettings.Request.REQUEST_REPORT:
+                setting_char = 'r'
+
+            case SetModemSettings.Request.SET_POWER_LEVEL:
+                setting_char = 'l'
+                power_level = char_to_send
+                if not (self.MIN_POWER_LEVEL <= power_level <= self.MAX_POWER_LEVEL):
+                    error_msg = (f'Invalid power level {power_level}. Must be in range [{self.MIN_POWER_LEVEL}, '
+                                 f'{self.MAX_POWER_LEVEL}]')
+                    self.get_logger().error(error_msg)
+                    response.success = False
+                    response.message = error_msg
+                    return response
+
+                true_char_to_send = str(char_to_send)
+            case _:
+                error_msg = f'Invalid setting {setting}. Must be in range [{self.MIN_SETTING}, {self.MAX_SETTING}]'
+                self.get_logger().error(error_msg)
                 response.success = False
-                return response
-            true_char_to_send = str(channel) if channel < 10 else ['a', 'b', 'c'][channel - 10]
-        elif (setting == 2):
-            setting_char = 'm'
-        elif (setting == 3):
-            setting_char = 'r'
-        elif (setting == 4):
-            setting_char = 'l'
-            power_lvl = char_to_send
-            true_char_to_send = str(char_to_send)
-            if power_lvl < 1 or power_lvl > 4:
-                response.success = False
+                response.message = error_msg
                 return response
 
-        if self.modem_ready and setting_char != '':
-            self.change_setting_timer = time.time()
-            print(f'Sending {setting_char}')
-            self.send_data(setting_char)
-            self.setting_char = setting_char
-            self.true_char_to_send = true_char_to_send
-            self.modem_ready = False
-            self.setting = setting
-            self.send_timer = self.create_timer(1.0, self.delayed_write)
-            response.success = True
-            return response
-
-        response.success = False
+        self.change_setting_timer = time.time()
+        print(f'Sending {setting_char}')
+        self.send_data(setting_char)
+        self.setting_char = setting_char
+        self.true_char_to_send = true_char_to_send
+        self.modem_ready = False
+        self.setting = setting
+        self.send_timer = self.create_timer(1.0, self.delayed_write)
+        response.success = True
         return response
 
     def delayed_write(self) -> None:
