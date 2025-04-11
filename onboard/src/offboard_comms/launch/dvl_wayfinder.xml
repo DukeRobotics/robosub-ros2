@@ -1,0 +1,3 @@
+<launch>
+	<node name="dvl_wayfinder" pkg="offboard_comms" exec="dvl_wayfinder" output="screen" />
+</launch>

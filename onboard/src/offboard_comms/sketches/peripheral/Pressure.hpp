@@ -4,11 +4,13 @@
 
 class Pressure {
     private:
+        uint8_t sensorModel;
         bool pressureConnected;
         String pressureTag;
         MS5837 sensor;
     public:
-        Pressure(String tagSuffix) {
+        Pressure(uint8_t model, String tagSuffix) {
+            sensorModel = model;
             pressureTag = "P" + tagSuffix + ":";
             pressureConnected = false;
             initPressure();
@@ -23,7 +25,7 @@ class Pressure {
 
             pressureConnected = sensor.init();
             if (pressureConnected) {
-                sensor.setModel(MS5837::MS5837_02BA);
+                sensor.setModel(sensorModel);
             }
         }
 

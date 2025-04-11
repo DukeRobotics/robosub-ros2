@@ -3,7 +3,7 @@ import os
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import ClassVar
 
 import rclpy
 from custom_msgs.srv import SetContinuousServo, SetDiscreteServo
@@ -29,6 +29,7 @@ class PeripheralDiscreteServo:
         tag (str): The tag to identify the servo.
         service_name (str): The name of the service to control the servo.
         states (dict[str, int]): Mapping of servo states to PWM values.
+        min_delay (float): Minimum delay between servo commands, in seconds.
         service (Service): The service to control the servo.
         last_called_time (float): The time the servo was last called, in seconds since epoch.
     """
@@ -36,6 +37,7 @@ class PeripheralDiscreteServo:
     tag: str
     service_name: str
     states: dict[str, int]
+    min_delay: float
     service: Service
     last_called_time: float = 0.0
 
@@ -50,14 +52,18 @@ class PeripheralContinuousServo:
         service_name (str): The name of the service to control the servo.
         min_pwm (int): Minimum PWM value for the servo.
         max_pwm (int): Maximum PWM value for the servo.
+        min_delay (float): Minimum delay between servo commands, in seconds.
         service (Service): The service to control the servo.
+        last_called_time (float): The time the servo was last called, in seconds since epoch.
     """
     name: str
     tag: str
     service_name: str
     min_pwm: int
     max_pwm: int
+    min_delay: float
     service: Service
+    last_called_time: float = 0.0
 
 @dataclass
 class ServoTypeInfo:
@@ -71,7 +77,8 @@ class ServoTypeInfo:
     """
     servo_dataclass: type[PeripheralDiscreteServo] | type[PeripheralContinuousServo]
     service_msg_type: type[SetDiscreteServo] | type[SetContinuousServo]
-    callback: Callable[..., Any]
+    callback: Callable[[SetDiscreteServo.Request, SetDiscreteServo.Response, str], SetDiscreteServo.Response] | \
+                Callable[[SetContinuousServo.Request, SetContinuousServo.Response, str], SetContinuousServo.Response]
 
 
 class PeripheralPublisher(SerialNode):
@@ -85,7 +92,6 @@ class PeripheralPublisher(SerialNode):
     ARDUINO_NAME = 'peripheral'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
     LOOP_RATE = 50.0  # Hz
-    DISCRETE_SERVO_MIN_DELAY = 3.0  # seconds
     SENSOR_CLASSES: ClassVar[dict[str, type[PeripheralSensor]]] = {
         'pressure': PressureSensor,
         'voltage': VoltageSensor,
@@ -194,8 +200,8 @@ class PeripheralPublisher(SerialNode):
         state = request.state
         servo: PeripheralDiscreteServo = self.servos[tag]
 
-        if time.time() - servo.last_called_time < self.DISCRETE_SERVO_MIN_DELAY:
-            error_msg = (f'Minimum delay of {self.DISCRETE_SERVO_MIN_DELAY} seconds not met since last call to '
+        if time.time() - servo.last_called_time < servo.min_delay:
+            error_msg = (f'Minimum delay of {servo.min_delay} seconds not met since last call to '
                          f'{self.servos[tag].name} servo.')
 
             response.success = False
@@ -243,8 +249,19 @@ class PeripheralPublisher(SerialNode):
         pwm = request.pwm
         servo: PeripheralContinuousServo = self.servos[tag]
 
+        if time.time() - servo.last_called_time < servo.min_delay:
+            error_msg = (f'Minimum delay of {servo.min_delay} seconds not met since last call to '
+                         f'{self.servos[tag].name} servo.')
+
+            response.success = False
+            response.message = error_msg
+
+            self.get_logger().error(error_msg)
+            return response
+
         if servo.min_pwm <= pwm <= servo.max_pwm:
             if self.writeline(f'{tag}:{pwm}'):
+                servo.last_called_time = time.time()
                 response.success = True
                 response.message = f'Successfully set {servo.name} servo to PWM: {pwm}'
             else:

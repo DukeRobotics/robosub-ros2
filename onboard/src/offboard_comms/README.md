@@ -66,12 +66,14 @@ arduino:
                 state_1: pwm_1
                 state_2: pwm_2
                 ...
+              min_delay: servo_1_min_delay
             - name: servo_2
               tag: servo_2_tag
               service_name: servo_2_service_name
               type: continuous
-              min_pwm: min_pwm
-              max_pwm: max_pwm
+              min_pwm: servo_2_min_pwm
+              max_pwm: servo_2_max_pwm
+              min_delay: servo_2_min_delay
             - name: servo_3
               ...
     arduino_2:
@@ -110,11 +112,14 @@ gyro:
         - `type` is the type of servo. It can be either `discrete` or `continuous`. A `discrete` servo has a fixed set of states that it can be set to, where each state is mapped to a specific PWM value. A `continuous` servo can be set to any PWM value within a range.
         - `states` (`discrete` servos only) is a dictionary that maps the states of the servo to the PWM values. Each key is a state of the servo, and the corresponding value is the PWM value to set the servo to when it is in that state.
         - `min_pwm` and `max_pwm` (`continuous` servos only) are the minimum and maximum PWM values that the servo can be set to.
+        - `min_delay` is the minimum delay in seconds between commands to the servo. This ensures that if two or more service requests are made to command the servo before the servo has returned to its stop position, the service requests will respond with an error message. This value should be greater than the `delay` value provided to the `RobotServo` initializer in the Peripheral Arduino sketch as it takes additional time for the Arduino to process the command and for the servo to respond. Thus, this value should be obtained experimentally by measuring the time elapsed between when the servo is commanded to move and when it returns to its stop position.
         > [!IMPORTANT]
         > The Peripheral Arduino sketch does **not** read the [robot config file](#robot-config-file). So, if a new servo is added to the robot and connected to the Peripheral Arduino, simply adding the new servo to the `servos` section of the [robot config file](#robot-config-file) will **not** be sufficient to enable the servo. The subclass for the robot in the Peripheral Arduino sketch must be updated to initialize the new servo.
 - `dvl`
     - `ftdi` is the FTDI string of the DVL. This is a unique identifier for the DVL and is used to find the port that the DVL is connected to. To find the FTDI string, see the [Obtain FTDI String](#obtain-ftdi-string) section.
     - `negate_x_vel`, `negate_y_vel`, and `negate_z_vel` are boolean values that determine whether the DVL's velocity readings should be negated. These values are used to correct for the orientation of the DVL on the robot. If the DVL is mounted in a way that causes the velocity readings along one or more axes to have an incorrect sign, set the corresponding value(s) to `true`. Otherwise, set them to `false`.
+    > [!NOTE]
+    > The DVL configuration structure is the same regardless of the DVL model.
 - `gyro`
   - `ftdi` is the FTDI string of the gyro. This is a unique identifier for the gyro and is used to find the port that the gyro is connected to. To find the FTDI string, see the [Obtain FTDI String](#obtain-ftdi-string) section.
   - `zero_bias` is the rate in degrees per second that the gyro accumulates error when it is at rest (not moving with respect to the surface of the Earth). See the [Gyro Zero Bias](#gyro-zero-bias) section for more information on what this value means and how to obtain it.
@@ -128,8 +133,9 @@ The `data` directory contains CSV files that are used to store lookup tables for
 
 ### Launch Config
 The `launch` directory contains the following launch files:
-- `dvl.xml`: Launches the `dvl_raw` node that interfaces with the DVL and the `dvl_odom` node that converts the DVL velocity readings to odometry messages.
-- `offboard_comms.xml`: Launches the `dvl_raw`, `dvl_odom`, `thrusters`, and `peripheral` nodes. This is the primary launch file for the offboard_comms package.
+- `dvl_pathfinder.xml`: Launches the `dvl_pathfinder_raw` node that interfaces with the Pathfinder DVL and the `dvl_pathfinder_to_odom` node that converts the Pathfinder DVL velocity readings to odometry messages.
+- `dvl_wayfinder.xml`: Launches the `dvl_wayfinder` node that interfaces with the Wayfinder DVL.
+- `offboard_comms.launch.py`: Launches the `thrusters`, and `peripheral` nodes, along with either the `dvl_pathfinder` or the `dvl_wayfinder` nodes, whichever is appropriate for the robot. This is the primary launch file for the offboard_comms package.
 - `peripheral.xml`: Launches the `peripheral` node that interfaces with the Peripheral Arduino.
 - `thrusters.xml`: Launches the `thrusters` node that interfaces with the Thruster Arduino.
 
@@ -217,7 +223,7 @@ Thus, by handling the basic serial communication, `SerialNode` allows subclasses
 
 It gracefully handles errors and exceptions that may occur during the process. If any read or write operation fails, the node will attempt to reconnect to the serial device indefinitely until the operation is successful. If the node is stopped, it will close the serial connection and exit.
 
-The `dvl_raw.py`, `gyro.py`, `peripheral.py`, and `thrusters.py` scripts subclass `SerialNode` to interface with the DVL, gyro, Peripheral Arduino, and Thruster Arduino.
+The `dvl_pathfinder_raw.py`, `gyro.py`, `peripheral.py`, and `thrusters.py` scripts sublcass `SerialNode` to interface with the Pathfinder DVL, gyro, Peripheral Arduino, and Thruster Arduino.
 
 ## Thruster Allocations to PWMs
 The `thrusters.py` node subscribes to `/controls/thruster_allocs` of type `custom_msgs/msg/ThrusterAllocs`. This is an array of 64-bit floats, and they must be in range [-1, 1]. It also subscribes to `/sensors/voltage` of type `std_msgs/msg/Float64`. This is a 64-bit float that is clamped to the range [14.0, 18.0].
@@ -265,13 +271,17 @@ test-thrusters -s 0.1 -r 10
 ```
 
 ## DVL
-We use the [Teledyne Pathfinder DVL](https://www.teledynemarine.com/brands/rdi/pathfinder-dvl) for velocity measurements. The DVL is connected to the robot's main computer via a USB serial converter.
+This package supports the [Teledyne Pathfinder DVL](https://www.teledynemarine.com/brands/rdi/pathfinder-dvl) and [Teledyne Wayfinder DVL](https://www.teledynemarine.com/wayfinder). The DVL (regardless of model) is connected to the robot's main computer via a USB serial converter.
 
-The `dvl_raw` script publishes the raw DVL data to the `/sensors/dvl/raw` topic with type `custom_msgs/msg/DVLRaw`. It obtains the DVL's FTDI string from the [robot config file](#robot-config-file) and uses it to find the DVL's serial port.
+### Pathfinder DVL
+The `dvl_pathfinder_raw.py` script publishes the raw Pathfinder DVL data to the `/sensors/dvl/raw` topic with type `custom_msgs/msg/DVLRaw`. It requires the DVL to automatically send data via serial in the PD13 format.
 
-The `dvl_to_odom` script converts the raw DVL data and publishes it to `/sensors/dvl/odom` with type `nav_msgs/msg/Odometry` for use in `sensor_fusion`. It obtains the DVL's negation values from the [robot config file](#robot-config-file) and uses them to negate the velocity readings if necessary.
+The `dvl_pathfinder_to_odom.py` script subscribes to `/sensors/dvl/raw` data, converts it to a `nav_msgs/msg/Odometry` message, and publishes it to `/sensors/dvl/odom`, for use in `sensor_fusion`. It obtains the DVL's negation values from the [robot config file](#robot-config-file) and uses them to negate the velocity readings if necessary.
 
-You can launch both scripts using the `dvl.xml` launch file.
+### Wayfinder DVL
+The `dvl_wayfinder.py` script interfaces with the Wayfinder DVL. Despite the Wayfinder DVL being a serial device, it does not use the [Serial Node](#serial-node) class to interface with it. Instead, it uses the `dvl_wayfinder_lib` provided by Teledyne to handle the serial communication and parsing of the data.
+
+Unlike the Pathfinder DVL, it does not publish the raw data. Instead, it publishes the DVL's velocity readings as a `nav_msgs/msg/Odometry` message to `/sensors/dvl/odom`,  for use in `sensor_fusion`. It also obtains the DVL's negation values from the [robot config file](#robot-config-file) and uses them to negate the velocity readings if necessary.
 
 
 ## Gyro
@@ -357,6 +367,8 @@ The Peripheral Arduino publishes voltage at 10 Hz.
 
 The votage is calibrated based on the Peripheral Arduino's voltage. This is important as the generic voltage sensor uses a voltage divider to measure the voltage, so it requires knowledge of its input voltage to provide an accurate reading.
 
+Despite the calibration, the voltage reading may still differ from the true voltage by 0.2-0.3V. This difference varies linearly with the voltage. To correct this difference, obtain a handful of voltage readings from the voltage sensor and a multimeter, and then compute a linear regression to find the slope and intercept of the line that best fits the data. The slope and intercept can then be used to correct the voltage readings from the sensor.
+
 ### Pressure
 The Peripheral Arduino interprets the Blue Robotics Pressure Sensor using the MS5837 library. It sends the data over serial each time the sensor gets a new reading, so the rate is not defined other than "as fast as possible."
 
@@ -393,7 +405,7 @@ The servo is controlled by sending a message to the Arduino over serial in the f
 > [!NOTE]
 > From the Peripheral Arduino's perspective, all servos are continuous servos. The Arduino does not differentiate between continuous and discrete servos; for any servo, it will accept any PWM value that is within its range. The distinction between discrete and continuous servos is made in the [robot config file](#robot-config-file) and [Peripheral Publisher](#peripheral-publisher) script, which requires discrete servos to be set to one of a predefined set of states and continuous servos to be set to any PWM value within a range.
 
-If a servo command is sent, then the servo will not accept any other commands until the servo has returned to its original position. Thus, if you wish to send multiple commands to the same servo in quick succession, you must wait for at least 3 seconds between commands.
+If a servo command is sent, then the servo will not accept any other commands until the servo has returned to its stop position. Thus, if you wish to send multiple commands to the same servo, the time elapsed between each command must be greater than the time it takes for the servo to return to its stop position. This time is defined in the `min_delay` field of the servo in the [robot config file](#robot-config-file).
 
 ### Gyro Trigger Signal
 The gyro requires a 1000Hz square wave trigger signal to send data. This signal is sent by the Peripheral Arduino.
@@ -435,4 +447,4 @@ When `peripheral.py` receives a service request to control a servo, it first val
 > The `peripheral.py` script only checks if the state is within the defined set of states (discrete servos) or the PWM value is within the min and max PWM values (continuous servos). They do **not** check if setting the servo to that state or PWM value will result in the servo moving to an unsafe position. It is the responsibility of the user to ensure that the PWM values sent to the servos are safe.
 
 > [!WARNING]
-> The Peripheral Arduino will not accept any other commands for a servo until the servo has returned to its original position. If you send multiple service requests for the same servo in quick succession, the service will respond with a success message, but the servo will not perform any actions except the first one until it has returned to its original position. To avoid this, **wait for at least 3 seconds** between service requests for the same servo.
+> The Peripheral Arduino will not accept any other commands for a servo until the servo has returned to its original position. Thus, if service request(s) are sent for a servo within `min_delay` seconds of the last successful request for that servo, the service will respond to those request(s) with an error message and no command will be sent to the servo. Thus, the service caller must **wait at least `min_delay` seconds between service requests** for the same servo.

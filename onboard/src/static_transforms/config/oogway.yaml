@@ -26,7 +26,7 @@ transforms:
     yaw: 3.141592653589793
     frame_id: corner_link
     child_frame_id: camera_depthai_bottom
-  camera_mono_front:
+  camera_usb_front:
     x: 0.1176809969
     y: 0.5166097436
     z: -0.1438393814
@@ -34,8 +34,8 @@ transforms:
     pitch: 0.0
     yaw: 0.0
     frame_id: corner_link
-    child_frame_id: camera_mono_front
-  camera_mono_bottom:
+    child_frame_id: camera_usb_front
+  camera_usb_bottom:
     x: -0.1165228228
     y: 0.600075
     z: -0.2769725
@@ -43,7 +43,7 @@ transforms:
     pitch: 1.5707963267948966
     yaw: 0.0
     frame_id: corner_link
-    child_frame_id: camera_mono_bottom
+    child_frame_id: camera_usb_bottom
   sonar_ping_360:
     x: 0.11086996
     y: 0.30952336
