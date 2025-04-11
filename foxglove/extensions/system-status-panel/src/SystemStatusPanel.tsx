@@ -11,6 +11,7 @@ import {
   TableContainer,
   TableRow,
   ThemeProvider,
+  Tooltip,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -59,18 +60,7 @@ const topicToStatus: Record<string, Status[]> = {
   ],
   "/sensors/humidity/signal": [
     {
-      name: "Humidity (Signal)",
-      suffix: "%",
-      parse: (event) => {
-        const msgEvent = event as MessageEvent<StdMsgs.Float64>;
-        return msgEvent.message.data;
-      },
-      warn: (value) => value != undefined && value >= 80,
-    },
-  ],
-  "/sensors/humidity/battery": [
-    {
-      name: "Humidity (Battery)",
+      name: "Humidity (S)",
       suffix: "%",
       parse: (event) => {
         const msgEvent = event as MessageEvent<StdMsgs.Float64>;
@@ -81,7 +71,7 @@ const topicToStatus: Record<string, Status[]> = {
   ],
   "/sensors/temperature/signal": [
     {
-      name: "Temperature (Signal)",
+      name: "Temp (S)",
       suffix: "F",
       parse: (event) => {
         const msgEvent = event as MessageEvent<StdMsgs.Float64>;
@@ -90,15 +80,37 @@ const topicToStatus: Record<string, Status[]> = {
       warn: (value) => value != undefined && value >= 100,
     },
   ],
+  "/sensors/humidity/battery": [
+    {
+      name: "Humidity (B)",
+      suffix: "%",
+      parse: (event) => {
+        const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+        return msgEvent.message.data;
+      },
+      warn: (value) => value != undefined && value >= 80,
+    },
+  ],
   "/sensors/temperature/battery": [
     {
-      name: "Temperature (Battery)",
+      name: "Temp (B)",
       suffix: "F",
       parse: (event) => {
         const msgEvent = event as MessageEvent<StdMsgs.Float64>;
         return msgEvent.message.data;
       },
       warn: (value) => value != undefined && value >= 100,
+    },
+  ],
+  "/sensors/gyro/temperature": [
+    {
+      name: "Temp (Gyro)",
+      suffix: "F",
+      parse: (event) => {
+        const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+        return msgEvent.message.data;
+      },
+      warn: (value) => value != undefined && value >= 140,
     },
   ],
 };
@@ -147,16 +159,18 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
   }, [renderDone]);
 
   // Construct table rows based on the config array and sensorValues state
-  const allStatus: Status[] = Object.values(topicToStatus).flat();
-  const rows = allStatus.map((status) => {
-    const value = sensorValues[status.name];
-    return {
-      name: status.name,
-      value,
-      suffix: status.suffix,
-      warn: status.warn(value),
-    };
-  });
+  const rows = Object.entries(topicToStatus).flatMap(([topic, allStatus]) =>
+    allStatus.map((status) => {
+      const value = sensorValues[status.name];
+      return {
+        topic,
+        name: status.name,
+        value,
+        suffix: status.suffix,
+        warn: status.warn(value),
+      };
+    }),
+  );
 
   const theme = useTheme();
   return (
@@ -166,32 +180,33 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
           <Table size="small">
             <TableBody>
               {rows.map((row) => (
-                <TableRow
-                  key={row.name}
-                  style={{
-                    backgroundColor: (() => {
-                      // If no value has ever been set for this sensor, show error color
-                      if (row.value == undefined) {
-                        return theme.palette.error.dark;
-                      } else if (row.warn) {
-                        return theme.palette.warning.main;
-                      }
-                      return theme.palette.success.dark;
-                    })(),
-                  }}
-                >
-                  <TableCell>
-                    <Typography variant="subtitle2" color={theme.palette.common.white}>
-                      {row.name}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="subtitle2" color={theme.palette.common.white}>
-                      {row.value?.toFixed(1)}
-                      {row.suffix}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
+                <Tooltip title={row.topic} arrow placement="left" key={row.name}>
+                  <TableRow
+                    style={{
+                      backgroundColor: (() => {
+                        // If no value has ever been set for this sensor, show error color
+                        if (row.value == undefined) {
+                          return theme.palette.error.dark;
+                        } else if (row.warn) {
+                          return theme.palette.warning.main;
+                        }
+                        return theme.palette.success.dark;
+                      })(),
+                    }}
+                  >
+                    <TableCell>
+                      <Typography variant="subtitle2" color={theme.palette.common.white}>
+                        {row.name}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="subtitle2" color={theme.palette.common.white}>
+                        {row.value?.toFixed(1)}
+                        {row.suffix}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                </Tooltip>
               ))}
             </TableBody>
           </Table>
