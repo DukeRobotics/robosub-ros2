@@ -3,7 +3,6 @@ import rclpy
 import tf2_geometry_msgs
 import tf2_ros
 
-SONAR_CENTER_GRADIANS = 200
 RADIANS_PER_GRADIAN = np.pi / 200
 GRADIANS_PER_DEGREE = 400 / 360
 
@@ -35,30 +34,33 @@ def transform_pose(buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped,
         raise RuntimeError(error_message) from e
 
 
-def centered_gradians_to_radians(angle_gradians: float) -> float:
+def centered_gradians_to_radians(angle_gradians: float, center_gradians: float, negate: bool) -> float:
     """
-    Convert gradians centered at 200 to radians centered at 0.
+    Convert gradians centered at center_gradians to radians centered at 0.
 
     Args:
-        angle_gradians (float): Angle in gradians where 200
-            (Sonar.SONAR_CENTER_GRADIANS) is forward.
+        angle_gradians (float): Angle in gradians where center_gradians is forward.
+        center_gradians (float): Center gradians to use for conversion.
+        negate (bool): If True, negate the angle.
 
     Returns:
-        float: Angle in radians.
+        float: Angle in radians where 0 is forward.
     """
-    return (angle_gradians - SONAR_CENTER_GRADIANS) * RADIANS_PER_GRADIAN
+    return (angle_gradians - center_gradians) * RADIANS_PER_GRADIAN * (-1 if negate else 1)
 
 
-def degrees_to_centered_gradians(angle_degrees: float) -> int:
+def degrees_to_centered_gradians(angle_degrees: float, center_gradians: float, negate: bool) -> int:
     """
-    Convert degrees centered at 0 to gradians centered at 200.
+    Convert degrees centered at 0 to gradians centered at center_gradians.
 
     Args:
         angle_degrees (float): Angle in degrees where 0 is forward.
+        center_gradians (float): Center gradians to use for conversion.
+        negate (bool): If True, negate the angle.
 
     Returns:
-        int: Angle in gradians where 200 (Sonar.SONAR_CENTER_GRADIANS) is forward.
+        int: Angle in gradians where center_gradians is forward.
     """
-    angle_gradians = angle_degrees * GRADIANS_PER_DEGREE
-    angle_gradians_centered = angle_gradians + SONAR_CENTER_GRADIANS
+    angle_gradians = angle_degrees * GRADIANS_PER_DEGREE * (-1 if negate else 1)
+    angle_gradians_centered = angle_gradians + center_gradians
     return int(angle_gradians_centered)

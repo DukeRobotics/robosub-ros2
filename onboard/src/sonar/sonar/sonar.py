@@ -1,6 +1,11 @@
+import os
+from pathlib import Path
+
 import numpy as np
 import rclpy
+import resource_retriever as rr
 import tf2_ros
+import yaml
 from brping import Ping360
 from custom_msgs.srv import SonarSweepRequest
 from cv_bridge import CvBridge
@@ -15,6 +20,8 @@ from sonar import sonar_image_processing, sonar_utils
 
 class Sonar(Node):
     """Class to interface with the Sonar device."""
+    CONFIG_FILE_PATH = f'package://sonar/config/{os.getenv("ROBOT_NAME")}.yaml'
+
     BAUD_RATE = 2000000  # hz
     SAMPLE_PERIOD_TICK_DURATION = 25e-9  # s
     SPEED_OF_SOUND_IN_WATER = 1482  # m/s
@@ -24,9 +31,8 @@ class Sonar(Node):
     prev_range = DEFAULT_RANGE
     DEFAULT_NUMER_OF_SAMPLES = 1200  # 1200 is max resolution
 
-    SONAR_FTDI_OOGWAY = 'DK0C1WF7'
     _serial_port = None
-    CONNECTION_RETRY_RATE = 5  # s
+    CONNECTION_RETRY_PERIOD = 5  # s
     LOOP_RATE = 10  # Hz
     STATUS_LOOP_RATE = 1 # Hz
 
@@ -52,6 +58,13 @@ class Sonar(Node):
         self.stream = self.declare_parameter('stream', False).value
         self.debug = self.declare_parameter('debug', True).value
 
+        with Path(rr.get_filename(self.CONFIG_FILE_PATH, use_protocol=False)).open() as f:
+            self._config_data = yaml.safe_load(f)
+
+        self.ftdi = self._config_data['ftdi']
+        self.center_gradians = self._config_data['center_gradians']
+        self.negate = self._config_data['negate']
+
         self.status_publisher = self.create_publisher(String, self.SONAR_STATUS_TOPIC, 10)
 
         self.tf_buffer = tf2_ros.Buffer()
@@ -69,12 +82,12 @@ class Sonar(Node):
 
         # Find sonar port
         try:
-            self._serial_port = next(list_ports.grep(self.SONAR_FTDI_OOGWAY)).device
+            self._serial_port = next(list_ports.grep(self.ftdi)).device
         except StopIteration:
             self.get_logger().error('Sonar not found.')
             rclpy.shutdown()
 
-        self.connect_timer = self.create_timer(1.0 / self.CONNECTION_RETRY_RATE, self.connect)
+        self.connect_timer = self.create_timer(1.0 / self.CONNECTION_RETRY_PERIOD, self.connect)
         self.status_publisher_timer = self.create_timer(1.0 / self.STATUS_LOOP_RATE, self.publish_status)
 
     def connect(self) -> None:
@@ -254,9 +267,9 @@ class Sonar(Node):
                 of angle/index item.
         """
         x_pos = self.get_distance_of_sample(index)*np.cos(
-            sonar_utils.centered_gradians_to_radians(angle))
+            sonar_utils.centered_gradians_to_radians(angle, self.center_gradians, self.negate))
         y_pos = -1 * self.get_distance_of_sample(index)*np.sin(
-            sonar_utils.centered_gradians_to_radians(angle))
+            sonar_utils.centered_gradians_to_radians(angle, self.center_gradians, self.negate))
         pos_of_point = Pose()
         pos_of_point.position.x = x_pos
         pos_of_point.position.y = y_pos
@@ -362,8 +375,8 @@ class Sonar(Node):
         right_degrees = request.end_angle
         new_range = request.distance_of_scan
 
-        left_gradians = sonar_utils.degrees_to_centered_gradians(left_degrees)
-        right_gradians = sonar_utils.degrees_to_centered_gradians(right_degrees)
+        left_gradians = sonar_utils.degrees_to_centered_gradians(left_degrees, self.center_gradians, self.negate)
+        right_gradians = sonar_utils.degrees_to_centered_gradians(right_degrees, self.center_gradians, self.negate)
 
         self.get_logger().info(f'Recieved Sonar request: {left_gradians}, {right_gradians}, {new_range}')
 
