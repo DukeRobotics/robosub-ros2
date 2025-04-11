@@ -46,6 +46,7 @@ class GyroPublisher(SerialNode):
 
         self.zero_bias = self._config['gyro']['zero_bias']
         self.scale_factor = self._config['gyro']['scale_factor']
+        self.negate = self._config['gyro']['negate']
 
         self.first_msg_time = None
 
@@ -190,6 +191,10 @@ class GyroPublisher(SerialNode):
         # The gyro data is in degrees per second, and the temperature data is in degrees Celsius
         angular_velocity = (gyro_data * self.TRIGGER_RATE / self.scale_factor) - self.zero_bias
         temperature = temp_data * 0.0625
+
+        # Negate the angular velocity if needed
+        if self.negate:
+            angular_velocity = -angular_velocity
 
         # Compute the angular position in degrees
         # Raw angular position is simply the integral of the angular velocity

@@ -50,3 +50,4 @@ gyro:
   ftdi: FT81SKA0
   zero_bias: 0.0023055327
   scale_factor: 15142595.0
+  negate: false

@@ -35,3 +35,8 @@ dvl:
   negate_x_vel: false
   negate_y_vel: false
   negate_z_vel: false
+gyro:
+  ftdi: FT81SUWZ
+  zero_bias: 0.0023055327
+  scale_factor: 15497811.0
+  negate: true
