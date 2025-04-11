@@ -378,6 +378,9 @@ class Sonar(Node):
         left_gradians = sonar_utils.degrees_to_centered_gradians(left_degrees, self.center_gradians, self.negate)
         right_gradians = sonar_utils.degrees_to_centered_gradians(right_degrees, self.center_gradians, self.negate)
 
+        if self.negate:
+            left_gradians, right_gradians = right_gradians, left_gradians
+
         self.get_logger().info(f'Recieved Sonar request: {left_gradians}, {right_gradians}, {new_range}')
 
         # Angle must be between 0 and 400 and range must be positive
