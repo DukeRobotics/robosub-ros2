@@ -7,9 +7,10 @@ import { createRoot } from "react-dom/client";
 
 // Map of sensor name to topic name
 const TOPICS_MAP = {
-  DVL: "/sensors/dvl/raw",
+  DVL: "/sensors/dvl/odom",
   IMU: "/vectornav/imu",
   Pressure: "/sensors/depth",
+  Gyro: "/sensors/gyro/angular_velocity/twist",
   "Front DAI": "/camera/front/rgb/preview/compressed",
   "Front Mono": "/camera/usb/front/compressed",
   "Bottom Mono": "/camera/usb/bottom/compressed",
@@ -156,7 +157,7 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
                   }}
                 >
                   <TableCell>
-                    <Tooltip title={topic} arrow placement="right">
+                    <Tooltip title={topic} arrow placement="left">
                       <Typography variant="subtitle2" color={theme.palette.common.white}>
                         {sensor}
                       </Typography>
