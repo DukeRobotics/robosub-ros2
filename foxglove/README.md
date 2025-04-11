@@ -103,7 +103,7 @@ When you are ready to publish custom extensions to your organization, run:
 ```
 fox publish [extensions ...]
 ```
-- `extensions`: A list of extensions to install. If no extensions are given, all extensions are installed.
+- `extensions`: A list of extensions to publish. If no extensions are given, all extensions are published.
 - `-v, --version`: Version to publish extensions under. If no version is given, the short (length 7) HEAD commit hash is used. A version is required if the `robosub-ros2` git reposititory is dirty.
 - `-f, --force`: Publish extensions even if the repository is dirty.
 
