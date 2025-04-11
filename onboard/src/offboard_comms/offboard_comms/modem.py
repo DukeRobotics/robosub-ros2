@@ -5,10 +5,10 @@ import time
 
 import rclpy
 from std_msgs.msg import ByteMultiArray
-from custom_msgs.srv import SetModemSettings
+from custom_msgs.srv import SetModemSettings, ModemWrite
 
 
-from offboard_comms.serial_node import SerialNode
+from offboard_comms.serial_node import SerialNode, SerialReadType
 
 
 
@@ -21,7 +21,7 @@ class ModemPublisher(SerialNode):
     BAUDRATE = 9600
     NODE_NAME = 'wlmodem'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
-    LOOP_RATE = 0.625  # Hz, loop every 1.6 seconds
+    LOOP_RATE = 20  # Hz, loop every 1.6 seconds
 
     DIAGNOSTIC_PACKET_SIZE = 18
 
@@ -29,10 +29,11 @@ class ModemPublisher(SerialNode):
     change_setting_timer = time.time()
 
     def __init__(self) -> None:
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME, True,
-                         self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE, use_nonblocking=True, return_byte=True)
-        self._publisher = self.node.create_publisher(ByteMultiArray, '/offboard/ivc', 1)
-        self.change_setting_srv = self.node.create_service(SetModemSettings, 'offboard/settings', self.)
+        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
+                         SerialReadType.BYTES_ALL, self.CONNECTION_RETRY_PERIOD, loop_rate=self.LOOP_RATE)
+        self._publisher = self.create_publisher(ByteMultiArray, '/offboard/ivc/messages', 1)
+        self.change_setting_srv = self.create_service(SetModemSettings, '/offboard/ivc/settings', self.change_setting)
+        self.send_message_srv = self.create_service(ModemWrite, 'offboard/ivc/write', self.send_message)
 
         # Create a timer that checks if a second byte needs to be sent
 
@@ -48,21 +49,32 @@ class ModemPublisher(SerialNode):
         """
         return self._config['modem']['ftdi']
 
-    def process_line(self, line: bytes) -> None:
+    def send_data(self, data: str) -> bool:
         """
-        Process a line of serial data from the WaterLinked Modem-M16.
+        Send data to the modem.
 
         Args:
-            line (byte): line to process
+            data (str): Data to send.
         """
-        if len(line) != self.DIAGNOSTIC_PACKET_SIZE or line[0] != ord('$') or line[-1] != ord('\n'):
-            self.process_data(line)
+        return self.writebytes(data.encode('ascii'))
+
+    def process_bytes(self, data: bytes) -> None:
+        """
+        Process bytes read from serial.
+
+        Args:
+            data (bytes): Data to process.
+        """
+        print(f"Received {len(data)} bytes: {data}")
+        if len(data) != self.DIAGNOSTIC_PACKET_SIZE or data[0] != ord('$') or data[-1] != ord('\n'):
+            self.process_data(data)
         else:
-            self.process_diagnostic_report(line)
+            self.process_diagnostic_report(data)
 
     def process_data(self, packet: bytes) -> bytes:
         """
         Process the message report received from the WaterLinked Modem-M16.
+
         This will be further implemented later on when a data transfer protocol is established.
 
         Args:
@@ -73,7 +85,7 @@ class ModemPublisher(SerialNode):
         """
         # Publish this message to a ROS topic
         msg_to_send = ByteMultiArray()
-        msg_to_send.msg = packet
+        msg_to_send.data = packet
         self._publisher.publish(msg_to_send)
         return packet
 
@@ -109,7 +121,25 @@ class ModemPublisher(SerialNode):
             'LEVEL': (decoded[12] & 0b00001100) >> 2,
         }
 
-    def change_setting(self, request: SetModemSettings.Request, response: SetModemSettings.Response) -> SetModemSettings.Response:
+    def send_message(self, request: ModemWrite.Request, response: ModemWrite.Response) -> ModemWrite.Response:
+        """
+        Send a message to the modem.
+
+        Args:
+            request (ModemWrite.Request): Request object containing the message to send.
+            response (ModemWrite.Response): Response object to be filled with the result.
+
+        Returns:
+            ModemWrite.Response: The response object with the result of the operation.
+        """
+        success = self.send_data(request.modem_message.toBytes())
+        response.success = success
+        response.message = 'Message sent successfully'
+
+        return response
+
+    def change_setting(self, request: SetModemSettings.Request, response: SetModemSettings.Response) -> \
+            SetModemSettings.Response:
         """
         Change the channel the modem is on if the modem is ready for commands.
 
@@ -118,7 +148,6 @@ class ModemPublisher(SerialNode):
             setting (int): Setting to change. 1 - Comm Channel, 2 - Op Mode, 3 - Report Request, 4 - Power Level
             char_to_send (str): Value to change setting to. i.e. channel #, power level
         """
-
         setting = request.setting
         char_to_send = request.char_to_send
 
@@ -132,10 +161,7 @@ class ModemPublisher(SerialNode):
                 self.get_logger().error('Invalid channel, please input an int within [1, 12]')
                 response.success = False
                 return response
-            if (channel < 10):
-                true_char_to_send = str(channel)
-            else:
-                true_char_to_send = ['a','b','c'][channel-10]
+            true_char_to_send = str(channel) if channel < 10 else ['a', 'b', 'c'][channel - 10]
         elif (setting == 2):
             setting_char = 'm'
         elif (setting == 3):
@@ -150,25 +176,28 @@ class ModemPublisher(SerialNode):
 
         if self.modem_ready and setting_char != '':
             self.change_setting_timer = time.time()
-            self.writebytes(ord(setting_char))
+            print(f'Sending {setting_char}')
+            self.send_data(setting_char)
             self.setting_char = setting_char
             self.true_char_to_send = true_char_to_send
             self.modem_ready = False
             self.setting = setting
-            self.send_timer = self.create_timer(1.0, self.delayed_write())
+            self.send_timer = self.create_timer(1.0, self.delayed_write)
             response.success = True
             return response
-        else:
-            response.success = False
-            return response
-        # Set a flag to true, record timestamp of the first byte, and record the content of the byte
 
-    def delayed_write(self):
-        if self.modem_ready == False:
-            self.writebytes(ord(setting_char))
-            if self.setting == 1 or self.setting == 4:
-                self.writebytes(ord(true_char_to_send))
+        response.success = False
+        return response
+
+    def delayed_write(self) -> None:
+        """Send the second byte after a delay."""
+        if not self.modem_ready:
+            print(f'Sending {self.setting_char} {self.true_char_to_send} {time.time() - self.change_setting_timer}')
+            self.send_data(self.setting_char)
+            if self.setting in {1, 4}:
+                self.send_data(self.true_char_to_send)
             self.modem_ready = True
+            self.send_timer.cancel()
 
 
 def main(args: list[str] | None = None) -> None:
@@ -188,3 +217,5 @@ def main(args: list[str] | None = None) -> None:
 
 if __name__ == '__main__':
     main()
+
+# Black is left

@@ -34,6 +34,7 @@ setup(
             'dvl_raw = offboard_comms.dvl_raw:main',
             'dvl_odom = offboard_comms.dvl_to_odom:main',
             'gyro = offboard_comms.gyro:main',
+            'modem = offboard_comms.modem:main',
             'peripheral = offboard_comms.peripheral:main',
             'test_thrusters = offboard_comms.test_thrusters:main',
             'thrusters = offboard_comms.thrusters:main',
