@@ -1,0 +1,10 @@
+depthai:
+  ip_range: 192.168.110.0/24
+  cameras:
+    front:
+      mac: 44:A9:2C:3E:1F:05
+      horizontal_fov: 95
+      focal_length: 2.75
+      sensor_size:
+        width: 6.2868
+        height: 4.712

@@ -1,3 +1,6 @@
 <launch>
-	<node name="depthai_camera_connect" pkg="cv" exec="depthai_camera_connect" output="screen"/>
+	<arg name="camera" default="front" />
+	<node name="depthai_camera_connect" pkg="cv" exec="depthai_camera_connect" output="screen">
+		<param name="camera" value="$(var camera)" />
+	</node>
 </launch>
