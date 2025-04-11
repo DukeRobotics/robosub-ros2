@@ -87,6 +87,7 @@ gyro:
   ftdi: gyro_FTDI_string
   zero_bias: gyro_zero_bias
   scale_factor: gyro_scale_factor
+  negate: true or false
 ```
 - `arduino`
     - `arduino_1`, `arduino_2`, etc. are the names of the Arduinos. These names are used to refer to the Arduinos in the [CLI](#command-line-interface) and in other files. They can be any string, but should be descriptive of the Arduino. They must be unique. `all` is a special name used by the CLI to refer to all Arduinos; do **_not_** use it as an Arduino name in this file. The names do not necessarily correspond to any names recognized by the Arduino CLI or operating system.
@@ -126,7 +127,7 @@ gyro:
   - `scale_factor` is a constant factor that the gyro readings are divided by to obtain the angular velocity.
     > [!NOTE]
     > Each individual gyro, even of the same model, behaves differently and thus has different scale factors. The manufacturer tests each gyro individually and provides a test report containing the scale factors for that gyro, calibrated at various temperatures. The scale factor chosen should be the one that is closest to the operating temperature of the gyro.
-
+  - `negate` is a boolean that determines whether the gyro's readings should be negated. This should be `true` if the gyro is mounted upside-down, `false` otherwise. To set this value, determine which face of the gyro has a higher Z-coordinate with respect to the robot's coordinate frame. If the circular face of the gyro has a higher Z-coordinate, the gyro is mounted right-side up. If the square face of the gyro has a higher Z-coordinate, the gyro is mounted upside-down.
 
 ### CSV Files
 The `data` directory contains CSV files that are used to store lookup tables for the thrusters. These tables are used to convert thruster allocations to PWM signals, given the current system voltage. They contain two columns: `force` and `pwm`. The `force` column has values ranging from `-1.00` to `1.00` in increments of `0.01`, and the `pwm` column has the corresponding PWM values needed to exert the given force at the given voltage. The CSV files are named `<voltage>.csv`, where `<voltage>` is the voltage the thrusters need to receive for the table to be accurate. The tables are generated using the Blue Robotics T200 Thruster performance data, found on [this page](https://bluerobotics.com/store/thrusters/t100-t200-thrusters/t200-thruster-r2-rp/) under "Technical Details".
@@ -332,14 +333,16 @@ The gyro measures angular velocity relative to an inertial frame of reference. T
 
 To obtain the gyro's zero bias, follow the steps below.
 1. Ensure that the gyro's environment is similar to the one in which it will be used. This means it should be at its average operating temperature and in a similar electromagnetic environment.
-2. Ensure that the gyro is precisely level with the surface of the Earth.
+2. Ensure that the gyro is precisely level with the surface of the Earth and is in the same orientation as it will be used (upside-down or right-side up). If it is upside-down, make sure to set the `negate` value in the robot config file to `true`. See the [robot config file](#robot-config-file) section for more information on how to set this value.
 3. Ensure that the gyro is not moving with respect to the surface of the Earth. This means it should be stationary and not experiencing any vibrations.
-4. Start the `gyro` node with the `compute_avg_angular_velocity` argument set to `true`. This will cause the node to compute the average angular velocity over its lifetime.
+4. Start the `gyro` node with the `compute_avg_angular_velocity` argument set to `true`. This will make the node compute the average angular velocity over its lifetime.
 5. Keep the node running for 5 minutes. Make sure the gyro is not moved or disturbed during this time.
 6. When the node is stopped, it will print the average angular velocity to the console. Sum this value with the existing zero bias value in the robot config file. This is the gyro's new zero bias.
     > [!IMPORTANT]
     > Do **not** overwrite the zero bias value in the robot config file with the average angular velocity obtained. The average angular velocity has the existing zero bias value subtracted from it. Thus, the updated zero bias is the sum of the average angular velocity and the existing zero bias value.
 7. Repeat steps 4-6 until the absolute value of average angular velocity is less than $2 \times 10^{-5}$ degrees per second. Values smaller than this are due to inaccuracies within the sensor itself and are negligible.
+    > [!NOTE]
+    > The final zero bias value must be positive. If the final value is negative, it is because the gyro's orientation was opposite of what was expected. In this case, review the `negate` value in the [robot config file](#robot-config-file) and the physical orientation of the gyro to make sure they align.
 
 
 ## Peripheral Arduino

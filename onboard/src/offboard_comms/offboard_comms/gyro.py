@@ -193,8 +193,7 @@ class GyroPublisher(SerialNode):
         temperature = temp_data * 0.0625
 
         # Negate the angular velocity if needed
-        if self.negate:
-            angular_velocity = -angular_velocity
+        angular_velocity = -angular_velocity if self.negate else angular_velocity
 
         # Compute the angular position in degrees
         # Raw angular position is simply the integral of the angular velocity
