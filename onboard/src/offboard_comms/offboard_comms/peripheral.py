@@ -3,7 +3,7 @@ import os
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import ClassVar
 
 import rclpy
 from custom_msgs.srv import SetContinuousServo, SetDiscreteServo
