@@ -217,7 +217,7 @@ Thus, by handling the basic serial communication, `SerialNode` allows subclasses
 
 It gracefully handles errors and exceptions that may occur during the process. If any read or write operation fails, the node will attempt to reconnect to the serial device indefinitely until the operation is successful. If the node is stopped, it will close the serial connection and exit.
 
-The `dvl_raw.py`, `gyro.py`, `peripheral.py`, and `thrusters.py` scripts sublcass `SerialNode` to interface with the DVL, gyro, Peripheral Arduino, and Thruster Arduino.
+The `dvl_raw.py`, `gyro.py`, `peripheral.py`, and `thrusters.py` scripts subclass `SerialNode` to interface with the DVL, gyro, Peripheral Arduino, and Thruster Arduino.
 
 ## Thruster Allocations to PWMs
 The `thrusters.py` node subscribes to `/controls/thruster_allocs` of type `custom_msgs/msg/ThrusterAllocs`. This is an array of 64-bit floats, and they must be in range [-1, 1]. It also subscribes to `/sensors/voltage` of type `std_msgs/msg/Float64`. This is a 64-bit float that is clamped to the range [14.0, 18.0].
@@ -321,7 +321,7 @@ The gyro measures angular velocity relative to an inertial frame of reference. T
 > The gyro's zero bias depends on the latitude at whiich it is located. If the gyro is moved to a different latitude, the zero bias must be remeasured and updated in the robot config file.
 
 To obtain the gyro's zero bias, follow the steps below.
-1. Ensure that the gyro's enviornment is similar to the one in which it will be used. This means it should be at its average operating temperature and in a similar electromagnetic environment.
+1. Ensure that the gyro's environment is similar to the one in which it will be used. This means it should be at its average operating temperature and in a similar electromagnetic environment.
 2. Ensure that the gyro is precisely level with the surface of the Earth.
 3. Ensure that the gyro is not moving with respect to the surface of the Earth. This means it should be stationary and not experiencing any vibrations.
 4. Start the `gyro` node with the `compute_avg_angular_velocity` argument set to `true`. This will cause the node to compute the average angular velocity over its lifetime.

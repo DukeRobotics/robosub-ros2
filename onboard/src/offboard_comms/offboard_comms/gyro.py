@@ -27,8 +27,8 @@ class GyroPublisher(SerialNode):
     TEMPERATURE_TOPIC_NAME = 'sensors/gyro/temperature'
 
     CONNECTION_RETRY_PERIOD = 1.0 # seconds
-    LOOP_RATE = 1000.0 #Hz
-    TRIGGER_RATE = 1000.0 #Hz
+    LOOP_RATE = 1000.0 # Hz
+    TRIGGER_RATE = 1000.0 # Hz
 
     TF_FRAME_ID = 'gyro'
 

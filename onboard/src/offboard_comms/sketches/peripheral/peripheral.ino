@@ -71,6 +71,7 @@ void setup() {
       break;
     case OOGWAY_SHELL:
       robot = new Oogway(VOLTAGE_DELAY, PRESSURE_DELAY, TEMP_HUMIDITY_DELAY, SERVO_DELAY, true);
+      setupGyroTrigger();
       break;
     case CRUSH:
       robot = new Crush(VOLTAGE_DELAY, PRESSURE_DELAY, TEMP_HUMIDITY_DELAY, SERVO_DELAY, false);
