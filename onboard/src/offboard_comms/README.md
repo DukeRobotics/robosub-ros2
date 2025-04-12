@@ -329,7 +329,7 @@ When the gyro is not moving with respect to the surface of the Earth, it will ou
 The gyro measures angular velocity relative to an inertial frame of reference. The rotation of the Earth and other cosmic forces accelerate the gyro by a small amount. Temperature, electromagnetic interference, vibrations, and other factors also affect the zero bias. The combined effect of these forces must be compensated for to obtain accurate readings.
 
 > [!IMPORTANT]
-> The gyro's zero bias depends on the latitude at whiich it is located. If the gyro is moved to a different latitude, the zero bias must be remeasured and updated in the robot config file.
+> The gyro's zero bias depends on the latitude at which it is located. If the gyro is moved to a different latitude, the zero bias must be remeasured and updated in the robot config file.
 
 To obtain the gyro's zero bias, follow the steps below.
 1. Ensure that the gyro's environment is similar to the one in which it will be used. This means it should be at its average operating temperature and in a similar electromagnetic environment.
