@@ -26,6 +26,15 @@ transforms:
     yaw: 0.0
     frame_id: corner_link
     child_frame_id: camera_usb_bottom
+  sonar_ping_360:
+    x: -0.02041527
+    y: -0.14635
+    z: -0.128477886
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: sonar_ping_360
   imu:
     x: -0.238648756
     y: -0.179527925
@@ -53,3 +62,12 @@ transforms:
     yaw: 0.0
     frame_id: corner_link
     child_frame_id: pressure_sensor
+  gyro:
+    x: -0.31751127
+    y: -0.2233
+    z: 0.048511603
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+    frame_id: corner_link
+    child_frame_id: gyro
