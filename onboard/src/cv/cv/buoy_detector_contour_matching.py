@@ -1,6 +1,9 @@
+from pathlib import Path
+
 import cv2
 import numpy as np
 import rclpy
+import resource_retriever as rr
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
 from rclpy.node import Node
@@ -16,10 +19,10 @@ class BuoyDetectorContourMatching(Node):
         super().__init__('buoy_detector_contour_matching')
 
         # Load the reference image in grayscale (assumes the image is already binary: white and black)
-        self.reference_image = cv2.imread(
-            '/home/ubuntu/robosub-ros2/onboard/build/cv/assets/polyform-a0-buoy-contour.png',
-            cv2.IMREAD_GRAYSCALE,
-        )
+        reference_image_path = 'package://cv/assets/polyform-a0-buoy-contour.png'
+        self.reference_image = cv2.imread(rr.get_filename(reference_image_path, use_protocol=False),
+                                          cv2.IMREAD_GRAYSCALE)
+
 
         # Compute the contours directly on the binary image
         self.ref_contours, _ = cv2.findContours(self.reference_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)

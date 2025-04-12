@@ -1,6 +1,9 @@
+from pathlib import Path
+
 import cv2
 import numpy as np
 import rclpy
+import resource_retriever as rr
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
 from rclpy.node import Node, Publisher
@@ -8,6 +11,8 @@ from sensor_msgs.msg import CompressedImage, Image
 
 from cv.config import MonoCam, Torpedo
 from cv.utils import calculate_relative_pose, compute_yaw
+
+CV_PACKAGE_PATH = 'package://cv/'
 
 
 class TorpedoTargetDetector(Node):
@@ -20,7 +25,8 @@ class TorpedoTargetDetector(Node):
         self.MATCH_TOLERANCE = 0.2
 
         # Load the reference image in grayscale (assumes the image is already binary: white and black)
-        self.reference_image = cv2.imread('/root/dev/robosub-ros2/onboard/build/cv/assets/torpedo_target_mask.png',
+        reference_image_path = 'package://cv/assets/torpedo_target_mask.png'
+        self.reference_image = cv2.imread(rr.get_filename(reference_image_path, use_protocol=False),
                                           cv2.IMREAD_GRAYSCALE)
 
         # Compute the contours directly on the binary image

@@ -2,17 +2,19 @@
 from math import radians
 
 from task_planning.task import Task, task
-from task_planning.tasks import comp_tasks, move_tasks, prequal_tasks, test_tasks
+from task_planning.tasks import buoyancy_tasks, comp_tasks, move_tasks, prequal_tasks, test_tasks
+from task_planning.utils import geometry_utils
 
 
 @task
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     tasks = [
+        buoyancy_tasks.buoyancy_task(-0.5, parent=self),  # Submerge and stabilize buoyancy
         # comp_tasks.initial_submerge(-0.7, parent=self),
         # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
 
-        prequal_tasks.prequal_task(parent=self),
+        # prequal_tasks.prequal_task(parent=self),
 
         # comp_tasks.coin_flip(parent=self),
         # comp_tasks.yaw_to_cv_object('gate_red_cw', direction=1, yaw_threshold=radians(10),

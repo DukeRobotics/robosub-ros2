@@ -7,7 +7,6 @@ from rclpy.time import Time
 from transforms3d.euler import euler2quat, quat2euler
 from transforms3d.quaternions import qmult
 
-
 def vector3_to_numpy(vector: Vector3) -> np.ndarray:
     """
     Convert a Vector3 to a numpy array.
@@ -73,6 +72,20 @@ def point_linear_distance(point1: Point, point2: Point) -> float:
     """
     return np.linalg.norm(point_to_numpy(point1) - point_to_numpy(point2))
 
+
+def geometry_quat_to_euler_angles(quat: Quaternion) -> Vector3:
+    """
+    Convert a geometry_msgs/Quaternion to Euler angles (roll, pitch, yaw).
+
+    Args:
+        quat: The Quaternion to convert.
+
+    Returns:
+        A Vector3 containing the Euler angles in radians, in the order of (roll, pitch, yaw).
+    """
+    transforms3d_quat = geometry_quat_to_transforms3d_quat(quat)
+    euler_angles = quat2euler(transforms3d_quat)
+    return Vector3(x=euler_angles[0], y=euler_angles[1], z=euler_angles[2])
 
 def vector3_linear_distance(vector1: Vector3, vector2: Vector3) -> float:
     """

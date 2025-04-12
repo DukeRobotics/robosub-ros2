@@ -63,6 +63,8 @@ class DVLOdomPublisher(Node):
         if self._config_data['dvl']['negate_z_vel']:
             vz = -vz
 
+        vx, vy = vy, -vx # hacky hack 30 March 2025 nr, mc, hl, wd
+
         # quat
         roll = math.radians(np.float64(msg.sa_roll))
         pitch = math.radians(np.float64(msg.sa_pitch))
