@@ -15,6 +15,7 @@ USER root
 RUN apt-get update
 RUN apt install -y --no-install-recommends clang
 RUN apt install -y --no-install-recommends clang-format
+RUN apt install -y --no-install-recommends ffmpeg
 RUN apt install -y --no-install-recommends gdb
 RUN apt install -y --no-install-recommends gdbserver
 RUN apt install -y --no-install-recommends iputils-ping
@@ -34,6 +35,7 @@ RUN apt install -y --no-install-recommends ros-jazzy-tf-transformations
 RUN apt install -y --no-install-recommends ros-jazzy-vision-msgs
 RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends tini
+RUN apt install -y --no-install-recommends udev
 RUN apt install -y --no-install-recommends valgrind
 
 # Build and install OSQP from source

@@ -1,7 +1,9 @@
 import functools
 import os
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import rclpy
 from custom_msgs.srv import SetContinuousServo, SetDiscreteServo
@@ -14,7 +16,7 @@ from offboard_comms.peripheral_sensors import (
     TemperatureSensor,
     VoltageSensor,
 )
-from offboard_comms.serial_node import SerialNode
+from offboard_comms.serial_node import SerialNode, SerialReadType
 
 
 @dataclass
@@ -28,12 +30,14 @@ class PeripheralDiscreteServo:
         service_name (str): The name of the service to control the servo.
         states (dict[str, int]): Mapping of servo states to PWM values.
         service (Service): The service to control the servo.
+        last_called_time (float): The time the servo was last called, in seconds since epoch.
     """
     name: str
     tag: str
     service_name: str
     states: dict[str, int]
     service: Service
+    last_called_time: float = 0.0
 
 @dataclass
 class PeripheralContinuousServo:
@@ -67,7 +71,7 @@ class ServoTypeInfo:
     """
     servo_dataclass: type[PeripheralDiscreteServo] | type[PeripheralContinuousServo]
     service_msg_type: type[SetDiscreteServo] | type[SetContinuousServo]
-    callback: callable
+    callback: Callable[..., Any]
 
 
 class PeripheralPublisher(SerialNode):
@@ -81,7 +85,8 @@ class PeripheralPublisher(SerialNode):
     ARDUINO_NAME = 'peripheral'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
     LOOP_RATE = 50.0  # Hz
-    SENSOR_CLASSES: ClassVar[dict[str, PeripheralSensor]] = {
+    DISCRETE_SERVO_MIN_DELAY = 3.0  # seconds
+    SENSOR_CLASSES: ClassVar[dict[str, type[PeripheralSensor]]] = {
         'pressure': PressureSensor,
         'voltage': VoltageSensor,
         'temperature': TemperatureSensor,
@@ -89,8 +94,8 @@ class PeripheralPublisher(SerialNode):
     }
 
     def __init__(self) -> None:
-        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME, True,
-                         self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE, use_nonblocking=True)
+        super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
+                         SerialReadType.LINE_NONBLOCKING, self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE)
 
         self.sensors: dict[str, PeripheralSensor] = {}
         self.setup_sensors()
@@ -189,9 +194,20 @@ class PeripheralPublisher(SerialNode):
         state = request.state
         servo: PeripheralDiscreteServo = self.servos[tag]
 
+        if time.time() - servo.last_called_time < self.DISCRETE_SERVO_MIN_DELAY:
+            error_msg = (f'Minimum delay of {self.DISCRETE_SERVO_MIN_DELAY} seconds not met since last call to '
+                         f'{self.servos[tag].name} servo.')
+
+            response.success = False
+            response.message = error_msg
+
+            self.get_logger().error(error_msg)
+            return response
+
         if state in servo.states:
             pwm = servo.states[state]
             if self.writeline(f'{tag}:{pwm}'):
+                servo.last_called_time = time.time()
                 response.success = True
                 response.message = f'Successfully set {servo.name} servo to state: "{state}"'
             else:

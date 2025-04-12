@@ -12,7 +12,7 @@ from ament_index_python.packages import get_package_share_directory
 from custom_msgs.msg import PWMAllocs, ThrusterAllocs
 from std_msgs.msg import Float64
 
-from offboard_comms.serial_node import SerialNode
+from offboard_comms.serial_node import SerialNode, SerialReadType
 
 
 @dataclass
@@ -47,7 +47,7 @@ class Thrusters(SerialNode):
     OFFBOARD_COMMS_CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
     ARDUINO_NAME = 'thruster'
     NUM_LOOKUP_ENTRIES = 201  # -1.0 to 1.0 in 0.01 increments
-    VOLTAGE_FILES: ClassVar[list[tuple[int, str]]] = [
+    VOLTAGE_FILES: ClassVar[list[tuple[float, str]]] = [
         (14.0, '14.csv'),
         (16.0, '16.csv'),
         (18.0, '18.csv'),
@@ -60,7 +60,7 @@ class Thrusters(SerialNode):
     def __init__(self) -> None:
         """Initialize the thruster node with all necessary components."""
         super().__init__(self.NODE_NAME, self.BAUDERATE, self.OFFBOARD_COMMS_CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
-                         False, self.CONNECTION_RETRY_PERIOD)
+                         SerialReadType.NONE, self.CONNECTION_RETRY_PERIOD)
 
         with Path(rr.get_filename(self.CONTROLS_CONFIG_FILE_PATH, use_protocol=False)).open() as f:
             controls_config = yaml.safe_load(f)
