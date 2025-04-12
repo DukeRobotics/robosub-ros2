@@ -7,15 +7,15 @@ RADIANS_PER_GRADIAN = np.pi / 200
 GRADIANS_PER_DEGREE = 400 / 360
 
 def transform_pose(buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped,
-                   source_frame: str, target_frame: str) -> tf2_geometry_msgs.PoseStamped:
+                   source_frame_id: str, target_frame_id: str) -> tf2_geometry_msgs.PoseStamped:
     """
     Transform pose from source reference frame to target reference frame.
 
     Args:
         buffer (tf2_ros.Buffer): The tf2 buffer containing transform data.
         pose (Pose): Pose in the source reference frame.
-        source_frame (str): Name of the source frame (e.g., 'sonar_ping_360').
-        target_frame (str): Name of the target frame (e.g., 'camera_depthai_front').
+        source_frame_id (str): Name of the source frame (e.g., 'sonar_ping_360').
+        target_frame_id (str): Name of the target frame (e.g., 'camera_depthai_front').
 
     Returns:
         Pose: Pose in the target reference frame.
@@ -23,7 +23,7 @@ def transform_pose(buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped,
     try:
         # Wait for transform to be available
         transform = buffer.lookup_transform(
-            target_frame, source_frame, rclpy.time.Time(),
+            target_frame_id, source_frame_id, rclpy.time.Time(),
         )
 
         # Transform the pose
