@@ -48,7 +48,7 @@ class BinDetector(Node):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # Create mask
-        mask_blue = cv2.inRange(hsv, Bins.lower_blue, Bins.upper_blue)
+        mask_blue = cv2.inRange(hsv, Bins.LOWER_BLUE, Bins.UPPER_BLUE)
         blue_hsv_filtered_msg = self.bridge.cv2_to_imgmsg(mask_blue, 'mono8')
         self.blue_bin_hsv_filtered_pub.publish(blue_hsv_filtered_msg)
 

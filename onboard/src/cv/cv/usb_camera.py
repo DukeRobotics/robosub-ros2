@@ -50,27 +50,28 @@ class USBCamera(Node):
 
     def run(self) -> None:
         """
-        Connect to camera found at self.device_path using cv2.VideoCaptures.
+        Connect to camera found at self.device_path using cv2.VideoCapture.
 
         Stream every image as it comes in at the device framerate.
         """
         total_tries = 5
         success = False
 
-        for _ in range(total_tries):
+        for i in range(total_tries):
             if not rclpy.ok():
                 break
 
             # Try connecting to the camera unless a connection is refused
             try:
                 # Connect to camera at device_path
-                self.get_logger().info('connecting to camera at '+ str(self.device_path))
+                self.get_logger().info(f'Attempt {i + 1} to connect to USB camera at '+ str(self.device_path))
                 cap = cv2.VideoCapture(self.device_path, apiPreference=cv2.CAP_V4L2)
-                self.get_logger().info('autodetected ' + str(cap.getBackendName()))
+
+                cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
 
                 # Read first frame
                 success, img = cap.read()
-                self.get_logger().info('First frame read ' + str(success))
+                self.get_logger().info('Received frame from USB camera at '+ str(self.device_path))
 
                 # Set publisher rate (framerate) to custom framerate if specified, otherwise, set to default
                 if self.framerate is None:

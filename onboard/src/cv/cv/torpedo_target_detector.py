@@ -3,15 +3,15 @@ import numpy as np
 import rclpy
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
-from rclpy.node import Node
+from rclpy.node import Node, Publisher
 from sensor_msgs.msg import CompressedImage, Image
 
-from cv.config import MonoCam, Torpoedo
+from cv.config import MonoCam, Torpedo
 from cv.utils import calculate_relative_pose, compute_yaw
 
 
 class TorpedoTargetDetector(Node):
-    """Match contour with torpedo holes."""
+    """Match contour with torpedo targets."""
 
     def __init__(self) -> None:
         super().__init__('torpedo_target_detector')
@@ -48,6 +48,7 @@ class TorpedoTargetDetector(Node):
             hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         except (TypeError, AttributeError) as t:
             self.get_logger().error(f'Failed to convert image: {t}')
+            return
 
         # Define the range for HSV filtering on the outer red circle
         lower_red = np.array([0, 70, 90])
@@ -97,7 +98,7 @@ class TorpedoTargetDetector(Node):
             if match < self.MATCH_TOLERANCE:
                 similar_size_contours.append(cnt)
 
-        # find highest and lower contour, assuming that those two will represent the upper and lower holes
+        # Find highest and lower contour, assuming that those two will represent the upper and lower holes
         if similar_size_contours:
             similar_size_contours.sort(key=lambda x: cv2.contourArea(x))
             upper_cnt = similar_size_contours[0]
@@ -149,7 +150,7 @@ class TorpedoTargetDetector(Node):
         ]
 
 
-    def publish_bbox(self, bbox: tuple[int, int, int, int], publisher: object) -> None:
+    def publish_bbox(self, bbox: tuple[int, int, int, int], publisher: Publisher) -> None:
         """
         Create a CVObject message to publish to the bounding box publisher.
 
@@ -178,7 +179,7 @@ class TorpedoTargetDetector(Node):
         # Point coords represents the 3D position of the object represented by the bounding box relative to the robot
         coords_list = calculate_relative_pose(bbox_bounds,
                                               MonoCam.IMG_SHAPE,
-                                              (Torpoedo.WIDTH, 0),
+                                              (Torpedo.WIDTH, 0),
                                               MonoCam.FOCAL_LENGTH,
                                               MonoCam.SENSOR_SIZE, 1)
         bounding_box.coords.x, bounding_box.coords.y, bounding_box.coords.z = coords_list
