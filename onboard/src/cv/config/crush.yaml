@@ -10,6 +10,7 @@ usb_cameras:
     img_size:
       width: 640
       height: 480
+    frame_id: camera_usb_front
 
   bottom:
     device_path: /dev/video_bottom
@@ -22,3 +23,4 @@ usb_cameras:
     img_size:
       width: 640
       height: 480
+    frame_id: camera_usb_bottom

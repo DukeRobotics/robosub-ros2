@@ -49,6 +49,7 @@ depthai:
       sensor_size:
         width: width
         height: height
+      frame_id: transform frame id of the camera
     ...
 
 usb_cameras:
@@ -63,6 +64,7 @@ usb_cameras:
     img_size:
       width: width
       height: height
+    frame_id: transform frame id of the camera
   ...
 ```
 
