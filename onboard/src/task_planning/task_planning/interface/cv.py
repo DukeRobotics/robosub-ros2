@@ -50,6 +50,10 @@ class CV:
     # TODO: add other CV models here as defined in depthai_models.yaml. Modify the Enum strings correspondingly.
     CV_MODELS: ClassVar[str] = ['yolov7_tiny_2023_main']
 
+    # TODO: create properties
+    # TODO: create is_receiving_{}_data functions
+    # TODO: modify lane_marker to conform to CVObject
+
     BOUNDING_BOX_TOPICS: ClassVar[dict[CVObjectType, str]] = {
         CVObjectType.BUOY: '/cv/front_usb/buoy/bounding_box',
         CVObjectType.BIN_BLUE: '/cv/bottom/bin_blue/bounding_box',
@@ -75,7 +79,7 @@ class CV:
         self.bypass = bypass
 
         # Subscribe to bounding box topics
-        self.bounding_boxes: dict[CVObjectType, CVObject] = dict.fromkeys(self.BOUNDING_BOX_TOPICS, CVObject())
+        self._bounding_boxes: dict[CVObjectType, CVObject] = dict.fromkeys(self.BOUNDING_BOX_TOPICS, CVObject())
         with Path(rr.get_filename(self.MODELS_PATH, use_protocol=False)).open() as f:
             models_dict = yaml.safe_load(f)
 
@@ -85,7 +89,7 @@ class CV:
                     node.create_subscription(
                         CVObject,
                         topic,
-                        lambda msg, model_class=model_class: self._on_receive_bounding_box(msg, model_class),
+                        lambda msg, model_class=model_class: self._on_receive_bounding_box_data(msg, model_class),
                         10,
                     )
 
@@ -98,8 +102,8 @@ class CV:
             )
 
         # Subscribe to distance topics
-        self.distances: dict[CVObjectType, Point] = dict.fromkeys(self.DISTANCE_TOPICS, Point())
-        self.distance_queues: dict[CVObjectType, dict[str, list[float]]] = {
+        self._distances: dict[CVObjectType, Point] = dict.fromkeys(self.DISTANCE_TOPICS, Point())
+        self._distance_queues: dict[CVObjectType, dict[str, list[float]]] = {
             object_type: {'x': [], 'y': []}
             for object_type in self.DISTANCE_TOPICS
         }
@@ -112,8 +116,8 @@ class CV:
             )
 
         # Subscribe to angle topics
-        self.angles: dict[CVObjectType, float] = dict.fromkeys(self.ANGLE_TOPICS, 0)
-        self.angle_queues: dict[CVObjectType, list[float]] = {object_type: [] for object_type in self.ANGLE_TOPICS}
+        self._angles: dict[CVObjectType, float] = dict.fromkeys(self.ANGLE_TOPICS, 0)
+        self._angle_queues: dict[CVObjectType, list[float]] = {object_type: [] for object_type in self.ANGLE_TOPICS}
         for object_type, object_topic in self.ANGLE_TOPICS.items():
             node.create_subscription(
                 Float64,
@@ -138,6 +142,21 @@ class CV:
             1,
         )
 
+    @property
+    def bounding_boxes(self) -> dict[CVObjectType, CVObject]:
+        """The dictionary containing the bounding boxes of each CV-detected object."""
+        return self._bounding_boxes
+
+    @property
+    def distances(self) -> dict[CVObjectType, Point]:
+        """The dictionary containing the positions of each CV-detected object from the center of the frame."""
+        return self._distances
+
+    @property
+    def angles(self) -> dict[CVObjectType, float]:
+        """The dictionary containing the angles (in radians) of each CV-detected object to the frame's horizontal."""
+        return self._angles
+
     def _on_receive_bounding_box_data(self, cv_data: CVObject, object_type: CVObjectType) -> None:
         """
         Store the received CV bounding box.
@@ -146,7 +165,7 @@ class CV:
             cv_data (CVObject): The received CV data.
             object_type (CVObjectType): The name/type of the object.
         """
-        self.bounding_boxes[object_type] = cv_data
+        self._bounding_boxes[object_type] = cv_data
 
     def _on_receive_distance_data(self, distance_data: Point, object_type: CVObjectType, filter_len: int = 10) -> None:
         """
@@ -159,14 +178,14 @@ class CV:
                 for the moving average filter. Defaults to 10.
         """
         avg_dist = Point()
-        avg_dist.x = self.update_moving_average(self.distance_queues[object_type]['x'], distance_data.x, filter_len)
-        avg_dist.y = self.update_moving_average(self.distance_queues[object_type]['y'], distance_data.y, filter_len)
-        self.distances[object_type] = avg_dist
+        avg_dist.x = self.update_moving_average(self._distance_queues[object_type]['x'], distance_data.x, filter_len)
+        avg_dist.y = self.update_moving_average(self._distance_queues[object_type]['y'], distance_data.y, filter_len)
+        self._distances[object_type] = avg_dist
 
         if object_type in [CVObjectType.BIN_RED, CVObjectType.BIN_BLUE]:
             # This angle is calculated from averaged distance values, so no moving average filter is needed here
-            self.angles[CVObjectType.BIN_WHOLE] = self.compute_angle_from_horizontal(
-                self.distances[CVObjectType.BIN_RED], self.distances[CVObjectType.BIN_BLUE],
+            self._angles[CVObjectType.BIN_WHOLE] = self.compute_angle_from_horizontal(
+                self._distances[CVObjectType.BIN_RED], self._distances[CVObjectType.BIN_BLUE],
             )
 
     def _on_receive_angle_data(self, angle_data: Float64, object_type: CVObjectType, filter_len: int = 10) -> None:
@@ -179,7 +198,7 @@ class CV:
             filter_len (int, optional): The maximum number of angle data points to retain
                 for the moving average filter. Defaults to 10.
         """
-        self.angles[object_type] = self.update_moving_average(self.angle_queues[object_type],
+        self._angles[object_type] = self.update_moving_average(self._angle_queues[object_type],
                                                               angle_data.data, filter_len)
 
         # TODO: do we still need a publisher here?
@@ -258,11 +277,11 @@ class CV:
         """
         pose = Pose()
 
-        if name not in self.bounding_boxes:
+        if name not in self._bounding_boxes:
             logger.warning(f'Attempted to get pose of unrecognized CV object {name}')
             return pose
 
-        data = self.bounding_boxes[name]
+        data = self._bounding_boxes[name]
         pose.position.x = data.coords.x
         pose.position.y = data.coords.y
         pose.position.z = data.coords.z
