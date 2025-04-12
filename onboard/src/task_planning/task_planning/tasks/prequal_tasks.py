@@ -34,17 +34,16 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
         Rotate the robot by the specified angle in degrees.
 
         Args:
-            angle (float): The angle to rotate the robot in degrees. Positive angles rotate the robot to the left.
+            angle (float): The angle to rotate the robot in radians. Positive angles rotate the robot to the left.
             log_msg_prefix (str): The prefix for the message logged after rotating. Defaults to 'Rotate'.
             depth_level (float | None): The depth level to move the robot to. If this is not None, the robot will be
                 kept at that depth level. Defaults to None.
         """
-        rad_angle = math.radians(angle)
         await move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, rad_angle),
+            geometry_utils.create_pose(0, 0, 0, 0, 0, angle),
             depth_level=depth_level,
             parent=self)
-        logger.info(f'{log_msg_prefix} {angle}')
+        logger.info(f'{log_msg_prefix} {math.degrees(angle)} degrees')
 
     async def move_with_directions(directions: list[tuple[float, float, float]], depth_level: float | None = None) -> \
         Coroutine[None, None, None]:
@@ -120,7 +119,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
                 # If the robot is moving forward, this means the yaw has drifted to the right, so rotate left.
                 # If the robot is moving backward, this means the yaw has drifted to the left, so rotate right.
                 if prev_touching_top and not prev_touching_bottom:
-                    await rotate_deg(20 * direction_sign, depth_level=DEPTH_LEVEL)
+                    await rotate_deg(math.radians(20) * direction_sign, depth_level=DEPTH_LEVEL)
 
             # If the lane marker is touching the bottom but not the top,
             # then the robot is too far to the left, so move right
@@ -136,7 +135,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
                 # If the robot is moving forward, this means the yaw has drifted to the left, so rotate right.
                 # If the robot is moving backward, this means the yaw has drifted to the right, so rotate left.
                 if not prev_touching_top and prev_touching_bottom:
-                    await rotate_deg(-20 * direction_sign, depth_level=DEPTH_LEVEL)
+                    await rotate_deg(math.radians(-20) * direction_sign, depth_level=DEPTH_LEVEL)
 
             # Y correction so the robot is centered on the lane marker
             dist_pixels = CV().distances[CVObjectType.LANE_MARKER].y

@@ -1,3 +1,5 @@
+import math
+
 import cv2
 import numpy as np
 import rclpy
@@ -57,7 +59,7 @@ class LaneMarkerDetector(Node):
             self.get_logger().error(f'Could not convert image: {e}')
 
     def get_angle_and_distance_of_rectangle(self, frame: np.array) -> tuple[float, int, RectInfo, np.array]:
-        """Get angle and distance of rectangle contour."""
+        """Get angle (in radians) and distance of rectangle contour."""
         # Convert frame to HSV color space
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
@@ -67,7 +69,7 @@ class LaneMarkerDetector(Node):
         # Find contours in the mask
         contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        angle = None
+        angle_in_degrees = None
         distance = None
         rect_info = None
         if contours:
@@ -95,15 +97,15 @@ class LaneMarkerDetector(Node):
             # Determine which point is higher on the right side
             right_top = min(right_pts, key=lambda pt: pt[1])
 
-            angle = rect[-1]
+            angle_in_degrees = rect[-1]
 
             # Compare the y-coordinates
             if right_top[1] < left_top[1]:
                 # Right side is higher than left side
-                angle = rect[-1] - 90
+                angle_in_degrees = rect[-1] - 90
 
-            if angle in (-90, 90): # this is NOT standard set notation (as in mathematics); this is a tuple
-                angle = 0.0
+            if angle_in_degrees in {-90, 90}:
+                angle_in_degrees = 0.0
 
             # Calculate the center of the rectangle
             rect_center = rect[0]
@@ -112,7 +114,7 @@ class LaneMarkerDetector(Node):
             frame_center = (frame.shape[1] / 2, frame.shape[0] / 2)
 
             # Calculate the vertical distance between the two centers
-            vertical_distance = rect_center[1] - frame_center[1]
+            dist_x = frame_center[1] - rect_center[1]
 
             # The distance is positive if the rectangle is below the centerline, negative if above
             distance = -vertical_distance
@@ -123,9 +125,9 @@ class LaneMarkerDetector(Node):
             rect_info.center_y = rect_center[1]
             rect_info.width = rect[1][0]
             rect_info.height = rect[1][1]
-            rect_info.angle = angle
+            rect_info.angle = math.radians(angle_in_degrees)
 
-        return angle, distance, rect_info, frame
+        return math.radians(angle_in_degrees), distance, rect_info, frame
 
 
 def main(args: None = None) -> None:
