@@ -7,6 +7,7 @@ import resource_retriever as rr
 import yaml
 from custom_msgs.msg import CVObject, RectInfo
 from geometry_msgs.msg import Point, Pose
+from rclpy.clock import Clock
 from rclpy.logging import get_logger
 from rclpy.node import Node
 from std_msgs.msg import Float64
@@ -40,7 +41,7 @@ class CV:
 
     Attributes:
         _instance: The singleton instance of this class. Is a static attribute.
-        cv_data: Dictionary of the data of the objects
+        cv_data: Dictionary of the data of the objects.
     """
     # NOTE: Initialized all objects so as to avoid accessing fields of None values at the beginning.
     # In CV, we tend to always check for detection recency so we wouldn't have an issue with wrong default values.
@@ -53,6 +54,7 @@ class CV:
     # TODO: create properties
     # TODO: create is_receiving_{}_data functions
     # TODO: modify lane_marker to conform to CVObject
+    # TODO: modify docstring of CV class
 
     BOUNDING_BOX_TOPICS: ClassVar[dict[CVObjectType, str]] = {
         CVObjectType.BUOY: '/cv/front_usb/buoy/bounding_box',
@@ -270,10 +272,10 @@ class CV:
         Get the pose of a detected object.
 
         Args:
-            name: The name/type of the object
+            name (CVObjectType): The name/type of the object.
 
         Returns:
-            The pose of the object
+            Pose: The pose of the object.
         """
         pose = Pose()
 
@@ -290,3 +292,37 @@ class CV:
         pose.orientation.z = 0
         pose.orientation.w = 1
         return pose
+
+    def is_receiving_recent_cv_data(
+        self,
+        name: CVObjectType,
+        latency: float,
+        last_detection_time: int | None = None,
+    ) -> bool:
+        """
+        Check if a detection for the specified object has been received within the given latency window (in seconds).
+
+        Optionally, also check if this is within the latency window of the previous detection.
+
+        Args:
+            name (CVObjectType): The name/type of the object.
+            latency (float): Maximum allowed time (in seconds) since the last detection.
+            last_detection_time (int | None): Optional timestamp (in seconds) of the previous detection for this object.
+                If provided, also check whether both the current and previous detections are within the
+                latency threshold of each other.
+
+        Returns:
+            bool: True if recent data has been received, False otherwise.
+        """
+        if name not in self._bounding_boxes:
+            return False
+
+        current_time = Clock().now().seconds_nanoseconds()[0]
+        detection_time = self._bounding_boxes[name].header.stamp.secs
+
+        recent = current_time - detection_time < latency
+
+        if last_detection_time is not None:
+            return recent and abs(detection_time - last_detection_time) < latency
+
+        return recent

@@ -240,9 +240,6 @@ async def after_buoy_task(self: Task):
         await move_tasks.correct_depth(desired_depth=DEPTH_LEVEL, parent=self)
     self.correct_depth = correct_depth
 
-    def is_receiving_cv_data():
-        return Clock().now().seconds_nanoseconds()[0] - CV().bounding_boxes[CVObjectType.PATH_MARKER].header.stamp.secs < latency_threshold
-
     def stabilize():
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
@@ -259,7 +256,7 @@ async def after_buoy_task(self: Task):
 
     while not circumnavigate_task.done:
         circumnavigate_task.step()
-        if is_receiving_cv_data():
+        if CV().is_receiving_recent_cv_data(CVObjectType.PATH_MARKER, latency_threshold):
             stabilize()
             await sleep(5)
             break
@@ -570,7 +567,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
         return min(abs(desired_yaw), MAXIMUM_YAW)
 
     async def yaw_until_object_detection():
-        while not is_receiving_cv_data():
+        while not CV().is_receiving_recent_cv_data(cv_object, latency_threshold):
             logger.info(f'No {cv_object} detection, setting yaw setpoint {MAXIMUM_YAW}')
             await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, MAXIMUM_YAW * direction),
                                                 parent=self)
@@ -599,7 +596,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
         await correct_depth()
         await Yield()
 
-        if (not is_receiving_cv_data()):
+        if (not CV().is_receiving_recent_cv_data(cv_object, latency_threshold)):
             logger.info(f'{cv_object} detection lost, running yaw_until_object_detection()')
             await yaw_until_object_detection()
 
@@ -682,17 +679,15 @@ async def align_path_marker(self: Task, direction=1) -> Task[None, None, None]:
     path_marker_yaw = CV().bounding_boxes[CVObjectType.PATH_MARKER].yaw
     await correct_depth()
     logger.info(f"abs(path_marker_yaw) = '{abs(path_marker_yaw)}")
-    logger.info(f'yaw_threshold = {YAW_THRESHOLD!s}')
+    logger.info(f'yaw_threshold = {YAW_THRESHOLD}')
 
     while abs(path_marker_yaw) > YAW_THRESHOLD:
         sign_path_marker_yaw = np.sign(path_marker_yaw)
         correction = get_step_size(path_marker_yaw)
         desired_yaw = sign_path_marker_yaw * correction
 
-        logger.info(f'Detected yaw {path_marker_yaw} is greater than threshold {YAW_THRESHOLD}. Yawing: {desired_yaw}',
-                      )
-        await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, desired_yaw),
-                                            parent=self)
+        logger.info(f'Detected yaw {path_marker_yaw} is greater than threshold {YAW_THRESHOLD}. Yawing: {desired_yaw}')
+        await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, desired_yaw), parent=self)
         await correct_depth()
         await center_path_marker(pixel_threshold=PIXEL_THRESHOLD)
         await correct_depth()
@@ -771,18 +766,14 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
     async def correct_depth(desired_depth: float) -> None:
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
 
-    def is_receiving_bin_data(bin_object: CVObjectType, latest_detection_time) -> bool:
-        if not latest_detection_time or bin_object not in CV().bounding_boxes:
-            return False
-
+    def is_receiving_bin_data(bin_object: CVObjectType, last_detection_time) -> bool:
         width = CV().bounding_boxes[bin_object].width
         height = CV().bounding_boxes[bin_object].height
 
-        return width * height >= AREA_THRESHOLD and \
-            Clock().now().seconds_nanoseconds()[0] - CV().bounding_boxes[bin_object].header.stamp.secs < LATENCY_THRESHOLD and \
-            abs(CV().bounding_boxes[bin_object].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
+        return width * height >= AREA_THRESHOLD \
+            and CV().is_receiving_recent_cv_data(bin_object, LATENCY_THRESHOLD, last_detection_time)
 
-    async def move_x(step : float =1 ) -> None:
+    async def move_x(step: float = 1) -> None:
         await move_tasks.move_x(step=step, parent=self)
 
     def stabilize() -> None:
@@ -810,7 +801,7 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
             await correct_depth(DEPTH_LEVEL)
 
             is_receiving_red_bin_data = is_receiving_bin_data(CVObjectType.BIN_RED, bin_red_time)
-            is_receiving_blue_bin_data = is_receiving_bin_data('bin_blue', bin_blue_time)
+            is_receiving_blue_bin_data = is_receiving_bin_data(CVObjectType.BIN_BLUE, bin_blue_time)
 
             logger.info(f'Receiving red bin data: {is_receiving_red_bin_data}')
             logger.info(f'Receiving blue bin data: {is_receiving_blue_bin_data}')
@@ -900,16 +891,12 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
     async def correct_depth(desired_depth: float) -> None:
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
 
-    def is_receiving_bin_data(bin_object: CVObjectType, latest_detection_time: float) -> bool:
-        if not latest_detection_time or bin_object not in CV().bounding_boxes:
-            return False
-
+    def is_receiving_bin_data(bin_object: CVObjectType, last_detection_time) -> bool:
         width = CV().bounding_boxes[bin_object].width
         height = CV().bounding_boxes[bin_object].height
 
-        return width * height >= AREA_THRESHOLD and \
-            Clock().now().seconds_nanoseconds()[0] - CV().bounding_boxes[bin_object].header.stamp.secs < LATENCY_THRESHOLD and \
-            abs(CV().bounding_boxes[bin_object].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
+        return width * height >= AREA_THRESHOLD \
+            and CV().is_receiving_recent_cv_data(bin_object, LATENCY_THRESHOLD, last_detection_time)
 
     def stabilize() -> None:
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
