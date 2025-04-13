@@ -5,7 +5,7 @@ from typing import ClassVar
 import numpy as np
 import resource_retriever as rr
 import yaml
-from custom_msgs.msg import CVObject, RectInfo
+from custom_msgs.msg import CVObject
 from geometry_msgs.msg import Point, Pose
 from rclpy.clock import Clock
 from rclpy.logging import get_logger
@@ -41,7 +41,15 @@ class CV:
 
     Attributes:
         _instance: The singleton instance of this class. Is a static attribute.
-        cv_data: Dictionary of the data of the objects.
+        _bounding_boxes: The dictionary containing the bounding boxes of each CV-detected object.
+        _distances: The dictionary containing the positions of each CV-detected object from the center of the frame.
+        _angles: The dictionary containing the angles (in radians) of each CV-detected object to the frame's horizontal.
+        _lane_marker_data: The dictionary containing lane marker-specific data.
+        _distance_queues: The dictionary mapping each CV-detected object to a queue
+            that stores the last 10 distance values for computing a moving average.
+        _angle_queues: The dictionary mapping each CV-detected object to a queue
+            that stores the last 10 angle values for computing a moving average.
+        _lane_marker_heights: The queue storing the last 10 lane marker height values for computing a moving average.
     """
     # NOTE: Initialized all objects so as to avoid accessing fields of None values at the beginning.
     # In CV, we tend to always check for detection recency so we wouldn't have an issue with wrong default values.
@@ -51,15 +59,11 @@ class CV:
     # TODO: add other CV models here as defined in depthai_models.yaml. Modify the Enum strings correspondingly.
     CV_MODELS: ClassVar[str] = ['yolov7_tiny_2023_main']
 
-    # TODO: create properties
-    # TODO: create is_receiving_{}_data functions
-    # TODO: modify lane_marker to conform to CVObject
-    # TODO: modify docstring of CV class
-
     BOUNDING_BOX_TOPICS: ClassVar[dict[CVObjectType, str]] = {
         CVObjectType.BUOY: '/cv/front_usb/buoy/bounding_box',
         CVObjectType.BIN_BLUE: '/cv/bottom/bin_blue/bounding_box',
         CVObjectType.BIN_RED: '/cv/bottom/bin_red/bounding_box',
+        CVObjectType.LANE_MARKER: '/cv/bottom/lane_marker/bounding_box',
         CVObjectType.PATH_MARKER: '/cv/bottom/path_marker/bounding_box',
     }
 
@@ -128,14 +132,9 @@ class CV:
                 10,
             )
 
-        self.lane_marker_data = {}
-        self.lane_marker_heights = []
-        node.create_subscription(
-            RectInfo,
-            '/cv/bottom/lane_marker',
-            self._on_receive_lane_marker_info,
-            10,
-        )
+        # Lane marker-specific data
+        self._lane_marker_data = {}
+        self._lane_marker_heights = []
 
         # TODO: do we still need to publish this?
         self.lane_marker_angle_publisher = node.create_publisher(
@@ -159,6 +158,11 @@ class CV:
         """The dictionary containing the angles (in radians) of each CV-detected object to the frame's horizontal."""
         return self._angles
 
+    @property
+    def lane_marker_data(self) -> dict:
+        """The dictionary containing lane marker-specific data."""
+        return self._lane_marker_data
+
     def _on_receive_bounding_box_data(self, cv_data: CVObject, object_type: CVObjectType) -> None:
         """
         Store the received CV bounding box.
@@ -168,6 +172,12 @@ class CV:
             object_type (CVObjectType): The name/type of the object.
         """
         self._bounding_boxes[object_type] = cv_data
+
+        if object_type == CVObjectType.LANE_MARKER:
+            self._lane_marker_data['height'] = self.update_moving_average(self._lane_marker_heights, cv_data.height)
+            # Determine if lane marker is touching top and/or bottom of frame
+            self._lane_marker_data['touching_top'] = cv_data.coords.y - cv_data.height / 2 <= 0
+            self._lane_marker_data['touching_bottom'] = cv_data.coords.y + cv_data.height / 2 >= self.FRAME_HEIGHT
 
     def _on_receive_distance_data(self, distance_data: Point, object_type: CVObjectType, filter_len: int = 10) -> None:
         """
@@ -207,22 +217,6 @@ class CV:
         msg = Float64()
         msg.data = self.cv_data['lane_marker_angle']
         self.lane_marker_angle_publisher.publish(msg)
-
-    def _on_receive_lane_marker_info(self, lane_marker_info: RectInfo) -> None:
-        """
-        Parse the received info of the lane marker and store it.
-
-        Args:
-            lane_marker_info (RectInfo): The received info of the lane marker.
-        """
-        top = 0
-        bottom = self.FRAME_HEIGHT
-
-        self.lane_marker_data['height'] = self.update_moving_average(self.lane_marker_heights, lane_marker_info.height)
-
-        # Based on lane_marker_info.center_y and height, determine if lane marker is touching top and/or bottom of frame
-        self.lane_marker_data['touching_top'] = lane_marker_info.center_y - lane_marker_info.height / 2 <= top
-        self.lane_marker_data['touching_bottom'] = lane_marker_info.center_y + lane_marker_info.height / 2 >= bottom
 
     def compute_angle_from_horizontal(self, p1: Point, p2: Point) -> float:
         """
