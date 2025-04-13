@@ -27,9 +27,9 @@ class CVObjectType(Enum):
     GATE_WHOLE = 'a'
     LANE_MARKER = 'lane_marker'
     PATH_MARKER = 'path_marker'
-    TORPEDO_BUOY = 'd'
-    TORPEDO_REEF_SHARK = 'e'
-    TORPEDO_SAWFISH = 'f'
+    TORPEDO_BANNER = 'torpedo_banner'
+    TORPEDO_REEF_SHARK = 'shark_front'
+    TORPEDO_SAWFISH = 'swordfish_front'
     TORPEDO_LOWER_TARGET = 'h'
     TORPEDO_UPPER_TARGET = 'g'
 
@@ -57,7 +57,7 @@ class CV:
     MODELS_PATH = 'package://cv/models/depthai_models.yaml'
     CV_CAMERA = 'front'
     # TODO: add other CV models here as defined in depthai_models.yaml. Modify the Enum strings correspondingly.
-    CV_MODELS: ClassVar[list[str]] = ['yolov7_tiny_2023_main']
+    CV_MODELS: ClassVar[list[str]] = ['2025_torpedo']
 
     BOUNDING_BOX_TOPICS: ClassVar[dict[CVObjectType, str]] = {
         CVObjectType.BUOY: '/cv/front_usb/buoy/bounding_box',
