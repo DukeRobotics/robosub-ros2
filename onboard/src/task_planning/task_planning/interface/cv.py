@@ -89,7 +89,12 @@ class CV:
         with Path(rr.get_filename(self.MODELS_PATH, use_protocol=False)).open() as f:
             models_dict = yaml.safe_load(f)
 
-            for model in models_dict.values():
+            for model_name in self.CV_MODELS:
+                if model_name not in models_dict:
+                    logger.warning(f'Model name {model_name} missing from DepthAI models config file.')
+                    continue
+
+                model = models_dict[model_name]
                 for model_class in model['classes']:
                     topic = f"{model['topic']}/{self.CV_CAMERA}/{model_class}"
                     node.create_subscription(
