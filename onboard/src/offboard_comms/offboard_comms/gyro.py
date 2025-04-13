@@ -189,11 +189,14 @@ class GyroPublisher(SerialNode):
 
         # Scale the gyro data and temperature data, and subtract the zero bias
         # The gyro data is in degrees per second, and the temperature data is in degrees Celsius
-        angular_velocity = (gyro_data * self.TRIGGER_RATE / self.scale_factor) - self.zero_bias
+        angular_velocity = (gyro_data * self.TRIGGER_RATE / self.scale_factor)
         temperature = temp_data * 0.0625
 
         # Negate the angular velocity if needed
         angular_velocity = -angular_velocity if self.negate else angular_velocity
+
+        # Subtract the zero bias
+        angular_velocity -= self.zero_bias
 
         # Compute the angular position in degrees
         # Raw angular position is simply the integral of the angular velocity
