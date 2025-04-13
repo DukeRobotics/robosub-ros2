@@ -1,5 +1,5 @@
 # Offboard Communications
-This package provides communications and functionality for serial devices to be integrated with our main ROS system. The Thruster Arduino handles thruster controls. The Peripheral Arduino provides voltage, pressure (depth), temperature, and humidity readings, and also enables control of servos. The DVL (Doppler Velocity Log) provides velocity measurements.
+This package provides communications and functionality for serial devices to be integrated with our main ROS system. The Thruster Arduino handles thruster controls. The Peripheral Arduino provides voltage, pressure (depth), temperature, and humidity readings, and also enables control of servos. The DVL (Doppler Velocity Log) provides velocity measurements. The fiber optic gyroscope provides angular velocity measurements on the robot's yaw axis.
 
 Each serial device is paired with a ROS node that interfaces with it. The nodes are responsible for parsing the data from the serial device and publishing it to ROS topics. The nodes also subscribe to ROS topics and/or advertise ROS services to receive commands, which they then send to the serial device.
 
@@ -81,6 +81,10 @@ dvl:
   negate_x_vel: true or false
   negate_y_vel: true or false
   negate_z_vel: true or false
+gyro:
+  ftdi: gyro_FTDI_string
+  zero_bias: gyro_zero_bias
+  scale_factor: gyro_scale_factor
 ```
 - `arduino`
     - `arduino_1`, `arduino_2`, etc. are the names of the Arduinos. These names are used to refer to the Arduinos in the [CLI](#command-line-interface) and in other files. They can be any string, but should be descriptive of the Arduino. They must be unique. `all` is a special name used by the CLI to refer to all Arduinos; do **_not_** use it as an Arduino name in this file. The names do not necessarily correspond to any names recognized by the Arduino CLI or operating system.
@@ -111,6 +115,13 @@ dvl:
 - `dvl`
     - `ftdi` is the FTDI string of the DVL. This is a unique identifier for the DVL and is used to find the port that the DVL is connected to. To find the FTDI string, see the [Obtain FTDI String](#obtain-ftdi-string) section.
     - `negate_x_vel`, `negate_y_vel`, and `negate_z_vel` are boolean values that determine whether the DVL's velocity readings should be negated. These values are used to correct for the orientation of the DVL on the robot. If the DVL is mounted in a way that causes the velocity readings along one or more axes to have an incorrect sign, set the corresponding value(s) to `true`. Otherwise, set them to `false`.
+- `gyro`
+  - `ftdi` is the FTDI string of the gyro. This is a unique identifier for the gyro and is used to find the port that the gyro is connected to. To find the FTDI string, see the [Obtain FTDI String](#obtain-ftdi-string) section.
+  - `zero_bias` is the rate in degrees per second that the gyro accumulates error when it is at rest (not moving with respect to the surface of the Earth). See the [Gyro Zero Bias](#gyro-zero-bias) section for more information on what this value means and how to obtain it.
+  - `scale_factor` is a constant factor that the gyro readings are divided by to obtain the angular velocity.
+    > [!NOTE]
+    > Each individual gyro, even of the same model, behaves differently and thus has different scale factors. The manufacturer tests each gyro individually and provides a test report containing the scale factors for that gyro, calibrated at various temperatures. The scale factor chosen should be the one that is closest to the operating temperature of the gyro.
+
 
 ### CSV Files
 The `data` directory contains CSV files that are used to store lookup tables for the thrusters. These tables are used to convert thruster allocations to PWM signals, given the current system voltage. They contain two columns: `force` and `pwm`. The `force` column has values ranging from `-1.00` to `1.00` in increments of `0.01`, and the `pwm` column has the corresponding PWM values needed to exert the given force at the given voltage. The CSV files are named `<voltage>.csv`, where `<voltage>` is the voltage the thrusters need to receive for the table to be accurate. The tables are generated using the Blue Robotics T200 Thruster performance data, found on [this page](https://bluerobotics.com/store/thrusters/t100-t200-thrusters/t200-thruster-r2-rp/) under "Technical Details".
@@ -153,8 +164,10 @@ The first argument is the command to run. The following commands are available:
 
 After the command, you can specify one or more Arduinos to run the command on. Each Arduino must be a top-level key in `config/arduino.yaml`, or `all`. If `all` is specified, the command will be run on all Arduinos in `config/arduino.yaml`.
 
+If one of the commands run by the CLI returns a non-zero exit code, the CLI will print the output of the failed command to the terminal and exit with the same exit code. Commands that return a zero exit code will not print any output unless the `-p` flag is specified.
+
 The following optional flags can be added to the end of the command:
-- `-p`, `--print-output`: Print the output of the commands being run by the CLI. This is useful for debugging if the script throws an error. This is available with the `install-libs`, `compile`, and `upload` commands.
+- `-p`, `--print-output`: Print the output of all commands being run by the CLI, regardless of whether they succeed or fail. This is available with the `install-libs`, `compile`, and `upload` commands.
 - `-nl`, `--no-linebreaks`: Do not print any line breaks, labels, or prefixes; only print the port(s) found. This is available _only_ with the `find-ports` command. It is useful for running the command in a script or for piping the output to another command.
 
 For example, to upload the sketches for all Arduinos, run:
@@ -204,7 +217,7 @@ Thus, by handling the basic serial communication, `SerialNode` allows subclasses
 
 It gracefully handles errors and exceptions that may occur during the process. If any read or write operation fails, the node will attempt to reconnect to the serial device indefinitely until the operation is successful. If the node is stopped, it will close the serial connection and exit.
 
-The `dvl_raw.py`, `peripheral.py`, and `thrusters.py` scripts sublcass `SerialNode` to interface with the DVL, Peripheral Arduino, and Thruster Arduino.
+The `dvl_raw.py`, `gyro.py`, `peripheral.py`, and `thrusters.py` scripts subclass `SerialNode` to interface with the DVL, gyro, Peripheral Arduino, and Thruster Arduino.
 
 ## Thruster Allocations to PWMs
 The `thrusters.py` node subscribes to `/controls/thruster_allocs` of type `custom_msgs/msg/ThrusterAllocs`. This is an array of 64-bit floats, and they must be in range [-1, 1]. It also subscribes to `/sensors/voltage` of type `std_msgs/msg/Float64`. This is a 64-bit float that is clamped to the range [14.0, 18.0].
@@ -217,10 +230,10 @@ For each `ThrusterAllocs` message it receives, the node first validates the mess
 
 To compute the PWMs, the node first finds the closest force value (rounded to 2 decimal precision) in the lookup tables for the two voltages that bound the current voltage reading. Then, it performs linear interpolation between those two values using the current voltage to find the PWM that will result in the thruster exerting the desired force at the current voltage.
 
-The PWMs are then sent to the Thruster Arduino via serial. See the [Thruster Arduino](#thruster-arduino) section for more information on the serial communication format. The PWMs are also published to `/offboard/pwm` of type `custom_msgs/msg/PWMAllocs`; this is for debugging purposes only.
+The PWMs are then sent to the Thruster Arduino via serial in the same order as the original thruster allocations. See the [Thruster Arduino](#thruster-arduino) section for more information on the serial communication format. The PWMs are also published to `/offboard/pwm` of type `custom_msgs/msg/PWMAllocs`; this is for debugging purposes only.
 
 ## Thruster Arduino
-The Thruster Arduino reads the PWM values sent by `thrusters.py` over serial. It expects values to be in the following format: a start flag of two bytes `0xFFFF` followed by pairs of bytes representing the PWM values in big-endian format. The Arduino treats each PWM value as a 16-bit unsigned integer. The Arduino validates the data by making sure that the number of PWM values received matches the number of thrusters, and that each value is within the range [1100, 1900]. If the data are valid, the Arduino sets the PWM values for the thrusters. If the data are invalid, the Arduino does not change the PWM values; the last valid values are retained.
+The Thruster Arduino reads the PWM values sent by `thrusters.py` over serial. It expects values to be in the following format: a start flag of two bytes `0xFFFF` followed by pairs of bytes representing the PWM values in big-endian format. The Arduino treats each PWM value as a 16-bit unsigned integer. The Arduino validates the data by making sure that the number of PWM values received matches the number of thrusters, and that each value is within the range [1100, 1900]. If the data are valid, the Arduino sets the PWM values for the thrusters by assigning the first value to the thruster whose ESC is attached to pin 0 on the multiplexer, the second value to the thruster whose ESC is attached to pin 1, and so on. If the data are invalid, the Arduino does not change the PWM values; the last valid values are retained.
 
 If it has been over 500 miliseconds since the last message was recieved, the Thruster Arduino will stop all thrusters. This is to prevent the robot from continuing to move if controls is disabled or if the connection to the main computer is lost.
 
@@ -259,6 +272,65 @@ The `dvl_raw` script publishes the raw DVL data to the `/sensors/dvl/raw` topic 
 The `dvl_to_odom` script converts the raw DVL data and publishes it to `/sensors/dvl/odom` with type `nav_msgs/msg/Odometry` for use in `sensor_fusion`. It obtains the DVL's negation values from the [robot config file](#robot-config-file) and uses them to negate the velocity readings if necessary.
 
 You can launch both scripts using the `dvl.xml` launch file.
+
+
+## Gyro
+We use the [Micro-Magic G-F60-C](https://www.memsmag.com/G-F60) fiber optic gyroscope to measure angular velocity about the Z axis (yaw).
+
+It requires a 1000Hz square wave trigger signal to send data. This signal is sent by the peripheral Arduino; see the [Gyro Trigger Signal](#gyro-trigger-signal) section for more information.
+
+Every time the gyro detects the falling edge of the square wave, it sends one frame of data containing the change in the gyro's angular position since the last frame and the current internal temperature of the gyro. This frame is received by the `gyro` node, which parses the data and publishes it to the appropriate topics.
+
+### Gyro Launch File
+The `gyro.xml` launch file launches the node that receives frames from the gyro and publishes its data.
+
+The node accepts two arguments:
+- `compute_avg_angular_velocity`
+  - Type: boolean
+  - Default: `false`
+  - Description: If set to `true`, the node computes the average angular velocity over the lifetime of the node. When the node is stopped, it will print the average angular velocity to the console. This is useful for obtaining the gyro's zero bias. See the [Gyro Zero Bias](#gyro-zero-bias) section for more information.
+- `log_checksum_errors`
+  - Type: boolean
+  - Default: `false`
+  - Description: If set to `true`, the node will log checksum errors via ROS, which will show up in the console. This is useful for debugging. If set to `false`, the node will not log checksum errors. Regardless of this setting, the node will not publish data from frames with checksum errors and it will not be included in the average angular velocity calculation.
+
+### Gyro Topics
+The topics published are:
+- `/sensors/gyro/angular_velocity/raw`
+  - Type: `std_msgs/msg/Float64`
+  - Value: The gyro's current angular velocity in degrees per second.
+- `/sensors/gyro/angular_velocity/twist`
+  - Type: `geometry_msgs/msg/TwistWithCovarianceStamped`
+  - Value: The gyro's current angular velocity in degrees per second, set as the angular Z value in the twist. Also includes the gyro's frame ID and covariance. This message type can be used as an input to sensor fusion. All twist values except angular Z are set to 0, and all covariance values except the (angular Z, angular Z) covariance are set to 0.
+- `/sensors/gyro/angular_position/raw`
+  - Type: `std_msgs/msg/Float64`
+  - Value: The integral of the gyro's angular velocity, which is the change in the gyro's angular position since the node was started. The value is in degrees and normalized to the range [-180, 180].
+- `/sensors/gyro/angular_position/pose`
+  - Type: `geometry_msgs/msg/PoseWithCovarianceStamped`
+  - Value: The orientation in the message is a quaternion that represents a rotation of zero roll, zero pitch, and the integral of the gyro's angular velocity as the yaw. Also includes the gyro's frame ID and covariance. The rotation is extrinsic and performed in the order: roll, pitch, yaw. This message type can be used as an input to sensor fusion. The position is set to 0, and all covariance values except the (angular Z, angular Z) covariance are set to 0.
+- `/sensors/gyro/temperature`
+  - Type: `std_msgs/msg/Float64`
+  - Value: The gyro's internal temperature in degrees Fahrenheit.
+
+### Gyro Zero Bias
+When the gyro is not moving with respect to the surface of the Earth, it will output a small, nonzero, angular velocity. The average rate of this rotation is the zero bias.
+
+The gyro measures angular velocity relative to an inertial frame of reference. The rotation of the Earth and other cosmic forces accelerate the gyro by a small amount. Temperature, electromagnetic interference, vibrations, and other factors also affect the zero bias. The combined effect of these forces must be compensated for to obtain accurate readings.
+
+> [!IMPORTANT]
+> The gyro's zero bias depends on the latitude at whiich it is located. If the gyro is moved to a different latitude, the zero bias must be remeasured and updated in the robot config file.
+
+To obtain the gyro's zero bias, follow the steps below.
+1. Ensure that the gyro's environment is similar to the one in which it will be used. This means it should be at its average operating temperature and in a similar electromagnetic environment.
+2. Ensure that the gyro is precisely level with the surface of the Earth.
+3. Ensure that the gyro is not moving with respect to the surface of the Earth. This means it should be stationary and not experiencing any vibrations.
+4. Start the `gyro` node with the `compute_avg_angular_velocity` argument set to `true`. This will cause the node to compute the average angular velocity over its lifetime.
+5. Keep the node running for 5 minutes. Make sure the gyro is not moved or disturbed during this time.
+6. When the node is stopped, it will print the average angular velocity to the console. Sum this value with the existing zero bias value in the robot config file. This is the gyro's new zero bias.
+    > [!IMPORTANT]
+    > Do **not** overwrite the zero bias value in the robot config file with the average angular velocity obtained. The average angular velocity has the existing zero bias value subtracted from it. Thus, the updated zero bias is the sum of the average angular velocity and the existing zero bias value.
+7. Repeat steps 4-6 until the absolute value of average angular velocity is less than $2 \times 10^{-5}$ degrees per second. Values smaller than this are due to inaccuracies within the sensor itself and are negligible.
+
 
 ## Peripheral Arduino
 The Peripheral Arduino obtains data from the following sensors:
@@ -322,6 +394,21 @@ The servo is controlled by sending a message to the Arduino over serial in the f
 > From the Peripheral Arduino's perspective, all servos are continuous servos. The Arduino does not differentiate between continuous and discrete servos; for any servo, it will accept any PWM value that is within its range. The distinction between discrete and continuous servos is made in the [robot config file](#robot-config-file) and [Peripheral Publisher](#peripheral-publisher) script, which requires discrete servos to be set to one of a predefined set of states and continuous servos to be set to any PWM value within a range.
 
 If a servo command is sent, then the servo will not accept any other commands until the servo has returned to its original position. Thus, if you wish to send multiple commands to the same servo in quick succession, you must wait for at least 3 seconds between commands.
+
+### Gyro Trigger Signal
+The gyro requires a 1000Hz square wave trigger signal to send data. This signal is sent by the Peripheral Arduino.
+
+The gyro uses the RS-422 protocol to send and receive data, which uses differential signaling. This means that the trigger signal is sent over two wires, RX+ and RX-, and the signal is sent as a voltage difference between the two wires. Thus, two complementary 1000Hz square wave signals are sent over the RX+ and RX- wires; when one wire is high, the other wire is low.
+
+The trigger signal must be created with precise timing to obtain accurate data from the gyro. Thus, a hardware timer is required. The Peripheral Arduino uses the Timer2 hardware timer to generate the trigger signal.
+
+The ATmega328P microcontroller used in the Arduino Nano and Uno has three hardware timers: Timer0, Timer1, and Timer2. Timer0 is used for the Arduino's built-in functions like `delay()` and `millis()` and is not availble for other use. Timer1 is used by the Servo library. Timer2 is available to generate the trigger signal.
+
+The official documentation for Timer2 can be found in the [ATmega328P datasheet](https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7810-Automotive-Microcontrollers-ATmega328P_Datasheet.pdf). This [image](https://www.gammon.com.au/images/Arduino/Timer_2.png) provides a helpful overview of how to configure Timer2.
+
+Timer2 outputs the trigger signals on pins D3 and D11. Since the signals are inverses of each other, it doesn't matter which pin is connected to RX+ and which pin is connected to RX-.
+
+See the comments in the Peripheral Arduino sketch for more information on how Timer2 is configured to generate the trigger signal.
 
 ## Peripheral Publisher
 The `peripheral.py` script starts a ROS node that interfaces with the Peripheral Arduino. It publishes all sensor data received from the Arduino to the appropriate ROS topics. It also advertises services to control the servos connected to the Arduino.

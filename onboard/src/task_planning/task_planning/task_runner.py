@@ -1,5 +1,5 @@
 import os
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import rclpy
 import tf2_ros
@@ -10,19 +10,19 @@ from rclpy.time import Time
 
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
-from task_planning.interface.marker_dropper import MarkerDropper
+from task_planning.interface.servos import Servos
 from task_planning.interface.state import State
 from task_planning.robot import crush, oogway, oogway_shell
 from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
 
 
 class TaskPlanning(Node):
-    """Node for running tasks."""
+    """Node for running task planning."""
     NODE_NAME = 'task_planning'
     TASK_RATE_SECS = 1 / 30
     COUNTDOWN_SECS = 10
 
-    ROBOT_NAME_TO_TASKS: ClassVar[dict] = {
+    ROBOT_NAME_TO_MODULE: ClassVar[dict] = {
         'oogway': oogway,
         'oogway_shell': oogway_shell,
         'crush': crush,
@@ -44,7 +44,7 @@ class TaskPlanning(Node):
         Controls(self, bypass=self.bypass)
         State(self, tf_buffer=tf_buffer, bypass=self.bypass)
         CV(self, bypass=self.bypass)
-        MarkerDropper(self, bypass=self.bypass)
+        Servos(self, bypass=self.bypass)
 
         # Initialize the task update publisher
         TaskUpdatePublisher(self)
@@ -87,15 +87,14 @@ class TaskPlanning(Node):
         # Determine the robot name
         robot_name = os.getenv('ROBOT_NAME')
 
-        # Get the tasks for the robot
-        if robot_name in self.ROBOT_NAME_TO_TASKS:
-            self.tasks = self.ROBOT_NAME_TO_TASKS[robot_name].get_tasks()
+        # Get the task for the robot
+        if robot_name in self.ROBOT_NAME_TO_MODULE:
+            self.task: Task[Any, Any, Any] = self.ROBOT_NAME_TO_MODULE[robot_name].main(parent=Task.MAIN_ID)
         else:
             msg = f'Unknown robot name: {robot_name}'
             raise ValueError(msg)
 
-        self.current_task = 0
-        self.started_running_tasks = False
+        self.started_running_task = False
 
         if self.autonomous:
             self.countdown_value = self.COUNTDOWN_SECS
@@ -103,12 +102,12 @@ class TaskPlanning(Node):
             self.get_logger().info('Countdown started...')
             self.countdown_timer = self.create_timer(1.0, self.countdown)
         else:
-            input('Press enter to start tasks...')
+            input('Press enter to run tasks...')
 
-        self.task_timer = self.create_timer(self.TASK_RATE_SECS, self.run_tasks, autostart=not self.autonomous)
+        self.task_timer = self.create_timer(self.TASK_RATE_SECS, self.run_task, autostart=not self.autonomous)
 
     def countdown(self) -> None:
-        """Count down to start tasks."""
+        """Countdown to start tasks."""
         self.get_logger().info(f'Countdown: {self.countdown_value}')
         if self.countdown_value <= 0:
             self.get_logger().info('Countdown complete!')
@@ -118,29 +117,27 @@ class TaskPlanning(Node):
 
         self.countdown_value -= 1
 
-    def run_tasks(self) -> None:
-        """Step through the tasks, or end the node if all tasks are completed."""
+    def run_task(self) -> None:
+        """Step through the task, or end the node if the task is complete."""
         try:
-            if not self.started_running_tasks:
-                # Main has finished initializing and has started running tasks
-                self.started_running_tasks = True
+            if not self.started_running_task:
+                # Main has finished initializing and has started running task
+                self.started_running_task = True
                 TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.INITIALIZED, None)
                 self.get_logger().info('Running tasks...')
 
-            if self.current_task >= len(self.tasks) or not rclpy.ok():
+            if self.task.done or not rclpy.ok():
                 if self.autonomous:
                     Controls().call_enable_controls(False)
                 self.task_timer.cancel()
-                self.get_logger().info('All tasks completed!')
+                self.get_logger().info('Task planning completed!')
 
                 # Main has finished gracefully
                 TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.RETURNED, None)
                 self.destroy_node()
                 rclpy.shutdown()
-            elif not self.tasks[self.current_task].done:
-                    self.tasks[self.current_task].step()
-            else:
-                self.current_task += 1
+            elif not self.task.done:
+                self.task.step()
 
         except BaseException as e:
             # Main has errored

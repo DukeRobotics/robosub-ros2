@@ -15,7 +15,7 @@ from transforms3d.euler import quat2euler
 
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV, CVObjectType
-from task_planning.interface.marker_dropper import MarkerDropper, MarkerDropperStates
+from task_planning.interface.servos import Servos, MarkerDropperStates
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield, task
 from task_planning.tasks import cv_tasks, move_tasks
@@ -967,7 +967,7 @@ async def bin_task(self: Task) -> Task[None, None, None]:
 
     start_time = Clock().now()
 
-    drop_marker = MarkerDropper().drop_marker
+    drop_marker = Servos().drop_marker
 
     async def correct_x(target: float) -> None:
         await cv_tasks.correct_x(prop=target, parent=self)

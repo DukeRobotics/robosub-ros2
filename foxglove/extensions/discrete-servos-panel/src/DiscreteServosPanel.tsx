@@ -17,7 +17,7 @@ interface DiscreteServo {
 
 const DISCRETE_SERVOS: DiscreteServo[] = [
   { name: "Marker Dropper", service: "/servos/marker_dropper", states: ["left", "right"] },
-  { name: "Torpedoes", service: "/servos/torpedoes", states: ["left", "right"] },
+  { name: "Torpedo", service: "/servos/torpedo", states: ["left", "right"] },
 ];
 
 type DiscreteServosPanel = {
