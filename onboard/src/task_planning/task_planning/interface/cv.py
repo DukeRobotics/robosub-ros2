@@ -57,7 +57,7 @@ class CV:
     MODELS_PATH = 'package://cv/models/depthai_models.yaml'
     CV_CAMERA = 'front'
     # TODO: add other CV models here as defined in depthai_models.yaml. Modify the Enum strings correspondingly.
-    CV_MODELS: ClassVar[str] = ['yolov7_tiny_2023_main']
+    CV_MODELS: ClassVar[list[str]] = ['yolov7_tiny_2023_main']
 
     BOUNDING_BOX_TOPICS: ClassVar[dict[CVObjectType, str]] = {
         CVObjectType.BUOY: '/cv/front_usb/buoy/bounding_box',
@@ -136,13 +136,6 @@ class CV:
         self._lane_marker_data = {}
         self._lane_marker_heights = []
 
-        # TODO: do we still need to publish this?
-        self.lane_marker_angle_publisher = node.create_publisher(
-            Float64,
-            '/task_planning/cv/bottom/lane_marker_angle',
-            1,
-        )
-
     @property
     def bounding_boxes(self) -> dict[CVObjectType, CVObject]:
         """The dictionary containing the bounding boxes of each CV-detected object."""
@@ -211,12 +204,7 @@ class CV:
                 for the moving average filter. Defaults to 10.
         """
         self._angles[object_type] = self.update_moving_average(self._angle_queues[object_type],
-                                                              angle_data.data, filter_len)
-
-        # TODO: do we still need a publisher here?
-        msg = Float64()
-        msg.data = self.cv_data['lane_marker_angle']
-        self.lane_marker_angle_publisher.publish(msg)
+                                                               angle_data.data, filter_len)
 
     def compute_angle_from_horizontal(self, p1: Point, p2: Point) -> float:
         """
