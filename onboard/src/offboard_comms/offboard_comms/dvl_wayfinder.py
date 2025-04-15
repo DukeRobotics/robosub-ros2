@@ -8,7 +8,6 @@ import numpy as np
 import rclpy
 import resource_retriever as rr
 import yaml
-from builtin_interfaces.msg import Time
 from geometry_msgs.msg import Vector3
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
