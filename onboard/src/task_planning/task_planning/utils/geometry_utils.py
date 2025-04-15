@@ -7,6 +7,7 @@ from rclpy.time import Time
 from transforms3d.euler import euler2quat, quat2euler
 from transforms3d.quaternions import qmult
 
+
 def vector3_to_numpy(vector: Vector3) -> np.ndarray:
     """
     Convert a Vector3 to a numpy array.
