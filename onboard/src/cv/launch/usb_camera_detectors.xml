@@ -10,5 +10,10 @@
     <include file="$(find-pkg-share cv)/launch/pink_bins_detector.xml">
         <arg name="camera" value="bottom" />
     </include>
-    <include file="$(find-pkg-share cv)/launch/usb_camera_connect_all.xml"/>
+    <include file="$(find-pkg-share cv)/launch/usb_camera.xml">
+        <arg name="camera" value="front" />
+    </include>
+    <include file="$(find-pkg-share cv)/launch/usb_camera.xml">
+        <arg name="camera" value="bottom" />
+    </include>
 </launch>

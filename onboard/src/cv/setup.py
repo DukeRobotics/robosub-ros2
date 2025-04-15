@@ -36,7 +36,6 @@ setup(
             'path_marker_detector = cv.path_marker_detector:main',
             'pink_bins_detector = cv.pink_bins_detector:main',
             'torpedo_target_detector = cv.torpedo_target_detector:main',
-            'usb_camera_connect_all = cv.usb_camera_connect_all:main',
             'usb_camera = cv.usb_camera:main',
         ],
     },
