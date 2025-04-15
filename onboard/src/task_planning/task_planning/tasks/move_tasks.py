@@ -13,7 +13,8 @@ from transforms3d.euler import euler2quat, quat2euler
 logger = get_logger('move_tasks')
 
 @task
-async def move_to_pose_global(_self: Task, pose: Pose, timeout: int = 30) -> Task[None, Pose | None, None]:
+async def move_to_pose_global(self: Task, pose: Pose, pose_tolerances: Twist | None = None, timeout: int = 30) -> \
+        Task[None, Pose | None, None]:
     """
     Move to a global pose in the "odom" frame.
 
@@ -24,6 +25,8 @@ async def move_to_pose_global(_self: Task, pose: Pose, timeout: int = 30) -> Tas
     Args:
         self (Task): The task instance managing the movement operation.
         pose (Pose): The target global pose to move to.
+        pose_tolerances (Twist, optional): If this is not None, this task will end when the robot's pose has reached the
+            desired pose within these tolerances.
         timeout (int, optional): The maximum number of seconds to attempt reaching the pose
                                  before timing out. Defaults to 30.
 
@@ -37,7 +40,8 @@ async def move_to_pose_global(_self: Task, pose: Pose, timeout: int = 30) -> Tas
     Controls().start_new_move()
     Controls().publish_desired_position(pose)
     start_time = Clock().now()
-    while not geometry_utils.stopped_at_pose(State().state.pose.pose, pose, State().state.twist.twist):
+    while not geometry_utils.stopped_at_pose(State().state.pose.pose, pose, State().state.twist.twist,
+                                             pose_tolerances=pose_tolerances):
         # Allow users of this task to update the pose
         new_pose = await Yield()
         if new_pose is not None:
@@ -53,7 +57,8 @@ async def move_to_pose_global(_self: Task, pose: Pose, timeout: int = 30) -> Tas
 
 @task
 async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False, depth_level: float | None = None,
-                             time_limit: int = 30) -> Task[None, Pose | None, None]:
+                             pose_tolerances: Twist | None = None, time_limit: int = 30) -> \
+                                Task[None, Pose | None, None]:
     """
     Move to a local pose in the "base_link" frame.
 
@@ -68,6 +73,8 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False, d
             False.
         depth_level (float, optional): The depth, as provided by the pressure sensor, the robot should move to. If this
             is not None, the Z value of the provided pose will be overridden. Defaults to None.
+        pose_tolerances (Twist, optional): If this is not None, this task will end when the robot's pose has reached the
+            desired pose within these tolerances.
         time_limit (int, optional): The time limit (in seconds) for reaching the pose. Defaults to 30.
 
     Returns:
@@ -77,23 +84,30 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False, d
     Send:
         Pose: A new local pose to move to.
     """
-    if depth_level is not None:
-        if pose.position.z != 0:
-            logger.warning(f'Depth level of {depth_level} provided but Z value of pose is not zero: {pose.position.z}')
-        depth_delta = depth_level - State().depth
-        pose.position.z = depth_delta
-    global_pose = geometry_utils.local_pose_to_global(State().tf_buffer, pose)
+    def send_transformer(local_pose: Pose | None) -> Pose | None:
+        if local_pose is None:
+            return None
 
-    if keep_level:
-        orig_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(
-            State().orig_state.pose.pose.orientation))
-        euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(global_pose.orientation))
-        global_pose.orientation = geometry_utils.transforms3d_quat_to_geometry_quat(
-            euler2quat(orig_euler_angles[0], orig_euler_angles[1], euler_angles[2]))
+        if depth_level is not None:
+            if local_pose.position.z != 0:
+                logger.warning(f'Depth level of {depth_level} provided but Z value of pose is not zero: '
+                               f'{local_pose.position.z}')
+            depth_delta = depth_level - State().depth
+            local_pose.position.z = depth_delta
+        global_pose = geometry_utils.local_pose_to_global(State().tf_buffer, pose)
+
+        if keep_level:
+            orig_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(
+                State().orig_state.pose.pose.orientation))
+            euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(global_pose.orientation))
+            global_pose.orientation = geometry_utils.transforms3d_quat_to_geometry_quat(
+                euler2quat(orig_euler_angles[0], orig_euler_angles[1], euler_angles[2]))
+
+    global_pose = send_transformer(pose)
 
     return await coroutine_utils.transform(
-        move_to_pose_global(global_pose, timeout=time_limit, parent=self),
-        send_transformer=lambda p: geometry_utils.local_pose_to_global(State().tf_buffer, p) if p else p)
+        move_to_pose_global(global_pose, pose_tolerances=pose_tolerances, timeout=time_limit, parent=self),
+            send_transformer=send_transformer)
 
 
 @task
