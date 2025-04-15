@@ -28,7 +28,7 @@ setup(
         'console_scripts': [
             'bin_detector = cv.bin_detector:main',
             'lane_marker_detector = cv.lane_marker_detector:main',
-            'buoy_detector_contour_matching = cv.buoy_detector_contour_matching:main',
+            'buoy_detector = cv.buoy_detector:main',
             'depthai_camera_connect = cv.depthai_camera_connect:main',
             'depthai_publish_save_streams = cv.depthai_publish_save_streams:main',
             'depthai_spatial_detection = cv.depthai_spatial_detection:main',

@@ -13,10 +13,10 @@ from cv.config import Buoy, MonoCam
 from cv.utils import calculate_relative_pose, compute_yaw
 
 
-class BuoyDetectorContourMatching(Node):
+class BuoyDetector(Node):
     """Match contour with buoy."""
     def __init__(self) -> None:
-        super().__init__('buoy_detector_contour_matching')
+        super().__init__('buoy_detector')
 
         # Load the reference image in grayscale (assumes the image is already binary: white and black)
         reference_image_path = 'package://cv/assets/polyform-a0-buoy-contour.png'
@@ -178,14 +178,14 @@ class BuoyDetectorContourMatching(Node):
 def main(args: None = None) -> None:
     """Run the node."""
     rclpy.init(args=args)
-    buoy_detector_contour_matching = BuoyDetectorContourMatching()
+    buoy_detector = BuoyDetector()
 
     try:
-        rclpy.spin(buoy_detector_contour_matching)
+        rclpy.spin(buoy_detector)
     except KeyboardInterrupt:
         pass
     finally:
-        buoy_detector_contour_matching.destroy_node()
+        buoy_detector.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
 
