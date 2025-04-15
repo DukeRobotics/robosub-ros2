@@ -28,7 +28,7 @@ class DVLWayfinderPublisher(Node):
     # Extrinsic rotation is performed in the order of roll, pitch, yaw
     WAYFINDER_ROLL = 0
     WAYFINDER_PITCH = 0
-    WAYFINDER_YAW = -135
+    WAYFINDER_YAW = 135
 
     NODE_NAME = 'dvl_wayfinder'
 
@@ -97,18 +97,8 @@ class DVLWayfinderPublisher(Node):
         if any(math.isnan(val) for val in [data_obj.vel_x, data_obj.vel_y, data_obj.vel_z, data_obj.vel_err]):
             return
 
-        # Convert DVL time to Unix timestamp (as float in seconds)
-        dvl_time = dt.datetime(data_obj.year, data_obj.month, data_obj.day, data_obj.hour, data_obj.minute,
-                    data_obj.second, data_obj.millisecond * 1000, tzinfo=dt.UTC)
-        unix_timestamp = dvl_time.timestamp()
-
-        # Create the ROS2 Time message
-        header_stamp = Time()
-        header_stamp.sec = int(unix_timestamp)
-        header_stamp.nanosec = int((unix_timestamp - header_stamp.sec) * 1e9)
-
         # Apply rotation matrix to velocities
-        vels = np.matmul(self._rotation_matrix, [data_obj.vel_x, data_obj.vel_y, data_obj.vel_z])
+        vels = np.matmul([data_obj.vel_x, data_obj.vel_y, data_obj.vel_z], self._rotation_matrix)
 
         # Convert velocities to Vector3
         vels_vector = Vector3(x=vels[0], y=vels[1], z=vels[2])
@@ -122,7 +112,7 @@ class DVLWayfinderPublisher(Node):
             vels_vector.z = -vels_vector.z
 
         # Publish the data
-        self.odom.header.stamp = header_stamp
+        self.odom.header.stamp = self.get_clock().now().to_msg()
         self.odom.twist.twist.linear = vels_vector
         self._pub.publish(self.odom)
 
