@@ -242,7 +242,7 @@ async def after_buoy_task(self: Task):
 
     def is_receiving_cv_data():
         return 'path_marker' in CV().cv_data and \
-            Clock().now().seconds_nanoseconds()[0] - CV().cv_data['path_marker'].header.stamp.secs < latency_threshold
+            Clock().now().seconds_nanoseconds()[0] - CV().cv_data['path_marker'].header.stamp.sec < latency_threshold
 
     def stabilize():
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
@@ -547,7 +547,8 @@ async def yaw_to_cv_object(self: Task, cv_object: str, direction=1,
     """
     Corrects the yaw relative to the CV object
     """
-    DEPTH_LEVEL = State().orig_depth - depth_level
+    #DEPTH_LEVEL = State().orig_depth - depth_level
+    DEPTH_LEVEL = -0.5
     MAXIMUM_YAW = math.radians(20)
 
     logger.info('Starting yaw_to_cv_object')
@@ -565,7 +566,7 @@ async def yaw_to_cv_object(self: Task, cv_object: str, direction=1,
 
     def is_receiving_cv_data():
         return cv_object in CV().cv_data and \
-                Clock().now().seconds_nanoseconds()[0] - CV().cv_data[cv_object].header.stamp.secs < latency_threshold
+                Clock().now().seconds_nanoseconds()[0] - CV().cv_data[cv_object].header.stamp.sec < latency_threshold
 
     def get_step_size(desired_yaw):
         # desired yaw in radians
@@ -781,8 +782,8 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
         height = CV().cv_data[bin_object].height
 
         return width * height >= AREA_THRESHOLD and \
-            Clock().now().seconds_nanoseconds()[0] - CV().cv_data[bin_object].header.stamp.secs < LATENCY_THRESHOLD and \
-            abs(CV().cv_data[bin_object].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
+            Clock().now().seconds_nanoseconds()[0] - CV().cv_data[bin_object].header.stamp.sec < LATENCY_THRESHOLD and \
+            abs(CV().cv_data[bin_object].header.stamp.sec - latest_detection_time) < LATENCY_THRESHOLD
 
     async def move_x(step : float =1 ) -> None:
         await move_tasks.move_x(step=step, parent=self)
@@ -807,9 +808,9 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
         while not is_receiving_bin_data('bin_red', bin_red_time) \
                 or not is_receiving_bin_data('bin_blue', bin_blue_time):
             if 'bin_red' in CV().cv_data:
-                bin_red_time = CV().cv_data['bin_red'].header.stamp.secs
+                bin_red_time = CV().cv_data['bin_red'].header.stamp.sec
             if 'bin_blue' in CV().cv_data:
-                bin_blue_time = CV().cv_data['bin_blue'].header.stamp.secs
+                bin_blue_time = CV().cv_data['bin_blue'].header.stamp.sec
 
             await correct_depth(DEPTH_LEVEL)
 
@@ -912,8 +913,8 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
         height = CV().cv_data[bin_object].height
 
         return width * height >= AREA_THRESHOLD and \
-            Clock().now().seconds_nanoseconds()[0] - CV().cv_data[bin_object].header.stamp.secs < LATENCY_THRESHOLD and \
-            abs(CV().cv_data[bin_object].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
+            Clock().now().seconds_nanoseconds()[0] - CV().cv_data[bin_object].header.stamp.sec < LATENCY_THRESHOLD and \
+            abs(CV().cv_data[bin_object].header.stamp.sec - latest_detection_time) < LATENCY_THRESHOLD
 
     def stabilize() -> None:
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
@@ -940,9 +941,9 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
             iterations = secs / 0.1
             for _ in range(int(iterations)):
                 if 'bin_red' in CV().cv_data:
-                    bin_red_time = CV().cv_data['bin_red'].header.stamp.secs
+                    bin_red_time = CV().cv_data['bin_red'].header.stamp.sec
                 if 'bin_blue' in CV().cv_data:
-                    bin_blue_time = CV().cv_data['bin_blue'].header.stamp.secs
+                    bin_blue_time = CV().cv_data['bin_blue'].header.stamp.sec
 
                 is_receiving_red_bin_data = is_receiving_bin_data('bin_red', bin_red_time)
                 is_receiving_blue_bin_data = is_receiving_bin_data('bin_blue', bin_blue_time)
@@ -1140,8 +1141,8 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     def is_receiving_pink_bin_data(latest_detection_time):
         return latest_detection_time and 'bin_pink_bottom' in CV().cv_data and \
             CV().cv_data['bin_pink_bottom'].score >= CONTOUR_SCORE_THRESHOLD and \
-            Clock().now().seconds_nanoseconds()[0] - CV().cv_data['bin_pink_bottom'].header.stamp.secs < LATENCY_THRESHOLD and \
-            abs(CV().cv_data['bin_pink_bottom'].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
+            Clock().now().seconds_nanoseconds()[0] - CV().cv_data['bin_pink_bottom'].header.stamp.sec < LATENCY_THRESHOLD and \
+            abs(CV().cv_data['bin_pink_bottom'].header.stamp.sec - latest_detection_time) < LATENCY_THRESHOLD
 
     def publish_power() -> None:
         power = Twist()
@@ -1190,7 +1191,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         await move_x(step=1)
         while not is_receiving_pink_bin_data(latest_detection_time) and not moved_above:
             if 'bin_pink_bottom' in CV().cv_data:
-                latest_detection_time = CV().cv_data['bin_pink_bottom'].header.stamp.secs
+                latest_detection_time = CV().cv_data['bin_pink_bottom'].header.stamp.sec
 
             await correct_depth(DEPTH_LEVEL_AT_BINS if not moved_above else DEPTH_LEVEL_ABOVE_BINS)
             if not moved_above:
@@ -1234,7 +1235,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
 
 @task
-async def torpedo_task(self: Task, depth_level=0.9, animal="shark_front") -> Task[None, None, None]:
+async def torpedo_task(self: Task, depth_level=0.5, animal="shark_front") -> Task[None, None, None]:
     step_size = 1
     shooting_distance = 1
 
@@ -1270,7 +1271,7 @@ async def torpedo_task(self: Task, depth_level=0.9, animal="shark_front") -> Tas
 
     async def move_to_torpedo_banner(banner_dist=1,):
         await yaw_to_torpedo_banner()
-        await correct_depth()
+        # await correct_depth()
 
         banner_dist = CV().cv_data['torpedo_banner'].coords.x
         while banner_dist > shooting_distance:
@@ -1280,8 +1281,8 @@ async def torpedo_task(self: Task, depth_level=0.9, animal="shark_front") -> Tas
             await correct_y()
             if banner_dist < 3:
                 await correct_z()
-            else:
-                await correct_depth()
+            # else:
+            #     await correct_depth()
 
             await Yield()
             banner_dist = CV().cv_data['torpedo_banner'].coords.x
@@ -1291,7 +1292,7 @@ async def torpedo_task(self: Task, depth_level=0.9, animal="shark_front") -> Tas
 
     async def center_with_torpedo_target():
         await correct_yaw_with_depthai() # Hopefully we know we are normal to the torpedo banner now and also centered with the banner.
-        await correct_depth()
+        # await correct_depth()
         target_dist_y = CV().cv_data[animal].coords.y
         target_dist_z = CV().cv_data[animal].coords.z
         await move_tasks.move_to_pose_local(
@@ -1309,7 +1310,8 @@ async def torpedo_task(self: Task, depth_level=0.9, animal="shark_front") -> Tas
             parent=self,
         )
 
-        await Servos().fire_torpedo(TorpedoStates.RIGHT)
+        logger.info('FIRING TORPEDO')
+        # await Servos().fire_torpedo(TorpedoStates.RIGHT)
 
     await center_with_torpedo_target()
 
