@@ -12,8 +12,6 @@ from sensor_msgs.msg import CompressedImage, Image
 from cv.config import MonoCam, Torpedo
 from cv.utils import calculate_relative_pose, compute_yaw
 
-CV_PACKAGE_PATH = 'package://cv/'
-
 
 class TorpedoTargetDetector(Node):
     """Match contour with torpedo targets."""
