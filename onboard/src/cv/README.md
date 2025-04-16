@@ -27,7 +27,7 @@ The following are the folders and files in the CV package:
 * `utils.py`: Auxiliary functions that visualize detections on an image feed and modularize certain repeated calculations.
 
 `launch`: Contains the various launch files for our CV package. There are specific launch files for each script in `cv` in addition to the following:
-* `usb_camera_detectors.xml`: Connects to all USB cameras and starts all detectors that use the USB camera feed.
+* `usb_camera_detectors.launch.py`: Connects to all USB cameras and starts all detectors that use the USB camera feed.
 
 `models`: Contains our pre-trained models and a `.yaml` file that specifies the details of each model.
 * `depthai_models.yaml`: Specifies models for object detection. A model is specified by a name, what classes it predicts, the path to a `.blob` file, as well as other configuration parameters. The blob file format is specific to the processors that the OAK cameras use. See [DepthAI Cameras](#depthai-cameras) for more details.
