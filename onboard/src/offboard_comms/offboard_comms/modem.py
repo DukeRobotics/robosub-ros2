@@ -64,7 +64,7 @@ class ModemPublisher(SerialNode):
         self.change_setting_srv = self.create_service(SetModemSettings, '/sensors/modem/settings', self.change_setting)
         self.send_message_srv = self.create_service(SendModemMessage, '/sensors/modem/send_message', self.send_message)
 
-        self.publish_modem_status_timer = self.create_timer(10.0, self.publish_modem_status)
+        self.publish_modem_status_timer = self.create_timer(1.0 / 10.0, self.publish_modem_status)
 
         self.status = Bool()
         self.message = String()
