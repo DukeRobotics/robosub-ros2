@@ -63,11 +63,7 @@ class ModemPublisher(SerialNode):
         self.message = String()
         self.report = ModemDiagnosticReport()
 
-        # Request a report from the modem to obtain its initial status
-        self.set_setting(SetModemSettings.Request(setting=SetModemSettings.Request.REQUEST_REPORT),
-                         SetModemSettings.Response())
-
-        self.obtained_init_report = False
+        self.received_report = False
 
         self.modem_status_publisher = self.create_publisher(ModemStatus, '/sensors/modem/status', 1)
         self.message_publisher = self.create_publisher(String, '/sensors/modem/messages', 1)
@@ -87,6 +83,11 @@ class ModemPublisher(SerialNode):
         """
         return self._config['modem']['ftdi']
 
+    def after_connect(self) -> None:
+        """Request a report from the modem to obtain its initial status."""
+        self.set_setting(SetModemSettings.Request(setting=SetModemSettings.Request.REQUEST_REPORT),
+                         SetModemSettings.Response())
+
     def send_data(self, data: str) -> bool:
         """
         Send data to the modem.
@@ -98,7 +99,7 @@ class ModemPublisher(SerialNode):
 
     def publish_modem_status(self) -> None:
         """Publish the modem status."""
-        if self.obtained_init_report:
+        if self.received_report:
             self.modem_status_publisher.publish(self.status)
 
     def process_bytes(self, data: bytes) -> None:
@@ -198,7 +199,7 @@ class ModemPublisher(SerialNode):
         self.status.channel = self.report.channel
         self.status.power_level = self.report.power_level
 
-        self.obtained_init_report = True
+        self.received_report = True
 
 
     def send_message(self, request: SendModemMessage.Request, response: SendModemMessage.Response) -> \
@@ -244,8 +245,10 @@ class ModemPublisher(SerialNode):
         else:
             self.status.ready = True
 
+            error_msg = f'Failed to send message "{request.message}".'
+            self.get_logger().error(error_msg)
             response.success = False
-            response.message = 'Failed to send message.'
+            response.message = error_msg
 
         return response
 
