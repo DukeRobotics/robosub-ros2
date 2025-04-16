@@ -117,7 +117,6 @@ class SerialNode(Node, ABC):
 
         return buff.decode('utf-8', errors='ignore')
 
-
     def writebytes(self, data: bytes) -> bool:
         """
         Write bytes to serial port.
