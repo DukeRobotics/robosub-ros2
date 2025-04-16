@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from ament_index_python.packages import get_package_share_directory
@@ -15,9 +14,6 @@ def generate_launch_description() -> LaunchDescription:
     Returns:
         LaunchDescription: The launch description containing the included launch files.
     """
-    robot_name = os.getenv('ROBOT_NAME')
-
-    # Get package share directories
     pkg_controls = Path(get_package_share_directory('controls'))
     pkg_cv = Path(get_package_share_directory('cv'))
     pkg_offboard_comms = Path(get_package_share_directory('offboard_comms'))
@@ -29,31 +25,34 @@ def generate_launch_description() -> LaunchDescription:
 
     ld = LaunchDescription()
 
-    # Add included launch files
     ld.add_action(IncludeLaunchDescription(
         XMLLaunchDescriptionSource(str(pkg_controls / 'launch' / 'controls.xml')),
     ))
+
     ld.add_action(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(pkg_cv / 'launch' / 'cv.launch.py')),
     ))
+
     ld.add_action(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'offboard_comms.launch.py')),
     ))
+
     ld.add_action(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(pkg_sensor_fusion / 'launch' / 'fuse.launch.py')),
     ))
 
-    if robot_name in ['oogway', 'oogway_shell']:
-        ld.add_action(IncludeLaunchDescription(
-            XMLLaunchDescriptionSource(str(pkg_sonar / 'launch' / 'sonar.xml')),
-        ))
+    ld.add_action(IncludeLaunchDescription(
+        XMLLaunchDescriptionSource(str(pkg_sonar / 'launch' / 'sonar.xml')),
+    ))
 
     ld.add_action(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(pkg_static_transforms / 'launch' / 'static_transforms.launch.py')),
     ))
+
     ld.add_action(IncludeLaunchDescription(
         XMLLaunchDescriptionSource(str(pkg_system_utils / 'launch' / 'system_utils.xml')),
     ))
+
     ld.add_action(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(pkg_vectornav / 'launch' / 'vectornav.launch.py')),
     ))
