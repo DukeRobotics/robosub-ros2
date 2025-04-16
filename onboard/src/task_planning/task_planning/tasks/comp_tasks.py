@@ -547,8 +547,7 @@ async def yaw_to_cv_object(self: Task, cv_object: str, direction=1,
     """
     Corrects the yaw relative to the CV object
     """
-    #DEPTH_LEVEL = State().orig_depth - depth_level
-    DEPTH_LEVEL = -0.5
+    DEPTH_LEVEL = State().orig_depth - depth_level
     MAXIMUM_YAW = math.radians(20)
 
     logger.info('Starting yaw_to_cv_object')
@@ -1236,6 +1235,9 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
 @task
 async def torpedo_task(self: Task, depth_level=0.5, animal="shark_front") -> Task[None, None, None]:
+    """
+    TODO: Test this task
+    """
     step_size = 1
     shooting_distance = 1
 
