@@ -1,4 +1,4 @@
-bool ready
+bool busy
 
 uint8 TRANSPARENT_MODE = 0
 uint8 DIAGNOSTIC_MODE = 1

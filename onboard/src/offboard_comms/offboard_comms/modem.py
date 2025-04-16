@@ -4,7 +4,7 @@ from typing import ClassVar
 
 import rclpy
 from custom_msgs.msg import ModemDiagnosticReport, ModemStatus
-from custom_msgs.srv import SendModemMessage, SetModemSettings
+from custom_msgs.srv import SendModemMessage, SendModemCommand
 from std_msgs.msg import String
 
 from offboard_comms.serial_node import SerialNode, SerialReadType
@@ -21,15 +21,15 @@ class ModemPublisher(SerialNode):
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
     LOOP_RATE = 20  # Hz
 
-    SETTING_NAMES: ClassVar[dict[int, str]] = {
-        SetModemSettings.Request.TRANSPARENT_MODE: 'TRANSPARENT_MODE',
-        SetModemSettings.Request.DIAGNOSTIC_MODE: 'DIAGNOSTIC_MODE',
-        SetModemSettings.Request.CHANGE_CHANNEL: 'CHANGE_CHANNEL',
-        SetModemSettings.Request.REQUEST_REPORT: 'REQUEST_REPORT',
-        SetModemSettings.Request.SET_POWER_LEVEL: 'SET_POWER_LEVEL',
+    COMMAND_NAMES: ClassVar[dict[int, str]] = {
+        SendModemCommand.Request.TRANSPARENT_MODE: 'TRANSPARENT_MODE',
+        SendModemCommand.Request.DIAGNOSTIC_MODE: 'DIAGNOSTIC_MODE',
+        SendModemCommand.Request.CHANGE_CHANNEL: 'CHANGE_CHANNEL',
+        SendModemCommand.Request.REQUEST_REPORT: 'REQUEST_REPORT',
+        SendModemCommand.Request.SET_POWER_LEVEL: 'SET_POWER_LEVEL',
     }
-    MIN_SETTING = min(SETTING_NAMES.keys())
-    MAX_SETTING = max(SETTING_NAMES.keys())
+    MIN_COMMAND = min(COMMAND_NAMES.keys())
+    MAX_COMMAND = max(COMMAND_NAMES.keys())
 
     MIN_CHANNEL = 1
     MAX_CHANNEL = 12
@@ -43,7 +43,8 @@ class ModemPublisher(SerialNode):
     DIAGNOSTIC_REPORT_END_BYTE = 0x0A # '\n'
     DIAGNOSTIC_REPORT_SIZE = 18  # bytes
 
-    FORBIDDEN_CHARS_IN_MESSAGE: ClassVar[list[str]] = [chr(DIAGNOSTIC_REPORT_START_BYTE),
+    FORBIDDEN_CHARS_IN_MESSAGE: ClassVar[list[str]] = [chr(0),
+                                                       chr(DIAGNOSTIC_REPORT_START_BYTE),
                                                        chr(DIAGNOSTIC_REPORT_END_BYTE)]
 
     def __init__(self) -> None:
@@ -51,7 +52,7 @@ class ModemPublisher(SerialNode):
                          SerialReadType.BYTES_ALL, self.CONNECTION_RETRY_PERIOD, loop_rate=self.LOOP_RATE)
         self.buffer = bytearray()
 
-        self.status = ModemStatus(ready=True)
+        self.status = ModemStatus(busy=False)
         self.message = String()
         self.report = ModemDiagnosticReport()
 
@@ -61,7 +62,7 @@ class ModemPublisher(SerialNode):
         self.message_publisher = self.create_publisher(String, '/sensors/modem/messages', 1)
         self.diagnostic_reports_publisher = self.create_publisher(ModemDiagnosticReport,
                                                                  '/sensors/modem/diagnostic_reports', 1)
-        self.set_setting_srv = self.create_service(SetModemSettings, '/sensors/modem/set_setting', self.set_setting)
+        self.send_command_srv = self.create_service(SendModemCommand, '/sensors/modem/send_command', self.send_command)
         self.send_message_srv = self.create_service(SendModemMessage, '/sensors/modem/send_message', self.send_message)
 
         self.publish_modem_status_timer = self.create_timer(1.0 / 10.0, self.publish_modem_status)
@@ -77,8 +78,8 @@ class ModemPublisher(SerialNode):
 
     def after_connect(self) -> None:
         """Request a report from the modem to obtain its initial status."""
-        self.set_setting(SetModemSettings.Request(setting=SetModemSettings.Request.REQUEST_REPORT),
-                         SetModemSettings.Response())
+        self.send_command(SendModemCommand.Request(command=SendModemCommand.Request.REQUEST_REPORT),
+                          SendModemCommand.Response())
 
     def send_data(self, data: str) -> bool:
         """
@@ -180,12 +181,13 @@ class ModemPublisher(SerialNode):
         self.report.transmission_complete = bool((decoded[11] & 0b10000000) >> 7)
         self.report.diagnostic_mode = bool(decoded[12] & 0b00000001)
         self.report.power_level = (decoded[12] & 0b00001100) >> 2
-
         self.diagnostic_reports_publisher.publish(self.report)
 
+        # If the report includes a non-empty message, publish it
         if message_bytes != b'\x00' * self.MESSAGE_SIZE:
             self.publish_message(self.report.message)
 
+        # Update the modem status
         self.status.mode = ModemStatus.DIAGNOSTIC_MODE if self.report.diagnostic_mode else \
             ModemStatus.TRANSPARENT_MODE
         self.status.channel = self.report.channel
@@ -213,8 +215,8 @@ class ModemPublisher(SerialNode):
             response.message = error_msg
             return response
 
-        if not self.status.ready:
-            error_msg = 'Cannot send message. Modem not ready for commands.'
+        if self.status.busy:
+            error_msg = 'Cannot send message. Modem is busy.'
             self.get_logger().error(error_msg)
             response.success = False
             response.message = error_msg
@@ -228,14 +230,14 @@ class ModemPublisher(SerialNode):
             response.message = error_msg
             return response
 
-        self.status.ready = False
+        self.status.busy = True
         if self.send_data(request.message):
             self.ready_timer = self.create_timer(2.0, self.set_ready)
 
             response.success = True
             response.message = 'Sent message successfully'
         else:
-            self.status.ready = True
+            self.status.busy = False
 
             error_msg = f'Failed to send message "{request.message}".'
             self.get_logger().error(error_msg)
@@ -244,39 +246,38 @@ class ModemPublisher(SerialNode):
 
         return response
 
-    def set_setting(self, request: SetModemSettings.Request, response: SetModemSettings.Response) -> \
-            SetModemSettings.Response:
+    def send_command(self, request: SendModemCommand.Request, response: SendModemCommand.Response) -> \
+            SendModemCommand.Response:
         """
-        Set a modem setting.
+        Set a comand to the modem.
 
         Args:
-            request (SetModemSettings.Request): Request object containing the setting to set.
-            response (SetModemSettings.Response): Response object to be filled with the result.
+            request (SendModemCommand.Request): Request object containing the command to send.
+            response (SendModemCommand.Response): Response object to be filled with the result.
 
         Returns:
-            SetModemSettings.Response: The response object with the result of the operation.
+            SendModemCommand.Response: The response object with the result of the operation.
         """
-        if not self.status.ready:
-            error_msg = 'Cannot set setting. Modem not ready for commands.'
+        if self.status.busy:
+            error_msg = 'Cannot send command. Modem is busy.'
             self.get_logger().error(error_msg)
             response.success = False
             response.message = error_msg
             return response
 
-        self.setting = request.setting
+        self.command = request.command
         raw_value = request.value
 
-        self.setting_char = ''
-        self.setting_value = None
+        self.command_char = ''
+        self.command_value = None
 
-        match self.setting:
-            case SetModemSettings.Request.TRANSPARENT_MODE:
-                self.setting_char = 't'
-            case SetModemSettings.Request.DIAGNOSTIC_MODE:
-                self.setting_char = 'd'
-
-            case SetModemSettings.Request.CHANGE_CHANNEL:
-                self.setting_char = 'c'
+        match self.command:
+            case SendModemCommand.Request.TRANSPARENT_MODE:
+                self.command_char = 't'
+            case SendModemCommand.Request.DIAGNOSTIC_MODE:
+                self.command_char = 'd'
+            case SendModemCommand.Request.CHANGE_CHANNEL:
+                self.command_char = 'c'
                 if not (self.MIN_CHANNEL <= raw_value <= self.MAX_CHANNEL):
                     error_msg = (f'Invalid channel {raw_value}. Must be in range [{self.MIN_CHANNEL}, '
                                  f'{self.MAX_CHANNEL}]')
@@ -285,15 +286,14 @@ class ModemPublisher(SerialNode):
                     response.message = error_msg
                     return response
 
-                self.setting_value = format(raw_value, 'x')
+                self.command_value = format(raw_value, 'x')
+            case SendModemCommand.Request.REQUEST_REPORT:
+                self.command_char = 'r'
 
-            case SetModemSettings.Request.REQUEST_REPORT:
-                self.setting_char = 'r'
-
-            # NOTE: The power level setting is available only on modems with firmware version 0x56 or recent.
-            # If the modem has an older firmware version, this setting will have no effect.
-            case SetModemSettings.Request.SET_POWER_LEVEL:
-                self.setting_char = 'l'
+            # NOTE: The power level command is available only on modems with firmware version 0x56 or recent.
+            # If the modem has an older firmware version, this command will have no effect.
+            case SendModemCommand.Request.SET_POWER_LEVEL:
+                self.command_char = 'l'
                 if not (self.MIN_POWER_LEVEL <= raw_value <= self.MAX_POWER_LEVEL):
                     error_msg = (f'Invalid power level {raw_value}. Must be in range [{self.MIN_POWER_LEVEL}, '
                                  f'{self.MAX_POWER_LEVEL}]')
@@ -302,24 +302,26 @@ class ModemPublisher(SerialNode):
                     response.message = error_msg
                     return response
 
-                self.setting_value = format(raw_value, 'x')
+                self.command_value = format(raw_value, 'x')
             case _:
-                error_msg = f'Invalid setting {self.setting}. Must be in range [{self.MIN_SETTING}, {self.MAX_SETTING}]'
+                error_msg = f'Invalid command {self.command}. Must be in range [{self.MIN_COMMAND}, {self.MAX_COMMAND}]'
                 self.get_logger().error(error_msg)
                 response.success = False
                 response.message = error_msg
                 return response
 
-        self.status.ready = False
-        if self.send_data(self.setting_char):
-            self.send_second_setting_char_timer = self.create_timer(1.0, self.send_second_setting_char)
+        self.command_name = self.COMMAND_NAMES[self.command]
+
+        self.status.busy = True
+        if self.send_data(self.command_char):
+            self.finish_sending_command_timer = self.create_timer(1.0, self.finish_sending_command)
 
             response.success = True
-            response.message = f'Set setting {self.SETTING_NAMES[self.setting]} successfully.'
+            response.message = f'Sent command {self.command_name} successfully.'
         else:
-            self.status.ready = True
+            self.status.busy = False
 
-            error_msg = f'Failed to send first character for setting {self.SETTING_NAMES[self.setting]}.'
+            error_msg = f'Failed to send first character for command {self.command_name}.'
             self.get_logger().error(error_msg)
 
             response.success = False
@@ -327,40 +329,40 @@ class ModemPublisher(SerialNode):
 
         return response
 
-    def send_second_setting_char(self) -> None:
-        """Send the second setting character and additional character if applicable."""
-        self.send_second_setting_char_timer.cancel()
+    def finish_sending_command(self) -> None:
+        """Send the second command character and value if applicable."""
+        self.finish_sending_command_timer.cancel()
 
-        if self.send_data(self.setting_char):
-            match self.setting:
-                case SetModemSettings.Request.TRANSPARENT_MODE:
+        if self.send_data(self.command_char):
+            match self.command:
+                case SendModemCommand.Request.TRANSPARENT_MODE:
                     self.status.mode = ModemStatus.TRANSPARENT_MODE
-                case SetModemSettings.Request.DIAGNOSTIC_MODE:
+                case SendModemCommand.Request.DIAGNOSTIC_MODE:
                     self.status.mode = ModemStatus.DIAGNOSTIC_MODE
 
-            if self.setting_value is not None:
-                if self.send_data(self.setting_value):
-                    match self.setting:
-                        case SetModemSettings.Request.CHANGE_CHANNEL:
-                            self.status.channel = int(self.setting_value, 16)
-                        case SetModemSettings.Request.SET_POWER_LEVEL:
-                            self.status.power_level = int(self.setting_value, 16)
+            if self.command_value is not None:
+                if self.send_data(self.command_value):
+                    match self.command:
+                        case SendModemCommand.Request.CHANGE_CHANNEL:
+                            self.status.channel = int(self.command_value, 16)
+                        case SendModemCommand.Request.SET_POWER_LEVEL:
+                            self.status.power_level = int(self.command_value, 16)
                 else:
-                    error_msg = (f'Failed to send value "{self.setting_value}" for setting '
-                                f'{self.SETTING_NAMES[self.setting]}')
+                    error_msg = (f'Failed to send value "{self.command_value}" for command '
+                                f'{self.COMMAND_NAMES[self.command]}')
                     self.get_logger().error(error_msg)
         else:
-            error_msg = f'Failed to send second character for setting {self.SETTING_NAMES[self.setting]}.'
+            error_msg = f'Failed to send second character for command {self.command_name}.'
             self.get_logger().error(error_msg)
-            self.status.ready = False
+            self.status.busy = False
             return
 
         self.ready_timer = self.create_timer(1.0, self.set_ready)
 
     def set_ready(self) -> None:
-        """Set the modem to ready state."""
+        """Set the modem to ready (not busy) state."""
         self.ready_timer.cancel()
-        self.status.ready = True
+        self.status.busy = False
 
 
 def main(args: list[str] | None = None) -> None:
