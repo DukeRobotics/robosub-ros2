@@ -21,16 +21,6 @@ class ModemPublisher(SerialNode):
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
     LOOP_RATE = 20  # Hz
 
-    SETTINGS: ClassVar[list[int]] = [
-        SetModemSettings.Request.TRANSPARENT_MODE,
-        SetModemSettings.Request.DIAGNOSTIC_MODE,
-        SetModemSettings.Request.CHANGE_CHANNEL,
-        SetModemSettings.Request.REQUEST_REPORT,
-        SetModemSettings.Request.SET_POWER_LEVEL,
-    ]
-    MIN_SETTING = min(SETTINGS)
-    MAX_SETTING = max(SETTINGS)
-
     SETTING_NAMES: ClassVar[dict[int, str]] = {
         SetModemSettings.Request.TRANSPARENT_MODE: 'TRANSPARENT_MODE',
         SetModemSettings.Request.DIAGNOSTIC_MODE: 'DIAGNOSTIC_MODE',
@@ -38,6 +28,8 @@ class ModemPublisher(SerialNode):
         SetModemSettings.Request.REQUEST_REPORT: 'REQUEST_REPORT',
         SetModemSettings.Request.SET_POWER_LEVEL: 'SET_POWER_LEVEL',
     }
+    MIN_SETTING = min(SETTING_NAMES.keys())
+    MAX_SETTING = max(SETTING_NAMES.keys())
 
     MIN_CHANNEL = 1
     MAX_CHANNEL = 12
