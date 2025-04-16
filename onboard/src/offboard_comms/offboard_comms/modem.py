@@ -51,6 +51,9 @@ class ModemPublisher(SerialNode):
     DIAGNOSTIC_REPORT_END_BYTE = 0x0A # '\n'
     DIAGNOSTIC_REPORT_SIZE = 18  # bytes
 
+    FORBIDDEN_CHARS_IN_MESSAGE: ClassVar[list[str]] = [chr(DIAGNOSTIC_REPORT_START_BYTE),
+                                                       chr(DIAGNOSTIC_REPORT_END_BYTE)]
+
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
                          SerialReadType.BYTES_ALL, self.CONNECTION_RETRY_PERIOD, loop_rate=self.LOOP_RATE)
@@ -219,6 +222,14 @@ class ModemPublisher(SerialNode):
 
         if not self.status.ready:
             error_msg = 'Cannot send message. Modem not ready for commands.'
+            self.get_logger().error(error_msg)
+            response.success = False
+            response.message = error_msg
+            return response
+
+        if any(char in request.message for char in self.FORBIDDEN_CHARS_IN_MESSAGE):
+            error_msg = (f'Message "{request.message}" contains forbidden characters: '
+                         f'{self.FORBIDDEN_CHARS_IN_MESSAGE}')
             self.get_logger().error(error_msg)
             response.success = False
             response.message = error_msg
