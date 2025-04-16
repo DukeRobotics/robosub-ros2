@@ -70,7 +70,7 @@ class ModemPublisher(SerialNode):
         self.message_publisher = self.create_publisher(String, '/sensors/modem/messages', 1)
         self.diagnostic_reports_publisher = self.create_publisher(ModemDiagnosticReport,
                                                                  '/sensors/modem/diagnostic_reports', 1)
-        self.change_setting_srv = self.create_service(SetModemSettings, '/sensors/modem/set_setting', self.set_setting)
+        self.set_setting_srv = self.create_service(SetModemSettings, '/sensors/modem/set_setting', self.set_setting)
         self.send_message_srv = self.create_service(SendModemMessage, '/sensors/modem/send_message', self.send_message)
 
         self.publish_modem_status_timer = self.create_timer(1.0 / 10.0, self.publish_modem_status)
@@ -241,17 +241,17 @@ class ModemPublisher(SerialNode):
     def set_setting(self, request: SetModemSettings.Request, response: SetModemSettings.Response) -> \
             SetModemSettings.Response:
         """
-        Change the channel the modem is on if the modem is ready for commands.
+        Set a modem setting.
 
         Args:
-            request (SetModemSettings.Request): Request object containing the setting to change.
+            request (SetModemSettings.Request): Request object containing the setting to set.
             response (SetModemSettings.Response): Response object to be filled with the result.
 
         Returns:
             SetModemSettings.Response: The response object with the result of the operation.
         """
         if not self.status.ready:
-            error_msg = 'Cannot change setting. Modem not ready for commands.'
+            error_msg = 'Cannot set setting. Modem not ready for commands.'
             self.get_logger().error(error_msg)
             response.success = False
             response.message = error_msg
@@ -285,7 +285,7 @@ class ModemPublisher(SerialNode):
                 self.setting_char = 'r'
 
             # NOTE: The power level setting is available only on modems with firmware version 0x56 or recent.
-            # If the modem has an older firmware version, this setting will not change anything.
+            # If the modem has an older firmware version, this setting will have no effect.
             case SetModemSettings.Request.SET_POWER_LEVEL:
                 self.setting_char = 'l'
                 if not (self.MIN_POWER_LEVEL <= raw_value <= self.MAX_POWER_LEVEL):
