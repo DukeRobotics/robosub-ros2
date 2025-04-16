@@ -103,7 +103,7 @@ class TaskUpdatePublisher:
         try:
             msg_data = jsonpickle.encode(data, **jsonpickle_options)
         except Exception:  # noqa: BLE001
-            self.get_logger().warn(
+            self.node.get_logger().warn(
                 f'Task with id {task_id} failed to encode data to JSON when publishing {status.name}: {data}',
             )
             msg_data = jsonpickle.encode(str(data), **jsonpickle_options)

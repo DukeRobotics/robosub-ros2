@@ -205,10 +205,13 @@ class GyroPublisher(SerialNode):
         # Angular position normalized between -180 and 180 degrees
         self.angular_position = (self.angular_velocity_integral + 180.0) % 360.0 - 180.0
 
+        # ROS Header timestamp for this frame
+        ros_time_msg = self.get_clock().now().to_msg()
+
         self.angular_velocity_raw_msg.data = angular_velocity
         self.angular_velocity_raw_publisher.publish(self.angular_velocity_raw_msg)
 
-        self.angular_velocity_twist_msg.header.stamp = self.get_clock().now().to_msg()
+        self.angular_velocity_twist_msg.header.stamp = ros_time_msg
         self.angular_velocity_twist_msg.twist.twist.angular.z = math.radians(angular_velocity)
         self.angular_velocity_twist_publisher.publish(self.angular_velocity_twist_msg)
 
@@ -218,6 +221,7 @@ class GyroPublisher(SerialNode):
         self.angular_position_raw_msg.data = self.angular_position
         self.angular_position_raw_publisher.publish(self.angular_position_raw_msg)
 
+        self.angular_position_pose_msg.header.stamp = ros_time_msg
         self.angular_position_pose_msg.pose.pose.orientation = self.transforms3d_quat_to_geometry_quat(
             euler2quat(0, 0, math.radians(self.angular_position)))
         self.angular_position_pose_publisher.publish(self.angular_position_pose_msg)

@@ -28,7 +28,7 @@ setup(
         'console_scripts': [
             'bin_detector = cv.bin_detector:main',
             'lane_marker_detector = cv.lane_marker_detector:main',
-            'buoy_detector_contour_matching = cv.buoy_detector_contour_matching:main',
+            'buoy_detector = cv.buoy_detector:main',
             'depthai_camera_connect = cv.depthai_camera_connect:main',
             'depthai_publish_save_streams = cv.depthai_publish_save_streams:main',
             'depthai_spatial_detection = cv.depthai_spatial_detection:main',
@@ -36,7 +36,6 @@ setup(
             'path_marker_detector = cv.path_marker_detector:main',
             'pink_bins_detector = cv.pink_bins_detector:main',
             'torpedo_target_detector = cv.torpedo_target_detector:main',
-            'usb_camera_connect_all = cv.usb_camera_connect_all:main',
             'usb_camera = cv.usb_camera:main',
         ],
     },

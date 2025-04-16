@@ -49,4 +49,24 @@ async def tune_static_power(self: Task) -> Task[None, None, None]:
         delta = curr_depth - TARGET_DEPTH
         move_to_depth = TARGET_DEPTH - DELTA_SCALE_FACTOR * delta
 
+@task
+async def buoyancy_task(self: Task, submerge_depth: float) -> Task[None, None, None]:
+    """Move robot forward and backward 1 meter while submerged."""
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(0, 0, submerge_depth, 0, 0, 0),
+        keep_level=False,
+        parent=self,
+    )
+    logger.info(f'Submerged {submerge_depth} meters')
 
+    x_pose = 1
+
+    while True:
+        await move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(x_pose, 0, 0, 0, 0, 0),
+            keep_level=False,
+            parent=self,
+        )
+        imu_euler_angles = State().imu_euler_angles
+        logger.info(f'Roll: {math.degrees(imu_euler_angles.x):.2f}, Pitch: {math.degrees(imu_euler_angles.y):.2f}')
+        x_pose *= -1

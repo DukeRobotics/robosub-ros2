@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import rclpy
+import resource_retriever as rr
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
 from rclpy.node import Node
@@ -10,16 +11,16 @@ from cv.config import Buoy, MonoCam
 from cv.utils import calculate_relative_pose, compute_yaw
 
 
-class BuoyDetectorContourMatching(Node):
+class BuoyDetector(Node):
     """Match contour with buoy."""
     def __init__(self) -> None:
-        super().__init__('buoy_detector_contour_matching')
+        super().__init__('buoy_detector')
 
         # Load the reference image in grayscale (assumes the image is already binary: white and black)
-        self.reference_image = cv2.imread(
-            '/home/ubuntu/robosub-ros2/onboard/build/cv/assets/polyform-a0-buoy-contour.png',
-            cv2.IMREAD_GRAYSCALE,
-        )
+        reference_image_path = 'package://cv/assets/polyform-a0-buoy-contour.png'
+        self.reference_image = cv2.imread(rr.get_filename(reference_image_path, use_protocol=False),
+                                          cv2.IMREAD_GRAYSCALE)
+
 
         # Compute the contours directly on the binary image
         self.ref_contours, _ = cv2.findContours(self.reference_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -175,14 +176,14 @@ class BuoyDetectorContourMatching(Node):
 def main(args: None = None) -> None:
     """Run the node."""
     rclpy.init(args=args)
-    buoy_detector_contour_matching = BuoyDetectorContourMatching()
+    buoy_detector = BuoyDetector()
 
     try:
-        rclpy.spin(buoy_detector_contour_matching)
+        rclpy.spin(buoy_detector)
     except KeyboardInterrupt:
         pass
     finally:
-        buoy_detector_contour_matching.destroy_node()
+        buoy_detector.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
 
