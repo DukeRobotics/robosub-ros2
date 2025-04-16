@@ -14,6 +14,7 @@ ekf_localization_node:
                   false, false, false, # angular velocity
                   false, false, false] # linear acceleration
     odom0_nodelay: true
+    odom0_differential: true
 
     imu0: vectornav/imu
     imu0_config: [false, false, false,
@@ -30,9 +31,10 @@ ekf_localization_node:
                   false, false, false,
                   false, false, false]
     pose0_nodelay: true
+    pose0_differential: true
 
     smooth_lagged_data: true
-    history_length: 0.1
+    history_length: 0.5
 
     initial_state: [0.0, 0.0, 0.0,
                     0.0, 0.0, 0.0,

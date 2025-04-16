@@ -128,11 +128,6 @@ class DVLRawPublisher(SerialNode):
         """
         fields = self._extract_floats(line, 0, 3)
 
-        # Filter out error values
-        error_threshold = 32000
-        if abs(fields[0]) > error_threshold or abs(fields[1]) > error_threshold or abs(fields[2]) > error_threshold:
-            return
-
         self._current_msg.bs_transverse = fields[0]
         self._current_msg.bs_longitudinal = fields[1]
         self._current_msg.bs_normal = fields[2]
@@ -164,6 +159,9 @@ class DVLRawPublisher(SerialNode):
         self._current_msg.bd_upwards = fields[2]
         self._current_msg.bd_range = fields[3]
         self._current_msg.bd_time = fields[4]
+
+        self._current_msg.header.stamp = self.get_clock().now().to_msg()
+        self._current_msg.header.frame_id = 'dvl'
 
         self._pub.publish(self._current_msg)
         self._current_msg = DVLRaw()
