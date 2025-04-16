@@ -5,7 +5,7 @@ from typing import ClassVar
 import rclpy
 from custom_msgs.msg import ModemDiagnosticReport
 from custom_msgs.srv import SendModemMessage, SetModemSettings
-from std_msgs.msg import String
+from std_msgs.msg import Bool, String
 
 from offboard_comms.serial_node import SerialNode, SerialReadType
 
@@ -13,11 +13,11 @@ from offboard_comms.serial_node import SerialNode, SerialReadType
 class ModemPublisher(SerialNode):
     """Serial publisher to publish and send data from WaterLinked M16 modems."""
 
-    SERIAL_DEVICE_NAME = 'wlmodem-m16'
+    SERIAL_DEVICE_NAME = 'IVC Modem'
     CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
 
     BAUDRATE = 9600
-    NODE_NAME = 'wlmodem'
+    NODE_NAME = 'modem'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
     LOOP_RATE = 20  # Hz
 
@@ -55,18 +55,20 @@ class ModemPublisher(SerialNode):
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
                          SerialReadType.BYTES_ALL, self.CONNECTION_RETRY_PERIOD, loop_rate=self.LOOP_RATE)
         self.buffer = bytearray()
-        self.modem_ready = True
+        self.ready = True
 
+        self.modem_status_publisher = self.create_publisher(Bool, '/sensors/modem/status', 1)
         self.message_publisher = self.create_publisher(String, '/sensors/modem/messages', 1)
         self.diagnostic_reports_publisher = self.create_publisher(ModemDiagnosticReport,
                                                                  '/sensors/modem/diagnostic_reports', 1)
         self.change_setting_srv = self.create_service(SetModemSettings, '/sensors/modem/settings', self.change_setting)
         self.send_message_srv = self.create_service(SendModemMessage, '/sensors/modem/send_message', self.send_message)
 
-        # Create a timer that checks if a second byte needs to be sent
+        self.publish_modem_status_timer = self.create_timer(10.0, self.publish_modem_status)
 
-        # Define a custom ROS service type for changing the setting
-        # Create a ROS service that calls the change_setting function
+        self.status = Bool()
+        self.message = String()
+        self.report = ModemDiagnosticReport()
 
     def get_ftdi_string(self) -> str:
         """
@@ -85,6 +87,11 @@ class ModemPublisher(SerialNode):
             data (str): Data to send.
         """
         return self.writebytes(data.encode('ascii'))
+
+    def publish_modem_status(self) -> None:
+        """Publish the modem status."""
+        self.status.data = self.ready
+        self.modem_status_publisher.publish(self.status)
 
     def process_bytes(self, data: bytes) -> None:
         """
@@ -137,9 +144,8 @@ class ModemPublisher(SerialNode):
             message (str): Message to publish.
         """
         # Publish this message to a ROS topic
-        msg_to_send = String()
-        msg_to_send.data = message
-        self.message_publisher.publish(msg_to_send)
+        self.message.data = message
+        self.message_publisher.publish(self.message)
 
     def process_diagnostic_report(self, packet: bytes) -> None:
         r"""
@@ -157,28 +163,27 @@ class ModemPublisher(SerialNode):
 
         message_bytes = decoded[0].to_bytes(self.MESSAGE_SIZE, 'little')
 
-        report = ModemDiagnosticReport()
-        report.header.stamp = self.get_clock().now().to_msg()
-        report.message = message_bytes.decode('ascii')
-        report.bit_error_rate = decoded[1]
-        report.signal_power = decoded[2]
-        report.noise_power = decoded[3]
-        report.packet_valid = decoded[4]
-        report.packet_invalid = decoded[5]
-        report.git_revision = decoded[6].to_bytes(1, 'little')
-        report.time_since_boot = (decoded[9] << 16) | (decoded[8] << 8) | decoded[7]
-        report.chip_id = decoded[10]
-        report.hardware_revision = (decoded[11] & 0b00000011).to_bytes(1, 'little')
-        report.channel = (decoded[11] & 0b00111100) >> 2
-        report.transport_block_valid = bool((decoded[11] & 0b01000000) >> 6)
-        report.transmission_complete = bool((decoded[11] & 0b10000000) >> 7)
-        report.diagnostic_mode = bool(decoded[12] & 0b00000001)
-        report.power_level = (decoded[12] & 0b00001100) >> 2
+        self.report.header.stamp = self.get_clock().now().to_msg()
+        self.report.message = message_bytes.decode('ascii')
+        self.report.bit_error_rate = decoded[1]
+        self.report.signal_power = decoded[2]
+        self.report.noise_power = decoded[3]
+        self.report.packet_valid = decoded[4]
+        self.report.packet_invalid = decoded[5]
+        self.report.git_revision = decoded[6].to_bytes(1, 'little')
+        self.report.time_since_boot = (decoded[9] << 16) | (decoded[8] << 8) | decoded[7]
+        self.report.chip_id = decoded[10]
+        self.report.hardware_revision = (decoded[11] & 0b00000011).to_bytes(1, 'little')
+        self.report.channel = (decoded[11] & 0b00111100) >> 2
+        self.report.transport_block_valid = bool((decoded[11] & 0b01000000) >> 6)
+        self.report.transmission_complete = bool((decoded[11] & 0b10000000) >> 7)
+        self.report.diagnostic_mode = bool(decoded[12] & 0b00000001)
+        self.report.power_level = (decoded[12] & 0b00001100) >> 2
 
-        self.diagnostic_reports_publisher.publish(report)
+        self.diagnostic_reports_publisher.publish(self.report)
 
         if message_bytes != b'\x00' * self.MESSAGE_SIZE:
-            self.publish_message(report.message)
+            self.publish_message(self.report.message)
 
 
     def send_message(self, request: SendModemMessage.Request, response: SendModemMessage.Response) -> \
@@ -193,10 +198,29 @@ class ModemPublisher(SerialNode):
         Returns:
             ModemWrite.Response: The response object with the result of the operation.
         """
+        if len(request.message) != self.MESSAGE_SIZE:
+            error_msg = (f'Message "{request.message}" must be {self.MESSAGE_SIZE} bytes long.')
+            self.get_logger().error(error_msg)
+            response.success = False
+            response.message = error_msg
+            return response
+
+        if not self.ready:
+            error_msg = 'Cannot send message. Modem not ready for commands.'
+            self.get_logger().error(error_msg)
+            response.success = False
+            response.message = error_msg
+            return response
+
+        self.ready = False
         if self.send_data(request.message):
+            self.ready_timer = self.create_timer(2.0, self.set_ready)
+
             response.success = True
             response.message = 'Sent message successfully'
         else:
+            self.ready = True
+
             response.success = False
             response.message = 'Failed to send message.'
 
@@ -214,8 +238,8 @@ class ModemPublisher(SerialNode):
         Returns:
             SetModemSettings.Response: The response object with the result of the operation.
         """
-        if not self.modem_ready:
-            error_msg = 'Modem not ready for commands.'
+        if not self.ready:
+            error_msg = 'Cannot change setting. Modem not ready for commands.'
             self.get_logger().error(error_msg)
             response.success = False
             response.message = error_msg
@@ -268,14 +292,16 @@ class ModemPublisher(SerialNode):
                 response.message = error_msg
                 return response
 
-        self.modem_ready = False
+        self.ready = False
         if self.send_data(self.setting_char):
             self.delayed_write_timer = self.create_timer(1.0, self.delayed_write)
 
             response.success = True
-            response.message = f'Set setting "{self.SETTING_NAMES[self.setting]}" successfully.'
+            response.message = f'Set setting {self.SETTING_NAMES[self.setting]} successfully.'
         else:
-            error_msg = f'Failed to send first character for setting "{self.SETTING_NAMES[self.setting]}".'
+            self.ready = True
+
+            error_msg = f'Failed to send first character for setting {self.SETTING_NAMES[self.setting]}.'
             self.get_logger().error(error_msg)
 
             response.success = False
@@ -285,17 +311,25 @@ class ModemPublisher(SerialNode):
 
     def delayed_write(self) -> None:
         """Send the setting character and additional character (if applicable) after a delay."""
+        self.delayed_write_timer.cancel()
+
         if self.send_data(self.setting_char):
             if self.setting_value is not None and not self.send_data(self.setting_value):
                 error_msg = (f'Failed to send value "{self.setting_value}" for setting '
-                             f'"{self.SETTING_NAMES[self.setting]}".')
+                             f'{self.SETTING_NAMES[self.setting]}')
                 self.get_logger().error(error_msg)
         else:
-            error_msg = f'Failed to send second character for setting "{self.SETTING_NAMES[self.setting]}".'
+            error_msg = f'Failed to send second character for setting {self.SETTING_NAMES[self.setting]}.'
             self.get_logger().error(error_msg)
+            self.ready = False
+            return
 
-        self.modem_ready = True
-        self.delayed_write_timer.cancel()
+        self.ready_timer = self.create_timer(1.0, self.set_ready)
+
+    def set_ready(self) -> None:
+        """Set the modem to ready state."""
+        self.ready_timer.cancel()
+        self.ready = True
 
 
 def main(args: list[str] | None = None) -> None:
