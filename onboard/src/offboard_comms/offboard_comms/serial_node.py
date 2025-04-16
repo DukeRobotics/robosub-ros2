@@ -99,7 +99,7 @@ class SerialNode(Node, ABC):
             self.get_logger().error(f'Error in connecting to {self._serial_device_name} over serial, trying again in '
                                     f'{self._connection_retry_period} seconds.')
 
-    def readline_nonblocking(self, tout: int = 1) -> str | bytes:
+    def readline_nonblocking(self, tout: int = 1) -> str:
         """
         Read line from serial port without blocking.
 
@@ -111,15 +111,11 @@ class SerialNode(Node, ABC):
         """
         start = time.time()
         buff = b''
-
         while ((time.time() - start) < tout) and (b'\r\n' not in buff):
             with suppress(serial.SerialException):
                 buff += self._serial.read(1)
 
-        if (self._return_byte):
-            return buff.decode('utf-8', errors='ignore')
-        else:
-            return buff
+        return buff.decode('utf-8', errors='ignore')
 
 
     def writebytes(self, data: bytes) -> bool:
