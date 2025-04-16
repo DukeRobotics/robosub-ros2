@@ -312,7 +312,7 @@ class ModemPublisher(SerialNode):
 
         self.status.ready = False
         if self.send_data(self.setting_char):
-            self.delayed_write_timer = self.create_timer(1.0, self.delayed_write)
+            self.send_second_setting_char_timer = self.create_timer(1.0, self.send_second_setting_char)
 
             response.success = True
             response.message = f'Set setting {self.SETTING_NAMES[self.setting]} successfully.'
@@ -327,9 +327,9 @@ class ModemPublisher(SerialNode):
 
         return response
 
-    def delayed_write(self) -> None:
-        """Send the setting character and additional character (if applicable) after a delay."""
-        self.delayed_write_timer.cancel()
+    def send_second_setting_char(self) -> None:
+        """Send the second setting character and additional character if applicable."""
+        self.send_second_setting_char_timer.cancel()
 
         if self.send_data(self.setting_char):
             match self.setting:
