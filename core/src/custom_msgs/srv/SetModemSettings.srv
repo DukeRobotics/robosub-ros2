@@ -4,7 +4,7 @@ uint8 CHANGE_CHANNEL = 2
 uint8 REQUEST_REPORT = 3
 uint8 SET_POWER_LEVEL = 4
 uint8 setting
-uint8 char_to_send
+uint8 value
 ---
 bool success
 string message

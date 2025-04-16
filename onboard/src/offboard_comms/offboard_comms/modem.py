@@ -1,16 +1,13 @@
 import os
-import time
 import struct
-import time
 from typing import ClassVar
 
 import rclpy
-from std_msgs.msg import ByteMultiArray
-from custom_msgs.srv import SetModemSettings, SendModemMessage
-
+from custom_msgs.msg import ModemDiagnosticReport
+from custom_msgs.srv import SendModemMessage, SetModemSettings
+from std_msgs.msg import String
 
 from offboard_comms.serial_node import SerialNode, SerialReadType
-
 
 
 class ModemPublisher(SerialNode):
@@ -22,19 +19,25 @@ class ModemPublisher(SerialNode):
     BAUDRATE = 9600
     NODE_NAME = 'wlmodem'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
-    LOOP_RATE = 20  # Hz, loop every 1.6 seconds
-
-    DIAGNOSTIC_PACKET_SIZE = 18
+    LOOP_RATE = 20  # Hz
 
     SETTINGS: ClassVar[list[int]] = [
         SetModemSettings.Request.TRANSPARENT_MODE,
         SetModemSettings.Request.DIAGNOSTIC_MODE,
         SetModemSettings.Request.CHANGE_CHANNEL,
         SetModemSettings.Request.REQUEST_REPORT,
-        SetModemSettings.Request.SET_POWER_LEVEL
+        SetModemSettings.Request.SET_POWER_LEVEL,
     ]
     MIN_SETTING = min(SETTINGS)
     MAX_SETTING = max(SETTINGS)
+
+    SETTING_NAMES: ClassVar[dict[int, str]] = {
+        SetModemSettings.Request.TRANSPARENT_MODE: 'TRANSPARENT_MODE',
+        SetModemSettings.Request.DIAGNOSTIC_MODE: 'DIAGNOSTIC_MODE',
+        SetModemSettings.Request.CHANGE_CHANNEL: 'CHANGE_CHANNEL',
+        SetModemSettings.Request.REQUEST_REPORT: 'REQUEST_REPORT',
+        SetModemSettings.Request.SET_POWER_LEVEL: 'SET_POWER_LEVEL',
+    }
 
     MIN_CHANNEL = 1
     MAX_CHANNEL = 12
@@ -42,15 +45,23 @@ class ModemPublisher(SerialNode):
     MIN_POWER_LEVEL = 1
     MAX_POWER_LEVEL = 4
 
-    modem_ready: ClassVar[bool] = True
-    change_setting_timer: ClassVar[float] = time.time()
+    MESSAGE_SIZE = 2  # bytes
+
+    DIAGNOSTIC_REPORT_START_BYTE = 0x24 # '$'
+    DIAGNOSTIC_REPORT_END_BYTE = 0x0A # '\n'
+    DIAGNOSTIC_REPORT_SIZE = 18  # bytes
 
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
                          SerialReadType.BYTES_ALL, self.CONNECTION_RETRY_PERIOD, loop_rate=self.LOOP_RATE)
-        self._publisher = self.create_publisher(ByteMultiArray, '/offboard/ivc/messages', 1)
-        self.change_setting_srv = self.create_service(SetModemSettings, '/offboard/ivc/settings', self.change_setting)
-        self.send_message_srv = self.create_service(SendModemMessage, 'offboard/ivc/send_message', self.send_message)
+        self.buffer = bytearray()
+        self.modem_ready = True
+
+        self.message_publisher = self.create_publisher(String, '/sensors/modem/messages', 1)
+        self.diagnostic_reports_publisher = self.create_publisher(ModemDiagnosticReport,
+                                                                 '/sensors/modem/diagnostic_reports', 1)
+        self.change_setting_srv = self.create_service(SetModemSettings, '/sensors/modem/settings', self.change_setting)
+        self.send_message_srv = self.create_service(SendModemMessage, '/sensors/modem/send_message', self.send_message)
 
         # Create a timer that checks if a second byte needs to be sent
 
@@ -82,31 +93,55 @@ class ModemPublisher(SerialNode):
         Args:
             data (bytes): Data to process.
         """
-        print(f"Received {len(data)} bytes: {data}")
-        if len(data) != self.DIAGNOSTIC_PACKET_SIZE or data[0] != ord('$') or data[-1] != ord('\n'):
-            self.process_data(data)
-        else:
-            self.process_diagnostic_report(data)
+        self.buffer.extend(data)
+        self.process_buffer()
 
-    def process_data(self, packet: bytes) -> bytes:
+    def process_buffer(self) -> None:
+        """Process the buffer to extract messages and diagnostic reports."""
+        index = 0
+        while index < len(self.buffer):
+            # Check if a diagnostic report begins at the current index
+            if self.buffer[index] == self.DIAGNOSTIC_REPORT_START_BYTE:
+                if len(self.buffer) - index < self.DIAGNOSTIC_REPORT_SIZE:
+                    # Not enough data for a full diagnostic report
+                    break
+
+                report_end_index = index + self.DIAGNOSTIC_REPORT_SIZE - 1
+                if self.buffer[report_end_index] == self.DIAGNOSTIC_REPORT_END_BYTE:
+                    # Extract the diagnostic report
+                    packet = self.buffer[index:report_end_index]
+                    self.process_diagnostic_report(bytes(packet))
+                else:
+                    self.get_logger().warn(f'Invalid diagnostic report end byte at index {report_end_index}.')
+                    # Invalid end byte, discard the data
+
+                index = report_end_index + 1
+            else:
+                # Not a diagnostic report, process as regular data
+                # Must be two bytes for a message
+                if len(self.buffer) - index < self.MESSAGE_SIZE:
+                    break
+
+                packet = self.buffer[index:index + self.MESSAGE_SIZE]
+                self.publish_message(bytes(packet).decode('ascii'))
+                index += 2
+
+        self.buffer = self.buffer[index:]
+
+
+    def publish_message(self, message: str) -> None:
         """
-        Process the message report received from the WaterLinked Modem-M16.
-
-        This will be further implemented later on when a data transfer protocol is established.
+        Publish the message received from the other modem.
 
         Args:
-            packet (bytes): raw data packet.
-
-        Returns:
-            byte: the raw data.
+            message (str): Message to publish.
         """
         # Publish this message to a ROS topic
-        msg_to_send = ByteMultiArray()
-        msg_to_send.data = packet
-        self._publisher.publish(msg_to_send)
-        return packet
+        msg_to_send = String()
+        msg_to_send.data = message
+        self.message_publisher.publish(msg_to_send)
 
-    def process_diagnostic_report(self, packet: bytes) -> dict[str, any]:
+    def process_diagnostic_report(self, packet: bytes) -> None:
         r"""
         Process the diagnostic report received from the WaterLinked Modem-M16.
 
@@ -120,23 +155,31 @@ class ModemPublisher(SerialNode):
         data = packet[1:17]
         decoded = struct.unpack('<HBBBHBBBBBHBB', data)
 
-        return {
-            'TR_BLOCK': decoded[0],
-            'BER': decoded[1],
-            'SIGNAL_POWER': decoded[2],
-            'NOISE_POWER': decoded[3],
-            'PACKET_VALID': decoded[4],
-            'PACKET_INVALID': decoded[5],
-            'GIT_REV': decoded[6].to_bytes(1, 'little'),
-            'TIME': (decoded[9] << 16) | (decoded[8] << 8) | decoded[7],
-            'CHIP_ID': decoded[10],
-            'HW_REV': decoded[11] & 0b00000011,
-            'CHANNEL': (decoded[11] & 0b00111100) >> 2,
-            'TB_VALID': (decoded[11] & 0b01000000) >> 6,
-            'TX_COMPLETE': (decoded[11] & 0b10000000) >> 7,
-            'DIAGNOSTIC_MODE': decoded[12] & 0b00000001,
-            'LEVEL': (decoded[12] & 0b00001100) >> 2,
-        }
+        message_bytes = decoded[0].to_bytes(self.MESSAGE_SIZE, 'little')
+
+        report = ModemDiagnosticReport()
+        report.header.stamp = self.get_clock().now().to_msg()
+        report.message = message_bytes.decode('ascii')
+        report.bit_error_rate = decoded[1]
+        report.signal_power = decoded[2]
+        report.noise_power = decoded[3]
+        report.packet_valid = decoded[4]
+        report.packet_invalid = decoded[5]
+        report.git_revision = decoded[6].to_bytes(1, 'little')
+        report.time_since_boot = (decoded[9] << 16) | (decoded[8] << 8) | decoded[7]
+        report.chip_id = decoded[10]
+        report.hardware_revision = (decoded[11] & 0b00000011).to_bytes(1, 'little')
+        report.channel = (decoded[11] & 0b00111100) >> 2
+        report.transport_block_valid = bool((decoded[11] & 0b01000000) >> 6)
+        report.transmission_complete = bool((decoded[11] & 0b10000000) >> 7)
+        report.diagnostic_mode = bool(decoded[12] & 0b00000001)
+        report.power_level = (decoded[12] & 0b00001100) >> 2
+
+        self.diagnostic_reports_publisher.publish(report)
+
+        if message_bytes != b'\x00' * self.MESSAGE_SIZE:
+            self.publish_message(report.message)
+
 
     def send_message(self, request: SendModemMessage.Request, response: SendModemMessage.Response) -> \
             SendModemMessage.Response:
@@ -165,9 +208,11 @@ class ModemPublisher(SerialNode):
         Change the channel the modem is on if the modem is ready for commands.
 
         Args:
-            channel (int): New channel value for the modem to operate on.
-            setting (int): Setting to change. 1 - Comm Channel, 2 - Op Mode, 3 - Report Request, 4 - Power Level
-            char_to_send (str): Value to change setting to. i.e. channel #, power level
+            request (SetModemSettings.Request): Request object containing the setting to change.
+            response (SetModemSettings.Response): Response object to be filled with the result.
+
+        Returns:
+            SetModemSettings.Response: The response object with the result of the operation.
         """
         if not self.modem_ready:
             error_msg = 'Modem not ready for commands.'
@@ -176,72 +221,81 @@ class ModemPublisher(SerialNode):
             response.message = error_msg
             return response
 
-        setting = request.setting
-        char_to_send = request.char_to_send
+        self.setting = request.setting
+        raw_value = request.value
 
-        setting_char = ''
-        true_char_to_send = ''
+        self.setting_char = ''
+        self.setting_value = None
 
-        match request.setting:
+        match self.setting:
             case SetModemSettings.Request.TRANSPARENT_MODE:
-                setting_char = 't'
+                self.setting_char = 't'
             case SetModemSettings.Request.DIAGNOSTIC_MODE:
-              setting_char = 'd'
+                self.setting_char = 'd'
 
             case SetModemSettings.Request.CHANGE_CHANNEL:
-                setting_char = 'c'
-                channel = char_to_send
-                if not (self.MIN_CHANNEL <= channel <= self.MAX_CHANNEL):
-                    error_msg = f'Invalid channel {channel}. Must be in range [{self.MIN_CHANNEL}, {self.MAX_CHANNEL}]'
+                self.setting_char = 'c'
+                if not (self.MIN_CHANNEL <= raw_value <= self.MAX_CHANNEL):
+                    error_msg = (f'Invalid channel {raw_value}. Must be in range [{self.MIN_CHANNEL}, '
+                                 f'{self.MAX_CHANNEL}]')
                     self.get_logger().error(error_msg)
                     response.success = False
                     response.message = error_msg
                     return response
 
-                true_char_to_send = format(channel, 'x')
+                self.setting_value = format(raw_value, 'x')
 
             case SetModemSettings.Request.REQUEST_REPORT:
-                setting_char = 'r'
+                self.setting_char = 'r'
 
+            # NOTE: The power level setting is available only on modems with firmware version 0x56 or recent.
+            # If the modem has an older firmware version, this setting will not change anything.
             case SetModemSettings.Request.SET_POWER_LEVEL:
-                setting_char = 'l'
-                power_level = char_to_send
-                if not (self.MIN_POWER_LEVEL <= power_level <= self.MAX_POWER_LEVEL):
-                    error_msg = (f'Invalid power level {power_level}. Must be in range [{self.MIN_POWER_LEVEL}, '
+                self.setting_char = 'l'
+                if not (self.MIN_POWER_LEVEL <= raw_value <= self.MAX_POWER_LEVEL):
+                    error_msg = (f'Invalid power level {raw_value}. Must be in range [{self.MIN_POWER_LEVEL}, '
                                  f'{self.MAX_POWER_LEVEL}]')
                     self.get_logger().error(error_msg)
                     response.success = False
                     response.message = error_msg
                     return response
 
-                true_char_to_send = str(char_to_send)
+                self.setting_value = format(raw_value, 'x')
             case _:
-                error_msg = f'Invalid setting {setting}. Must be in range [{self.MIN_SETTING}, {self.MAX_SETTING}]'
+                error_msg = f'Invalid setting {self.setting}. Must be in range [{self.MIN_SETTING}, {self.MAX_SETTING}]'
                 self.get_logger().error(error_msg)
                 response.success = False
                 response.message = error_msg
                 return response
 
-        self.change_setting_timer = time.time()
-        print(f'Sending {setting_char}')
-        self.send_data(setting_char)
-        self.setting_char = setting_char
-        self.true_char_to_send = true_char_to_send
         self.modem_ready = False
-        self.setting = setting
-        self.send_timer = self.create_timer(1.0, self.delayed_write)
-        response.success = True
+        if self.send_data(self.setting_char):
+            self.delayed_write_timer = self.create_timer(1.0, self.delayed_write)
+
+            response.success = True
+            response.message = f'Set setting "{self.SETTING_NAMES[self.setting]}" successfully.'
+        else:
+            error_msg = f'Failed to send first character for setting "{self.SETTING_NAMES[self.setting]}".'
+            self.get_logger().error(error_msg)
+
+            response.success = False
+            response.message = error_msg
+
         return response
 
     def delayed_write(self) -> None:
-        """Send the second byte after a delay."""
-        if not self.modem_ready:
-            print(f'Sending {self.setting_char} {self.true_char_to_send} {time.time() - self.change_setting_timer}')
-            self.send_data(self.setting_char)
-            if self.setting in {1, 4}:
-                self.send_data(self.true_char_to_send)
-            self.modem_ready = True
-            self.send_timer.cancel()
+        """Send the setting character and additional character (if applicable) after a delay."""
+        if self.send_data(self.setting_char):
+            if self.setting_value is not None and not self.send_data(self.setting_value):
+                error_msg = (f'Failed to send value "{self.setting_value}" for setting '
+                             f'"{self.SETTING_NAMES[self.setting]}".')
+                self.get_logger().error(error_msg)
+        else:
+            error_msg = f'Failed to send second character for setting "{self.SETTING_NAMES[self.setting]}".'
+            self.get_logger().error(error_msg)
+
+        self.modem_ready = True
+        self.delayed_write_timer.cancel()
 
 
 def main(args: list[str] | None = None) -> None:
