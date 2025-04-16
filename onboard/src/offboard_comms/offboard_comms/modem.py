@@ -4,7 +4,7 @@ from typing import ClassVar
 
 import rclpy
 from custom_msgs.msg import ModemDiagnosticReport, ModemStatus
-from custom_msgs.srv import SendModemMessage, SendModemCommand
+from custom_msgs.srv import SendModemCommand, SendModemMessage
 from std_msgs.msg import String
 
 from offboard_comms.serial_node import SerialNode, SerialReadType
@@ -91,8 +91,8 @@ class ModemPublisher(SerialNode):
         return self.writebytes(data.encode('ascii'))
 
     def publish_modem_status(self) -> None:
-        """Publish the modem status."""
-        if self.received_report:
+        """Publish the modem status if at least one report has been received and the serial port is open."""
+        if self.received_report and self._serial and self._serial.is_open:
             self.modem_status_publisher.publish(self.status)
 
     def process_bytes(self, data: bytes) -> None:
@@ -225,6 +225,13 @@ class ModemPublisher(SerialNode):
         if any(char in request.message for char in self.FORBIDDEN_CHARS_IN_MESSAGE):
             error_msg = (f'Message "{request.message}" contains forbidden characters: '
                          f'{self.FORBIDDEN_CHARS_IN_MESSAGE}')
+            self.get_logger().error(error_msg)
+            response.success = False
+            response.message = error_msg
+            return response
+
+        if not request.message.isascii():
+            error_msg = f'Message "{request.message}" contains non-ASCII characters.'
             self.get_logger().error(error_msg)
             response.success = False
             response.message = error_msg
