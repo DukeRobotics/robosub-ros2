@@ -1,6 +1,6 @@
 import os
 import struct
-from typing import ClassVar
+from typing import ClassVar, TypeVar
 
 import rclpy
 from custom_msgs.msg import ModemDiagnosticReport, ModemStatus
@@ -28,12 +28,24 @@ class ModemPublisher(SerialNode):
         SendModemCommand.Request.REQUEST_REPORT: 'REQUEST_REPORT',
         SendModemCommand.Request.SET_POWER_LEVEL: 'SET_POWER_LEVEL',
     }
+    COMMAND_CHARS: ClassVar[dict[int, str]] = {
+        SendModemCommand.Request.TRANSPARENT_MODE: 't',
+        SendModemCommand.Request.DIAGNOSTIC_MODE: 'd',
+        SendModemCommand.Request.CHANGE_CHANNEL: 'c',
+        SendModemCommand.Request.REQUEST_REPORT: 'r',
+        SendModemCommand.Request.SET_POWER_LEVEL: 'l',
+    }
+    COMMANDS_WITH_VALUE: ClassVar[list[int]] = [
+        SendModemCommand.Request.CHANGE_CHANNEL,
+        SendModemCommand.Request.SET_POWER_LEVEL,
+    ]
     MIN_COMMAND = min(COMMAND_NAMES.keys())
     MAX_COMMAND = max(COMMAND_NAMES.keys())
 
     MIN_CHANNEL = 1
     MAX_CHANNEL = 12
 
+    GIT_REVISIONS_WITH_POWER_LEVEL_COMMAND: ClassVar[bytearray] = bytearray([0x56])
     MIN_POWER_LEVEL = 1
     MAX_POWER_LEVEL = 4
 
@@ -65,6 +77,8 @@ class ModemPublisher(SerialNode):
         self.send_command_srv = self.create_service(SendModemCommand, '/sensors/modem/send_command', self.send_command)
         self.send_message_srv = self.create_service(SendModemMessage, '/sensors/modem/send_message', self.send_message)
 
+        self.request_initial_report_timer = self.create_timer(1.0, self.request_initial_report)
+
         self.publish_modem_status_timer = self.create_timer(1.0 / 10.0, self.publish_modem_status)
 
     def get_ftdi_string(self) -> str:
@@ -76,10 +90,13 @@ class ModemPublisher(SerialNode):
         """
         return self._config['modem']['ftdi']
 
-    def after_connect(self) -> None:
+    def request_initial_report(self) -> None:
         """Request a report from the modem to obtain its initial status."""
-        self.send_command(SendModemCommand.Request(command=SendModemCommand.Request.REQUEST_REPORT),
-                          SendModemCommand.Response())
+        if self.received_report:
+            self.request_initial_report_timer.cancel()
+        elif not self.status.busy and self._serial and self._serial.is_open:
+            self.send_command(SendModemCommand.Request(command=SendModemCommand.Request.REQUEST_REPORT),
+                              SendModemCommand.Response())
 
     def send_data(self, data: str) -> bool:
         """
@@ -87,6 +104,9 @@ class ModemPublisher(SerialNode):
 
         Args:
             data (str): Data to send.
+
+        Returns:
+            bool: True if the data was sent successfully, False otherwise.
         """
         return self.writebytes(data.encode('ascii'))
 
@@ -118,16 +138,16 @@ class ModemPublisher(SerialNode):
                 report_end_index = index + self.DIAGNOSTIC_REPORT_SIZE - 1
                 if self.buffer[report_end_index] == self.DIAGNOSTIC_REPORT_END_BYTE:
                     # Extract the diagnostic report
-                    packet = self.buffer[index:report_end_index]
+                    packet = self.buffer[index:report_end_index + 1]
                     self.process_diagnostic_report(bytes(packet))
                 else:
-                    self.get_logger().warn(f'Invalid diagnostic report end byte at index {report_end_index}.')
+                    self.get_logger().error(f'Invalid diagnostic report end byte at index {report_end_index}.')
                     # Invalid end byte, discard the data
 
                 index = report_end_index + 1
             else:
                 # Not a diagnostic report, process as regular data
-                # Must be two bytes for a message
+                # Must have enough bytes in buffer for a complete message
                 if len(self.buffer) - index < self.MESSAGE_SIZE:
                     break
 
@@ -195,6 +215,23 @@ class ModemPublisher(SerialNode):
 
         self.received_report = True
 
+    T = TypeVar('T', bound=SendModemMessage.Response | SendModemCommand.Response)
+
+    def _handle_service_error(self, error_msg: str, response: T) -> T:
+        """
+        Log the error message and set the response to indicate failure.
+
+        Args:
+            error_msg (str): The error message to log.
+            response (T): The response object to modify.
+
+        Returns:
+            T: The modified response object.
+        """
+        self.get_logger().error(error_msg)
+        response.success = False
+        response.message = error_msg
+        return response
 
     def send_message(self, request: SendModemMessage.Request, response: SendModemMessage.Response) -> \
             SendModemMessage.Response:
@@ -208,50 +245,32 @@ class ModemPublisher(SerialNode):
         Returns:
             ModemWrite.Response: The response object with the result of the operation.
         """
-        if len(request.message) != self.MESSAGE_SIZE:
-            error_msg = (f'Message "{request.message}" must be {self.MESSAGE_SIZE} bytes long.')
-            self.get_logger().error(error_msg)
-            response.success = False
-            response.message = error_msg
-            return response
+        error_conditions_and_msgs = [
+            (self.status.busy, f"Cannot send message '{request.message}'. Modem is busy."),
+            (any(char in request.message for char in self.FORBIDDEN_CHARS_IN_MESSAGE),
+                f"Message '{request.message}' contains one or more forbidden characters: "
+                + str(self.FORBIDDEN_CHARS_IN_MESSAGE)),
+            (not request.message.isascii(), f"Message '{request.message}' contains one or more non-ASCII characters."),
+            (len(request.message.encode('ascii')) != self.MESSAGE_SIZE,
+                f"Message '{request.message}' is too long. It must be exactly {self.MESSAGE_SIZE} bytes."),
+        ]
 
-        if self.status.busy:
-            error_msg = 'Cannot send message. Modem is busy.'
-            self.get_logger().error(error_msg)
-            response.success = False
-            response.message = error_msg
-            return response
-
-        if any(char in request.message for char in self.FORBIDDEN_CHARS_IN_MESSAGE):
-            error_msg = (f'Message "{request.message}" contains forbidden characters: '
-                         f'{self.FORBIDDEN_CHARS_IN_MESSAGE}')
-            self.get_logger().error(error_msg)
-            response.success = False
-            response.message = error_msg
-            return response
-
-        if not request.message.isascii():
-            error_msg = f'Message "{request.message}" contains non-ASCII characters.'
-            self.get_logger().error(error_msg)
-            response.success = False
-            response.message = error_msg
-            return response
+        for error_condition, error_msg in error_conditions_and_msgs:
+            if error_condition:
+                return self._handle_service_error(error_msg, response)
 
         self.status.busy = True
         if self.send_data(request.message):
+            # Sent message successfully
             self.ready_timer = self.create_timer(2.0, self.set_ready)
 
             response.success = True
-            response.message = 'Sent message successfully'
-        else:
-            self.status.busy = False
+            response.message = f"Sent message '{request.message}' successfully"
+            return response
 
-            error_msg = f'Failed to send message "{request.message}".'
-            self.get_logger().error(error_msg)
-            response.success = False
-            response.message = error_msg
-
-        return response
+        self.status.busy = False
+        error_msg = f'Failed to send message "{request.message}".'
+        return self._handle_service_error(error_msg, response)
 
     def send_command(self, request: SendModemCommand.Request, response: SendModemCommand.Response) -> \
             SendModemCommand.Response:
@@ -265,82 +284,59 @@ class ModemPublisher(SerialNode):
         Returns:
             SendModemCommand.Response: The response object with the result of the operation.
         """
-        if self.status.busy:
-            error_msg = 'Cannot send command. Modem is busy.'
-            self.get_logger().error(error_msg)
-            response.success = False
-            response.message = error_msg
-            return response
-
-        self.command = request.command
+        command = request.command
         raw_value = request.value
+        command_name = self.COMMAND_NAMES.get(command)
 
-        self.command_char = ''
-        self.command_value = None
+        error_conditions_and_msgs = [
+            (command not in self.COMMAND_NAMES,
+             f"Invalid command '{command}'. Must be in range [{self.MIN_COMMAND}, {self.MAX_COMMAND}]."),
+            (self.status.busy, f'Cannot send command {command_name}. Modem is busy.'),
+            (command == SendModemCommand.Request.CHANGE_CHANNEL and
+                not (self.MIN_CHANNEL <= raw_value <= self.MAX_CHANNEL),
+             f"Invalid channel '{raw_value}'. Must be in range [{self.MIN_CHANNEL}, {self.MAX_CHANNEL}]."),
+            (command == SendModemCommand.Request.SET_POWER_LEVEL and not self.received_report,
+             f'Cannot send command {command_name}. No report received.'),
+            (command == SendModemCommand.Request.SET_POWER_LEVEL and
+                self.report.git_revision not in self.GIT_REVISIONS_WITH_POWER_LEVEL_COMMAND,
+             f'{command_name} command not available on this modem with firmware version '
+                f'{self.report.git_revision.hex()}.'),
+            (command == SendModemCommand.Request.SET_POWER_LEVEL and
+                not (self.MIN_POWER_LEVEL <= raw_value <= self.MAX_POWER_LEVEL),
+             f"Invalid power level '{raw_value}'. Must be in range [{self.MIN_POWER_LEVEL}, {self.MAX_POWER_LEVEL}]."),
+        ]
 
-        match self.command:
-            case SendModemCommand.Request.TRANSPARENT_MODE:
-                self.command_char = 't'
-            case SendModemCommand.Request.DIAGNOSTIC_MODE:
-                self.command_char = 'd'
-            case SendModemCommand.Request.CHANGE_CHANNEL:
-                self.command_char = 'c'
-                if not (self.MIN_CHANNEL <= raw_value <= self.MAX_CHANNEL):
-                    error_msg = (f'Invalid channel {raw_value}. Must be in range [{self.MIN_CHANNEL}, '
-                                 f'{self.MAX_CHANNEL}]')
-                    self.get_logger().error(error_msg)
-                    response.success = False
-                    response.message = error_msg
-                    return response
+        for error_condition, error_msg in error_conditions_and_msgs:
+            if error_condition:
+                return self._handle_service_error(error_msg, response)
 
-                self.command_value = format(raw_value, 'x')
-            case SendModemCommand.Request.REQUEST_REPORT:
-                self.command_char = 'r'
-
-            # NOTE: The power level command is available only on modems with firmware version 0x56 or recent.
-            # If the modem has an older firmware version, this command will have no effect.
-            case SendModemCommand.Request.SET_POWER_LEVEL:
-                self.command_char = 'l'
-                if not (self.MIN_POWER_LEVEL <= raw_value <= self.MAX_POWER_LEVEL):
-                    error_msg = (f'Invalid power level {raw_value}. Must be in range [{self.MIN_POWER_LEVEL}, '
-                                 f'{self.MAX_POWER_LEVEL}]')
-                    self.get_logger().error(error_msg)
-                    response.success = False
-                    response.message = error_msg
-                    return response
-
-                self.command_value = format(raw_value, 'x')
-            case _:
-                error_msg = f'Invalid command {self.command}. Must be in range [{self.MIN_COMMAND}, {self.MAX_COMMAND}]'
-                self.get_logger().error(error_msg)
-                response.success = False
-                response.message = error_msg
-                return response
-
-        self.command_name = self.COMMAND_NAMES[self.command]
+        command_char = self.COMMAND_CHARS[command]
+        command_value = format(raw_value, 'x') if command in self.COMMANDS_WITH_VALUE else None
 
         self.status.busy = True
-        if self.send_data(self.command_char):
-            self.finish_sending_command_timer = self.create_timer(1.0, self.finish_sending_command)
+        if self.send_data(command_char):
+            # First character sent successfully
+            self.command = request.command
+            self.command_name = command_name
+            self.command_char = command_char
+            self.command_value = command_value
 
+            self.finish_sending_command_timer = self.create_timer(1.0, self.finish_sending_command)
             response.success = True
             response.message = f'Sent command {self.command_name} successfully.'
-        else:
-            self.status.busy = False
+            return response
 
-            error_msg = f'Failed to send first character for command {self.command_name}.'
-            self.get_logger().error(error_msg)
+        self.status.busy = False
 
-            response.success = False
-            response.message = error_msg
-
-        return response
+        error_msg = f'Failed to send first character for command {self.command_name}.'
+        return self._handle_service_error(error_msg, response)
 
     def finish_sending_command(self) -> None:
         """Send the second command character and value if applicable."""
         self.finish_sending_command_timer.cancel()
 
         if self.send_data(self.command_char):
+            # Second character sent successfully
             match self.command:
                 case SendModemCommand.Request.TRANSPARENT_MODE:
                     self.status.mode = ModemStatus.TRANSPARENT_MODE
@@ -349,14 +345,14 @@ class ModemPublisher(SerialNode):
 
             if self.command_value is not None:
                 if self.send_data(self.command_value):
+                    # Command value sent successfully
                     match self.command:
                         case SendModemCommand.Request.CHANGE_CHANNEL:
                             self.status.channel = int(self.command_value, 16)
                         case SendModemCommand.Request.SET_POWER_LEVEL:
                             self.status.power_level = int(self.command_value, 16)
                 else:
-                    error_msg = (f'Failed to send value "{self.command_value}" for command '
-                                f'{self.COMMAND_NAMES[self.command]}')
+                    error_msg = f'Failed to send value "{self.command_value}" for command {self.command_name}.'
                     self.get_logger().error(error_msg)
         else:
             error_msg = f'Failed to send second character for command {self.command_name}.'
@@ -367,7 +363,7 @@ class ModemPublisher(SerialNode):
         self.ready_timer = self.create_timer(1.0, self.set_ready)
 
     def set_ready(self) -> None:
-        """Set the modem to ready (not busy) state."""
+        """Set the modem status to ready (not busy)."""
         self.ready_timer.cancel()
         self.status.busy = False
 
