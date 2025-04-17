@@ -58,7 +58,7 @@ class LaneMarkerDetector(Node):
         except CvBridgeError as e:
             self.get_logger().error(f'Could not convert image: {e}')
 
-    def get_angle_and_distance_of_rectangle(self, frame: np.array) -> tuple[float, int, RectInfo, np.array]:
+    def get_angle_and_distance_of_rectangle(self, frame: np.array) -> tuple[float, int, CVObject, np.array]:
         """Get angle (in radians) and distance of rectangle contour."""
         # Convert frame to HSV color space
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
