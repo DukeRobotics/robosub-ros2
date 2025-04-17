@@ -247,6 +247,8 @@ class ModemPublisher(SerialNode):
         """
         error_conditions_and_msgs = [
             (self.status.busy, f"Cannot send message '{request.message}'. Modem is busy."),
+            (not self.received_report,
+             f"Cannot send message '{request.message}' before receiving a diagnostic report."),
             (any(char in request.message for char in self.FORBIDDEN_CHARS_IN_MESSAGE),
                 f"Message '{request.message}' contains one or more forbidden characters: "
                 + str(self.FORBIDDEN_CHARS_IN_MESSAGE)),
@@ -296,7 +298,7 @@ class ModemPublisher(SerialNode):
                 not (self.MIN_CHANNEL <= raw_value <= self.MAX_CHANNEL),
              f"Invalid channel '{raw_value}'. Must be in range [{self.MIN_CHANNEL}, {self.MAX_CHANNEL}]."),
             (command == SendModemCommand.Request.SET_POWER_LEVEL and not self.received_report,
-             f'Cannot send command {command_name}. No report received.'),
+             f'Cannot send command {command_name} before receiving a diagnostic report.'),
             (command == SendModemCommand.Request.SET_POWER_LEVEL and
                 self.report.git_revision not in self.GIT_REVISIONS_WITH_POWER_LEVEL_COMMAND,
              f'{command_name} command not available on this modem with firmware version '
