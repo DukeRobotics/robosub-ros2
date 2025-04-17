@@ -30,3 +30,5 @@ arduino:
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketches/thruster
+modem:
+  ftdi: CP2102
