@@ -1218,8 +1218,10 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
 
 @task
-async def torpedo_task(self: Task, depth_level=0.5,
-                       animal: Literal[CVObjectType.TORPEDO_SAWFISH, CVObjectType.TORPEDO_REEF_SHARK]) -> Task[None, None, None]:
+async def torpedo_task(self: Task,
+                       target_animal: Literal[CVObjectType.TORPEDO_SAWFISH,
+                                              CVObjectType.TORPEDO_REEF_SHARK] = CVObjectType.TORPEDO_REEF_SHARK,
+                       depth_level: float = 0.5) -> Task[None, None, None]:
     """
     TODO: Test this task
     """
@@ -1272,7 +1274,7 @@ async def torpedo_task(self: Task, depth_level=0.5,
             #     await correct_depth()
 
             await Yield()
-            banner_dist = CV().cv_data[CVObjectType.TO].coords.x
+            banner_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
             logger.info(f"Torpedo banner dist: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x}")
 
     await move_to_torpedo_banner()
@@ -1280,8 +1282,8 @@ async def torpedo_task(self: Task, depth_level=0.5,
     async def center_with_torpedo_target():
         await correct_yaw_with_depthai() # Hopefully we know we are normal to the torpedo banner now and also centered with the banner.
         # await correct_depth()
-        target_dist_y = CV().bounding_boxes[].coords.y
-        target_dist_z = CV().bounding_boxes[].coords.z
+        target_dist_y = CV().bounding_boxes[target_animal].coords.y
+        target_dist_z = CV().bounding_boxes[target_animal].coords.z
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, target_dist_y, target_dist_z, 0, 0, 0),
             keep_level=True,
