@@ -30,3 +30,22 @@ arduino:
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketches/thruster
+thrusters:
+  - name: middle_right
+    cw: false
+    standard_esc: true
+  - name: front_right
+    cw: false
+    standard_esc: false
+  - name: back_right
+    cw: false
+    standard_esc: true
+  - name: back_left
+    cw: true
+    standard_esc: true
+  - name: middle_left
+    cw: true
+    standard_esc: true
+  - name: front_left
+    cw: true
+    standard_esc: true

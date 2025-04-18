@@ -48,3 +48,28 @@ gyro:
   ftdi: FT9DD97Q
   zero_bias: 0.0023055327
   scale_factor: 15142595.0
+thrusters:
+  - name: bottom_front_left
+    cw: true
+    standard_esc: true
+  - name: top_front_left
+    cw: false
+    standard_esc: false
+  - name: top_front_right
+    cw: true
+    standard_esc: true
+  - name: bottom_front_right
+    cw: false
+    standard_esc: true
+  - name: bottom_back_left
+    cw: false
+    standard_esc: true
+  - name: top_back_left
+    cw: false
+    standard_esc: true
+  - name: bottom_back_right
+    cw: true
+    standard_esc: true
+  - name: top_back_right
+    cw: true
+    standard_esc: true
