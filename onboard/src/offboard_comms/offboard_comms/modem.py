@@ -1,5 +1,6 @@
 import os
 import struct
+from dataclasses import dataclass
 from typing import ClassVar, TypeVar
 
 import rclpy
@@ -8,6 +9,21 @@ from custom_msgs.srv import SendModemCommand, SendModemMessage
 from std_msgs.msg import String
 
 from offboard_comms.serial_node import SerialNode, SerialReadType
+
+
+@dataclass
+class ModemCommandInfo:
+    """
+    Dataclass to store properties of modem command types.
+
+    Attributes:
+        name (str): Human-readable name of the command.
+        char (str): Character to send to the modem to trigger the command.
+        requires_value (bool): Indicates if the command requires a value to be sent.
+    """
+    name: str
+    char: str
+    requires_value: bool
 
 
 class ModemPublisher(SerialNode):
@@ -21,26 +37,15 @@ class ModemPublisher(SerialNode):
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
     LOOP_RATE = 20  # Hz
 
-    COMMAND_NAMES: ClassVar[dict[int, str]] = {
-        SendModemCommand.Request.TRANSPARENT_MODE: 'TRANSPARENT_MODE',
-        SendModemCommand.Request.DIAGNOSTIC_MODE: 'DIAGNOSTIC_MODE',
-        SendModemCommand.Request.CHANGE_CHANNEL: 'CHANGE_CHANNEL',
-        SendModemCommand.Request.REQUEST_REPORT: 'REQUEST_REPORT',
-        SendModemCommand.Request.SET_POWER_LEVEL: 'SET_POWER_LEVEL',
+    COMMAND_INFO: ClassVar[dict[int, ModemCommandInfo]] = {
+        SendModemCommand.Request.TRANSPARENT_MODE: ModemCommandInfo('TRANSPARENT_MODE', 't', False),
+        SendModemCommand.Request.DIAGNOSTIC_MODE: ModemCommandInfo('DIAGNOSTIC_MODE', 'd', False),
+        SendModemCommand.Request.CHANGE_CHANNEL: ModemCommandInfo('CHANGE_CHANNEL', 'c', True),
+        SendModemCommand.Request.REQUEST_REPORT: ModemCommandInfo('REQUEST_REPORT', 'r', False),
+        SendModemCommand.Request.SET_POWER_LEVEL: ModemCommandInfo('SET_POWER_LEVEL', 'l', True),
     }
-    COMMAND_CHARS: ClassVar[dict[int, str]] = {
-        SendModemCommand.Request.TRANSPARENT_MODE: 't',
-        SendModemCommand.Request.DIAGNOSTIC_MODE: 'd',
-        SendModemCommand.Request.CHANGE_CHANNEL: 'c',
-        SendModemCommand.Request.REQUEST_REPORT: 'r',
-        SendModemCommand.Request.SET_POWER_LEVEL: 'l',
-    }
-    COMMANDS_WITH_VALUE: ClassVar[list[int]] = [
-        SendModemCommand.Request.CHANGE_CHANNEL,
-        SendModemCommand.Request.SET_POWER_LEVEL,
-    ]
-    MIN_COMMAND = min(COMMAND_NAMES.keys())
-    MAX_COMMAND = max(COMMAND_NAMES.keys())
+    MIN_COMMAND = min(COMMAND_INFO.keys())
+    MAX_COMMAND = max(COMMAND_INFO.keys())
 
     MIN_CHANNEL = 1
     MAX_CHANNEL = 12
@@ -288,20 +293,25 @@ class ModemPublisher(SerialNode):
         """
         command = request.command
         raw_value = request.value
-        command_name = self.COMMAND_NAMES.get(command)
+
+        if command not in self.COMMAND_INFO:
+            error_msg = f"Invalid command '{command}'. Must be in range [{self.MIN_COMMAND}, {self.MAX_COMMAND}]."
+            self._handle_service_error(error_msg, response)
+
+        command_info = self.COMMAND_INFO[command]
 
         error_conditions_and_msgs = [
-            (command not in self.COMMAND_NAMES,
+            (command not in self.COMMAND_INFO,
              f"Invalid command '{command}'. Must be in range [{self.MIN_COMMAND}, {self.MAX_COMMAND}]."),
-            (self.status.busy, f'Cannot send command {command_name}. Modem is busy.'),
+            (self.status.busy, f'Cannot send command {command_info.name}. Modem is busy.'),
             (command == SendModemCommand.Request.CHANGE_CHANNEL and
                 not (self.MIN_CHANNEL <= raw_value <= self.MAX_CHANNEL),
              f"Invalid channel '{raw_value}'. Must be in range [{self.MIN_CHANNEL}, {self.MAX_CHANNEL}]."),
             (command == SendModemCommand.Request.SET_POWER_LEVEL and not self.received_report,
-             f'Cannot send command {command_name} before receiving a diagnostic report.'),
+             f'Cannot send command {command_info.name} before receiving a diagnostic report.'),
             (command == SendModemCommand.Request.SET_POWER_LEVEL and
                 self.report.git_revision not in self.GIT_REVISIONS_WITH_POWER_LEVEL_COMMAND,
-             f'{command_name} command not available on this modem with firmware version '
+             f'{command_info.name} command not available on this modem with firmware version '
                 f'{self.report.git_revision.hex()}.'),
             (command == SendModemCommand.Request.SET_POWER_LEVEL and
                 not (self.MIN_POWER_LEVEL <= raw_value <= self.MAX_POWER_LEVEL),
@@ -312,32 +322,30 @@ class ModemPublisher(SerialNode):
             if error_condition:
                 return self._handle_service_error(error_msg, response)
 
-        command_char = self.COMMAND_CHARS[command]
-        command_value = format(raw_value, 'x') if command in self.COMMANDS_WITH_VALUE else None
+        command_value = format(raw_value, 'x') if command_info.requires_value else None
 
         self.status.busy = True
-        if self.send_data(command_char):
+        if self.send_data(command_info.char):
             # First character sent successfully
             self.command = request.command
-            self.command_name = command_name
-            self.command_char = command_char
+            self.command_info = command_info
             self.command_value = command_value
 
             self.finish_sending_command_timer = self.create_timer(1.0, self.finish_sending_command)
             response.success = True
-            response.message = f'Sent command {self.command_name} successfully.'
+            response.message = f'Sent command {command_info.name} successfully.'
             return response
 
         self.status.busy = False
 
-        error_msg = f'Failed to send first character for command {self.command_name}.'
+        error_msg = f'Failed to send first character for command {command_info.name}.'
         return self._handle_service_error(error_msg, response)
 
     def finish_sending_command(self) -> None:
         """Send the second command character and value if applicable."""
         self.finish_sending_command_timer.cancel()
 
-        if self.send_data(self.command_char):
+        if self.send_data(self.command_info.char):
             # Second character sent successfully
             match self.command:
                 case SendModemCommand.Request.TRANSPARENT_MODE:
@@ -345,8 +353,11 @@ class ModemPublisher(SerialNode):
                 case SendModemCommand.Request.DIAGNOSTIC_MODE:
                     self.status.mode = ModemStatus.DIAGNOSTIC_MODE
 
-            if self.command_value is not None:
-                if self.send_data(self.command_value):
+            if self.command_info.requires_value:
+                if self.command_value is None:
+                    error_msg = f'Command {self.command_info.name} requires a value. Received None.'
+                    self.get_logger().error(error_msg)
+                elif self.send_data(self.command_value):
                     # Command value sent successfully
                     match self.command:
                         case SendModemCommand.Request.CHANGE_CHANNEL:
@@ -354,14 +365,15 @@ class ModemPublisher(SerialNode):
                         case SendModemCommand.Request.SET_POWER_LEVEL:
                             self.status.power_level = int(self.command_value, 16)
                 else:
-                    error_msg = f'Failed to send value "{self.command_value}" for command {self.command_name}.'
+                    error_msg = f'Failed to send value "{self.command_value}" for command {self.command_info.name}.'
                     self.get_logger().error(error_msg)
         else:
-            error_msg = f'Failed to send second character for command {self.command_name}.'
+            error_msg = f'Failed to send second character for command {self.command_info.name}.'
             self.get_logger().error(error_msg)
             self.status.busy = False
             return
 
+        # If one or more characters were sent, set the modem to ready after 1 second
         self.ready_timer = self.create_timer(1.0, self.set_ready)
 
     def set_ready(self) -> None:
