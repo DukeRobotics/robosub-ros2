@@ -305,7 +305,7 @@ class CV:
             return False
 
         current_time = Clock().now().seconds_nanoseconds()[0]
-        detection_time = self._bounding_boxes[name].header.stamp.secs
+        detection_time = self._bounding_boxes[name].header.stamp.sec
 
         recent = current_time - detection_time < latency
 

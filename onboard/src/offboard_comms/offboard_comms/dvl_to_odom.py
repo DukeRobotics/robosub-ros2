@@ -45,6 +45,7 @@ class DVLOdomPublisher(Node):
         # for status: A = good, V = bad
         if msg.bs_status == self.DVL_BAD_STATUS_MSG:
             return
+
         # handle message here
         odom = Odometry()
         odom.header.stamp = self.get_clock().now().to_msg()
