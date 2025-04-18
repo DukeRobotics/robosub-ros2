@@ -20,7 +20,6 @@ from task_planning.interface.state import State
 from task_planning.task import Task, Yield, task
 from task_planning.tasks import cv_tasks, move_tasks
 from task_planning.utils import geometry_utils
-from task_planning.utils.coroutine_utils import sleep
 
 logger = get_logger('buoyancy_tasks')
 

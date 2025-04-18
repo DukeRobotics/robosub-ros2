@@ -18,13 +18,10 @@ from task_planning.interface.cv import CV
 from task_planning.interface.servos import Servos, MarkerDropperStates
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield, task
-from task_planning.tasks import cv_tasks, move_tasks
+from task_planning.tasks import cv_tasks, move_tasks, util_tasks
 from task_planning.utils import geometry_utils
-from task_planning.utils.coroutine_utils import sleep
 
 # TODO: move stablize() to move_tasks.py
-#
-# TODO: see if we can remove sleep() since we already have sleep() in coroutine_utils.py
 #
 # TODO: create a common skeleton @task class/interface with all the common functions to remove redundancy:
 # - move_x
@@ -62,26 +59,20 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
 
     DEPTH_LEVEL = State().orig_depth - depth_level
 
-    async def sleep(secs):
-        duration = Duration(seconds=secs)
-        start_time = Clock().now()
-        while start_time + duration > Clock().now():
-            await Yield()
-
     async def roll():
         power = Twist()
         power.angular.x = 1
         Controls().publish_desired_power(power)
         logger.info('Published roll power')
 
-        await sleep(2.25)
+        await util_tasks.sleep(2.25, parent=self)
 
         logger.info('Completed roll')
 
         Controls().publish_desired_power(Twist())
         logger.info('Published zero power')
 
-        await sleep(2)
+        await util_tasks.sleep(2, parent=self)
 
         logger.info('Completed zero')
 
@@ -90,9 +81,9 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
     State().reset_pose()
     await roll()
     State().reset_pose()
-    await sleep(3)
+    await util_tasks.sleep(3, parent=self)
     await move_tasks.depth_correction(DEPTH_LEVEL, parent=self)
-    await sleep(3)
+    await util_tasks.sleep(3, parent=self)
 
     imu_orientation = State().imu.orientation
     euler_angles = quat2euler([imu_orientation.w, imu_orientation.x, imu_orientation.y, imu_orientation.z])
@@ -262,7 +253,7 @@ async def after_buoy_task(self: Task):
         circumnavigate_task.step()
         if is_receiving_cv_data():
             stabilize()
-            await sleep(5)
+            await util_tasks.sleep(5, parent=self)
             break
 
         await Yield()
@@ -349,11 +340,11 @@ async def buoy_circumnavigation_power(self: Task, depth: float = 0.7) -> Task[No
     for _ in range(4):
         publish_power()
         logger.info('Publish power')
-        await sleep(6)
+        await util_tasks.sleep(6, parent=self)
         logger.info('Sleep 5 (1)')
         stabilize()
         logger.info('Stabilized')
-        await sleep(5)
+        await util_tasks.sleep(5, parent=self)
         logger.info('Sleep 5 (2)')
         await correct_depth()
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 1, 0, 0, 0, 0), parent=self)
@@ -502,15 +493,8 @@ async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[Non
             return 1
         return max(dist-3 + 0.25, 0.25)
 
-
-    async def sleep(secs: float) -> None:
-        duration = Duration(seconds=secs)
-        start_time = Clock().now()
-        while start_time + duration > Clock().now():
-            await Yield()
-
     logger.info('Begin sleep')
-    await sleep(2)
+    await util_tasks.sleep(2, parent=self)
     logger.info('End sleep')
 
     gate_dist = CV().cv_data['gate_red_cw'].coords.x
@@ -552,12 +536,6 @@ async def yaw_to_cv_object(self: Task, cv_object: str, direction=1,
 
     logger.info('Starting yaw_to_cv_object')
 
-
-    async def sleep(secs):
-        duration = Duration(seconds=secs)
-        start_time = Clock().now()
-        while start_time + duration > Clock().now():
-            await Yield()
 
     async def correct_depth():
         # await move_tasks.depth_correction(DEPTH_LEVEL, parent=self)
@@ -632,12 +610,6 @@ async def align_path_marker(self: Task, direction=1) -> Task[None, None, None]:
 
     async def correct_depth():
         await move_tasks.depth_correction(desired_depth=DEPTH_LEVEL, parent=self)
-
-    async def sleep(secs):
-        duration = Duration(seconds=secs)
-        start_time = Clock().now()
-        while start_time + duration > Clock().now():
-            await Yield()
 
     def get_step_size(desired_yaw):
         # desired yaw in rads
@@ -791,12 +763,6 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
-    async def sleep(secs: float) -> None:
-        duration = Duration(seconds=secs)
-        start_time = Clock().now()
-        while start_time + duration > Clock().now():
-            await Yield()
-
     async def move_to_bins() -> None:
         count = 1
         bin_red_time = None
@@ -832,7 +798,7 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
 
         logger.info('Reached pink bins, stabilizing...')
         stabilize()
-        await sleep(5)
+        await util_tasks.sleep(5, parent=self)
 
     await move_to_bins()
 
@@ -919,12 +885,6 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
 
-    async def sleep(secs: float) -> None:
-        duration = Duration(seconds=secs)
-        start_time = Clock().now()
-        while start_time + duration > Clock().now():
-            await Yield()
-
     async def search_for_bins() -> bool:
         logger.info('Searching for red/blue bins...')
         bin_red_time = None
@@ -952,7 +912,7 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
                 if bin_found:
                     break
 
-                await sleep(0.1)
+                await util_tasks.sleep(0.1, parent=self)
                 await Yield()
 
             await correct_depth(DEPTH_LEVEL)
@@ -1036,12 +996,6 @@ async def bin_task(self: Task) -> Task[None, None, None]:
             return 1
         return -1
 
-    async def sleep(secs):
-        duration = Duration(seconds=secs)
-        start_time = Clock().now()
-        while start_time + duration > Clock().now():
-            await Yield()
-
     async def track_bin(target, desired_depth, pixel_threshold, step_size=0.20, x_offset=0, y_offset=0):
         logger.info(CV().cv_data[f'{target}_distance'])
         pixel_x = CV().cv_data[f'{target}_distance'].x + x_offset
@@ -1099,11 +1053,11 @@ async def bin_task(self: Task) -> Task[None, None, None]:
 
     drop_marker(MarkerDropperStates.LEFT)
     logger.info('Dropped left marker')
-    await sleep(3)
+    await util_tasks.sleep(3, parent=self)
 
     drop_marker(MarkerDropperStates.RIGHT)
     logger.info('Dropped right marker')
-    await sleep(2)
+    await util_tasks.sleep(2, parent=self)
 
     await correct_depth(desired_depth=START_DEPTH_LEVEL)
     logger.info(f'Corrected depth to {START_DEPTH_LEVEL}')
@@ -1155,12 +1109,6 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     def stabilize() -> None:
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
-
-    async def sleep(secs) -> None:
-        duration = Duration(seconds=secs)
-        start_time = Clock().now()
-        while start_time + duration > Clock().now():
-            await Yield()
 
     def get_step_size(last_step_size):
         bin_pink_score = CV().cv_data['bin_pink_front'].score
@@ -1223,7 +1171,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
         logger.info('Reached pink bins, stabilizing...')
         stabilize()
-        await sleep(5)
+        await util_tasks.sleep(5, parent=self)
 
     await move_to_pink_bins()
 
