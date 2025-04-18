@@ -10,8 +10,9 @@ from task_planning.utils import geometry_utils
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     tasks = [
+        test_tasks.test_ivc('ho', parent=self),
         # buoyancy_tasks.buoyancy_task(-0.5, parent=self),  # Submerge and stabilize buoyancy
-        comp_tasks.initial_submerge(-0.5, parent=self),
+        # comp_tasks.initial_submerge(-0.5, parent=self),
         # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
         # move_tasks.move_with_directions([(2, 0, 0), (0, 2, 0), (-2, 0, 0), (0, -2, 0)], parent=self),
 
