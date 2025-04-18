@@ -1,4 +1,3 @@
-
 import numpy as np
 import tf2_geometry_msgs
 import tf2_ros
@@ -101,6 +100,18 @@ def vector3_linear_distance(vector1: Vector3, vector2: Vector3) -> float:
     """
     return np.linalg.norm(vector3_to_numpy(vector1) - vector3_to_numpy(vector2))
 
+def vector_between_points(point1: Point, point2: Point) -> Vector3:
+    """
+    Obtain a vector that points from point2 to point1.
+
+    Args:
+        point1: The first point.
+        point2: The second point.
+
+    Returns:
+        Vector3: The vector pointing from point2 to point1. Equivalent to point1 - point2.
+    """
+    return Vector3(x=point1.x - point2.x, y=point1.y - point2.y, z=point1.z - point2.z)
 
 def angular_distance_quat(quat1: Quaternion, quat2: Quaternion) -> Vector3:
     """
@@ -138,15 +149,17 @@ def angular_distance_rpy(rpy1: tuple[float, float, float], rpy2: tuple[float, fl
     return Vector3(x=roll, y=pitch, z=yaw)
 
 
-def at_pose(current_pose: Pose, desired_pose: Pose, linear_tol: float = 0.15, roll_tol: float = 0.2,
-            pitch_tol: float = 0.3, yaw_tol: float = 0.10) -> bool:
+def at_pose(current_pose: Pose, desired_pose: Pose, x_tol: float = 0.05, y_tol: float = 0.05, z_tol: float = 0.05,
+        roll_tol: float = 0.2, pitch_tol: float = 0.3, yaw_tol: float = 0.10) -> bool:
     """
     Check if current pose is within tolerance of a desired pose (position and orientation).
 
     Args:
         current_pose: The current pose.
         desired_pose: The desired pose.
-        linear_tol: The allowable linear distance in meters for the robot to be considered at the desired pose.
+        x_tol: The allowable linear distance in meters in the X axis for the robot to be considered at the desired pose.
+        y_tol: The allowable linear distance in meters in the Y axis for the robot to be considered at the desired pose.
+        z_tol: The allowable linear distance in meters in the Z axis for the robot to be considered at the desired pose.
         roll_tol: The allowable angular distance in radians in the roll axis for the robot to be considered at the
         desired pose.
         pitch_tol: The allowable angular distance in radians in the pitch axis for the robot to be considered at the
@@ -157,9 +170,12 @@ def at_pose(current_pose: Pose, desired_pose: Pose, linear_tol: float = 0.15, ro
     Returns:
         True if the current pose is within the tolerances of the desired pose.
     """
-    linear = point_linear_distance(current_pose.position, desired_pose.position) < linear_tol
+    linear_dist = vector_between_points(current_pose.position, desired_pose.position)
+    linear = all((abs(linear_dist.x) < x_tol, abs(linear_dist.y) < y_tol, abs(linear_dist.z) < z_tol))
+
     angular_dist = angular_distance_quat(current_pose.orientation, desired_pose.orientation)
-    angular = np.all(vector3_to_numpy(angular_dist) < np.array([roll_tol, pitch_tol, yaw_tol]))
+    angular = all((abs(angular_dist.x) < roll_tol, abs(angular_dist.y) < pitch_tol, abs(angular_dist.z) < yaw_tol))
+
     return linear and angular
 
 
@@ -183,7 +199,8 @@ def at_vel(current_twist: Twist, desired_twist: Twist, linear_tol: float = 0.02,
     return linear and angular
 
 
-def stopped_at_pose(current_pose: Pose, desired_pose: Pose, current_twist: Twist) -> bool:
+def stopped_at_pose(current_pose: Pose, desired_pose: Pose, current_twist: Twist,
+                    pose_tolerances: Twist | None = None) -> bool:
     """
     Check if the robot is at the desired pose and has stopped moving.
 
@@ -191,11 +208,18 @@ def stopped_at_pose(current_pose: Pose, desired_pose: Pose, current_twist: Twist
         current_pose: The current pose.
         desired_pose: The desired pose.
         current_twist: The current twist.
+        pose_tolerances: Tolerances to use if current_pose is at desired_pose. If None, default values will be used.
 
     Returns:
         True if the robot is at the desired pose and has stopped moving, within the default tolerances.
     """
-    at_desired_pose = at_pose(current_pose, desired_pose)
+    if pose_tolerances:
+        at_desired_pose = at_pose(current_pose, desired_pose, x_tol=pose_tolerances.linear.x,
+                                  y_tol=pose_tolerances.linear.y, z_tol=pose_tolerances.linear.z,
+                                  roll_tol=pose_tolerances.angular.x, pitch_tol=pose_tolerances.angular.y,
+                                  yaw_tol=pose_tolerances.angular.z)
+    else:
+        at_desired_pose = at_pose(current_pose, desired_pose)
     at_desired_vel = at_vel(current_twist, Twist())
 
     return at_desired_pose and at_desired_vel

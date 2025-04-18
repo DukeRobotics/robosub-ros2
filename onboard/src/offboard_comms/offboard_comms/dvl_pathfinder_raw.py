@@ -6,14 +6,14 @@ from custom_msgs.msg import DVLRaw
 from offboard_comms.serial_node import SerialNode, SerialReadType
 
 
-class DVLRawPublisher(SerialNode):
-    """A class to read and publish raw DVL data from a serial port."""
+class DVLPathfinderRawPublisher(SerialNode):
+    """A class to read and publish raw Teledyne Pathfinder DVL data from a serial port."""
 
-    SERIAL_DEVICE_NAME = 'DVL'
+    SERIAL_DEVICE_NAME = 'DVL Pathfinder'
     CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
 
     BAUDRATE = 115200
-    NODE_NAME = 'dvl_raw_pub'
+    NODE_NAME = 'dvl_pathfinder_raw_pub'
     TOPIC_NAME = 'sensors/dvl/raw'
     LINE_DELIM = ','
 
@@ -65,10 +65,13 @@ class DVLRawPublisher(SerialNode):
             self.get_logger().warn(f'Failed to parse data type from line: {line}')
             return
 
-        if data_type in self._dvl_line_parsers:
-            self._dvl_line_parsers[data_type](self._clean_line(line))
-        else:
-            self.get_logger().warn(f'Unknown data type: {data_type}')
+        try:
+            if data_type in self._dvl_line_parsers:
+                self._dvl_line_parsers[data_type](self._clean_line(line))
+            else:
+                self.get_logger().warn(f'Unknown data type: {data_type}')
+        except ValueError:
+            self.get_logger().warn(f'Failed to parse line: {line}')
 
     def _clean_line(self, line: str) -> str:
         """
@@ -176,9 +179,9 @@ class DVLRawPublisher(SerialNode):
 
 
 def main(args: list[str] | None = None) -> None:
-    """Create and run the DVL raw data publisher node."""
+    """Create and run the DVL Pathfinder raw data publisher node."""
     rclpy.init(args=args)
-    dvl_raw = DVLRawPublisher()
+    dvl_raw = DVLPathfinderRawPublisher()
 
     try:
         rclpy.spin(dvl_raw)

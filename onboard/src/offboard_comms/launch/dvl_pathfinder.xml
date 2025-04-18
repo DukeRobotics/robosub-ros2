@@ -1,0 +1,4 @@
+<launch>
+	<node name="dvl_pathfinder_raw" pkg="offboard_comms" exec="dvl_pathfinder_raw" output="screen" />
+	<node name="dvl_pathfinder_to_odom" pkg="offboard_comms" exec="dvl_pathfinder_to_odom" output="screen" />
+</launch>

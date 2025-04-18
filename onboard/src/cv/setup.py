@@ -14,7 +14,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (str(Path('share') / package_name / 'assets'), list(map(str, Path('./assets').glob('*.png')))),
         (str(Path('share') / package_name / 'config'), list(map(str, Path('./config').glob('*.yaml')))),
-        (str(Path('share') / package_name / 'launch'), list(map(str, Path('./launch').glob('*.xml')))),
+        (str(Path('share') / package_name / 'launch'), list(map(str, Path('./launch').glob('*')))),
         (str(Path('share') / package_name / 'models'), list(map(str, Path('./models').glob('*.blob')))),
         (str(Path('share') / package_name / 'models'), list(map(str, Path('./models').glob('*.yaml')))),
     ],

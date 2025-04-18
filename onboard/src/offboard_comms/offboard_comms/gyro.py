@@ -46,6 +46,7 @@ class GyroPublisher(SerialNode):
 
         self.zero_bias = self._config['gyro']['zero_bias']
         self.scale_factor = self._config['gyro']['scale_factor']
+        self.negate = self._config['gyro']['negate']
 
         self.first_msg_time = None
 
@@ -132,20 +133,23 @@ class GyroPublisher(SerialNode):
     def process_buffer(self) -> None:
         """Process the buffer of data from the gyro."""
         index = 0
-        clear_buffer_up_to_index = 0
         while index < len(self.buffer):
             if self.buffer[index] == self.FRAME_START_BYTE:
                 if index + self.FRAME_NUM_BYTES > len(self.buffer):
-                    clear_buffer_up_to_index = index
+                    # Not enough bytes in the buffer to process this frame
+                    # Wait for more data to arrive before processing this frame
                     break
+
+                # There are enough bytes in the buffer to process this frame
                 self.process_frame(index)
                 index += self.FRAME_NUM_BYTES
-                clear_buffer_up_to_index = index
             else:
+                # The current byte is not the start byte and is not part of a frame
+                # Find the next start byte
                 index += 1
 
-        # Remove all bytes up to but not including the clear_buffer_up_to_index
-        self.buffer = self.buffer[clear_buffer_up_to_index:]
+        # Remove all processed bytes from the buffer
+        self.buffer = self.buffer[index:]
 
     def process_frame(self, start_byte_index: int) -> None:
         """
@@ -188,8 +192,14 @@ class GyroPublisher(SerialNode):
 
         # Scale the gyro data and temperature data, and subtract the zero bias
         # The gyro data is in degrees per second, and the temperature data is in degrees Celsius
-        angular_velocity = (gyro_data * self.TRIGGER_RATE / self.scale_factor) - self.zero_bias
+        angular_velocity = (gyro_data * self.TRIGGER_RATE / self.scale_factor)
         temperature = temp_data * 0.0625
+
+        # Negate the angular velocity if needed
+        angular_velocity = -angular_velocity if self.negate else angular_velocity
+
+        # Subtract the zero bias
+        angular_velocity -= self.zero_bias
 
         # Compute the angular position in degrees
         # Raw angular position is simply the integral of the angular velocity
