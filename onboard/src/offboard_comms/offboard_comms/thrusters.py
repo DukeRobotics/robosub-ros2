@@ -71,10 +71,10 @@ class Thrusters(SerialNode):
         self.voltage_min = min(v for v, _ in self.VOLTAGE_FILES)
         self.voltage_max = max(v for v, _ in self.VOLTAGE_FILES)
         self.voltage_tables: list[VoltageTable] = []
-        
+
         # Get thruster orientations
         self.thruster_orientation = self.get_thruster_orientation()
-        
+
         # Load lookup tables
         self.load_lookup_tables()
 
@@ -102,7 +102,7 @@ class Thrusters(SerialNode):
         Returns:
             list: List of thruster orientations for every thruster.
         """
-        return [~(thruster['cw']^thruster['standard_esc']) for thruster in self._config['thrusters']]
+        return [thruster['cw'] == thruster['standard_esc'] for thruster in self._config['thrusters']]
 
     def load_lookup_tables(self) -> None:
         """Load voltage-based PWM lookup tables from CSV files."""
