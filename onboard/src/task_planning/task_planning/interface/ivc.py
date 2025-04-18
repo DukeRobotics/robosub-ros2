@@ -79,7 +79,7 @@ class IVC:
         Args:
             msg: The message to send.
         """
+        request = SendModemMessage.Request()
+        request.message = msg
         if not self.bypass:
-            request = SendModemMessage.Request()
-            request.message = msg
             self._send_message.call_async(request)
