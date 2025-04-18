@@ -14,7 +14,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/config', [str(file) for file in Path('./config').glob('*.yaml')]),
         ('share/' + package_name + '/data', [str(file) for file in Path('./data').glob('*.csv')]),
-        ('share/' + package_name + '/launch', [str(file) for file in Path('./launch').glob('*.xml')]),
+        ('share/' + package_name + '/launch', [str(file) for file in Path('./launch').glob('*')]),
         ('share/' + package_name + '/sketches',
          [str(file) for file in Path('./sketches').glob('*') if file.is_file()]),
         ('share/' + package_name + '/sketches/peripheral',
@@ -31,8 +31,9 @@ setup(
     entry_points={
         'console_scripts': [
             'arduino = offboard_comms.arduino:main',
-            'dvl_raw = offboard_comms.dvl_raw:main',
-            'dvl_odom = offboard_comms.dvl_to_odom:main',
+            'dvl_pathfinder_raw = offboard_comms.dvl_pathfinder_raw:main',
+            'dvl_pathfinder_to_odom = offboard_comms.dvl_pathfinder_to_odom:main',
+            'dvl_wayfinder = offboard_comms.dvl_wayfinder:main',
             'gyro = offboard_comms.gyro:main',
             'peripheral = offboard_comms.peripheral:main',
             'test_thrusters = offboard_comms.test_thrusters:main',

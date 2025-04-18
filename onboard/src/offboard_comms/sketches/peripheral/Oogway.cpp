@@ -20,8 +20,8 @@ public:
     Oogway(int voltageDelay, int pressureDelay, int tempHumidityDelay, int servoDelay, bool isShell = false)
         : Robot(voltageDelay, pressureDelay, tempHumidityDelay, servoDelay), isShell(isShell) {
 
-        voltage_sensor = new Voltage(VOLTAGE_PIN, 4.655, "");
-        pressure_sensor = new Pressure("");
+        voltage_sensor = new Voltage(VOLTAGE_PIN, 4.655, 0.987, -0.00524, "");
+        pressure_sensor = new Pressure(MS5837::MS5837_02BA, "");
         temp_humidity_sensor = new TempHumidity(TH_PIN, "");
         servo_marker = new RobotServo(SERVO_MARKER, 500, 1500, 2500, "M");
         servo_torpedo = new RobotServo(SERVO_TORPEDO, 700, 1500, 2300, "T");
