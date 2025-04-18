@@ -48,7 +48,7 @@ class DepthAISpatialDetector(Node):
         with Path(rr.get_filename(CV_CONFIG_PATH, use_protocol=False)).open() as f:
             self.cv_config = yaml.safe_load(f)
 
-        self.horizontal_fov, self.focal_length, self.sensor_size = self.get_camera_constants()
+        self.horizontal_fov, self.focal_length, self.sensor_size, self.frame_id = self.get_camera_constants()
 
         with Path(rr.get_filename(DEPTHAI_MODELS_PATH, use_protocol=False)).open() as f:
             self.models = yaml.safe_load(f)
@@ -87,19 +87,20 @@ class DepthAISpatialDetector(Node):
         if run:
             self.run()
 
-    def get_camera_constants(self) -> tuple[float, float, tuple[float, float]]:
+    def get_camera_constants(self) -> tuple[float, float, tuple[float, float], str]:
         """
         Set camera constants based on the camera being used.
 
         Returns:
-            tuple[float, float, tuple[float, float]]: Tuple containing the horizontal field of view, focal length, and
-                sensor size.
+            tuple[float, float, tuple[float, float], str]: Tuple containing the horizontal field of view, focal length,
+                sensor size, and frame ID of the camera.
         """
         camera_config = self.cv_config['depthai']['cameras'][self.camera]
         horizontal_fov = camera_config['horizontal_fov']
         focal_length = camera_config['focal_length']
         sensor_size = (camera_config['sensor_size']['width'], camera_config['sensor_size']['height'])
-        return horizontal_fov, focal_length, sensor_size
+        frame_id = camera_config['frame_id']
+        return horizontal_fov, focal_length, sensor_size, frame_id
 
     def build_pipeline(self, nn_blob_path: Path, sync_nn: bool) -> dai.Pipeline:
         """

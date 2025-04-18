@@ -20,19 +20,20 @@ class DepthAIUSBDetector(DepthAISpatialDetector):
                                  self._update_latest_img, 1)
         self.run()
 
-    def get_camera_constants(self) -> tuple[float, float, tuple[float, float]]:
+    def get_camera_constants(self) -> tuple[float, float, tuple[float, float], str]:
         """
         Set camera constants based on the camera being used.
 
         Returns:
-            tuple[float, float, tuple[float, float]]: Tuple containing the horizontal field of view, focal length, and
-                sensor size.
+            tuple[float, float, tuple[float, float], str]: Tuple containing the horizontal field of view, focal length,
+                sensor size, and frame ID of the camera.
         """
         usb_camera_config = self.cv_config['usb_cameras'][self.usb_camera]
         horizontal_fov = usb_camera_config['horizontal_fov']
         focal_length = usb_camera_config['focal_length']
         sensor_size = (usb_camera_config['sensor_size']['width'], usb_camera_config['sensor_size']['height'])
-        return horizontal_fov, focal_length, sensor_size
+        frame_id = usb_camera_config['frame_id']
+        return horizontal_fov, focal_length, sensor_size, frame_id
 
     # Format a cv2 image to be sent to the device
     def to_planar(self, arr: np.ndarray, shape: Sequence) -> np.ndarray:
