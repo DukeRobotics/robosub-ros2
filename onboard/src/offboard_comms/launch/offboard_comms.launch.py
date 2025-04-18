@@ -34,6 +34,10 @@ def generate_launch_description() -> LaunchDescription:
     ))
 
     ld.add_action(IncludeLaunchDescription(
+        XMLLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'modem.xml')),
+    ))
+
+    ld.add_action(IncludeLaunchDescription(
         XMLLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'peripheral.xml')),
     ))
 
