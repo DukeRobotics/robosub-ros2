@@ -10,6 +10,7 @@ from rclpy.time import Time
 
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
+from task_planning.interface.ivc import IVC
 from task_planning.interface.servos import Servos
 from task_planning.interface.state import State
 from task_planning.robot import crush, oogway, oogway_shell
@@ -33,8 +34,8 @@ class TaskPlanning(Node):
         super().__init__(self.NODE_NAME)
         self.get_logger().info('Task planning node initialized')
 
-        self.bypass = self.declare_parameter('bypass', False).value
-        self.autonomous = self.declare_parameter('autonomous', False).value
+        self.bypass = self.declare_parameter('bypass', False).get_parameter_value().bool_value
+        self.autonomous = self.declare_parameter('autonomous', False).get_parameter_value().bool_value
 
         # Initialize transform buffer and listener
         tf_buffer = tf2_ros.Buffer()
@@ -42,9 +43,10 @@ class TaskPlanning(Node):
 
         # Initialize interfaces
         Controls(self, bypass=self.bypass)
-        State(self, tf_buffer=tf_buffer, bypass=self.bypass)
         CV(self, bypass=self.bypass)
+        IVC(self, bypass=self.bypass)
         Servos(self, bypass=self.bypass)
+        State(self, tf_buffer=tf_buffer, bypass=self.bypass)
 
         # Initialize the task update publisher
         TaskUpdatePublisher(self)
