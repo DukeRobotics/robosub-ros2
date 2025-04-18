@@ -28,8 +28,8 @@ class CVObjectType(Enum):
     LANE_MARKER = 'lane_marker'
     PATH_MARKER = 'path_marker'
     TORPEDO_BANNER = 'torpedo_banner'
-    TORPEDO_REEF_SHARK = 'shark_front'
-    TORPEDO_SAWFISH = 'swordfish_front'
+    TORPEDO_REEF_SHARK = 'torpedo_reef_shark'
+    TORPEDO_SAWFISH = 'torpedo_sawfish'
     TORPEDO_LOWER_TARGET = 'h'
     TORPEDO_UPPER_TARGET = 'g'
 
@@ -65,6 +65,9 @@ class CV:
         CVObjectType.BIN_RED: '/cv/bottom/bin_red/bounding_box',
         CVObjectType.LANE_MARKER: '/cv/bottom/lane_marker/bounding_box',
         CVObjectType.PATH_MARKER: '/cv/bottom/path_marker/bounding_box',
+        CVObjectType.TORPEDO_BANNER: '/cv/front/torpedo_banner',
+        CVObjectType.TORPEDO_REEF_SHARK: '/cv/front/shark_front',
+        CVObjectType.TORPEDO_SAWFISH: '/cv/front/swordfish_front',
     }
 
     DISTANCE_TOPICS: ClassVar[dict[CVObjectType, str]] = {
