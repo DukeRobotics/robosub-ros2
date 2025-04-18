@@ -1,6 +1,6 @@
 arduino:
   peripheral:
-    ftdi: B0015XL0
+    ftdi: B0005AVT
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketches/peripheral
@@ -26,9 +26,19 @@ arduino:
         tag: HB
         topic: /sensors/humidity/battery
   thruster:
-    ftdi: B0004VDI
+    ftdi: A10LT2EI
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketches/thruster
+dvl:
+  ftdi: DN04A9W9
+  negate_x_vel: false
+  negate_y_vel: false
+  negate_z_vel: false
+gyro:
+  ftdi: FT81SUWZ
+  zero_bias: 0.0025549003
+  scale_factor: 15497811.0
+  negate: true
 modem:
   ftdi: CP2102

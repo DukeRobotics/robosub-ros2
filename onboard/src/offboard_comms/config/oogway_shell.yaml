@@ -27,6 +27,7 @@ arduino:
         states:
           left: 1250
           right: 1750
+        min_delay: 3.0
       - name: torpedo
         tag: T
         service_name: /servos/torpedo
@@ -34,6 +35,7 @@ arduino:
         states:
           left: 1650
           right: 1350
+        min_delay: 3.0
   thruster:
     ftdi: 02AB8D8451544E5450202020FF0D334A
     fqbn: arduino:megaavr:nona4809
@@ -48,3 +50,4 @@ gyro:
   ftdi: FT81SKA0
   zero_bias: 0.0023055327
   scale_factor: 15142595.0
+  negate: false

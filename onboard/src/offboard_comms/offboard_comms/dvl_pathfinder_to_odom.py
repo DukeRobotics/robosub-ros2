@@ -13,12 +13,12 @@ from rclpy.node import Node
 from tf_transformations import quaternion_from_euler
 
 
-class DVLOdomPublisher(Node):
-    """A class to convert raw DVL data to odometry messages."""
+class DVLPathfinderOdomPublisher(Node):
+    """A class to convert raw Teledyne Pathfinder DVL data to odometry messages."""
 
     CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
 
-    NODE_NAME = 'dvl_odom_pub'
+    NODE_NAME = 'dvl_pathfinder_odom_pub'
     DVL_RAW_TOPIC = 'sensors/dvl/raw'
     DVL_ODOM_TOPIC = 'sensors/dvl/odom'
 
@@ -84,9 +84,9 @@ class DVLOdomPublisher(Node):
 
 
 def main(args: list[str] | None = None) -> None:
-    """Create and run the DVL odometry publisher node."""
+    """Create and run the DVL Pathfinder odometry publisher node."""
     rclpy.init(args=args)
-    dvl_odom = DVLOdomPublisher()
+    dvl_odom = DVLPathfinderOdomPublisher()
 
     try:
         rclpy.spin(dvl_odom)
