@@ -4,9 +4,8 @@ from dataclasses import dataclass
 from typing import ClassVar, TypeVar
 
 import rclpy
-from custom_msgs.msg import ModemDiagnosticReport, ModemStatus
+from custom_msgs.msg import ModemDiagnosticReport, ModemStatus, StringWithHeader
 from custom_msgs.srv import SendModemCommand, SendModemMessage
-from std_msgs.msg import String
 
 from offboard_comms.serial_node import SerialNode, SerialReadType
 
@@ -70,13 +69,13 @@ class ModemPublisher(SerialNode):
         self.buffer = bytearray()
 
         self.status = ModemStatus(busy=False)
-        self.message = String()
+        self.message = StringWithHeader()
         self.report = ModemDiagnosticReport()
 
         self.received_report = False
 
         self.modem_status_publisher = self.create_publisher(ModemStatus, '/sensors/modem/status', 1)
-        self.message_publisher = self.create_publisher(String, '/sensors/modem/messages', 1)
+        self.message_publisher = self.create_publisher(StringWithHeader, '/sensors/modem/messages', 1)
         self.diagnostic_reports_publisher = self.create_publisher(ModemDiagnosticReport,
                                                                  '/sensors/modem/diagnostic_reports', 1)
         self.send_command_srv = self.create_service(SendModemCommand, '/sensors/modem/send_command', self.send_command)
@@ -118,6 +117,7 @@ class ModemPublisher(SerialNode):
     def publish_modem_status(self) -> None:
         """Publish the modem status if at least one report has been received and the serial port is open."""
         if self.received_report and self._serial and self._serial.is_open:
+            self.status.header.stamp = self.get_clock().now().to_msg()
             self.modem_status_publisher.publish(self.status)
 
     def process_bytes(self, data: bytes) -> None:
@@ -171,6 +171,7 @@ class ModemPublisher(SerialNode):
             message (str): Message to publish.
         """
         # Publish this message to a ROS topic
+        self.message.header.stamp = self.get_clock().now().to_msg()
         self.message.data = message
         self.message_publisher.publish(self.message)
 

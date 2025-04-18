@@ -1,3 +1,5 @@
+std_msgs/Header header
+
 bool busy
 
 uint8 TRANSPARENT_MODE = 0
