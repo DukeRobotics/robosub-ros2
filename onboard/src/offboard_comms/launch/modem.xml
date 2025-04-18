@@ -1,0 +1,3 @@
+<launch>
+    <node name="modem" pkg="offboard_comms" exec="modem" output="screen" />
+</launch>
