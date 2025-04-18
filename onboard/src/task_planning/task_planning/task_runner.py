@@ -11,6 +11,7 @@ from rclpy.time import Time
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.servos import Servos
+from task_planning.interface.sonar import Sonar
 from task_planning.interface.state import State
 from task_planning.robot import crush, oogway, oogway_shell
 from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
@@ -45,6 +46,7 @@ class TaskPlanning(Node):
         State(self, tf_buffer=tf_buffer, bypass=self.bypass)
         CV(self, bypass=self.bypass)
         Servos(self, bypass=self.bypass)
+        Sonar(self, bypass=self.bypass)
 
         # Initialize the task update publisher
         TaskUpdatePublisher(self)
