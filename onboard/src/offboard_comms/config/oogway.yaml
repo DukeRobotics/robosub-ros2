@@ -57,13 +57,13 @@ thrusters:
     standard_esc: true
   - name: top_front_left
     cw: false
-    standard_esc: false
+    standard_esc: true
   - name: top_front_right
     cw: true
     standard_esc: true
   - name: bottom_front_right
     cw: false
-    standard_esc: true
+    standard_esc: false
   - name: bottom_back_left
     cw: false
     standard_esc: true
