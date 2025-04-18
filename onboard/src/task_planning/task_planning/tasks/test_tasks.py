@@ -1,7 +1,9 @@
+from rclpy.clock import Clock
+from rclpy.duration import Duration
 from rclpy.logging import get_logger
 from std_msgs.msg import String
-from task_planning.task import Task, task
 from task_planning.interface.ivc import IVC
+from task_planning.task import Task, Yield, task
 from task_planning.utils.coroutine_utils import sleep
 
 logger = get_logger('test_tasks')
@@ -46,9 +48,10 @@ async def test_ivc(self: Task, msg: str) -> Task[None, None, None]:
         logger.info(f'Sending IVC message: {msg}')
         IVC().send_message(msg)
 
-        sleep_coroutine = sleep(5)
-        while not sleep_coroutine.done():
+        duration = Duration(seconds=5)
+        start_time = Clock().now()
+        while start_time + duration > Clock().now():
             if len(IVC().messages) > messages_received:
                 logger.info(f'Received IVC message: {IVC().messages[-1].data}')
                 messages_received = len(IVC().messages)
-            sleep_coroutine.send(None)
+            await Yield()
