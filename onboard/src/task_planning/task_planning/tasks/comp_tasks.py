@@ -4,6 +4,7 @@ import copy
 import math
 from collections.abc import Coroutine
 from enum import Enum
+from typing import Literal
 
 import numpy as np
 from custom_msgs.msg import ControlTypes
@@ -114,10 +115,10 @@ async def buoy_task(self: Task, turn_to_face_buoy: bool = False, depth: float = 
     DEPTH_LEVEL = State().orig_depth - depth
 
     async def correct_y() -> Coroutine[None, None, None]:
-        await cv_tasks.correct_y('buoy', parent=self)
+        await cv_tasks.correct_y(prop=CVObjectType.BUOY, parent=self)
 
     async def correct_z() -> Coroutine[None, None, None]:
-        await cv_tasks.correct_z(prop='buoy', parent=self)
+        await cv_tasks.correct_z(prop=CVObjectType.BUOY, parent=self)
 
     async def correct_depth() -> Coroutine[None, None, None]:
         await move_tasks.correct_depth(desired_depth=DEPTH_LEVEL, parent=self)
@@ -475,15 +476,16 @@ async def gate_task_dead_reckoning(self: Task) -> Task[None, None, None]:
 async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[None, None, None]:
     """
     Asynchronous task to perform gate-related operations.
+    NOTE: This code is assuming we choose the sawfish side of the gate.
     """
     logger.info('Started gate task')
     depth_level = State().orig_depth - 0.7
 
     async def correct_y(factor: int=1) -> None:
-        await cv_tasks.correct_y(prop='gate_red_cw', add_factor=0.2 + offset, mult_factor=factor, parent=self)
+        await cv_tasks.correct_y(prop=CVObjectType.GATE_SAWFISH, add_factor=0.2 + offset, mult_factor=factor, parent=self)
 
     async def correct_z() -> None:
-        await cv_tasks.correct_z(prop='gate_red_cw', parent=self)
+        await cv_tasks.correct_z(prop=CVObjectType.GATE_SAWFISH, parent=self)
 
     async def correct_depth() -> None:
         await move_tasks.correct_depth(desired_depth=depth_level, parent=self)
@@ -515,7 +517,7 @@ async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[Non
     num_corrections = 0
     while gate_dist > 3:
         await move_x(step=get_step_size(gate_dist))
-        await yaw_to_cv_object('gate_red_cw', direction=-1, yaw_threshold=math.radians(10),
+        await yaw_to_cv_object(CVObjectType.GATE_SAWFISH, direction=-1, yaw_threshold=math.radians(10),
                                latency_threshold=2, depth_level=0.6, parent=self),
         # await correct_y(factor=(0.5 if num_corrections < 0 else 1))
         await correct_depth()
@@ -969,10 +971,10 @@ async def bin_task(self: Task) -> Task[None, None, None]:
 
     drop_marker = Servos().drop_marker
 
-    async def correct_x(target: float) -> None:
+    async def correct_x(target: CVObjectType) -> None:
         await cv_tasks.correct_x(prop=target, parent=self)
 
-    async def correct_y(target: float) -> None:
+    async def correct_y(target: CVObjectType) -> None:
         await cv_tasks.correct_y(prop=target, parent=self)
 
     async def correct_z():
@@ -1070,12 +1072,12 @@ async def bin_task(self: Task) -> Task[None, None, None]:
         logger.info(f'x: {pixel_x}, y: {pixel_y}, area: {width * height}')
 
     await correct_depth(desired_depth=START_DEPTH_LEVEL)
-    await track_bin(target='bin_red', desired_depth=START_DEPTH_LEVEL, pixel_threshold=START_PIXEL_THRESHOLD)
+    await track_bin(target=CVObjectType.BIN_RED, desired_depth=START_DEPTH_LEVEL, pixel_threshold=START_PIXEL_THRESHOLD)
 
     await correct_yaw()
 
     await correct_depth(desired_depth=MID_DEPTH_LEVEL)
-    await track_bin(target='bin_red', desired_depth=MID_DEPTH_LEVEL, pixel_threshold=MID_PIXEL_THRESHOLD,
+    await track_bin(target=CVObjectType.BIN_RED, desired_depth=MID_DEPTH_LEVEL, pixel_threshold=MID_PIXEL_THRESHOLD,
                     step_size=0.18, y_offset=30, x_offset=25)
 
     drop_marker(MarkerDropperStates.LEFT)
@@ -1216,7 +1218,8 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
 
 @task
-async def torpedo_task(self: Task, depth_level=0.5, animal="shark_front") -> Task[None, None, None]:
+async def torpedo_task(self: Task, depth_level=0.5,
+                       animal: Literal[CVObjectType.TORPEDO_SAWFISH, CVObjectType.TORPEDO_REEF_SHARK]) -> Task[None, None, None]:
     """
     TODO: Test this task
     """
@@ -1227,23 +1230,23 @@ async def torpedo_task(self: Task, depth_level=0.5, animal="shark_front") -> Tas
         await move_tasks.correct_depth(desired_depth=depth_level, parent=self)
 
     async def yaw_to_torpedo_banner() -> None:
-        await yaw_to_cv_object('torpedo_banner', direction=1, yaw_threshold=math.radians(15),
-                        depth_level=depth_level, parent=Task.MAIN_ID)
+        await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=1, yaw_threshold=math.radians(15),
+                               depth_level=depth_level, parent=Task.MAIN_ID)
 
     def get_step_size(dist: float) -> float:
         return min(dist - step_size, shooting_distance)
 
     async def correct_y() -> Coroutine[None, None, None]:
-        await cv_tasks.correct_y('torpedo_banner', parent=self)
+        await cv_tasks.correct_y(prop=CVObjectType.TORPEDO_BANNER, parent=self)
 
     async def correct_z() -> Coroutine[None, None, None]:
-        await cv_tasks.correct_z(prop='torpedo_banner', parent=self)
+        await cv_tasks.correct_z(prop=CVObjectType.TORPEDO_BANNER, parent=self)
 
     async def move_x(step:float = 1) -> Coroutine[None, None, None]:
         await move_tasks.move_x(step=step, parent=self)
 
     async def correct_yaw_with_depthai() -> None:
-        yaw_correction = CV().cv_data['torpedo_banner'].yaw
+        yaw_correction = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].yaw
         logger.info(f'Yaw correction: {yaw_correction}')
         sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
         await move_tasks.move_to_pose_local(
@@ -1253,15 +1256,15 @@ async def torpedo_task(self: Task, depth_level=0.5, animal="shark_front") -> Tas
         )
         logger.info('Corrected yaw')
 
-    async def move_to_torpedo_banner(banner_dist=1,):
+    async def move_to_torpedo_banner(banner_dist=1):
         await yaw_to_torpedo_banner()
         # await correct_depth()
 
-        banner_dist = CV().cv_data['torpedo_banner'].coords.x
+        banner_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
         while banner_dist > shooting_distance:
             await move_x(step=get_step_size(banner_dist, shooting_distance))
             await yaw_to_torpedo_banner()
-            logger.info(f"Torpedo banner dist: {CV().cv_data['torpedo_banner'].coords.x}")
+            logger.info(f"Torpedo banner dist: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x}")
             await correct_y()
             if banner_dist < 3:
                 await correct_z()
@@ -1269,22 +1272,23 @@ async def torpedo_task(self: Task, depth_level=0.5, animal="shark_front") -> Tas
             #     await correct_depth()
 
             await Yield()
-            banner_dist = CV().cv_data['torpedo_banner'].coords.x
-            logger.info(f"Torpedo banner dist: {CV().cv_data['torpedo_banner'].coords.x}")
+            banner_dist = CV().cv_data[CVObjectType.TO].coords.x
+            logger.info(f"Torpedo banner dist: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x}")
 
     await move_to_torpedo_banner()
 
     async def center_with_torpedo_target():
         await correct_yaw_with_depthai() # Hopefully we know we are normal to the torpedo banner now and also centered with the banner.
         # await correct_depth()
-        target_dist_y = CV().cv_data[animal].coords.y
-        target_dist_z = CV().cv_data[animal].coords.z
+        target_dist_y = CV().bounding_boxes[].coords.y
+        target_dist_z = CV().bounding_boxes[].coords.z
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, target_dist_y, target_dist_z, 0, 0, 0),
             keep_level=True,
             parent=self,
         )
-        logger.info(f'Centered on torpedo target, y: {CV().cv_data["torpedo_banner"].coords.y}, z: {CV().cv_data["torpedo_banner"].coords.z}')
+        logger.info(f'Centered on torpedo target, y: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.y}, \
+                                                  z: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.z}')
 
         # Move the Z to account for distance between camera and torpedo launcher
         offset = -0.05
