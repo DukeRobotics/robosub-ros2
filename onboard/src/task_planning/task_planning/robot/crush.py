@@ -9,8 +9,9 @@ from task_planning.tasks import buoyancy_tasks, comp_tasks, move_tasks, prequal_
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Crush."""
     tasks = [
+        test_tasks.test_ivc('hc', parent=self),
         # buoyancy_tasks.tune_static_power(parent=self),
-        comp_tasks.initial_submerge(-0.7, parent=self),
+        # comp_tasks.initial_submerge(-0.7, parent=self),
         # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
 
         # prequal_tasks.prequal_task(parent=self),
