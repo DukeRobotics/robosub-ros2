@@ -31,6 +31,7 @@ class GyroPublisher(SerialNode):
     TEMPERATURE_SLOW_TOPIC_NAME = 'sensors/gyro/temperature/slow'
 
     STATUS_PUBLISH_RATE = 5.0 # Hz
+    TEMP_SLOW_PUBLISH_RATE = 1.0 # Hz
 
     CONNECTION_RETRY_PERIOD = 1.0 # seconds
     LOOP_RATE = 1000.0 # Hz
@@ -99,8 +100,8 @@ class GyroPublisher(SerialNode):
 
         self.temperature_msg = Float64()
 
-        self.status_publisher_timer = self.create_timer(1.0 / self.STATUS_PUBLISH_RATE,
-                                                        self.publish_status_and_temp_slow)
+        self.status_publisher_timer = self.create_timer(1.0 / self.STATUS_PUBLISH_RATE, self.publish_status)
+        self.temp_slow_publisher_timer = self.create_timer(1.0 / self.TEMP_SLOW_PUBLISH_RATE, self.publish_temp_slow)
 
 
     def get_ftdi_string(self) -> str:
@@ -136,11 +137,16 @@ class GyroPublisher(SerialNode):
         """
         return ros_time_msg.sec + ros_time_msg.nanosec * 1e-9
 
-    def publish_status_and_temp_slow(self) -> None:
-        """Publish the gyro status and slow temperature if the last frame was published recently."""
+    def publish_status(self) -> None:
+        """Publish the gyro status if the last frame was published recently."""
         if (self.get_clock().now() - Time.from_msg(self.last_frame_timestamp) <
                 Duration(seconds=1.0 / self.STATUS_PUBLISH_RATE)):
             self.status_publisher.publish(self.status_msg)
+
+    def publish_temp_slow(self) -> None:
+        """Publish the slow temperature if the last frame was published recently."""
+        if (self.get_clock().now() - Time.from_msg(self.last_frame_timestamp) <
+                Duration(seconds=1.0 / self.STATUS_PUBLISH_RATE)):
             self.temperature_slow_publisher.publish(self.temperature_msg)
 
     def process_bytes(self, data: bytes) -> None:
