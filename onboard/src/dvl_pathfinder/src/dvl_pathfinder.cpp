@@ -4,20 +4,33 @@
 
 #include <atomic>
 #include <chrono>
+#include <filesystem>
 #include <memory>
+#include <regex>
 #include <string>
 #include <thread>
 #include <vector>
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <fmt/core.h>
 #include <rclcpp/rclcpp.hpp>
+#include <rcpputils/asserts.hpp>
 #include <geometry_msgs/msg/vector3_stamped.hpp>
 #include <std_msgs/msg/float64.hpp>
+#include <yaml-cpp/yaml.h>
 
 extern "C" {
   #include "PDD_Include.h"
 }
 
+namespace fs = std::filesystem;
+
+const std::string DVL_PATHFINDER_PACKAGE_PATH = ament_index_cpp::get_package_share_directory("dvl_pathfinder");
+
+// Path to robot config file
+inline const char* ROBOT_NAME = std::getenv("ROBOT_NAME");
+const std::string ROBOT_CONFIG_FILE_PATH =
+  DVL_PATHFINDER_PACKAGE_PATH + "/config/" + std::string(ROBOT_NAME ? ROBOT_NAME : "") + ".yaml";
 
 /**
  * @brief ROS 2 Jazzy node that reads PD0 ensembles from a Teledyne ADCP over a serial port and publishes
@@ -37,19 +50,22 @@ extern "C" {
 class AdcpReader : public rclcpp::Node
 {
 public:
-  static constexpr int DEFAULT_BAUD = 115200;
+  static constexpr speed_t DEFAULT_BAUD = B115200;
   static constexpr std::size_t BUF_SZ = 10'000;
 
   AdcpReader() : Node("adcp_reader")
   {
-    // ── Declare & get parameters ─────────────────────────────────────────────
-    declare_parameter<std::string>("device", "/dev/ttyUSB4");
-    declare_parameter<int>("baud", DEFAULT_BAUD);
-    declare_parameter<std::string>("frame_id", "dvl_link");
+    // ── Parameters ───────────────────────────────────────────────────────────
+    // Get the FTDI string from the robot config file
+    std::string ftdi;
+    read_robot_config(ftdi);
 
-    device_   = get_parameter("device").as_string();
-    baud_     = get_parameter("baud").as_int();
-    frame_id_ = get_parameter("frame_id").as_string();
+    // Find the serial port by FTDI string
+    device_ = findSerialPortByFtdiString(ftdi);
+    if (device_.empty()) {
+      RCLCPP_FATAL(get_logger(), "Failed to find serial port with FTDI string '%s'", ftdi.c_str());
+      throw std::runtime_error("Serial port not found");
+    }
 
     // ── Publishers ───────────────────────────────────────────────────────────
     vel_pub_   = create_publisher<geometry_msgs::msg::Vector3Stamped>("adcp/velocity", 10);
@@ -60,6 +76,8 @@ public:
       RCLCPP_FATAL(get_logger(), "Failed to open serial device '%s'", device_.c_str());
       throw std::runtime_error("Serial open failed");
     }
+
+    RCLCPP_INFO(get_logger(), "Connected to DVL Pathfinder at %s.", device_.c_str());
 
     // ── Teledyne PD0 decoder ─────────────────────────────────────────────────
     decoder_ = std::make_unique<tdym::PDD_Decoder>();
@@ -82,6 +100,51 @@ public:
   }
 
 private:
+  void read_robot_config(std::string &ftdi) {
+    try {
+      YAML::Node config = YAML::LoadFile(ROBOT_CONFIG_FILE_PATH);
+      ftdi   = config["ftdi"].as<std::string>();
+    } catch (const std::exception &e) {
+      RCLCPP_ERROR(get_logger(), "Exception: %s", e.what());
+      rcpputils::check_true(
+        false, fmt::format("Could not read robot config file. Make sure it is in the correct format. '%s'",
+                           ROBOT_CONFIG_FILE_PATH));
+    }
+  }
+
+  /* Find the serial port by FTDI string. */
+  std::string findSerialPortByFtdiString(const std::string& ftdi) {
+    const std::string by_id_path = "/dev/serial/by-id";
+
+    if (!fs::exists(by_id_path) || !fs::is_directory(by_id_path)) {
+        RCLCPP_ERROR(get_logger(), "Directory %s does not exist.", by_id_path.c_str());
+        return "";
+    }
+
+    for (const auto& entry : fs::directory_iterator(by_id_path)) {
+        std::string filename = entry.path().filename().string();
+
+        if (filename.find(ftdi) != std::string::npos) {
+            // Resolve symlink to get actual device path
+            std::error_code ec;
+            std::string resolved_path = fs::read_symlink(entry.path(), ec).string();
+
+            if (ec) {
+                RCLCPP_ERROR(this->get_logger(), "Failed to resolve symlink: %s", ec.message().c_str());
+                continue;
+            }
+
+            // Join with /dev/serial/by-id to get full device path
+            std::string full_path = fs::canonical(entry.path(), ec).string();
+            if (!ec) {
+                return full_path;
+            }
+        }
+    }
+
+    return ""; // No match found
+  }
+
   /* Open and configure the serial port. */
   bool openSerial()
   {
@@ -95,19 +158,7 @@ private:
     tcgetattr(fd_, &tio);
     cfmakeraw(&tio);
 
-    speed_t spd = B115200;
-    switch (baud_) {
-      case 9600:   spd = B9600;   break;
-      case 19200:  spd = B19200;  break;
-      case 38400:  spd = B38400;  break;
-      case 57600:  spd = B57600;  break;
-      case 115200: spd = B115200; break;
-      default:
-        RCLCPP_WARN(get_logger(), "Unsupported baud %d, falling back to 115200", baud_);
-        baud_ = 115200;
-        spd   = B115200;
-    }
-    cfsetspeed(&tio, spd);
+    cfsetspeed(&tio, DEFAULT_BAUD);
 
     tio.c_cflag |= CLOCAL | CREAD; // ignore modem lines, enable RX
     tio.c_cc[VMIN]  = 0;           // non‑blocking read
@@ -167,8 +218,7 @@ private:
 
   // ── Member variables ──────────────────────────────────────────────────────
   std::string device_;
-  int         baud_;
-  std::string frame_id_;
+  std::string frame_id_ = "dvl";
   int         fd_{-1};
   std::atomic<bool> running_{true};
   std::unique_ptr<tdym::PDD_Decoder> decoder_;
@@ -181,7 +231,6 @@ private:
 int main(int argc, char **argv)
 {
   rclcpp::init(argc, argv);
-
   auto node = std::make_shared<AdcpReader>();
 
   // Use a Multi‑threaded executor – helps when callbacks become CPU‑bound.

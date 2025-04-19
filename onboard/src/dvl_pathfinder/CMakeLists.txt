@@ -10,8 +10,11 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
+find_package(fmt REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 set(CXX_SOURCES
   src/dvl_pathfinder.cpp
@@ -30,7 +33,10 @@ target_include_directories(dvl_pathfinder PUBLIC
 )
 
 target_link_libraries(dvl_pathfinder
+  fmt::fmt
   rclcpp::rclcpp
+  yaml-cpp::yaml-cpp
+  ${ament_index_cpp_TARGETS}
   ${geometry_msgs_TARGETS}
 )
 
@@ -38,5 +44,13 @@ target_link_libraries(dvl_pathfinder
 set_source_files_properties(${C_SOURCES} PROPERTIES LANGUAGE C)
 
 install(TARGETS dvl_pathfinder DESTINATION lib/${PROJECT_NAME})
+install(
+  DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config
+)
+install(
+  DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/config
+)
 
 ament_package()
