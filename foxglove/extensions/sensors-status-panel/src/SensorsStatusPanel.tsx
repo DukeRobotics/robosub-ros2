@@ -7,7 +7,7 @@ import { createRoot } from "react-dom/client";
 
 // Map of sensor name to topic name
 const TOPICS_MAP = {
-  DVL: "/sensors/dvl/odom",
+  DVL: "/sensors/dvl/raw",
   IMU: "/vectornav/imu",
   Pressure: "/sensors/depth",
   Gyro: "/sensors/gyro/status",
