@@ -25,8 +25,8 @@ arduino:
         service_name: /servos/marker_dropper
         type: discrete
         states:
-          left: 1250
-          right: 1750
+          left: 1000
+          right: 2000
         min_delay: 3.0
       - name: torpedo
         tag: T
