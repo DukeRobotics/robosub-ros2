@@ -164,13 +164,16 @@ class CV:
         """The dictionary containing lane marker-specific data."""
         return self._lane_marker_data
 
-    def _on_receive_bounding_box_data(self, cv_data: CVObject, object_type: CVObjectType) -> None:
+    def _on_receive_bounding_box_data(self, cv_data: CVObject, object_type: CVObjectType, filter_len: int = 10) -> None:
         """
         Store the received CV bounding box.
 
         Args:
             cv_data (CVObject): The received CV data.
             object_type (CVObjectType): The name/type of the object.
+            filter_len (int, optional): The maximum number of distance data points to retain
+                for the moving average filter. Defaults to 10.
+            
         """
         self._bounding_boxes[object_type] = cv_data
 
@@ -180,10 +183,14 @@ class CV:
             self._lane_marker_data['touching_top'] = cv_data.coords.y - cv_data.height / 2 <= 0
             self._lane_marker_data['touching_bottom'] = cv_data.coords.y + cv_data.height / 2 >= self.FRAME_HEIGHT
 
+        if object_type == CVObjectType.PATH_MARKER:
+            self._angles[object_type] = self.update_moving_average(self._angle_queues[object_type],
+                                                                   cv_data.yaw, filter_len)
+
     def _on_receive_distance_data(self, distance_data: Point, object_type: CVObjectType, filter_len: int = 10) -> None:
         """
         Parse the received distance data and store it.
-
+,
         Args:
             distance_data (Point): The received distance data.
             object_type (CVObjectType): The name/type of the object.
