@@ -135,7 +135,7 @@ class GyroPublisher(SerialNode):
 
     def publish_status(self) -> None:
         """Publish the gyro status if the last frame was published in the last 1/self.STATUS_PUBLISH_RATE seconds."""
-        if (self.get_clock().now() - Time.from_msg(self.last_frame_timestamp) >
+        if (self.get_clock().now() - Time.from_msg(self.last_frame_timestamp) <
                 Duration(seconds=1.0 / self.STATUS_PUBLISH_RATE)):
             self.status_publisher.publish(self.status_msg)
 
