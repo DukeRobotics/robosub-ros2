@@ -35,6 +35,7 @@ class ModemPublisher(SerialNode):
     NODE_NAME = 'modem'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
     LOOP_RATE = 20  # Hz
+    STATUS_PUBLISH_RATE = 5.0 # Hz
 
     COMMAND_INFO: ClassVar[dict[int, ModemCommandInfo]] = {
         SendModemCommand.Request.TRANSPARENT_MODE: ModemCommandInfo('TRANSPARENT_MODE', 't', False),
@@ -83,7 +84,7 @@ class ModemPublisher(SerialNode):
 
         self.request_initial_report_timer = self.create_timer(1.0, self.request_initial_report)
 
-        self.publish_modem_status_timer = self.create_timer(1.0 / 5.0, self.publish_modem_status)
+        self.publish_modem_status_timer = self.create_timer(1.0 / self.STATUS_PUBLISH_RATE, self.publish_modem_status)
 
     def get_ftdi_string(self) -> str:
         """
