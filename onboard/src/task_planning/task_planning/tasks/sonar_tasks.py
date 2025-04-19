@@ -8,7 +8,7 @@ from custom_msgs.srv import SonarSweepRequest
 logger = get_logger('sonar_tasks')
 
 @task
-async def test_sonar(_self: Task, start_angle: int, end_angle: int, scan_distance: float,
+async def test_sonar(_self: Task, start_angle: float, end_angle: float, scan_distance: float,
                      target_frame_id: str = 'base_link') -> Task[None, None, None]:
     """Repeatedly perform sonar scans."""
     while True:

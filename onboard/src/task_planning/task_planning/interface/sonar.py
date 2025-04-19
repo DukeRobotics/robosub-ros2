@@ -1,5 +1,4 @@
 from custom_msgs.srv import SonarSweepRequest
-from rclpy.client import Client
 from rclpy.logging import get_logger
 from rclpy.node import Node
 from rclpy.task import Future
@@ -22,13 +21,13 @@ class Sonar:
             while not self._sonar_request.wait_for_service(timeout_sec=1.0):
                 logger.info(f'{self.SONAR_SWEEP_REQUEST_SERVICE} not ready, waiting...')
 
-    def sweep(self, start_angle: int, end_angle: int, scan_distance: float, target_frame_id: str) -> Future | None:
+    def sweep(self, start_angle: float, end_angle: float, scan_distance: float, target_frame_id: str) -> Future | None:
         """
         Perform an angular sweep using the sonar.
 
         Args:
-            start_angle (int): The angle to start a sweep at.
-            end_angle (int): The angle for the sweep to finish at.
+            start_angle (float): The angle to start a sweep at.
+            end_angle (float): The angle for the sweep to finish at.
             scan_distance (float): The distance the sonar should scan up to.
             target_frame_id (str): Coordinate frame to convert output to.
 
