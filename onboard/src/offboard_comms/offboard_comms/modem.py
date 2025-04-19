@@ -83,7 +83,7 @@ class ModemPublisher(SerialNode):
 
         self.request_initial_report_timer = self.create_timer(1.0, self.request_initial_report)
 
-        self.publish_modem_status_timer = self.create_timer(1.0 / 10.0, self.publish_modem_status)
+        self.publish_modem_status_timer = self.create_timer(1.0 / 5.0, self.publish_modem_status)
 
     def get_ftdi_string(self) -> str:
         """
