@@ -7,7 +7,6 @@ from rclpy.logging import get_logger
 from rclpy.node import Node
 from rclpy.task import Future
 from rclpy.time import Time
-from task_planning.utils.other_utils import singleton
 
 logger = get_logger('ivc_interface')
 
@@ -37,31 +36,33 @@ class IVC:
 
     _instance = None
 
-    # ROS topics for the state and resetting the pose
     STATUS_TOPIC = '/sensors/modem/status'
     MESSAGES_TOPIC = '/sensors/modem/messages'
     SEND_MESSAGE_SERVICE = '/sensors/modem/send_message'
 
-    def __new__(cls, node: Node | None = None, bypass: bool = False) -> 'IVC':
+    def __new__(cls, node: Node | None = None, bypass: bool = False) -> 'IVC':  # noqa: ARG004
+        """Create a new instance of the IVC class or return the existing instance."""
         if cls._instance is None:
-            if node is None:
-                raise ValueError("IVC must be initialized with a Node the first time.")
             cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
+            cls._instance._initialized = False  # noqa: SLF001
         return cls._instance
 
     def __init__(self, node: Node | None = None, bypass: bool = False) -> None:
         """
-        Initialize the state.
+        Initialize the IVC interface.
 
         Args:
-            node (Node): The ROS node used for communication and state management.
+            node (Node): The task planning ROS node.
             bypass (bool): If True, bypass certain checks. Defaults to False.
         """
         if self._initialized:
             return
 
         self._initialized = True
+
+        if node is None:
+            error_msg = 'IVC interface must be initialized with a Node the first time.'
+            raise ValueError(error_msg)
 
         self.bypass = bypass
 
