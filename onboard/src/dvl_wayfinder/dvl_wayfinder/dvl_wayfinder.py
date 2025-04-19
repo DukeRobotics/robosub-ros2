@@ -8,19 +8,18 @@ import numpy as np
 import rclpy
 import resource_retriever as rr
 import yaml
-from geometry_msgs.msg import Vector3
-from nav_msgs.msg import Odometry
+from custom_msgs.msg import DVLRaw
 from rclpy.node import Node
 from serial.tools import list_ports
 from transforms3d.euler import euler2mat
 
-from offboard_comms.dvl_wayfinder_lib.dvl import Dvl
-from offboard_comms.dvl_wayfinder_lib.system import OutputData
+from dvl_wayfinder.lib.dvl import Dvl
+from dvl_wayfinder.lib.system import OutputData
 
 
 class DVLWayfinderPublisher(Node):
     """A class to read and publish Teledyne Wayfinder DVL data from a serial port."""
-    CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
+    CONFIG_FILE_PATH = f'package://dvl_wayfinder/config/{os.getenv("ROBOT_NAME")}.yaml'
     BAUDRATE = 115200
 
     # Rotate the DVL's coordinate system by the following angles specified in degrees
@@ -31,7 +30,7 @@ class DVLWayfinderPublisher(Node):
 
     NODE_NAME = 'dvl_wayfinder'
 
-    DVL_ODOM_TOPIC = 'sensors/dvl/odom'
+    DVL_RAW_TOPIC = '/sensors/dvl/raw'
 
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME)
@@ -42,7 +41,7 @@ class DVLWayfinderPublisher(Node):
 
         # Get the serial port the DVL is connected to
         try:
-            self._serial_port = next(list_ports.grep(self._config_data['dvl']['ftdi'])).device
+            self._serial_port = next(list_ports.grep(self._config_data['ftdi'])).device
         except StopIteration:
             self.get_logger().error('Wayfinder DVL not found.')
             rclpy.shutdown()
@@ -69,17 +68,11 @@ class DVLWayfinderPublisher(Node):
         self._rotation_matrix = euler2mat(math.radians(self.WAYFINDER_ROLL), math.radians(self.WAYFINDER_PITCH),
                                     math.radians(self.WAYFINDER_YAW))
 
-        self._pub = self.create_publisher(Odometry, self.DVL_ODOM_TOPIC, 50)
+        self._pub = self.create_publisher(DVLRaw, self.DVL_RAW_TOPIC, 50)
 
         # Set up the odometry message
-        self.odom = Odometry()
-        self.odom.header.frame_id = 'odom'
-        self.odom.child_frame_id = 'dvl'
-
-        # Only set the covariance for (linear x, linear x), (linear y, linear y), (linear z, linear z)
-        self.odom.twist.covariance[0] = 0.01
-        self.odom.twist.covariance[7] = 0.01
-        self.odom.twist.covariance[14] = 0.01
+        self.dvl_raw_msg = DVLRaw()
+        self.dvl_raw_msg.header.frame_id = 'dvl'
 
         # Set up the callback for the DVL data
         self._sensor.register_ondata_callback(self.wayfinder_data_callback, None)
@@ -93,27 +86,18 @@ class DVLWayfinderPublisher(Node):
             data_obj (OutputData): WayFinder output data.
         """
         # Make sure the data is valid
-        if any(math.isnan(val) for val in [data_obj.vel_x, data_obj.vel_y, data_obj.vel_z, data_obj.vel_err]):
-            return
+        # if any(math.isnan(val) for val in [data_obj.vel_x, data_obj.vel_y, data_obj.vel_z, data_obj.vel_err]):
+        #     return
 
         # Apply rotation matrix to velocities
-        vels = np.matmul([data_obj.vel_x, data_obj.vel_y, data_obj.vel_z], self._rotation_matrix)
-
-        # Convert velocities to Vector3
-        vels_vector = Vector3(x=vels[0], y=vels[1], z=vels[2])
-
-        # Negate velocities if configured
-        if self._config_data['dvl']['negate_x_vel']:
-            vels_vector.x = -vels_vector.x
-        if self._config_data['dvl']['negate_y_vel']:
-            vels_vector.y = -vels_vector.y
-        if self._config_data['dvl']['negate_z_vel']:
-            vels_vector.z = -vels_vector.z
+        vels = np.matmul([data_obj.vel_x, data_obj.vel_y, data_obj.vel_z], self._rotation_matrix) * 1e3  # Convert to mm
 
         # Publish the data
-        self.odom.header.stamp = self.get_clock().now().to_msg()
-        self.odom.twist.twist.linear = vels_vector
-        self._pub.publish(self.odom)
+        self.dvl_raw_msg.header.stamp = self.get_clock().now().to_msg()
+        self.dvl_raw_msg.bs_transverse = vels[0]
+        self.dvl_raw_msg.bs_longitudinal = vels[1]
+        self.dvl_raw_msg.bs_normal = vels[2]
+        self._pub.publish(self.dvl_raw_msg)
 
 def main(args: list[str] | None = None) -> None:
     """Initialize and run the DVL Wayfinder node."""

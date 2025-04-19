@@ -9,8 +9,8 @@ import struct
 import datetime
 from enum import Enum, auto
 import numpy as np
-from offboard_comms.dvl_wayfinder_lib.packets import AppLayerPacket, AppLayerIdType, calc_checksum
-from offboard_comms.dvl_wayfinder_lib.util import Setting, indent_string
+from dvl_wayfinder.lib.packets import AppLayerPacket, AppLayerIdType, calc_checksum
+from dvl_wayfinder.lib.util import Setting, indent_string
 
 class DateTime():
     """Date and time helper class for getting/setting system time.
