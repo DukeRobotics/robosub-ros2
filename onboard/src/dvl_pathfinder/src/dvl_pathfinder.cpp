@@ -169,7 +169,6 @@ private:
   {
     unsigned char buf[BUF_SZ];
     tdym::PDD_PD0Ensemble ens{};
-    unsigned int ens_num = 0;
 
     while (running_.load() && rclcpp::ok()) {
       ssize_t n = read(fd_, buf, BUF_SZ);
@@ -184,8 +183,6 @@ private:
       tdym::PDD_AddDecoderData(decoder_.get(), buf, static_cast<int>(n));
 
       while (tdym::PDD_GetPD0Ensemble(decoder_.get(), &ens)) {
-        ens_num = tdym::PDD_GetEnsembleNumber(&ens, tdym::PDBB);
-
         double vv[FOUR_BEAMS];
         tdym::PDD_GetVesselVelocities(&ens, vv);
         double range = tdym::PDD_GetRangeToBottom(&ens, vv);
