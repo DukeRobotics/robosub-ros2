@@ -102,7 +102,7 @@ const topicToStatus: Record<string, Status[]> = {
       warn: (value) => value != undefined && value >= 100,
     },
   ],
-  "/sensors/gyro/temperature": [
+  "/sensors/gyro/temperature/slow": [
     {
       name: "Temp (Gyro)",
       suffix: "F",
