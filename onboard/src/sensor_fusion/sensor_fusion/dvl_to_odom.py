@@ -37,6 +37,11 @@ class DVLOdomPublisher(Node):
         if msg.bs_status == self.DVL_BAD_STATUS_MSG:
             return
 
+        # make sure the data is valid
+        if any(math.isnan(val) for val in [msg.bs_transverse, msg.bs_longitudinal, msg.bs_normal,
+                                           msg.sa_roll, msg.sa_pitch, msg.sa_heading]):
+            return
+
         # handle message here
         odom = Odometry()
         odom.header.stamp = self.get_clock().now().to_msg()

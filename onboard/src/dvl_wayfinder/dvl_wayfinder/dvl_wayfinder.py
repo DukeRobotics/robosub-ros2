@@ -85,10 +85,6 @@ class DVLWayfinderPublisher(Node):
         Args:
             data_obj (OutputData): WayFinder output data.
         """
-        # Make sure the data is valid
-        # if any(math.isnan(val) for val in [data_obj.vel_x, data_obj.vel_y, data_obj.vel_z, data_obj.vel_err]):
-        #     return
-
         # Apply rotation matrix to velocities
         vels = np.matmul([data_obj.vel_x, data_obj.vel_y, data_obj.vel_z], self._rotation_matrix) * 1e3  # Convert to mm
 
