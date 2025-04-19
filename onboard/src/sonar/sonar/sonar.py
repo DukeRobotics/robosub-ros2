@@ -34,7 +34,7 @@ class Sonar(Node):
     _serial_port = None
     CONNECTION_RETRY_PERIOD = 5  # s
     LOOP_RATE = 10  # Hz
-    STATUS_LOOP_RATE = 1 # Hz
+    STATUS_LOOP_RATE = 5 # Hz
 
     SONAR_STATUS_TOPIC = 'sonar/status'
     SONAR_REQUEST_TOPIC = 'sonar/request'
