@@ -53,7 +53,7 @@ gyro:
   negate: false
 thrusters:
   - name: bottom_front_left
-    cw: true
+    cw: false
     standard_esc: true
   - name: top_front_left
     cw: false
@@ -62,16 +62,16 @@ thrusters:
     cw: true
     standard_esc: true
   - name: bottom_front_right
-    cw: false
+    cw: true
     standard_esc: false
   - name: bottom_back_left
-    cw: false
+    cw: true
     standard_esc: true
   - name: top_back_left
     cw: false
     standard_esc: true
   - name: bottom_back_right
-    cw: true
+    cw: false
     standard_esc: true
   - name: top_back_right
     cw: true
