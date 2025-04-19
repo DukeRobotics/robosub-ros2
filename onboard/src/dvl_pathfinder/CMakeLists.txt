@@ -31,6 +31,9 @@ set(C_SOURCES
   src/PDD/PDD_Helper.c
 )
 
+# Suppress warnings for C files
+set_source_files_properties(${C_SOURCES} PROPERTIES COMPILE_FLAGS "-w")
+
 add_executable(dvl_pathfinder ${CXX_SOURCES} ${C_SOURCES})
 
 target_include_directories(dvl_pathfinder PUBLIC
