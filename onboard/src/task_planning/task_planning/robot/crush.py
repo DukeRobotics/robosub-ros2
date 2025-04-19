@@ -1,8 +1,8 @@
 # ruff: noqa: ERA001, F401
 from math import radians
 
+from task_planning.interface.ivc import IVCMessageType
 from task_planning.task import Task, task
-from task_planning.task_planning.interface.ivc import IVCMessageType
 from task_planning.tasks import buoyancy_tasks, comp_tasks, ivc_tasks, move_tasks, prequal_tasks
 
 
