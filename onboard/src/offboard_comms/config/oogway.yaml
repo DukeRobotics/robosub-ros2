@@ -48,3 +48,28 @@ gyro:
   negate: false
 modem:
   ftdi: CP2102
+thrusters:
+  - name: bottom_front_left
+    cw: false
+    standard_esc: true
+  - name: top_front_left
+    cw: false
+    standard_esc: true
+  - name: top_front_right
+    cw: true
+    standard_esc: true
+  - name: bottom_front_right
+    cw: true
+    standard_esc: false
+  - name: bottom_back_left
+    cw: true
+    standard_esc: true
+  - name: top_back_left
+    cw: false
+    standard_esc: true
+  - name: bottom_back_right
+    cw: false
+    standard_esc: true
+  - name: top_back_right
+    cw: true
+    standard_esc: true
