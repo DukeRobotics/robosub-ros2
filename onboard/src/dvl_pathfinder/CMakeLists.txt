@@ -26,9 +26,9 @@ set(CXX_SOURCES
 )
 
 set(C_SOURCES
-  src/PDD_Decoder.c
-  src/PDD_Ensemble.c
-  src/PDD_Helper.c
+  src/PDD/PDD_Decoder.c
+  src/PDD/PDD_Ensemble.c
+  src/PDD/PDD_Helper.c
 )
 
 add_executable(dvl_pathfinder ${CXX_SOURCES} ${C_SOURCES})
