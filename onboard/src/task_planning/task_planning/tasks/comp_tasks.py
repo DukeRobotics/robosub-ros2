@@ -4,6 +4,7 @@ import copy
 import math
 from collections.abc import Coroutine
 from enum import Enum
+from typing import Literal
 
 import numpy as np
 from custom_msgs.msg import ControlTypes
@@ -14,7 +15,7 @@ from rclpy.logging import get_logger
 from transforms3d.euler import quat2euler
 
 from task_planning.interface.controls import Controls
-from task_planning.interface.cv import CV
+from task_planning.interface.cv import CV, CVObjectType
 from task_planning.interface.servos import Servos, MarkerDropperStates
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield, task
@@ -105,10 +106,10 @@ async def buoy_task(self: Task, turn_to_face_buoy: bool = False, depth: float = 
     DEPTH_LEVEL = State().orig_depth - depth
 
     async def correct_y() -> Coroutine[None, None, None]:
-        await cv_tasks.correct_y('buoy', parent=self)
+        await cv_tasks.correct_y(prop=CVObjectType.BUOY, parent=self)
 
     async def correct_z() -> Coroutine[None, None, None]:
-        await cv_tasks.correct_z(prop='buoy', parent=self)
+        await cv_tasks.correct_z(prop=CVObjectType.BUOY, parent=self)
 
     async def correct_depth() -> Coroutine[None, None, None]:
         await move_tasks.correct_depth(desired_depth=DEPTH_LEVEL, parent=self)
@@ -127,13 +128,13 @@ async def buoy_task(self: Task, turn_to_face_buoy: bool = False, depth: float = 
         return min(dist - dist_threshold + 0.1, 0.25)
 
     async def move_to_buoy(buoy_dist_threshold=1):
-        buoy_dist = CV().cv_data['buoy'].coords.x
+        buoy_dist = CV().bounding_boxes[CVObjectType.BUOY].coords.x
         await correct_y()
         await correct_depth()
 
         while buoy_dist > buoy_dist_threshold:
             await move_x(step=get_step_size(buoy_dist, buoy_dist_threshold))
-            logger.info(f"Buoy dist: {CV().cv_data['buoy'].coords.x}")
+            logger.info(f"Buoy dist: {CV().bounding_boxes[CVObjectType.BUOY].coords.x}")
             await correct_y()
             if buoy_dist < 3:
                 await correct_z()
@@ -141,8 +142,8 @@ async def buoy_task(self: Task, turn_to_face_buoy: bool = False, depth: float = 
                 await correct_depth()
 
             await Yield()
-            buoy_dist = CV().cv_data['buoy'].coords.x
-            logger.info(f"Buoy dist: {CV().cv_data['buoy'].coords.x}")
+            buoy_dist = CV().bounding_boxes[CVObjectType.BUOY]
+            logger.info(f"Buoy dist: {CV().bounding_boxes[CVObjectType.BUOY].coords.x}")
 
         await correct_z()
 
@@ -180,18 +181,18 @@ async def buoy_task(self: Task, turn_to_face_buoy: bool = False, depth: float = 
 
         async def move_away_from_buoy(buoy_dist_threshold=1.0):
             logger.info('Moving away from buoy')
-            buoy_dist = CV().cv_data['buoy'].coords.x
+            buoy_dist = CV().bounding_boxes[CVObjectType.BUOY].coords.x
             await correct_y()
             await correct_z()
             while buoy_dist < buoy_dist_threshold:
                 await move_x(step=get_step_size_move_away(buoy_dist, buoy_dist_threshold))
 
-                logger.info(f"Buoy dist: {CV().cv_data['buoy'].coords.x}")
+                logger.info(f"Buoy dist: {CV().bounding_boxes[CVObjectType.BUOY].coords.x}")
                 await correct_y()
                 await correct_z()
                 await Yield()
-                buoy_dist = CV().cv_data['buoy'].coords.x
-                logger.info(f"Buoy dist: {CV().cv_data['buoy'].coords.x}")
+                buoy_dist = CV().bounding_boxes[CVObjectType.BUOY].coords.x
+                logger.info(f"Buoy dist: {CV().bounding_boxes[CVObjectType.BUOY].coords.x}")
 
             logger.info('Moved away from buoy')
 
@@ -231,10 +232,6 @@ async def after_buoy_task(self: Task):
         await move_tasks.correct_depth(desired_depth=DEPTH_LEVEL, parent=self)
     self.correct_depth = correct_depth
 
-    def is_receiving_cv_data():
-        return 'path_marker' in CV().cv_data and \
-            Clock().now().seconds_nanoseconds()[0] - CV().cv_data['path_marker'].header.stamp.sec < latency_threshold
-
     def stabilize():
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
         Controls().publish_desired_position(pose_to_hold)
@@ -251,7 +248,7 @@ async def after_buoy_task(self: Task):
 
     while not circumnavigate_task.done:
         circumnavigate_task.step()
-        if is_receiving_cv_data():
+        if CV().is_receiving_recent_cv_data(CVObjectType.PATH_MARKER, latency_threshold):
             stabilize()
             await util_tasks.sleep(5, parent=self)
             break
@@ -470,15 +467,16 @@ async def gate_task_dead_reckoning(self: Task) -> Task[None, None, None]:
 async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[None, None, None]:
     """
     Asynchronous task to perform gate-related operations.
+    NOTE: This code is assuming we choose the sawfish side of the gate.
     """
     logger.info('Started gate task')
     depth_level = State().orig_depth - 0.7
 
     async def correct_y(factor: int=1) -> None:
-        await cv_tasks.correct_y(prop='gate_red_cw', add_factor=0.2 + offset, mult_factor=factor, parent=self)
+        await cv_tasks.correct_y(prop=CVObjectType.GATE_SAWFISH, add_factor=0.2 + offset, mult_factor=factor, parent=self)
 
     async def correct_z() -> None:
-        await cv_tasks.correct_z(prop='gate_red_cw', parent=self)
+        await cv_tasks.correct_z(prop=CVObjectType.GATE_SAWFISH, parent=self)
 
     async def correct_depth() -> None:
         await move_tasks.correct_depth(desired_depth=depth_level, parent=self)
@@ -497,18 +495,18 @@ async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[Non
     await util_tasks.sleep(2, parent=self)
     logger.info('End sleep')
 
-    gate_dist = CV().cv_data['gate_red_cw'].coords.x
+    gate_dist = CV().bounding_boxes[CVObjectType.GATE_SAWFISH].coords.x
     # await correct_y(factor=0.5)
     await correct_depth()
     num_corrections = 0
     while gate_dist > 3:
         await move_x(step=get_step_size(gate_dist))
-        await yaw_to_cv_object('gate_red_cw', direction=-1, yaw_threshold=math.radians(10),
+        await yaw_to_cv_object(CVObjectType.GATE_SAWFISH, direction=-1, yaw_threshold=math.radians(10),
                                latency_threshold=2, depth_level=0.6, parent=self),
         # await correct_y(factor=(0.5 if num_corrections < 0 else 1))
         await correct_depth()
         await Yield()
-        gate_dist = CV().cv_data['gate_red_cw'].coords.x
+        gate_dist = CV().bounding_boxes[CVObjectType.GATE_SAWFISH].coords.x
         logger.info(f'Gate dist: {gate_dist}')
         num_corrections += 1
 
@@ -525,7 +523,7 @@ async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[Non
 
 
 @task
-async def yaw_to_cv_object(self: Task, cv_object: str, direction=1,
+async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
                            yaw_threshold=math.radians(30), latency_threshold=10,
                            depth_level=0.5) -> Task[None, None, None]:
     """
@@ -542,15 +540,15 @@ async def yaw_to_cv_object(self: Task, cv_object: str, direction=1,
         await move_tasks.depth_correction(desired_depth=DEPTH_LEVEL, parent=self)
 
     def is_receiving_cv_data():
-        return cv_object in CV().cv_data and \
-                Clock().now().seconds_nanoseconds()[0] - CV().cv_data[cv_object].header.stamp.sec < latency_threshold
+        return cv_object in CV().bounding_boxes and \
+                Clock().now().seconds_nanoseconds()[0] - CV().bounding_boxes[cv_object].header.stamp.secs < latency_threshold
 
     def get_step_size(desired_yaw):
         # desired yaw in radians
         return min(abs(desired_yaw), MAXIMUM_YAW)
 
     async def yaw_until_object_detection():
-        while not is_receiving_cv_data():
+        while not CV().is_receiving_recent_cv_data(cv_object, latency_threshold):
             logger.info(f'No {cv_object} detection, setting yaw setpoint {MAXIMUM_YAW}')
             await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, MAXIMUM_YAW * direction),
                                                 parent=self)
@@ -564,7 +562,7 @@ async def yaw_to_cv_object(self: Task, cv_object: str, direction=1,
     logger.info(f'{cv_object} detected. Now centering {cv_object} in frame...')
 
     # Center detected object in camera frame
-    cv_object_yaw = CV().cv_data[cv_object].yaw
+    cv_object_yaw = CV().bounding_boxes[cv_object].yaw
     await correct_depth()
     logger.info(f'abs(cv_object_yaw): {abs(cv_object_yaw)}')
     logger.info(f'yaw_threshold: {yaw_threshold}')
@@ -579,11 +577,11 @@ async def yaw_to_cv_object(self: Task, cv_object: str, direction=1,
         await correct_depth()
         await Yield()
 
-        if (not is_receiving_cv_data()):
+        if (not CV().is_receiving_recent_cv_data(cv_object, latency_threshold)):
             logger.info(f'{cv_object} detection lost, running yaw_until_object_detection()')
             await yaw_until_object_detection()
 
-        cv_object_yaw = CV().cv_data[cv_object].yaw
+        cv_object_yaw = CV().bounding_boxes[cv_object].yaw
 
     logger.info(f'{cv_object} centered.')
 
@@ -623,19 +621,19 @@ async def align_path_marker(self: Task, direction=1) -> Task[None, None, None]:
         return -1
 
     async def center_path_marker(pixel_threshold: float, step_size=0.20, x_offset=0, y_offset=0) -> None:
-        logger.info(CV().cv_data['path_marker_distance'])
-        pixel_x = CV().cv_data['path_marker_distance'].x + x_offset
-        pixel_y = CV().cv_data['path_marker_distance'].y + y_offset
+        logger.info(CV().distances[CVObjectType.PATH_MARKER])
+        pixel_x = CV().distances[CVObjectType.PATH_MARKER].x + x_offset
+        pixel_y = CV().distances[CVObjectType.PATH_MARKER].y + y_offset
 
         count = 1
         while (max(pixel_x, pixel_y) > pixel_threshold or min(pixel_x, pixel_y) < -pixel_threshold):
-            logger.info(CV().cv_data['path_marker_distance'])
+            logger.info(CV().distances[CVObjectType.PATH_MARKER])
 
             await move_x(step=step_size * get_step_mult_factor(pixel_x, pixel_threshold))
             await move_y(step=step_size * get_step_mult_factor(pixel_y, pixel_threshold))
 
-            pixel_x = CV().cv_data['path_marker_distance'].x + x_offset
-            pixel_y = CV().cv_data['path_marker_distance'].y + y_offset
+            pixel_x = CV().distances[CVObjectType.PATH_MARKER].x + x_offset
+            pixel_y = CV().distances[CVObjectType.PATH_MARKER].y + y_offset
 
             if count % 3 == 0:
                 logger.info('Correcting depth')
@@ -653,27 +651,25 @@ async def align_path_marker(self: Task, direction=1) -> Task[None, None, None]:
     logger.info('Now aligning path marker in frame...')
 
     # Center detected object in camera frame
-    path_marker_yaw = CV().cv_data['path_marker'].yaw
+    path_marker_yaw = CV().bounding_boxes[CVObjectType.PATH_MARKER].yaw
     await correct_depth()
     logger.info(f"abs(path_marker_yaw) = '{abs(path_marker_yaw)}")
-    logger.info(f'yaw_threshold = {YAW_THRESHOLD!s}')
+    logger.info(f'yaw_threshold = {YAW_THRESHOLD}')
 
     while abs(path_marker_yaw) > YAW_THRESHOLD:
         sign_path_marker_yaw = np.sign(path_marker_yaw)
         correction = get_step_size(path_marker_yaw)
         desired_yaw = sign_path_marker_yaw * correction
 
-        logger.info(f'Detected yaw {path_marker_yaw} is greater than threshold {YAW_THRESHOLD}. Yawing: {desired_yaw}',
-                      )
-        await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, desired_yaw),
-                                            parent=self)
+        logger.info(f'Detected yaw {path_marker_yaw} is greater than threshold {YAW_THRESHOLD}. Yawing: {desired_yaw}')
+        await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, desired_yaw), parent=self)
         await correct_depth()
         await center_path_marker(pixel_threshold=PIXEL_THRESHOLD)
         await correct_depth()
 
         await Yield()
 
-        path_marker_yaw = CV().cv_data['path_marker'].yaw
+        path_marker_yaw = CV().bounding_boxes[CVObjectType.PATH_MARKER].yaw
 
     logger.info('Path marker centered.')
 
@@ -703,19 +699,19 @@ async def center_path_marker(self: Task):
         return -1
 
     async def center_path_marker(pixel_threshold: float, step_size=0.20, x_offset=0, y_offset=0) -> None:
-        logger.info(CV().cv_data['path_marker_distance'])
-        pixel_x = CV().cv_data['path_marker_distance'].x + x_offset
-        pixel_y = CV().cv_data['path_marker_distance'].y + y_offset
+        logger.info(CV().distances[CVObjectType.PATH_MARKER])
+        pixel_x = CV().distances[CVObjectType.PATH_MARKER].x + x_offset
+        pixel_y = CV().distances[CVObjectType.PATH_MARKER].y + y_offset
 
         count = 1
         while (max(pixel_x, pixel_y) > pixel_threshold or min(pixel_x, pixel_y) < -pixel_threshold):
-            logger.info(CV().cv_data['path_marker_distance'])
+            logger.info(CV().distances[CVObjectType.PATH_MARKER])
 
             await move_x(step=step_size * get_step_mult_factor(pixel_x, pixel_threshold))
             await move_y(step=step_size * get_step_mult_factor(pixel_y, pixel_threshold))
 
-            pixel_x = CV().cv_data['path_marker_distance'].x + x_offset
-            pixel_y = CV().cv_data['path_marker_distance'].y + y_offset
+            pixel_x = CV().distances[CVObjectType.PATH_MARKER].x + x_offset
+            pixel_y = CV().distances[CVObjectType.PATH_MARKER].y + y_offset
 
             if count % 3 == 0:
                 logger.info('Correcting depth')
@@ -745,18 +741,14 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
     async def correct_depth(desired_depth: float) -> None:
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
 
-    def is_receiving_bin_data(bin_object, latest_detection_time) -> bool:
-        if not latest_detection_time or bin_object not in CV().data:
-            return False
+    def is_receiving_bin_data(bin_object: CVObjectType, last_detection_time) -> bool:
+        width = CV().bounding_boxes[bin_object].width
+        height = CV().bounding_boxes[bin_object].height
 
-        width = CV().cv_data[bin_object].width
-        height = CV().cv_data[bin_object].height
+        return width * height >= AREA_THRESHOLD \
+            and CV().is_receiving_recent_cv_data(bin_object, LATENCY_THRESHOLD, last_detection_time)
 
-        return width * height >= AREA_THRESHOLD and \
-            Clock().now().seconds_nanoseconds()[0] - CV().cv_data[bin_object].header.stamp.sec < LATENCY_THRESHOLD and \
-            abs(CV().cv_data[bin_object].header.stamp.sec - latest_detection_time) < LATENCY_THRESHOLD
-
-    async def move_x(step : float =1 ) -> None:
+    async def move_x(step: float = 1) -> None:
         await move_tasks.move_x(step=step, parent=self)
 
     def stabilize() -> None:
@@ -770,17 +762,15 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
 
         await move_x(step=1)
 
-        while not is_receiving_bin_data('bin_red', bin_red_time) \
-                or not is_receiving_bin_data('bin_blue', bin_blue_time):
-            if 'bin_red' in CV().cv_data:
-                bin_red_time = CV().cv_data['bin_red'].header.stamp.sec
-            if 'bin_blue' in CV().cv_data:
-                bin_blue_time = CV().cv_data['bin_blue'].header.stamp.sec
+        while not is_receiving_bin_data(CVObjectType.BIN_RED, bin_red_time) \
+                or not is_receiving_bin_data(CVObjectType.BIN_BLUE, bin_blue_time):
+            bin_red_time = CV().bounding_boxes[CVObjectType.BIN_RED].header.stamp.secs
+            bin_blue_time = CV().bounding_boxes[CVObjectType.BIN_BLUE].header.stamp.secs
 
             await correct_depth(DEPTH_LEVEL)
 
-            is_receiving_red_bin_data = is_receiving_bin_data('bin_red', bin_red_time)
-            is_receiving_blue_bin_data = is_receiving_bin_data('bin_blue', bin_blue_time)
+            is_receiving_red_bin_data = is_receiving_bin_data(CVObjectType.BIN_RED, bin_red_time)
+            is_receiving_blue_bin_data = is_receiving_bin_data(CVObjectType.BIN_BLUE, bin_blue_time)
 
             logger.info(f'Receiving red bin data: {is_receiving_red_bin_data}')
             logger.info(f'Receiving blue bin data: {is_receiving_blue_bin_data}')
@@ -870,16 +860,12 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
     async def correct_depth(desired_depth: float) -> None:
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
 
-    def is_receiving_bin_data(bin_object, latest_detection_time: float) -> bool:
-        if not latest_detection_time or bin_object not in CV().cv_data:
-            return False
+    def is_receiving_bin_data(bin_object: CVObjectType, last_detection_time) -> bool:
+        width = CV().bounding_boxes[bin_object].width
+        height = CV().bounding_boxes[bin_object].height
 
-        width = CV().cv_data[bin_object].width
-        height = CV().cv_data[bin_object].height
-
-        return width * height >= AREA_THRESHOLD and \
-            Clock().now().seconds_nanoseconds()[0] - CV().cv_data[bin_object].header.stamp.sec < LATENCY_THRESHOLD and \
-            abs(CV().cv_data[bin_object].header.stamp.sec - latest_detection_time) < LATENCY_THRESHOLD
+        return width * height >= AREA_THRESHOLD \
+            and CV().is_receiving_recent_cv_data(bin_object, LATENCY_THRESHOLD, last_detection_time)
 
     def stabilize() -> None:
         pose_to_hold = copy.deepcopy(State().state.pose.pose)
@@ -899,13 +885,11 @@ async def spiral_bin_search(self: Task) -> Task[None, None, None]:
 
             iterations = secs / 0.1
             for _ in range(int(iterations)):
-                if 'bin_red' in CV().cv_data:
-                    bin_red_time = CV().cv_data['bin_red'].header.stamp.sec
-                if 'bin_blue' in CV().cv_data:
-                    bin_blue_time = CV().cv_data['bin_blue'].header.stamp.sec
+                bin_red_time = CV().bounding_boxes[CVObjectType.BIN_RED].header.stamp.secs
+                bin_blue_time = CV().bounding_boxes[CVObjectType.BIN_BLUE].header.stamp.secs
 
-                is_receiving_red_bin_data = is_receiving_bin_data('bin_red', bin_red_time)
-                is_receiving_blue_bin_data = is_receiving_bin_data('bin_blue', bin_blue_time)
+                is_receiving_red_bin_data = is_receiving_bin_data(CVObjectType.BIN_RED, bin_red_time)
+                is_receiving_blue_bin_data = is_receiving_bin_data(CVObjectType.BIN_BLUE, bin_blue_time)
 
                 bin_found = is_receiving_red_bin_data and is_receiving_blue_bin_data
 
@@ -948,10 +932,10 @@ async def bin_task(self: Task) -> Task[None, None, None]:
 
     drop_marker = Servos().drop_marker
 
-    async def correct_x(target: float) -> None:
+    async def correct_x(target: CVObjectType) -> None:
         await cv_tasks.correct_x(prop=target, parent=self)
 
-    async def correct_y(target: float) -> None:
+    async def correct_y(target: CVObjectType) -> None:
         await cv_tasks.correct_y(prop=target, parent=self)
 
     async def correct_z():
@@ -962,7 +946,7 @@ async def bin_task(self: Task) -> Task[None, None, None]:
     self.correct_depth = correct_depth
 
     async def correct_yaw() -> None:
-        yaw_correction = CV().cv_data['bin_angle']
+        yaw_correction = CV().angles[CVObjectType.BIN_WHOLE]
         logger.info(f'Yaw correction: {yaw_correction}')
         sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
         await move_tasks.move_to_pose_local(
@@ -996,27 +980,27 @@ async def bin_task(self: Task) -> Task[None, None, None]:
             return 1
         return -1
 
-    async def track_bin(target, desired_depth, pixel_threshold, step_size=0.20, x_offset=0, y_offset=0):
-        logger.info(CV().cv_data[f'{target}_distance'])
-        pixel_x = CV().cv_data[f'{target}_distance'].x + x_offset
-        pixel_y = CV().cv_data[f'{target}_distance'].y + y_offset
+    async def track_bin(target: CVObjectType, desired_depth, pixel_threshold, step_size=0.20, x_offset=0, y_offset=0):
+        logger.info(CV().distances[target])
+        pixel_x = CV().distances[target].x + x_offset
+        pixel_y = CV().distances[target].y + y_offset
 
-        width = CV().cv_data['bin_red'].width
-        height = CV().cv_data['bin_red'].height
+        width = CV().bounding_boxes[CVObjectType.BIN_RED].width
+        height = CV().bounding_boxes[CVObjectType.BIN_RED].height
 
         count = 1
         while (max(pixel_x, pixel_y) > pixel_threshold or min(pixel_x, pixel_y) < -pixel_threshold) \
                 and width * height <= 1/3 * FRAME_AREA:
-            logger.info(CV().cv_data[f'{target}_distance'])
+            logger.info(CV().distances[target])
 
             await move_x(step=step_size * get_step_mult_factor(pixel_x, pixel_threshold))
             await move_y(step=step_size * get_step_mult_factor(pixel_y, pixel_threshold))
 
-            width = CV().cv_data['bin_red'].width
-            height = CV().cv_data['bin_red'].height
+            width = CV().bounding_boxes[CVObjectType.BIN_RED].width
+            height = CV().bounding_boxes[CVObjectType.BIN_RED].height
 
-            pixel_x = CV().cv_data[f'{target}_distance'].x + x_offset
-            pixel_y = CV().cv_data[f'{target}_distance'].y + y_offset
+            pixel_x = CV().distances[target].x + x_offset
+            pixel_y = CV().distances[target].y + y_offset
 
             if count % 3 == 0:
                 logger.info('correcting depth')
@@ -1043,12 +1027,12 @@ async def bin_task(self: Task) -> Task[None, None, None]:
         logger.info(f'x: {pixel_x}, y: {pixel_y}, area: {width * height}')
 
     await correct_depth(desired_depth=START_DEPTH_LEVEL)
-    await track_bin(target='bin_red', desired_depth=START_DEPTH_LEVEL, pixel_threshold=START_PIXEL_THRESHOLD)
+    await track_bin(target=CVObjectType.BIN_RED, desired_depth=START_DEPTH_LEVEL, pixel_threshold=START_PIXEL_THRESHOLD)
 
     await correct_yaw()
 
     await correct_depth(desired_depth=MID_DEPTH_LEVEL)
-    await track_bin(target='bin_red', desired_depth=MID_DEPTH_LEVEL, pixel_threshold=MID_PIXEL_THRESHOLD,
+    await track_bin(target=CVObjectType.BIN_RED, desired_depth=MID_DEPTH_LEVEL, pixel_threshold=MID_PIXEL_THRESHOLD,
                     step_size=0.18, y_offset=30, x_offset=25)
 
     drop_marker(MarkerDropperStates.LEFT)
@@ -1070,6 +1054,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     """
     Detects, move towards the pink bins, then surfaces inside the octagon. Requires robot to have submerged 0.7 meters.
     """
+    # NOTE: due to CV interface refactoring, pink bins are no longer object types available through the CV interface.
     logger.info('Starting octagon task')
 
     DEPTH_LEVEL_AT_BINS = State().orig_depth - 1.0
@@ -1094,8 +1079,8 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     def is_receiving_pink_bin_data(latest_detection_time):
         return latest_detection_time and 'bin_pink_bottom' in CV().cv_data and \
             CV().cv_data['bin_pink_bottom'].score >= CONTOUR_SCORE_THRESHOLD and \
-            Clock().now().seconds_nanoseconds()[0] - CV().cv_data['bin_pink_bottom'].header.stamp.sec < LATENCY_THRESHOLD and \
-            abs(CV().cv_data['bin_pink_bottom'].header.stamp.sec - latest_detection_time) < LATENCY_THRESHOLD
+            Clock().now().seconds_nanoseconds()[0] - CV().cv_data['bin_pink_bottom'].header.stamp.secs < LATENCY_THRESHOLD and \
+            abs(CV().cv_data['bin_pink_bottom'].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
 
     def publish_power() -> None:
         power = Twist()
@@ -1138,7 +1123,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         await move_x(step=1)
         while not is_receiving_pink_bin_data(latest_detection_time) and not moved_above:
             if 'bin_pink_bottom' in CV().cv_data:
-                latest_detection_time = CV().cv_data['bin_pink_bottom'].header.stamp.sec
+                latest_detection_time = CV().cv_data['bin_pink_bottom'].header.stamp.secs
 
             await correct_depth(DEPTH_LEVEL_AT_BINS if not moved_above else DEPTH_LEVEL_ABOVE_BINS)
             if not moved_above:
@@ -1182,7 +1167,10 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
 
 @task
-async def torpedo_task(self: Task, depth_level=0.5, animal="shark_front") -> Task[None, None, None]:
+async def torpedo_task(self: Task,
+                       target_animal: Literal[CVObjectType.TORPEDO_SAWFISH,
+                                              CVObjectType.TORPEDO_REEF_SHARK] = CVObjectType.TORPEDO_REEF_SHARK,
+                       depth_level: float = 0.5) -> Task[None, None, None]:
     """
     TODO: Test this task
     """
@@ -1193,23 +1181,23 @@ async def torpedo_task(self: Task, depth_level=0.5, animal="shark_front") -> Tas
         await move_tasks.correct_depth(desired_depth=depth_level, parent=self)
 
     async def yaw_to_torpedo_banner() -> None:
-        await yaw_to_cv_object('torpedo_banner', direction=1, yaw_threshold=math.radians(15),
-                        depth_level=depth_level, parent=Task.MAIN_ID)
+        await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=1, yaw_threshold=math.radians(15),
+                               depth_level=depth_level, parent=Task.MAIN_ID)
 
     def get_step_size(dist: float) -> float:
         return min(dist - step_size, shooting_distance)
 
     async def correct_y() -> Coroutine[None, None, None]:
-        await cv_tasks.correct_y('torpedo_banner', parent=self)
+        await cv_tasks.correct_y(prop=CVObjectType.TORPEDO_BANNER, parent=self)
 
     async def correct_z() -> Coroutine[None, None, None]:
-        await cv_tasks.correct_z(prop='torpedo_banner', parent=self)
+        await cv_tasks.correct_z(prop=CVObjectType.TORPEDO_BANNER, parent=self)
 
     async def move_x(step:float = 1) -> Coroutine[None, None, None]:
         await move_tasks.move_x(step=step, parent=self)
 
     async def correct_yaw_with_depthai() -> None:
-        yaw_correction = CV().cv_data['torpedo_banner'].yaw
+        yaw_correction = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].yaw
         logger.info(f'Yaw correction: {yaw_correction}')
         sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
         await move_tasks.move_to_pose_local(
@@ -1219,15 +1207,15 @@ async def torpedo_task(self: Task, depth_level=0.5, animal="shark_front") -> Tas
         )
         logger.info('Corrected yaw')
 
-    async def move_to_torpedo_banner(banner_dist=1,):
+    async def move_to_torpedo_banner(banner_dist=1):
         await yaw_to_torpedo_banner()
         # await correct_depth()
 
-        banner_dist = CV().cv_data['torpedo_banner'].coords.x
+        banner_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
         while banner_dist > shooting_distance:
             await move_x(step=get_step_size(banner_dist, shooting_distance))
             await yaw_to_torpedo_banner()
-            logger.info(f"Torpedo banner dist: {CV().cv_data['torpedo_banner'].coords.x}")
+            logger.info(f"Torpedo banner dist: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x}")
             await correct_y()
             if banner_dist < 3:
                 await correct_z()
@@ -1235,22 +1223,23 @@ async def torpedo_task(self: Task, depth_level=0.5, animal="shark_front") -> Tas
             #     await correct_depth()
 
             await Yield()
-            banner_dist = CV().cv_data['torpedo_banner'].coords.x
-            logger.info(f"Torpedo banner dist: {CV().cv_data['torpedo_banner'].coords.x}")
+            banner_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
+            logger.info(f"Torpedo banner dist: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x}")
 
     await move_to_torpedo_banner()
 
     async def center_with_torpedo_target():
         await correct_yaw_with_depthai() # Hopefully we know we are normal to the torpedo banner now and also centered with the banner.
         # await correct_depth()
-        target_dist_y = CV().cv_data[animal].coords.y
-        target_dist_z = CV().cv_data[animal].coords.z
+        target_dist_y = CV().bounding_boxes[target_animal].coords.y
+        target_dist_z = CV().bounding_boxes[target_animal].coords.z
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, target_dist_y, target_dist_z, 0, 0, 0),
             keep_level=True,
             parent=self,
         )
-        logger.info(f'Centered on torpedo target, y: {CV().cv_data["torpedo_banner"].coords.y}, z: {CV().cv_data["torpedo_banner"].coords.z}')
+        logger.info(f'Centered on torpedo target, y: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.y}, \
+                                                  z: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.z}')
 
         # Move the Z to account for distance between camera and torpedo launcher
         offset = -0.05
@@ -1264,6 +1253,3 @@ async def torpedo_task(self: Task, depth_level=0.5, animal="shark_front") -> Tas
         # await Servos().fire_torpedo(TorpedoStates.RIGHT)
 
     await center_with_torpedo_target()
-
-
-

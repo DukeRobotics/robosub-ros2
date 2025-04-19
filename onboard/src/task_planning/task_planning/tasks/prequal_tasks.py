@@ -4,7 +4,7 @@ import math
 from collections.abc import Coroutine
 
 from rclpy.logging import get_logger
-from task_planning.interface.cv import CV
+from task_planning.interface.cv import CV, CVObjectType
 from task_planning.interface.state import State
 from task_planning.task import Task, task
 from task_planning.tasks import move_tasks
@@ -34,17 +34,16 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
         Rotate the robot by the specified angle in degrees.
 
         Args:
-            angle (float): The angle to rotate the robot in degrees. Positive angles rotate the robot to the left.
+            angle (float): The angle to rotate the robot in radians. Positive angles rotate the robot to the left.
             log_msg_prefix (str): The prefix for the message logged after rotating. Defaults to 'Rotate'.
             depth_level (float | None): The depth level to move the robot to. If this is not None, the robot will be
                 kept at that depth level. Defaults to None.
         """
-        rad_angle = math.radians(angle)
         await move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, rad_angle),
+            geometry_utils.create_pose(0, 0, 0, 0, 0, angle),
             depth_level=depth_level,
             parent=self)
-        logger.info(f'{log_msg_prefix} {angle}')
+        logger.info(f'{log_msg_prefix} {math.degrees(angle)} degrees')
 
     async def move_with_directions(directions: list[tuple[float, float, float]], depth_level: float | None = None) -> \
         Coroutine[None, None, None]:
@@ -96,10 +95,10 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
             # then one or both of these flags will be true
 
             # If lane marker detection is touching the top of the frame
-            touching_top = CV().cv_data['lane_marker_touching_top']
+            touching_top = CV().lane_marker_data['touching_top']
 
              # If lane marker detection is touching the bottom of the frame
-            touching_bottom = CV().cv_data['lane_marker_touching_bottom']
+            touching_bottom = CV().lane_marker_data['touching_bottom']
 
             # If the lane marker is touching both the top and bottom of the frame,
             # then the robot is very close to the pool floor, but it is still centered on the lane marker.
@@ -120,7 +119,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
                 # If the robot is moving forward, this means the yaw has drifted to the right, so rotate left.
                 # If the robot is moving backward, this means the yaw has drifted to the left, so rotate right.
                 if prev_touching_top and not prev_touching_bottom:
-                    await rotate_deg(20 * direction_sign, depth_level=DEPTH_LEVEL)
+                    await rotate_deg(math.radians(20) * direction_sign, depth_level=DEPTH_LEVEL)
 
             # If the lane marker is touching the bottom but not the top,
             # then the robot is too far to the left, so move right
@@ -136,11 +135,11 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
                 # If the robot is moving forward, this means the yaw has drifted to the left, so rotate right.
                 # If the robot is moving backward, this means the yaw has drifted to the right, so rotate left.
                 if not prev_touching_top and prev_touching_bottom:
-                    await rotate_deg(-20 * direction_sign, depth_level=DEPTH_LEVEL)
+                    await rotate_deg(math.radians(-20) * direction_sign, depth_level=DEPTH_LEVEL)
 
             # Y correction so the robot is centered on the lane marker
-            dist_pixels = CV().cv_data['lane_marker_dist']
-            height_pixels = CV().cv_data['lane_marker_height']
+            dist_pixels = CV().distances[CVObjectType.LANE_MARKER].y
+            height_pixels = CV().lane_marker_data['height']
             dist_meters = dist_pixels * LANE_MARKER_HEIGHT_METERS / height_pixels
             if abs(dist_meters) > 0:
                 await move_tasks.move_to_pose_local(
@@ -155,7 +154,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
             # (left) relative to the lane marker, then the angle is positive. If the robot has rotated clockwise
             # (right) relative to the lane marker, then the angle is negative. To correct the robot's yaw, the robot
             # must rotate in the opposite direction of the angle, hence the angle is negated.
-            angle = (CV().cv_data['lane_marker_angle'] * -1)
+            angle = (CV().angles[CVObjectType.LANE_MARKER] * -1)
             if abs(angle) > 0:
                 await rotate_deg(angle, 'Yaw correction', DEPTH_LEVEL)
 

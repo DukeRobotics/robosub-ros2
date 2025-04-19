@@ -34,33 +34,33 @@ def transform_pose(buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped,
         raise RuntimeError(error_message) from e
 
 
-def centered_gradians_to_radians(angle_gradians: float, center_gradians: float, negate: bool) -> float:
+def centered_gradians_to_radians(angle_gradians: float, center_gradians: float, increase_ccw: bool) -> float:
     """
     Convert gradians centered at center_gradians to radians centered at 0.
 
     Args:
         angle_gradians (float): Angle in gradians where center_gradians is forward.
         center_gradians (float): Center gradians to use for conversion.
-        negate (bool): If True, negate the angle.
+        increase_ccw (bool): If True, sonar angles increase counter-clockwise when viewed from above the robot.
 
     Returns:
         float: Angle in radians where 0 is forward.
     """
-    return (angle_gradians - center_gradians) * RADIANS_PER_GRADIAN * (-1 if negate else 1)
+    return (angle_gradians - center_gradians) * RADIANS_PER_GRADIAN * (1 if increase_ccw else -1)
 
 
-def degrees_to_centered_gradians(angle_degrees: float, center_gradians: float, negate: bool) -> int:
+def degrees_to_centered_gradians(angle_degrees: float, center_gradians: float, increase_ccw: bool) -> int:
     """
     Convert degrees centered at 0 to gradians centered at center_gradians.
 
     Args:
         angle_degrees (float): Angle in degrees where 0 is forward.
         center_gradians (float): Center gradians to use for conversion.
-        negate (bool): If True, negate the angle.
+        increase_ccw (bool): If True, sonar angles increase counter-clockwise when viewed from above the robot.
 
     Returns:
         int: Angle in gradians where center_gradians is forward.
     """
-    angle_gradians = angle_degrees * GRADIANS_PER_DEGREE * (-1 if negate else 1)
+    angle_gradians = angle_degrees * GRADIANS_PER_DEGREE * (1 if increase_ccw else -1)
     angle_gradians_centered = angle_gradians + center_gradians
     return int(angle_gradians_centered)

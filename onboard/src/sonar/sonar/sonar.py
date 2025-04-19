@@ -63,7 +63,7 @@ class Sonar(Node):
 
         self.ftdi = self._config_data['ftdi']
         self.center_gradians = self._config_data['center_gradians']
-        self.negate = self._config_data['negate']
+        self.increase_ccw = self._config_data['increase_ccw']
 
         self.status_publisher = self.create_publisher(String, self.SONAR_STATUS_TOPIC, 10)
 
@@ -248,7 +248,7 @@ class Sonar(Node):
             List: List of data messages from the Sonar device.
         """
         sonar_sweep_data = []
-        for i in range(range_start, range_end + 1):  # inclusive ends
+        for i in range(range_start, range_end + 1, 1 if self.increase_ccw else -1):  # inclusive ends
             sonar_scan = self.request_data_at_angle(i)
             sonar_sweep_data.append(sonar_scan)
         return np.vstack(sonar_sweep_data)
@@ -267,9 +267,9 @@ class Sonar(Node):
             Pose: Pose in target_frame_id containing x and y position of angle/index item.
         """
         x_pos = self.get_distance_of_sample(index)*np.cos(
-            sonar_utils.centered_gradians_to_radians(angle, self.center_gradians, self.negate))
+            sonar_utils.centered_gradians_to_radians(angle, self.center_gradians, self.increase_ccw))
         y_pos = -1 * self.get_distance_of_sample(index)*np.sin(
-            sonar_utils.centered_gradians_to_radians(angle, self.center_gradians, self.negate))
+            sonar_utils.centered_gradians_to_radians(angle, self.center_gradians, self.increase_ccw))
         pos_of_point = Pose()
         pos_of_point.position.x = x_pos
         pos_of_point.position.y = y_pos
@@ -377,11 +377,9 @@ class Sonar(Node):
         right_degrees = request.end_angle
         new_range = request.distance_of_scan
 
-        left_gradians = sonar_utils.degrees_to_centered_gradians(left_degrees, self.center_gradians, self.negate)
-        right_gradians = sonar_utils.degrees_to_centered_gradians(right_degrees, self.center_gradians, self.negate)
-
-        if self.negate:
-            left_gradians, right_gradians = right_gradians, left_gradians
+        left_gradians = sonar_utils.degrees_to_centered_gradians(left_degrees, self.center_gradians, self.increase_ccw)
+        right_gradians = sonar_utils.degrees_to_centered_gradians(right_degrees, self.center_gradians,
+                                                                  self.increase_ccw)
 
         self.get_logger().info(f'Recieved Sonar request: {left_gradians}, {right_gradians}, {new_range}')
 
