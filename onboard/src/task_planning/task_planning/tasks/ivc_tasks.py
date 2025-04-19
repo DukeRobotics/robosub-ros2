@@ -23,7 +23,7 @@ async def wait_for_modem_status(self: Task[None, None, None], timeout: float = 1
     Returns:
         bool: True if modem status is received, False otherwise.
     """
-    sleep_task = util_tasks.sleep(timeout)
+    sleep_task = util_tasks.sleep(timeout, parent=self)
     while not IVC().received_modem_status:
         remaining_duration = sleep_task.step()
         if not remaining_duration:
@@ -49,7 +49,7 @@ async def wait_for_modem_ready(self: Task[None, None, None], timeout: float = 15
     Returns:
         bool: True if the modem is ready, False otherwise.
     """
-    sleep_task = util_tasks.sleep(timeout)
+    sleep_task = util_tasks.sleep(timeout, parent=self)
     received_modem_status = await wait_for_modem_status(timeout=timeout, parent=self)
     if not received_modem_status:
         logger.error('Modem status not received so modem is not ready.')
