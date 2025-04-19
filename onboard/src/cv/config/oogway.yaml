@@ -9,6 +9,7 @@ depthai:
       sensor_size:
         width: 6.2868
         height: 4.712
+      frame_id: camera_depthai_front
     bottom:
       number: 1
       mac: 44:A9:2C:30:DC:B0
@@ -17,6 +18,7 @@ depthai:
       sensor_size:
         width: 6.2868
         height: 4.712
+      frame_id: camera_depthai_bottom
 
 usb_cameras:
   front:
@@ -30,6 +32,7 @@ usb_cameras:
     img_size:
       width: 640
       height: 480
+    frame_id: camera_usb_front
 
   bottom:
     device_path: /dev/video_bottom
@@ -42,3 +45,4 @@ usb_cameras:
     img_size:
       width: 640
       height: 480
+    frame_id: camera_usb_bottom

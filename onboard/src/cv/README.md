@@ -13,7 +13,7 @@ The following are the folders and files in the CV package:
 `cv`: Contains scripts that connect to the camera and perform detection.
 * `bin_detector.py`: Detects bins using HSV filtering.
 * `lane_marker_detector.py`: Detects the lane marker in Taishoff Aquatics Pavilion using HSV filtering.
-* `buoy_detector_contour_matching.py`: Detects the buoy using HSV filtering.
+* `buoy_detector.py`: Detects the buoy using HSV filtering.
 * `config.py`: Constants used throughout the CV package.
 * `depthai_camera_connect.py`: Connects to the OAK camera and uploads the image pipeline. Used by other DepthAI scripts.
 * `depthai_usb_detection.py`: Publishes detections using a specified model in `depthai_models.yaml` on a USB camera image feed.
@@ -23,12 +23,11 @@ The following are the folders and files in the CV package:
 * `torpedo_target_detector.py`: Detects the torpedo target using HSV filtering.
 * `path_marker_detector.py`: Detects path marker using HSV filtering.
 * `pink_bins_detector.py`: Detects pink bins using HSV filtering.
-* `usb_camera_connect_all.py`: Launches `usb_camera.py` on all cameras specified in the config.
 * `usb_camera.py`: Publishes frames coming from a USB camera.
 * `utils.py`: Auxiliary functions that visualize detections on an image feed and modularize certain repeated calculations.
 
 `launch`: Contains the various launch files for our CV package. There are specific launch files for each script in `cv` in addition to the following:
-* `usb_camera_detectors.xml`: Runs the USB camera connect script, along with all detectors that use the USB camera feed.
+* `usb_camera_detectors.launch.py`: Connects to all USB cameras and starts all detectors that use the USB camera feed.
 
 `models`: Contains our pre-trained models and a `.yaml` file that specifies the details of each model.
 * `depthai_models.yaml`: Specifies models for object detection. A model is specified by a name, what classes it predicts, the path to a `.blob` file, as well as other configuration parameters. The blob file format is specific to the processors that the OAK cameras use. See [DepthAI Cameras](#depthai-cameras) for more details.
@@ -49,6 +48,7 @@ depthai:
       sensor_size:
         width: width
         height: height
+      frame_id: transform frame id of the camera
     ...
 
 usb_cameras:
@@ -63,6 +63,7 @@ usb_cameras:
     img_size:
       width: width
       height: height
+    frame_id: transform frame id of the camera
   ...
 ```
 
@@ -117,15 +118,14 @@ To stream the feed or perform spatial detection using the OAK camera, use `ros2 
 ### USB Camera
 This package also contains driver code to publish a camera stream from a USB-type camera in `usb_camera.py`. A USB camera can be located by `/dev/video*` on a linux computer, where `*` can be replaced by any number specifying a given camera channel. The default channel is `0`. Each camera may provide multiple channels; however, typically, only the first channel can be used by OpenCV to capture the camera stream. If multiple cameras are plugged in, the channels are enumerated in the order in which the cameras are plugged in. For example, channels `0-3` correspond to one camera, while channels `4-7` correspond to another camera.
 
-The script `usb_camera.py` uses OpenCV to capture a stream frame by frame from a specified USB camera channel and publishes it to a specified ROS topic. Use `ros2 launch cv usb_camera.xml` to start a stream once a USB camera has been plugged in. You can specify the ROS topic to which the USB camera feed is published via
-
+The script `usb_camera.py` uses OpenCV to capture a stream frame by frame from a specified USB camera channel and publishes it to a specified ROS topic. Use `ros2 launch cv usb_camera.xml` to start a stream once a USB camera has been plugged in. You can specify the camera to connect to via:
 ```bash
-ros2 launch cv usb_camera.xml topic:=<topic>
+ros2 launch cv usb_camera.xml camera:=<camera>
 ```
 
-By default, `<topic>` is set to `/camera/usb_camera/compressed`. Note that the camera must be plugged in _before_ the Docker container is started.
+By default, `<camera>` is set to `front`. Note that the camera must be plugged in _before_ the Docker container is started.
 
-The `udev` rules located at the repository root in the file `99-robosub-ros2.rules` are used to symlink the first channel provided by each of the front and bottom cameras to `/dev/video_front` and `/dev/video_bottom` respectively. This is done to ensure that the cameras are always accessible at the same path, regardless of the channel they are plugged into. The `usb_camera_connect_all.py` script is used to connect to all cameras simultaneously, and can be launched using `ros2 launch cv usb_camera_connect_all.xml`.
+The `udev` rules located at the repository root in the file `99-robosub-ros2.rules` are used to symlink the first channel provided by each of the front and bottom cameras to `/dev/video_front` and `/dev/video_bottom` respectively. This is done to ensure that the cameras are always accessible at the same path, regardless of the channel they are plugged into.
 
 ### Running the Code
 

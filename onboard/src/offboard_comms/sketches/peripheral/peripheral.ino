@@ -75,6 +75,7 @@ void setup() {
       break;
     case CRUSH:
       robot = new Crush(VOLTAGE_DELAY, PRESSURE_DELAY, TEMP_HUMIDITY_DELAY, SERVO_DELAY, false);
+      setupGyroTrigger();
       break;
     default:
       valid_robot = false;
