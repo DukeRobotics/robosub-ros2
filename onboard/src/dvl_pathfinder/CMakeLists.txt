@@ -11,10 +11,15 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(custom_msgs REQUIRED)
 find_package(fmt REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(yaml-cpp REQUIRED)
+
+include_directories(
+  ${custom_msgs_INCLUDE_DIRS}
+)
 
 set(CXX_SOURCES
   src/dvl_pathfinder.cpp
@@ -37,6 +42,7 @@ target_link_libraries(dvl_pathfinder
   rclcpp::rclcpp
   yaml-cpp::yaml-cpp
   ${ament_index_cpp_TARGETS}
+  ${custom_msgs_TARGETS}
   ${geometry_msgs_TARGETS}
 )
 

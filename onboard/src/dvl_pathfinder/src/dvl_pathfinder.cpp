@@ -15,9 +15,9 @@
 #include <fmt/core.h>
 #include <rclcpp/rclcpp.hpp>
 #include <rcpputils/asserts.hpp>
-#include <geometry_msgs/msg/vector3_stamped.hpp>
-#include <std_msgs/msg/float64.hpp>
 #include <yaml-cpp/yaml.h>
+
+#include <custom_msgs/msg/dvl_raw.hpp>
 
 extern "C" {
   #include "PDD_Include.h"
@@ -38,22 +38,16 @@ const std::string ROBOT_CONFIG_FILE_PATH =
  *
  * Topics
  * -------
- *   adcp/velocity (geometry_msgs/Vector3Stamped) – Vessel velocity in m/s (x = surge, y = sway, z = heave).
- *   adcp/range    (std_msgs/Float64)            – Range to bottom in metres.
+ *   /sensors/dvl/raw (custom_msgs/msg/DVLRaw)      – Raw DVL data.
  *
- * Parameters
- * ----------
- *   device    (string, default: "/dev/ttyUSB4")  – Serial device for the ADCP interface.
- *   baud      (int,    default: 115200)          – Baud rate. 9 600‑115 200 supported.
- *   frame_id  (string, default: "adcp_link")     – Frame ID stamped into outgoing messages.
  */
-class AdcpReader : public rclcpp::Node
+class DVLPathfinder : public rclcpp::Node
 {
 public:
   static constexpr speed_t DEFAULT_BAUD = B115200;
   static constexpr std::size_t BUF_SZ = 10'000;
 
-  AdcpReader() : Node("adcp_reader")
+  DVLPathfinder() : Node("dvl_pathfinder")
   {
     // ── Parameters ───────────────────────────────────────────────────────────
     // Get the FTDI string from the robot config file
@@ -68,8 +62,7 @@ public:
     }
 
     // ── Publishers ───────────────────────────────────────────────────────────
-    vel_pub_   = create_publisher<geometry_msgs::msg::Vector3Stamped>("adcp/velocity", 10);
-    range_pub_ = create_publisher<std_msgs::msg::Float64>("adcp/range", 10);
+    dvl_raw_pub_ = create_publisher<custom_msgs::msg::DVLRaw>("/sensors/dvl/raw", 10);
 
     // ── Serial initialisation ────────────────────────────────────────────────
     if (!openSerial()) {
@@ -85,10 +78,10 @@ public:
     tdym::PDD_SetInvalidValue(0);
 
     // ── Background read thread ───────────────────────────────────────────────
-    read_thread_ = std::thread(&AdcpReader::readLoop, this);
+    read_thread_ = std::thread(&DVLPathfinder::readLoop, this);
   }
 
-  ~AdcpReader() override
+  ~DVLPathfinder() override
   {
     running_.store(false);
     if (read_thread_.joinable()) {
@@ -197,21 +190,14 @@ private:
         tdym::PDD_GetVesselVelocities(&ens, vv);
         double range = tdym::PDD_GetRangeToBottom(&ens, vv);
 
-        geometry_msgs::msg::Vector3Stamped vel_msg;
-        vel_msg.header.stamp = now();
-        vel_msg.header.frame_id = frame_id_;
-        vel_msg.vector.x = vv[0];
-        vel_msg.vector.y = vv[1];
-        vel_msg.vector.z = vv[2];
-        vel_pub_->publish(vel_msg);
-
-        std_msgs::msg::Float64 range_msg;
-        range_msg.data = range;
-        range_pub_->publish(range_msg);
-
-        RCLCPP_DEBUG_THROTTLE(get_logger(), *get_clock(), 1000,
-          "Ensemble %u  Vel: [%.3f %.3f %.3f]  Range: %.3f m",
-          ens_num, vv[0], vv[1], vv[2], range);
+        custom_msgs::msg::DVLRaw dvl_raw_msg;
+        dvl_raw_msg.header.stamp = now();
+        dvl_raw_msg.header.frame_id = frame_id_;
+        dvl_raw_msg.bs_transverse = vv[0];
+        dvl_raw_msg.bs_longitudinal = vv[1];
+        dvl_raw_msg.bs_normal = vv[2];
+        dvl_raw_msg.bd_range = range;
+        dvl_raw_pub_->publish(dvl_raw_msg);
       }
     }
   }
@@ -224,14 +210,13 @@ private:
   std::unique_ptr<tdym::PDD_Decoder> decoder_;
   std::thread read_thread_;
 
-  rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr vel_pub_;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr             range_pub_;
+  rclcpp::Publisher<custom_msgs::msg::DVLRaw>::SharedPtr dvl_raw_pub_;
 };
 
 int main(int argc, char **argv)
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<AdcpReader>();
+  auto node = std::make_shared<DVLPathfinder>();
 
   // Use a Multi‑threaded executor – helps when callbacks become CPU‑bound.
   rclcpp::executors::MultiThreadedExecutor exec;
