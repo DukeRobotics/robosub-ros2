@@ -28,6 +28,7 @@ class GyroPublisher(SerialNode):
     ANGULAR_POSITION_TOPIC_NAME = 'sensors/gyro/angular_position/raw'
     ANGULAR_POSITION_POSE_TOPIC_NAME = 'sensors/gyro/angular_position/pose'
     TEMPERATURE_TOPIC_NAME = 'sensors/gyro/temperature'
+    TEMPERATURE_SLOW_TOPIC_NAME = 'sensors/gyro/temperature/slow'
 
     STATUS_PUBLISH_RATE = 5.0 # Hz
 
@@ -68,6 +69,7 @@ class GyroPublisher(SerialNode):
         self.angular_position_pose_publisher = self.create_publisher(PoseWithCovarianceStamped,
                                                                      self.ANGULAR_POSITION_POSE_TOPIC_NAME, 10)
         self.temperature_publisher = self.create_publisher(Float64, self.TEMPERATURE_TOPIC_NAME, 10)
+        self.temperature_slow_publisher = self.create_publisher(Float64, self.TEMPERATURE_SLOW_TOPIC_NAME, 10)
 
         self.last_frame_timestamp = Time_msg()
 
@@ -97,7 +99,8 @@ class GyroPublisher(SerialNode):
 
         self.temperature_msg = Float64()
 
-        self.status_publisher_timer = self.create_timer(1.0 / self.STATUS_PUBLISH_RATE, self.publish_status)
+        self.status_publisher_timer = self.create_timer(1.0 / self.STATUS_PUBLISH_RATE,
+                                                        self.publish_status_and_temp_slow)
 
 
     def get_ftdi_string(self) -> str:
@@ -133,11 +136,12 @@ class GyroPublisher(SerialNode):
         """
         return ros_time_msg.sec + ros_time_msg.nanosec * 1e-9
 
-    def publish_status(self) -> None:
-        """Publish the gyro status if the last frame was published in the last 1/self.STATUS_PUBLISH_RATE seconds."""
+    def publish_status_and_temp_slow(self) -> None:
+        """Publish the gyro status and slow temperature if the last frame was published recently."""
         if (self.get_clock().now() - Time.from_msg(self.last_frame_timestamp) <
                 Duration(seconds=1.0 / self.STATUS_PUBLISH_RATE)):
             self.status_publisher.publish(self.status_msg)
+            self.temperature_slow_publisher.publish(self.temperature_msg)
 
     def process_bytes(self, data: bytes) -> None:
         """
