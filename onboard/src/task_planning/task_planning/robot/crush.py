@@ -2,14 +2,15 @@
 from math import radians
 
 from task_planning.task import Task, task
-from task_planning.tasks import buoyancy_tasks, comp_tasks, move_tasks, prequal_tasks, test_tasks
+from task_planning.task_planning.interface.ivc import IVCMessageType
+from task_planning.tasks import buoyancy_tasks, comp_tasks, ivc_tasks, move_tasks, prequal_tasks
 
 
 @task
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Crush."""
     tasks = [
-        test_tasks.test_ivc('hc', parent=self),
+        ivc_tasks.test_ivc(IVCMessageType.CRUSH_TEST, parent=self),
         # buoyancy_tasks.tune_static_power(parent=self),
         # comp_tasks.initial_submerge(-0.7, parent=self),
         # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
