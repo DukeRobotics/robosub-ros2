@@ -4,9 +4,11 @@ import os
 import numpy as np
 import rclpy
 import serial
-from builtin_interfaces.msg import Time
+from builtin_interfaces.msg import Time as Time_msg
 from geometry_msgs.msg import PoseWithCovarianceStamped, Quaternion, TwistWithCovarianceStamped
-from std_msgs.msg import Float64
+from rclpy.duration import Duration
+from rclpy.time import Time
+from std_msgs.msg import Float64, String
 from transforms3d.euler import euler2quat
 
 from offboard_comms.serial_node import SerialNode, SerialReadType
@@ -20,11 +22,14 @@ class GyroPublisher(SerialNode):
 
     BAUDRATE = 460800
     NODE_NAME = 'gyro'
+    STATUS_TOPIC_NAME = 'sensors/gyro/status'
     ANGULAR_VELOCITY_TOPIC_NAME = 'sensors/gyro/angular_velocity/raw'
     ANGULAR_VELOCITY_TWIST_TOPIC_NAME = 'sensors/gyro/angular_velocity/twist'
     ANGULAR_POSITION_TOPIC_NAME = 'sensors/gyro/angular_position/raw'
     ANGULAR_POSITION_POSE_TOPIC_NAME = 'sensors/gyro/angular_position/pose'
     TEMPERATURE_TOPIC_NAME = 'sensors/gyro/temperature'
+
+    STATUS_PUBLISH_RATE = 5.0 # Hz
 
     CONNECTION_RETRY_PERIOD = 1.0 # seconds
     LOOP_RATE = 1000.0 # Hz
@@ -55,6 +60,7 @@ class GyroPublisher(SerialNode):
 
         self.buffer = bytearray()
 
+        self.status_publisher = self.create_publisher(String, self.STATUS_TOPIC_NAME, 10)
         self.angular_velocity_raw_publisher = self.create_publisher(Float64, self.ANGULAR_VELOCITY_TOPIC_NAME, 10)
         self.angular_velocity_twist_publisher = self.create_publisher(TwistWithCovarianceStamped,
                                                                 self.ANGULAR_VELOCITY_TWIST_TOPIC_NAME, 10)
@@ -62,6 +68,11 @@ class GyroPublisher(SerialNode):
         self.angular_position_pose_publisher = self.create_publisher(PoseWithCovarianceStamped,
                                                                      self.ANGULAR_POSITION_POSE_TOPIC_NAME, 10)
         self.temperature_publisher = self.create_publisher(Float64, self.TEMPERATURE_TOPIC_NAME, 10)
+
+        self.last_frame_timestamp = Time_msg()
+
+        self.status_msg = String()
+        self.status_msg.data = 'Gyro running'
 
         self.angular_velocity_raw_msg = Float64()
 
@@ -86,6 +97,8 @@ class GyroPublisher(SerialNode):
 
         self.temperature_msg = Float64()
 
+        self.status_publisher_timer = self.create_timer(1.0 / self.STATUS_PUBLISH_RATE, self.publish_status)
+
 
     def get_ftdi_string(self) -> str:
         """
@@ -108,17 +121,23 @@ class GyroPublisher(SerialNode):
         """
         return Quaternion(x=quat[1], y=quat[2], z=quat[3], w=quat[0])
 
-    def ros_time_msg_to_float(self, ros_time_msg: Time) -> float:
+    def ros_time_msg_to_float(self, ros_time_msg: Time_msg) -> float:
         """
         Convert a ROS time message to a float.
 
         Args:
-            ros_time_msg (Time): The ROS time to convert.
+            ros_time_msg (Time_msg): The ROS time to convert.
 
         Returns:
             float: The converted time in seconds.
         """
         return ros_time_msg.sec + ros_time_msg.nanosec * 1e-9
+
+    def publish_status(self) -> None:
+        """Publish the gyro status if the last frame was published in the last 1/self.STATUS_PUBLISH_RATE seconds."""
+        if (self.get_clock().now() - Time.from_msg(self.last_frame_timestamp) >
+                Duration(seconds=1.0 / self.STATUS_PUBLISH_RATE)):
+            self.status_publisher.publish(self.status_msg)
 
     def process_bytes(self, data: bytes) -> None:
         """
@@ -209,12 +228,12 @@ class GyroPublisher(SerialNode):
         self.angular_position = (self.angular_velocity_integral + 180.0) % 360.0 - 180.0
 
         # ROS Header timestamp for this frame
-        ros_time_msg = self.get_clock().now().to_msg()
+        self.last_frame_timestamp = self.get_clock().now().to_msg()
 
         self.angular_velocity_raw_msg.data = angular_velocity
         self.angular_velocity_raw_publisher.publish(self.angular_velocity_raw_msg)
 
-        self.angular_velocity_twist_msg.header.stamp = ros_time_msg
+        self.angular_velocity_twist_msg.header.stamp = self.last_frame_timestamp
         self.angular_velocity_twist_msg.twist.twist.angular.z = math.radians(angular_velocity)
         self.angular_velocity_twist_publisher.publish(self.angular_velocity_twist_msg)
 
@@ -224,7 +243,7 @@ class GyroPublisher(SerialNode):
         self.angular_position_raw_msg.data = self.angular_position
         self.angular_position_raw_publisher.publish(self.angular_position_raw_msg)
 
-        self.angular_position_pose_msg.header.stamp = ros_time_msg
+        self.angular_position_pose_msg.header.stamp = self.last_frame_timestamp
         self.angular_position_pose_msg.pose.pose.orientation = self.transforms3d_quat_to_geometry_quat(
             euler2quat(0, 0, math.radians(self.angular_position)))
         self.angular_position_pose_publisher.publish(self.angular_position_pose_msg)
