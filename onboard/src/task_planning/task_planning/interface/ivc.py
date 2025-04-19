@@ -11,8 +11,16 @@ from rclpy.time import Time
 logger = get_logger('ivc_interface')
 
 class IVCMessageType(Enum):
-    """Enum for the types of IVC messages."""
+    """
+    Enum for the types of IVC messages.
 
+    Each message must be a ASCII-encodable string with exactly 2 characters.
+
+    Attributes:
+        UNKNOWN (str): Unknown message type. Any message that is not one of the following will be set to this type.
+        OOGWAY_TEST (str): Test message for Oogway.
+        CRUSH_TEST (str): Test message for Crush.
+    """
     UNKNOWN = ''
     OOGWAY_TEST = 'to'
     CRUSH_TEST = 'tc'
