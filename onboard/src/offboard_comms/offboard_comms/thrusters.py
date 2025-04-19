@@ -172,7 +172,8 @@ class Thrusters(SerialNode):
             return
 
         # Convert allocations to PWM values
-        pwm_values = [self._convert_pwms(self._lookup(alloc), thruster_index) for thruster_index, alloc in enumerate(msg.allocs)]
+        pwm_values = [self._convert_pwms(self._lookup(alloc), thruster_index) for thruster_index, alloc in
+                      enumerate(msg.allocs)]
 
         # Send to serial if connection is available
         self._write_pwms_to_serial(pwm_values)
