@@ -1,0 +1,3 @@
+<launch>
+  <node pkg="dvl_wayfinder" exec="dvl_wayfinder" name="dvl_wayfinder" output="screen" />
+</launch>

@@ -41,11 +41,6 @@ arduino:
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketches/thruster
-dvl:
-  ftdi: D309SFWS
-  negate_x_vel: false
-  negate_y_vel: false
-  negate_z_vel: false
 gyro:
   ftdi: FT9DD97Q
   zero_bias: 0.0023055327

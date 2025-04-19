@@ -1,11 +1,7 @@
 import math
-import os
-from pathlib import Path
 
 import numpy as np
 import rclpy
-import resource_retriever as rr
-import yaml
 from custom_msgs.msg import DVLRaw
 from geometry_msgs.msg import Point, Pose, Quaternion, Twist, Vector3
 from nav_msgs.msg import Odometry
@@ -13,21 +9,16 @@ from rclpy.node import Node
 from tf_transformations import quaternion_from_euler
 
 
-class DVLPathfinderOdomPublisher(Node):
-    """A class to convert raw Teledyne Pathfinder DVL data to odometry messages."""
+class DVLOdomPublisher(Node):
+    """A class to convert raw DVL data to odometry messages."""
 
-    CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
-
-    NODE_NAME = 'dvl_pathfinder_odom_pub'
-    DVL_RAW_TOPIC = 'sensors/dvl/raw'
-    DVL_ODOM_TOPIC = 'sensors/dvl/odom'
+    NODE_NAME = 'dvl_odom_pub'
+    DVL_RAW_TOPIC = '/sensors/dvl/raw'
+    DVL_ODOM_TOPIC = '/sensors/dvl/odom'
 
     DVL_BAD_STATUS_MSG = 'V'
 
     def __init__(self) -> None:
-        with Path(rr.get_filename(self.CONFIG_FILE_PATH, use_protocol=False)).open() as f:
-            self._config_data = yaml.safe_load(f)
-
         super().__init__(self.NODE_NAME)
         self._pub = self.create_publisher(Odometry, self.DVL_ODOM_TOPIC, 50)
         self._sub = self.create_subscription(DVLRaw, self.DVL_RAW_TOPIC, self.convert_to_odom, 10)
@@ -46,6 +37,11 @@ class DVLPathfinderOdomPublisher(Node):
         if msg.bs_status == self.DVL_BAD_STATUS_MSG:
             return
 
+        # make sure the data is valid
+        if any(math.isnan(val) for val in [msg.bs_transverse, msg.bs_longitudinal, msg.bs_normal,
+                                           msg.sa_roll, msg.sa_pitch, msg.sa_heading]):
+            return
+
         # handle message here
         odom = Odometry()
         odom.header.stamp = self.get_clock().now().to_msg()
@@ -57,13 +53,6 @@ class DVLPathfinderOdomPublisher(Node):
         vy = np.float64(msg.bs_longitudinal) / 1000
         vz = np.float64(msg.bs_normal) / 1000
 
-        if self._config_data['dvl']['negate_x_vel']:
-            vx = -vx
-        if self._config_data['dvl']['negate_y_vel']:
-            vy = -vy
-        if self._config_data['dvl']['negate_z_vel']:
-            vz = -vz
-
         # quat
         roll = math.radians(np.float64(msg.sa_roll))
         pitch = math.radians(np.float64(msg.sa_pitch))
@@ -72,8 +61,8 @@ class DVLPathfinderOdomPublisher(Node):
 
         # set pose
         odom.pose.pose = Pose(position=Point(x=0.0, y=0.0, z=0.0),
-                              orientation=Quaternion(x=odom_quat[1], y=odom_quat[2], z=odom_quat[3], w=odom_quat[0]))
-        odom.child_frame_id = 'dvl'
+                              orientation=Quaternion(x=odom_quat[0], y=odom_quat[1], z=odom_quat[2], w=odom_quat[3]))
+        odom.child_frame_id = msg.header.frame_id
 
         # set twist (set angular velocity to (0, 0, 0), should not be used)
         odom.twist.twist = Twist(linear=Vector3(x=vx, y=vy, z=vz), angular=Vector3(x=0.0, y=0.0, z=0.0))
@@ -84,9 +73,9 @@ class DVLPathfinderOdomPublisher(Node):
 
 
 def main(args: list[str] | None = None) -> None:
-    """Create and run the DVL Pathfinder odometry publisher node."""
+    """Create and run the DVL odometry publisher node."""
     rclpy.init(args=args)
-    dvl_odom = DVLPathfinderOdomPublisher()
+    dvl_odom = DVLOdomPublisher()
 
     try:
         rclpy.spin(dvl_odom)

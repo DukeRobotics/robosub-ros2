@@ -2,7 +2,7 @@ from pathlib import Path
 
 from setuptools import find_packages, setup
 
-package_name = 'sensor_fusion'
+package_name = 'dvl_wayfinder'
 
 setup(
     name=package_name,
@@ -12,19 +12,19 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        (str(Path('share') / package_name / 'launch'), list(map(str, Path('./launch').glob('*')))),
-        (str(Path('share') / package_name / 'config'), list(map(str, Path('./config').glob('*.yaml')))),
+        ('share/' + package_name + '/config', [str(file) for file in Path('./config').glob('*.yaml')]),
+        ('share/' + package_name + '/launch', [str(file) for file in Path('./launch').glob('*')]),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='Duke Robotics',
     maintainer_email='hello@duke-robotics.com',
-    description=' Package that combines multiple sources of sensor data and uses an EKF for robot localization',
+    description='Obtain information from the DVL and publish it.',
     license='MIT',
+    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'dummy_state_publisher = sensor_fusion.dummy_state_publisher:main',
-            'dvl_to_odom = sensor_fusion.dvl_to_odom:main',
+            'dvl_wayfinder = dvl_wayfinder.dvl_wayfinder:main',
         ],
     },
 )
