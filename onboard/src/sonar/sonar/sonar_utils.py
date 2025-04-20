@@ -29,7 +29,8 @@ def transform_pose(buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped,
         # Transform the pose
         return tf2_geometry_msgs.do_transform_pose(pose, transform)
 
-    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException,
+            tf2_ros.InvalidArgumentException) as e:
         error_message = f'Failed to transform pose: {e}'
         raise RuntimeError(error_message) from e
 

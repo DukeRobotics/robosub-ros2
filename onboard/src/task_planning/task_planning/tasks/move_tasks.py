@@ -103,7 +103,10 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False, d
             global_pose.orientation = geometry_utils.transforms3d_quat_to_geometry_quat(
                 euler2quat(orig_euler_angles[0], orig_euler_angles[1], euler_angles[2]))
 
+        return global_pose
+
     global_pose = send_transformer(pose)
+
 
     return await coroutine_utils.transform(
         move_to_pose_global(global_pose, pose_tolerances=pose_tolerances, timeout=time_limit, parent=self),

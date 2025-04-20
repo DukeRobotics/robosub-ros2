@@ -38,11 +38,7 @@ def generate_launch_description() -> LaunchDescription:
         PythonLaunchDescriptionSource(str(pkg_cv / 'launch' / 'cv.launch.py')),
     ))
 
-    if robot_name in ['oogway', 'oogway_shell']:
-        ld.add_action(IncludeLaunchDescription(
-            XMLLaunchDescriptionSource(str(pkg_dvl_pathfinder / 'launch' / 'dvl_pathfinder.xml')),
-        ))
-    elif robot_name == 'crush':
+    if robot_name == 'crush':
         ld.add_action(IncludeLaunchDescription(
             XMLLaunchDescriptionSource(str(pkg_dvl_wayfinder / 'launch' / 'dvl_wayfinder.xml')),
         ))

@@ -21,7 +21,7 @@ class Sonar:
             while not self._sonar_request.wait_for_service(timeout_sec=1.0):
                 logger.info(f'{self.SONAR_SWEEP_REQUEST_SERVICE} not ready, waiting...')
 
-    def sweep(self, start_angle: float, end_angle: float, scan_distance: float, target_frame_id: str) -> Future | None:
+    def sweep(self, start_angle: float, end_angle: float, scan_distance: float) -> Future | None:
         """
         Perform an angular sweep using the sonar.
 
@@ -29,16 +29,14 @@ class Sonar:
             start_angle (float): The angle to start a sweep at.
             end_angle (float): The angle for the sweep to finish at.
             scan_distance (float): The distance the sonar should scan up to.
-            target_frame_id (str): Coordinate frame to convert output to.
 
         Returns:
             Future: The result of the aynschronous service call.
         """
         request = SonarSweepRequest.Request()
-        request.start_angle = start_angle
-        request.end_angle = end_angle
-        request.distance_of_scan = scan_distance
-        request.target_frame_id = target_frame_id
+        request.start_angle = float(start_angle)
+        request.end_angle = float(end_angle)
+        request.distance_of_scan = float(scan_distance)
 
         if not self.bypass:
             return self._sonar_request.call_async(request)
