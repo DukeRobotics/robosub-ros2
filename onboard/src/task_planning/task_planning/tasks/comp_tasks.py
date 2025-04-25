@@ -534,14 +534,9 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
 
     logger.info('Starting yaw_to_cv_object')
 
-
     async def correct_depth():
         # await move_tasks.depth_correction(DEPTH_LEVEL, parent=self)
         await move_tasks.depth_correction(desired_depth=DEPTH_LEVEL, parent=self)
-
-    def is_receiving_cv_data():
-        return cv_object in CV().bounding_boxes and \
-                Clock().now().seconds_nanoseconds()[0] - CV().bounding_boxes[cv_object].header.stamp.secs < latency_threshold
 
     def get_step_size(desired_yaw):
         # desired yaw in radians
@@ -562,7 +557,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
     logger.info(f'{cv_object} detected. Now centering {cv_object} in frame...')
 
     # Center detected object in camera frame
-    cv_object_yaw = CV().bounding_boxes[cv_object].yaw
+    cv_object_yaw = CV().bounding_boxes[cv_object].yaw *0.3
     await correct_depth()
     logger.info(f'abs(cv_object_yaw): {abs(cv_object_yaw)}')
     logger.info(f'yaw_threshold: {yaw_threshold}')
@@ -1197,7 +1192,7 @@ async def torpedo_task(self: Task,
         await move_tasks.move_x(step=step, parent=self)
 
     async def correct_yaw_with_depthai() -> None:
-        yaw_correction = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].yaw
+        yaw_correction = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].yaw * 0.3
         logger.info(f'Yaw correction: {yaw_correction}')
         sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
         await move_tasks.move_to_pose_local(
@@ -1207,13 +1202,15 @@ async def torpedo_task(self: Task,
         )
         logger.info('Corrected yaw')
 
-    async def move_to_torpedo_banner(banner_dist=1):
+    async def move_to_torpedo_banner():
         await yaw_to_torpedo_banner()
         # await correct_depth()
 
         banner_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
+        logger.info(f'banner x dist: {banner_dist}')
         while banner_dist > shooting_distance:
-            await move_x(step=get_step_size(banner_dist, shooting_distance))
+            logger.info(f'step_size: {get_step_size(banner_dist)}')
+            await move_x(step=get_step_size(banner_dist))
             await yaw_to_torpedo_banner()
             logger.info(f"Torpedo banner dist: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x}")
             await correct_y()
