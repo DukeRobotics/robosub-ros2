@@ -15,8 +15,8 @@ async def main(self: Task) -> Task[None, None, None]:
         # buoyancy_tasks.tune_static_power(parent=self),
         comp_tasks.initial_submerge(-0.5, parent=self),
         # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
-        # move_tasks.move_with_directions([(0, 1, 0), (0, -1, 0)], depth_level=-0.5, parent=self),
-        move_tasks.move_with_directions([(0, 0, -0.5), (0, 0, 0.5)], parent=self),
+         move_tasks.move_with_directions([(1, 0, 0), (-1, 0, 0)], depth_level=-0.5, parent=self),
+        # move_tasks.move_with_directions([(0, 0, -0.5), (0, 0, 0.5)], parent=self),
 
         # prequal_tasks.prequal_task(parent=self),
 
