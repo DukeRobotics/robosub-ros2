@@ -248,7 +248,9 @@ class Sonar(Node):
             List: List of data messages from the Sonar device.
         """
         sonar_sweep_data = []
-        for i in range(range_start, range_end + 1):  # inclusive ends
+        # Sweep from end to start so that the top edge of ths sweep corresponds to the left side of the robot
+        # and the right edge of the sweep corresponds to the right side of the robot
+        for i in range(range_end, range_start + 1, -1 if self.increase_ccw else 1):
             sonar_scan = self.request_data_at_angle(i)
             sonar_sweep_data.append(sonar_scan)
         return np.vstack(sonar_sweep_data)
@@ -378,12 +380,14 @@ class Sonar(Node):
         end_degrees = request.end_angle
         new_range = request.distance_of_scan
 
+        if start_degrees > end_degrees:
+            response.success = False
+            response.message = f'Start angle {start_degrees} must be less than or equal to end angle {end_degrees}.'
+            return response
+
         left_gradians = sonar_utils.degrees_to_centered_gradians(start_degrees, self.center_gradians, self.increase_ccw)
         right_gradians = sonar_utils.degrees_to_centered_gradians(end_degrees, self.center_gradians,
                                                                   self.increase_ccw)
-
-        if right_gradians < left_gradians:
-            left_gradians, right_gradians = right_gradians, left_gradians
 
         self.get_logger().info(f'Recieved Sonar request: {left_gradians}, {right_gradians}, {new_range}')
 
