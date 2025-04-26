@@ -26,9 +26,9 @@ class Sonar:
         Perform an angular sweep using the sonar.
 
         Args:
-            start_angle (float): The angle to start a sweep at.
-            end_angle (float): The angle for the sweep to finish at.
-            scan_distance (float): The distance the sonar should scan up to.
+            start_angle (float): The angle (degrees) to start a sweep at.
+            end_angle (float): The angle (degrees) for the sweep to finish at.
+            scan_distance (float): The distance (meters) the sonar should scan up to.
 
         Returns:
             Future: The result of the aynschronous service call.
