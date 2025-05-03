@@ -10,7 +10,7 @@ from rclpy.node import Node
 from rclpy.task import Future
 from task_planning.utils.other_utils import singleton
 
-logger = get_logger('marker_dropper_interface')
+logger = get_logger('servos_interface')
 
 class MarkerDropperStates(Enum):
     """Enum for the states of the marker dropper servo."""
