@@ -13,7 +13,7 @@ from transforms3d.euler import euler2quat, quat2euler
 logger = get_logger('move_tasks')
 
 @task
-async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | None = None, timeout: int = 30) -> \
+async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | None = None, timeout: int = 20) -> \
         Task[None, Pose | None, None]:
     """
     Move to a global pose in the "odom" frame.
@@ -28,7 +28,7 @@ async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | 
         pose_tolerances (Twist, optional): If this is not None, this task will end when the robot's pose has reached the
             desired pose within these tolerances.
         timeout (int, optional): The maximum number of seconds to attempt reaching the pose
-                                 before timing out. Defaults to 30.
+                                 before timing out. Defaults to 20.
 
     Returns:
         Task[None, Pose | None, None]: Returns a task that sends the new global pose and
@@ -284,7 +284,7 @@ async def move_with_directions(self: Task,
         for direction in directions:
             assert len(direction) in [3, 6], 'Each tuple in the directions list must be of length 3 or 6. Tuple '
             f'{direction} has length {len(direction)}.'
-
+            logger.info(f'Starting move to {direction}')
             await move_to_pose_local(
                 geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
                 depth_level=depth_level,

@@ -52,7 +52,7 @@ RECT_HEIGHT_METERS = 0.3048
 
 
 @task
-async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]:
+async def gate_style_task(self: Task, depth_level=0.9, isOogway=True) -> Task[None, None, None]:
     """
     Complete two full barrel rolls.
     """
@@ -62,11 +62,14 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
 
     async def roll():
         power = Twist()
-        power.angular.x = 1
+        power.angular.x = 1.0
         Controls().publish_desired_power(power)
         logger.info('Published roll power')
 
-        await util_tasks.sleep(2.25, parent=self)
+        if isOogway:
+            await util_tasks.sleep(2.25, parent=self)
+        else:
+            await util_tasks.sleep(2.0, parent=self)
 
         logger.info('Completed roll')
 

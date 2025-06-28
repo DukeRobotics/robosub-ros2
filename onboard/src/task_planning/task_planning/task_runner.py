@@ -45,7 +45,7 @@ class TaskPlanning(Node):
         # Initialize interfaces
         Controls(self, bypass=self.bypass)
         CV(self, bypass=self.bypass)
-        IVC(node=self, bypass=self.bypass)
+        #IVC(node=self, bypass=self.bypass)
         Servos(self, bypass=self.bypass)
         Sonar(self, bypass=self.bypass)
         State(self, tf_buffer=tf_buffer, bypass=self.bypass)
