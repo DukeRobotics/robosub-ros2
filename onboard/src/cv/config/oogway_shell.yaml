@@ -8,3 +8,4 @@ depthai:
       sensor_size:
         width: 6.2868
         height: 4.712
+      frame_id: camera_depthai_front

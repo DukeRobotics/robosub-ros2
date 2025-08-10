@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Generator
@@ -103,7 +103,7 @@ class TaskUpdatePublisher:
         try:
             msg_data = jsonpickle.encode(data, **jsonpickle_options)
         except Exception:  # noqa: BLE001
-            self.get_logger().warn(
+            self.node.get_logger().warn(
                 f'Task with id {task_id} failed to encode data to JSON when publishing {status.name}: {data}',
             )
             msg_data = jsonpickle.encode(str(data), **jsonpickle_options)
@@ -125,7 +125,7 @@ SendType = TypeVar('SendType')
 ReturnType = TypeVar('ReturnType')
 
 
-class Task(Generic[YieldType, SendType, ReturnType]):
+class Task[YieldType, SendType, ReturnType]:
     """
     A wrapper around a coroutine to publish task updates for every action taken on the coroutine.
 
@@ -356,7 +356,7 @@ class Task(Generic[YieldType, SendType, ReturnType]):
         return output
 
 
-def task(func: Callable[..., Coroutine[YieldType, SendType, ReturnType]]) -> \
+def task[YieldType, SendType, ReturnType](func: Callable[..., Coroutine[YieldType, SendType, ReturnType]]) -> \
         Callable[..., Task[YieldType, SendType, ReturnType]]:
     """Wrap a coroutine within Task."""
 
@@ -365,7 +365,7 @@ def task(func: Callable[..., Coroutine[YieldType, SendType, ReturnType]]) -> \
     return wrapper
 
 
-class Yield(Generic[YieldType, SendType]):
+class Yield[YieldType, SendType]:
     """A class to allow coroutines to yield and accept input."""
 
     def __init__(self, value: YieldType = None) -> None:

@@ -98,6 +98,25 @@ class CV:
 
         node.create_subscription(
             CVObject,
+            '/cv/front/torpedo_banner',
+            lambda msg: self._on_receive_cv_data(msg, 'torpedo_banner'),
+            10,
+        )
+        node.create_subscription(
+            CVObject,
+            '/cv/front/shark_front',
+            lambda msg: self._on_receive_cv_data(msg, 'shark_front'),
+            10,
+        )
+        node.create_subscription(
+            CVObject,
+            '/cv/front/swordfish_front',
+            lambda msg: self._on_receive_cv_data(msg, 'swordfish_front'),
+            10,
+        )
+
+        node.create_subscription(
+            CVObject,
             '/cv/front/gate_red_cw',
             lambda msg: self._on_receive_cv_data(msg, 'gate_red_cw'),
             10,
@@ -342,8 +361,8 @@ class CV:
             'x': msg.coords.x,
             'y': msg.coords.y,
             'z': msg.coords.z,
-            'yaw': msg.coords.yaw,
-            'secs': msg.header.stamp.secs,
+            'yaw': msg.yaw,
+            'secs': msg.header.stamp.sec,
         }
 
     def _on_receive_gate_detection(self, msg: Detection2DArray) -> None:
