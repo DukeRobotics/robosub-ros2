@@ -45,7 +45,7 @@ dvl:
   ftdi: D309SFWS
 gyro:
   ftdi: FT9DD97Q
-  zero_bias: 0.00207636 # CA
+  zero_bias: 0.002162096 # CA -- 0.00207636 + 0.000059247 - 0.000736156 + (0.000748412/2) + 0.000381797 + 0.000006642
   # zero_bias: 0.0023055327 # NC
   scale_factor: 15142595.0
   negate: false
