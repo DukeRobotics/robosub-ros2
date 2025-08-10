@@ -22,6 +22,8 @@ from task_planning.task import Task, Yield, task
 from task_planning.tasks import cv_tasks, move_tasks, util_tasks
 from task_planning.utils import geometry_utils
 
+from task_planning.utils.other_utils import get_robot_name
+
 # TODO: move stablize() to move_tasks.py
 #
 # TODO: create a common skeleton @task class/interface with all the common functions to remove redundancy:
@@ -52,7 +54,7 @@ RECT_HEIGHT_METERS = 0.3048
 
 
 @task
-async def gate_style_task(self: Task, depth_level=0.9, isOogway=True) -> Task[None, None, None]:
+async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]:
     """
     Complete two full barrel rolls.
     """
@@ -66,7 +68,7 @@ async def gate_style_task(self: Task, depth_level=0.9, isOogway=True) -> Task[No
         Controls().publish_desired_power(power)
         logger.info('Published roll power')
 
-        if isOogway:
+        if get_robot_name() == "oogway":
             await util_tasks.sleep(2.25, parent=self)
         else:
             await util_tasks.sleep(1.40, parent=self)

@@ -1,4 +1,3 @@
-import os
 from typing import Any, ClassVar
 
 import rclpy
@@ -16,6 +15,7 @@ from task_planning.interface.sonar import Sonar
 from task_planning.interface.state import State
 from task_planning.robot import crush, oogway, oogway_shell
 from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
+from task_planning.utils.other_utils import get_robot_name
 
 
 class TaskPlanning(Node):
@@ -45,7 +45,7 @@ class TaskPlanning(Node):
         # Initialize interfaces
         Controls(self, bypass=self.bypass)
         CV(self, bypass=self.bypass)
-        #IVC(node=self, bypass=self.bypass)
+        IVC(node=self, bypass=self.bypass)
         Servos(self, bypass=self.bypass)
         Sonar(self, bypass=self.bypass)
         State(self, tf_buffer=tf_buffer, bypass=self.bypass)
@@ -89,7 +89,7 @@ class TaskPlanning(Node):
                 rclpy.spin_once(self, timeout_sec=0.1)
 
         # Determine the robot name
-        robot_name = os.getenv('ROBOT_NAME')
+        robot_name = get_robot_name()
 
         # Get the task for the robot
         if robot_name in self.ROBOT_NAME_TO_MODULE:

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import resource_retriever as rr
@@ -10,6 +9,8 @@ from rclpy.logging import get_logger
 from rclpy.node import Node
 from std_srvs.srv import SetBool, Trigger
 from task_planning.utils.other_utils import singleton
+
+from task_planning.utils.other_utils import get_robot_name
 
 logger = get_logger('controls_interface')
 
@@ -91,7 +92,7 @@ class Controls:
         Returns:
             The thruster dictionary
         """
-        config_file_path = f'package://controls/config/{os.getenv('ROBOT_NAME')}.yaml'
+        config_file_path = f'package://controls/config/{get_robot_name()}.yaml'
         filename = Path(rr.get_filename(config_file_path, use_protocol=False))
         with filename.open() as f:
             full_thruster_dict = yaml.safe_load(f)

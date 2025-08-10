@@ -27,7 +27,7 @@ async def main(self: Task) -> Task[None, None, None]:
         # comp_tasks.yaw_to_cv_object(CVObjectType.GATE_SAWFISH, direction=1, yaw_threshold=radians(10),
         #                             latency_threshold=1, depth_level=0.7, parent=self),
         # comp_tasks.gate_task(offset=-0.1, direction=-1, parent=self),
-        comp_tasks.gate_style_task(depth_level=0.6, isOogway=False, parent=self),
+        comp_tasks.gate_style_task(depth_level=0.6, parent=self),
         # comp_tasks.yaw_to_cv_object(CVObjectType.BUOY, direction=1, depth_level=0.7, parent=self),
         # comp_tasks.buoy_task(turn_to_face_buoy=False, depth=0.7, parent=self),
         # comp_tasks.after_buoy_task(parent=self),

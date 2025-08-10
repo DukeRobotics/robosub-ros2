@@ -1,4 +1,3 @@
-import os
 from dataclasses import dataclass
 from enum import Enum
 from typing import ClassVar
@@ -9,6 +8,7 @@ from rclpy.logging import get_logger
 from rclpy.node import Node
 from rclpy.task import Future
 from task_planning.utils.other_utils import singleton
+from task_planning.utils.other_utils import get_robot_name
 
 logger = get_logger('servos_interface')
 
@@ -70,7 +70,7 @@ class Servos:
             SetContinuousServo: self._set_continuous_servo,
         }
 
-        robot_name = os.getenv('ROBOT_NAME')
+        robot_name = get_robot_name()
 
         for servo_name, servo_info in self.SERVOS.items():
             if robot_name in servo_info.robot_names:
