@@ -13,6 +13,7 @@ __pycache__
 *.mcap
 *.db3
 *.bag
+metadata.yaml
 
 # Configuration files
 .config
