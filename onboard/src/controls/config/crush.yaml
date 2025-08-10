@@ -1,9 +1,9 @@
 pid:
   position:
     x:
-      Kp: 1.5
-      Ki: 0.20000000000000001
-      Kd: 2
+      Kp: 1
+      Ki: 0
+      Kd: 0.20000000000000001
       Ff: 0
       control_effort:
         min: -1
