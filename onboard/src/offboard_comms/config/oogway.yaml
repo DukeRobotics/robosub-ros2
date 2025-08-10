@@ -45,7 +45,8 @@ dvl:
   ftdi: D309SFWS
 gyro:
   ftdi: FT9DD97Q
-  zero_bias: 0.0023055327
+  zero_bias: 0.00207636 # CA
+  # zero_bias: 0.0023055327 # NC
   scale_factor: 15142595.0
   negate: false
 modem:
