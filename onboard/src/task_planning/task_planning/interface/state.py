@@ -1,4 +1,4 @@
-from geometry_msgs.msg import PoseWithCovarianceStamped, Vector3
+from geometry_msgs.msg import PoseWithCovarianceStamped, Vector3, Twist
 from nav_msgs.msg import Odometry
 from rclpy.logging import get_logger
 from rclpy.node import Node
@@ -27,6 +27,7 @@ class State:
     DEPTH_TOPIC = '/sensors/depth'
     IMU_TOPIC = '/vectornav/imu'
     RESET_POSE_SERVICE = '/set_pose'
+    GYRO_TOPIC = '/sensors/gyro/angular_position/pose'
 
     def __init__(self, node: Node, bypass: bool = False, tf_buffer: Buffer | None = None) -> None:
         """
@@ -42,12 +43,16 @@ class State:
 
         self._received_state = False
         self._received_depth = False
+        self._received_gyro = False
         self._received_imu = False
 
         self._state = None
         self._orig_state = None
         self._depth = 0
         self._orig_depth = 0
+        self._gyro = PoseWithCovarianceStamped()
+        self._orig_gyro = PoseWithCovarianceStamped()
+        self._gyro_euler_angles = Vector3()
         self._imu = Imu()
         self._orig_imu = Imu()
 
@@ -59,6 +64,8 @@ class State:
                 logger.info(f'{self.RESET_POSE_SERVICE} not ready, waiting...')
 
         node.create_subscription(PoseWithCovarianceStamped, self.DEPTH_TOPIC, self._on_receive_depth, 10)
+
+        node.create_subscription(Twist, self.GYRO_TOPIC, self._on_receive_gyro, 10)
 
         node.create_subscription(Imu, self.IMU_TOPIC, self._on_receive_imu, 10)
 
@@ -86,6 +93,21 @@ class State:
     def orig_depth(self) -> float:
         """The first depth message received from the pressure sensor."""
         return self._orig_depth
+
+    @property
+    def gyro(self) -> PoseWithCovarianceStamped:
+        """The yaw from the gyro sensor."""
+        return self._gyro
+
+    @property
+    def orig_gyro(self) -> PoseWithCovarianceStamped:
+        """The first yaw message received from the gyro sensor."""
+        return self._orig_gyro
+
+    @property
+    def gyro_euler_angles(self) -> Vector3:
+        """Euler angles of gyro orientation in radians."""
+        return self._gyro_euler_angles
 
     @property
     def imu(self) -> Imu:
@@ -120,6 +142,15 @@ class State:
         if not self._received_depth:
             self._orig_depth = depth_msg.pose.pose.position.z
             self._received_depth = True
+
+    def _on_receive_gyro(self, gyro_msg: PoseWithCovarianceStamped) -> None:
+        self._gyro = gyro_msg
+
+        if not self._received_gyro:
+            self._orig_gyro = gyro_msg
+            self._received_gyro = True
+        logger.info('die')
+        self._gyro_euler_angles = geometry_utils.geometry_quat_to_euler_angles(self._gyro.pose.pose.orientation)
 
     def _on_receive_imu(self, imu_msg: Imu) -> None:
         self._imu = imu_msg
