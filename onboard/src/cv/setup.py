@@ -37,6 +37,8 @@ setup(
             'pink_bins_detector = cv.pink_bins_detector:main',
             'torpedo_target_detector = cv.torpedo_target_detector:main',
             'usb_camera = cv.usb_camera:main',
+            'hsv_filter = cv.hsv_filter:main',
+            'hsv_red_bin = cv.hsv_red_bin:main',
         ],
     },
 )
