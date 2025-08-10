@@ -4,6 +4,7 @@ from enum import Enum
 from custom_msgs.msg import ModemStatus, StringWithHeader
 from custom_msgs.srv import SendModemMessage
 from rclpy.logging import get_logger
+from rclpy.clock import Clock
 from rclpy.node import Node
 from rclpy.task import Future
 from rclpy.time import Time
@@ -67,6 +68,7 @@ class IVC:
             return
 
         self._initialized = True
+        logger.info(f"{Clock().now().seconds_nanoseconds()[0]}: IVC interface initialized")
 
         if node is None:
             error_msg = 'IVC interface must be initialized with a Node the first time.'
@@ -129,8 +131,11 @@ class IVC:
             message_type = IVCMessageType(msg.data)
         except ValueError:
             message_type = IVCMessageType.UNKNOWN
-        return IVCMessage(timestamp=timestamp, msg=message_type)
+        ivc_message = IVCMessage(timestamp=timestamp, msg=message_type)
 
+        logger.info(f"{timestamp}: {message_type.name}")
+        return ivc_message
+    
     def _on_receive_modem_message(self, msg: StringWithHeader) -> None:
         """
         Convert the message received from the other robot to an IVCMessage and append it to the list of messages.
