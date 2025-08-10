@@ -1,7 +1,7 @@
 pid:
   position:
     x:
-      Kp: 0.59999999999999998
+      Kp: 1.5
       Ki: 0.20000000000000001
       Kd: 2
       Ff: 0
@@ -21,7 +21,7 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     z:
-      Kp: 1.3300000000000001
+      Kp: 1.4299999999999999
       Ki: 0
       Kd: 1.2
       Ff: 0

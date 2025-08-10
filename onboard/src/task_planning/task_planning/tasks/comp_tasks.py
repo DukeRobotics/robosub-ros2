@@ -148,6 +148,7 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
     logger.info('Started gate style task')
 
     DEPTH_LEVEL = State().orig_depth - depth_level
+    YAW_LEVEL = State().gyro_euler_angles.z
 
     async def roll():
         power = Twist()
@@ -182,9 +183,10 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
     euler_angles = quat2euler([imu_orientation.w, imu_orientation.x, imu_orientation.y, imu_orientation.z])
     roll_correction = -euler_angles[0]
     pitch_correction = -euler_angles[1]
+    yaw_correction = -(State().gyro_euler_angles.z - YAW_LEVEL)
 
-    logger.info(f'Roll, pitch correction: {roll_correction, pitch_correction}')
-    await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, 0),
+    logger.info(f'Roll, pitch, yaw correction: {roll_correction, pitch_correction, yaw_correction}')
+    await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, yaw_correction),
                                         parent=self)
     State().reset_pose()
     logger.info('Reset orientation')

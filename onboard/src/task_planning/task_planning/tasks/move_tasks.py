@@ -280,18 +280,17 @@ async def move_with_directions(self: Task,
     Returns:
         None
     """
-    while True:
-        for direction in directions:
-            assert len(direction) in [3, 6], 'Each tuple in the directions list must be of length 3 or 6. Tuple '
-            f'{direction} has length {len(direction)}.'
-            logger.info(f'Starting move to {direction}')
-            await move_to_pose_local(
-                geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
-                depth_level=depth_level,
-                parent=self)
-            logger.info(f'Moved to {direction}')
+    for direction in directions:
+        assert len(direction) in [3, 6], 'Each tuple in the directions list must be of length 3 or 6. Tuple '
+        f'{direction} has length {len(direction)}.'
+        logger.info(f'Starting move to {direction}')
+        await move_to_pose_local(
+            geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
+            depth_level=depth_level,
+            parent=self)
+        logger.info(f'Moved to {direction}')
 
-            if correct_yaw:
-                await self.parent.correct_yaw()
-            if correct_depth:
-                await self.parent.correct_depth()
+        if correct_yaw:
+            await self.parent.correct_yaw()
+        if correct_depth:
+            await self.parent.correct_depth()
