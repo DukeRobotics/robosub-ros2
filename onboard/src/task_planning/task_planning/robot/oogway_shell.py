@@ -1,4 +1,4 @@
-# ruff: noqa: ERA001, F401
+# ruff: noqa: F401
 from task_planning.task import Task, task
 from task_planning.tasks import comp_tasks, move_tasks, prequal_tasks, test_tasks
 

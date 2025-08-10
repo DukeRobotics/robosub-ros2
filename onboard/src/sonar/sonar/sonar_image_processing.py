@@ -115,7 +115,7 @@ def find_center_point_and_angle(array: np.ndarray, threshold: int, eps: float,
         canvas.draw()
 
         image = np.frombuffer(canvas.tostring_argb(), dtype='uint8')
-        image = image.reshape(fig.canvas.get_width_height()[::-1] + (4,))
+        image = image.reshape((*fig.canvas.get_width_height()[::-1], 4))
         array = cv2.cvtColor(image[:, :, 1:], cv2.COLOR_RGB2BGR)
 
     return average_column_index, angle, array
