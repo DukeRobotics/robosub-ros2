@@ -16,7 +16,7 @@ from transforms3d.euler import quat2euler
 
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV, CVObjectType
-from task_planning.interface.servos import Servos, MarkerDropperStates
+from task_planning.interface.servos import Servos, MarkerDropperStates, TorpedoStates
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield, task
 from task_planning.tasks import cv_tasks, move_tasks, util_tasks
@@ -51,6 +51,97 @@ from task_planning.utils.other_utils import get_robot_name
 logger = get_logger('comp_tasks')
 
 RECT_HEIGHT_METERS = 0.3048
+
+@task
+async def torpedo_task(depth_level=0.9, angle_to_shoot_at=0, animal="shark_front") -> Task[None, None, None]:
+    step_size = 1
+    shooting_distance = 1
+
+
+    async def correct_depth() -> None:
+        await move_tasks.correct_depth(desired_depth=depth_level, parent=self)
+
+    async def yaw_to_torpedo_banner() -> None:
+        await yaw_to_cv_object('torpedo_banner', direction=1, yaw_threshold=math.radians(15),
+                        depth_level=depth_level, parent=Task.MAIN_ID)
+
+    def get_step_size(dist: float) -> float:
+        return min(dist - step_size, shooting_distance)
+
+    async def correct_y() -> Coroutine[None, None, None]:
+        await cv_tasks.correct_y('torpedo_banner', parent=self)
+
+    async def correct_z() -> Coroutine[None, None, None]:
+        await cv_tasks.correct_z(prop='torpedo_banner', parent=self)
+
+    async def move_x(step:float = 1) -> Coroutine[None, None, None]:
+        await move_tasks.move_x(step=step, parent=self)
+
+    async def correct_yaw_with_depthai() -> None:
+        yaw_correction = CV().cv_data['torpedo_banner'].yaw
+        logger.info(f'Yaw correction: {yaw_correction}')
+        sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
+        await move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction + (sign * 0.1)),
+            keep_level=True,
+            parent=self,
+        )
+        logger.info('Corrected yaw')
+
+
+
+
+    async def move_to_torpedo_banner(banner_dist=1,):
+        await yaw_to_torpedo_banner()
+        await correct_depth()
+
+        banner_dist = CV().cv_data['torpedo_banner'].coords.x
+        while banner_dist > shooting_distance:
+            await move_x(step=get_step_size(banner_dist, shooting_distance))
+            await yaw_to_torpedo_banner()
+            logger.info(f"Torpedo banner dist: {CV().cv_data['torpedo_banner'].coords.x}")
+            await correct_y()
+            if banner_dist < 3:
+                await correct_z()
+            else:
+                await correct_depth()
+
+            await Yield()
+            banner_dist = CV().cv_data['torpedo_banner'].coords.x
+            logger.info(f"Torpedo banner dist: {CV().cv_data['torpedo_banner'].coords.x}")
+
+
+
+    await move_to_torpedo_banner()
+
+    async def center_with_torpedo_target():
+        await correct_yaw_with_depthai() # Hopefully we know we are normal to the torpedo banner now and also centered with the banner.
+        await correct_depth()
+        target_dist_y = CV().cv_data[animal].coords.y
+        target_dist_z = CV().cv_data[animal].coords.z
+        await move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, target_dist_y, target_dist_z, 0, 0, 0),
+            keep_level=True,
+            parent=self,
+        )
+        logger.info(f'Centered on torpedo target, y: {CV().cv_data["torpedo_banner"].coords.y}, z: {CV().cv_data["torpedo_banner"].coords.z}')
+
+        # Move the Z to account for distance between camera and torpedo launcher
+        offset = -0.05
+        await move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, 0, offset, 0, 0, 0),
+            keep_level=True,
+            parent=self,
+        )
+
+        await Servos().fire_torpedo(TorpedoStates.RIGHT)
+
+
+
+    await center_with_torpedo_target()
+
+
+
 
 
 @task
