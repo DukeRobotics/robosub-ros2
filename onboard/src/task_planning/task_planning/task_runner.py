@@ -92,10 +92,10 @@ class TaskPlanning(Node):
         robot_name = get_robot_name()
 
         # Get the task for the robot
-        if robot_name in self.ROBOT_NAME_TO_MODULE:
-            self.task: Task[Any, Any, Any] = self.ROBOT_NAME_TO_MODULE[robot_name].main(parent=Task.MAIN_ID)
+        if robot_name.value in self.ROBOT_NAME_TO_MODULE:
+            self.task: Task[Any, Any, Any] = self.ROBOT_NAME_TO_MODULE[robot_name.value].main(parent=Task.MAIN_ID)
         else:
-            msg = f'Unknown robot name: {robot_name}'
+            msg = f'Unknown robot name: {robot_name.value}'
             raise ValueError(msg)
 
         self.started_running_task = False

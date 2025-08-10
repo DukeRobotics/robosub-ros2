@@ -1,19 +1,27 @@
 import os
 from collections.abc import Callable
-from typing import Any, Literal
+from enum import Enum
+from typing import Any
 
-# TODO: strongly type return (does python support this?)
-def get_robot_name() -> Literal['oogway', 'oogway_shell', 'crush']:
+
+class RobotName(Enum):
+    """Enum for valid robot names."""
+    OOGWAY = 'oogway'
+    OOGWAY_SHELL = 'oogway_shell'
+    CRUSH = 'crush'
+
+
+def get_robot_name() -> RobotName:
     """
     Get the robot name from the ROBOT_NAME environment variable.
 
     Returns:
-        Literal['oogway', 'oogway_shell', 'crush']: The robot name from the environment variable.
+        RobotName: The robot name from the environment variable.
     """
     robot_name = os.getenv('ROBOT_NAME', '')
-    if robot_name in ('oogway', 'oogway_shell', 'crush'):
-        return robot_name
-    else:
+    try:
+        return RobotName(robot_name)
+    except ValueError:
         raise ValueError(f'Invalid robot name: {robot_name}. Must be one of: oogway, oogway_shell, crush')
 
 

@@ -22,7 +22,7 @@ from task_planning.task import Task, Yield, task
 from task_planning.tasks import cv_tasks, move_tasks, util_tasks
 from task_planning.utils import geometry_utils
 
-from task_planning.utils.other_utils import get_robot_name
+from task_planning.utils.other_utils import get_robot_name, RobotName
 
 # TODO: move stablize() to move_tasks.py
 #
@@ -159,7 +159,7 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
         Controls().publish_desired_power(power)
         logger.info('Published roll power')
 
-        if get_robot_name() == "oogway":
+        if get_robot_name() == RobotName.OOGWAY:
             await util_tasks.sleep(2.25, parent=self)
         else:
             await util_tasks.sleep(1.40, parent=self)

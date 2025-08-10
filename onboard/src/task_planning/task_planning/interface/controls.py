@@ -92,7 +92,7 @@ class Controls:
         Returns:
             The thruster dictionary
         """
-        config_file_path = f'package://controls/config/{get_robot_name()}.yaml'
+        config_file_path = f'package://controls/config/{get_robot_name().value}.yaml'
         filename = Path(rr.get_filename(config_file_path, use_protocol=False))
         with filename.open() as f:
             full_thruster_dict = yaml.safe_load(f)

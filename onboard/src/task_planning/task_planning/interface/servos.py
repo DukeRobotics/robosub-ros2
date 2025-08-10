@@ -73,7 +73,7 @@ class Servos:
         robot_name = get_robot_name()
 
         for servo_name, servo_info in self.SERVOS.items():
-            if robot_name in servo_info.robot_names:
+            if robot_name.value in servo_info.robot_names:
                 self.SERVOS[servo_name].service_client = node.create_client(servo_info.service_type,
                                                                             servo_info.service_topic)
                 if not bypass:
