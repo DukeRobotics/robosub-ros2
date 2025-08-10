@@ -69,7 +69,7 @@ async def gate_style_task(self: Task, depth_level=0.9, isOogway=True) -> Task[No
         if isOogway:
             await util_tasks.sleep(2.25, parent=self)
         else:
-            await util_tasks.sleep(2.0, parent=self)
+            await util_tasks.sleep(1.40, parent=self)
 
         logger.info('Completed roll')
 
