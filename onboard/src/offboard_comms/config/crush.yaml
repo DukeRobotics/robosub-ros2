@@ -32,7 +32,7 @@ arduino:
     sketch: sketches/thruster
 gyro:
   ftdi: FT81SUWZ
-  zero_bias: 0.0025549003
+  zero_bias: 0.0023800993
   scale_factor: 15497811.0
   negate: true
 modem:
