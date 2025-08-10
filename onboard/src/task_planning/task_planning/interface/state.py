@@ -52,7 +52,6 @@ class State:
         self._orig_depth = 0
         self._gyro = PoseWithCovarianceStamped()
         self._orig_gyro = PoseWithCovarianceStamped()
-        self._gyro_euler_angles = Vector3()
         self._imu = Imu()
         self._orig_imu = Imu()
 
@@ -65,7 +64,7 @@ class State:
 
         node.create_subscription(PoseWithCovarianceStamped, self.DEPTH_TOPIC, self._on_receive_depth, 10)
 
-        node.create_subscription(Twist, self.GYRO_TOPIC, self._on_receive_gyro, 10)
+        node.create_subscription(PoseWithCovarianceStamped, self.GYRO_TOPIC, self._on_receive_gyro, 10)
 
         node.create_subscription(Imu, self.IMU_TOPIC, self._on_receive_imu, 10)
 
@@ -149,7 +148,6 @@ class State:
         if not self._received_gyro:
             self._orig_gyro = gyro_msg
             self._received_gyro = True
-        logger.info('die')
         self._gyro_euler_angles = geometry_utils.geometry_quat_to_euler_angles(self._gyro.pose.pose.orientation)
 
     def _on_receive_imu(self, imu_msg: Imu) -> None:
