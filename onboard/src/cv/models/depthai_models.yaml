@@ -74,8 +74,9 @@ yolov7_tiny_2023_main:
   colors: ["800000", "3C14DC", "00FFFF"]
 
 2025_gate:
-  clases: ["gate_sawfish", "gate_shark", "gate_tick", "gate_whole"]
+  classes: ["gate_sawfish", "gate_shark", "gate_tick", "gate_whole"]
   sizes: {"gate_sawfish": [-1, -1], "gate_shark": [-1, -1], "gate_tick": [-1, -1], "gate_whole": [-1, 1]} # not present on config file
+  topic: cv
   weights: 2025_gate.blob
   input_size: [416, 416]
   coordinate_size: 4
