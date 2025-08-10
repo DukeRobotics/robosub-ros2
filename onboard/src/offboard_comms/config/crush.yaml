@@ -49,10 +49,10 @@ thrusters:
     standard_esc: true
   - name: back_left
     cw: true
-    standard_esc: true
+    standard_esc: false
   - name: middle_left
     cw: true
-    standard_esc: false
+    standard_esc: true
   - name: front_left
     cw: true
     standard_esc: false
