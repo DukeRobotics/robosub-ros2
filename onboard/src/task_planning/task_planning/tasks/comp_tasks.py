@@ -8,7 +8,7 @@ from typing import Literal
 
 import numpy as np
 from custom_msgs.msg import ControlTypes
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Vector3
 from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.logging import get_logger
@@ -56,10 +56,6 @@ RECT_HEIGHT_METERS = 0.3048
 async def torpedo_task(depth_level=0.9, angle_to_shoot_at=0, animal="shark_front") -> Task[None, None, None]:
     step_size = 1
     shooting_distance = 1
-
-
-    async def correct_depth() -> None:
-        await move_tasks.correct_depth(desired_depth=depth_level, parent=self)
 
     async def yaw_to_torpedo_banner() -> None:
         await yaw_to_cv_object('torpedo_banner', direction=1, yaw_threshold=math.radians(15),
@@ -524,18 +520,16 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
         desired_yaw = sign_correction * get_step_size(correction)
         logger.info(f'Coinflip: desired_yaw = {desired_yaw}')
 
-        return correction
-        # return desired_yaw
+        return desired_yaw
 
     while abs(yaw_correction := get_yaw_correction()) > math.radians(5):
         logger.info(f'Yaw correction: {yaw_correction}')
-        sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
         await move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction + (sign * 0.1)),
-            keep_level=True,
+            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),
             parent=self,
+            # TODO: maybe set yaw tolerance?
         )
-        logger.info('Back to original orientation')
+        logger.info('Step Completed')
 
     logger.info(f'Final yaw correction: {get_yaw_correction()}')
 
@@ -576,7 +570,6 @@ async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[Non
 
     async def correct_depth() -> None:
         await move_tasks.correct_depth(desired_depth=depth_level, parent=self)
-    self.correct_depth = correct_depth
 
     async def move_x(step=1) -> None:
         await move_tasks.move_x(step=step, parent=self)
@@ -1287,16 +1280,16 @@ async def torpedo_task(self: Task,
     async def move_x(step:float = 1) -> Coroutine[None, None, None]:
         await move_tasks.move_x(step=step, parent=self)
 
-    async def correct_yaw_with_depthai() -> None:
-        yaw_correction = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].yaw * 0.3
-        logger.info(f'Yaw correction: {yaw_correction}')
-        sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
-        await move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction + (sign * 0.1)),
-            keep_level=True,
-            parent=self,
-        )
-        logger.info('Corrected yaw')
+    # async def correct_yaw_with_depthai() -> None:
+    #     yaw_correction = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].yaw * 0.3
+    #     logger.info(f'Yaw correction: {yaw_correction}')
+    #     sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
+    #     await move_tasks.move_to_pose_local(
+    #         geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction + (sign * 0.1)),
+    #         keep_level=True,
+    #         parent=self,
+    #     )
+    #     logger.info('Corrected yaw')
 
     async def move_to_torpedo_banner():
         await yaw_to_torpedo_banner()
@@ -1322,7 +1315,7 @@ async def torpedo_task(self: Task,
     await move_to_torpedo_banner()
 
     async def center_with_torpedo_target():
-        await correct_yaw_with_depthai() # Hopefully we know we are normal to the torpedo banner now and also centered with the banner.
+        # await correct_yaw_with_depthai() # Hopefully we know we are normal to the torpedo banner now and also centered with the banner.
         # await correct_depth()
         target_dist_y = CV().bounding_boxes[target_animal].coords.y
         target_dist_z = CV().bounding_boxes[target_animal].coords.z
