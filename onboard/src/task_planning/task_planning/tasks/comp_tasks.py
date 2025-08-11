@@ -1186,7 +1186,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
 
     async def correct_yaw():
-        yaw_correction = CV().cv_data['bin_pink_front'].yaw
+        yaw_correction = CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].yaw
         logger.info(f'Yaw correction: {yaw_correction}')
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction * 0.7),
@@ -1197,10 +1197,10 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     self.correct_yaw = correct_yaw
 
     def is_receiving_pink_bin_data(latest_detection_time):
-        return latest_detection_time and 'bin_pink_bottom' in CV().cv_data and \
-            CV().cv_data['bin_pink_bottom'].score >= CONTOUR_SCORE_THRESHOLD and \
-            Clock().now().seconds_nanoseconds()[0] - CV().cv_data['bin_pink_bottom'].header.stamp.secs < LATENCY_THRESHOLD and \
-            abs(CV().cv_data['bin_pink_bottom'].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
+        return latest_detection_time and CVObjectType.BIN_PINK_BOTTOM in CV().bounding_boxes and \
+            CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].score >= CONTOUR_SCORE_THRESHOLD and \
+            Clock().now().seconds_nanoseconds()[0] - CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.secs < LATENCY_THRESHOLD and \
+            abs(CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
 
     def publish_power() -> None:
         power = Twist()
@@ -1216,7 +1216,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         Controls().publish_desired_position(pose_to_hold)
 
     def get_step_size(last_step_size):
-        bin_pink_score = CV().cv_data['bin_pink_front'].score
+        bin_pink_score = CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score
         step = 0
 
         low_score = 200
@@ -1242,8 +1242,8 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         last_step_size = float('inf')
         await move_x(step=1)
         while not is_receiving_pink_bin_data(latest_detection_time) and not moved_above:
-            if 'bin_pink_bottom' in CV().cv_data:
-                latest_detection_time = CV().cv_data['bin_pink_bottom'].header.stamp.secs
+            if CVObjectType.BIN_PINK_BOTTOM in CV().bounding_boxes:
+                latest_detection_time = CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.secs
 
             await correct_depth(DEPTH_LEVEL_AT_BINS if not moved_above else DEPTH_LEVEL_ABOVE_BINS)
             if not moved_above:
@@ -1254,10 +1254,10 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             await move_x(step=step)
             last_step_size = step
 
-            logger.info(f'Bin pink front score: {CV().cv_data['bin_pink_front'].score}')
+            logger.info(f'Bin pink front score: {CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score}')
 
             score_threshold = 4000
-            if CV().cv_data['bin_pink_front'].score > score_threshold and not moved_above:
+            if CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score > score_threshold and not moved_above:
                 await correct_depth(DEPTH_LEVEL_ABOVE_BINS + 0.1)
                 moved_above = True
 

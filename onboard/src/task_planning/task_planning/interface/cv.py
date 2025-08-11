@@ -32,6 +32,8 @@ class CVObjectType(Enum):
     TORPEDO_SAWFISH = 'torpedo_sawfish'
     TORPEDO_LOWER_TARGET = 'h'
     TORPEDO_UPPER_TARGET = 'g'
+    BIN_PINK_FRONT = 'bin_pink_front'
+    BIN_PINK_BOTTOM = 'bin_pink_bottom'
 
 
 @singleton
@@ -68,6 +70,8 @@ class CV:
         CVObjectType.TORPEDO_BANNER: '/cv/front/torpedo_banner',
         CVObjectType.TORPEDO_REEF_SHARK: '/cv/front/shark_front',
         CVObjectType.TORPEDO_SAWFISH: '/cv/front/swordfish_front',
+        CVObjectType.BIN_PINK_FRONT: 'cv/front_usb/bin_pink_front/bounding_box',
+        CVObjectType.BIN_PINK_BOTTOM: 'cv/front_usb/bin_pink_bottom/bounding_box',
     }
 
     DISTANCE_TOPICS: ClassVar[dict[CVObjectType, str]] = {
@@ -75,6 +79,8 @@ class CV:
         CVObjectType.BIN_RED: '/cv/bottom/bin_red/distance',
         CVObjectType.LANE_MARKER: '/cv/bottom/lane_marker/distance',
         CVObjectType.PATH_MARKER: '/cv/bottom/path_marker/distance',
+        CVObjectType.BIN_PINK_FRONT: '/cv/front_usb/bin_pink_front/distance',
+        CVObjectType.BIN_PINK_BOTTOM: '/cv/front_usb/bin_pink_bottom/distance',
     }
 
     ANGLE_TOPICS: ClassVar[dict[CVObjectType, str]] = {
