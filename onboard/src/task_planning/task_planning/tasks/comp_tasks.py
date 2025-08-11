@@ -189,7 +189,6 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
     State().reset_pose()
     logger.info('Reset orientation')
 
-
 @task
 async def buoy_task(self: Task, turn_to_face_buoy: bool = False, depth: float = 0.7) -> Task[None, None, None]:
     """Circumnavigate the buoy. Requires robot to have submerged 0.5 meters."""
@@ -440,7 +439,7 @@ async def buoy_circumnavigation_power(self: Task, depth: float = 0.7) -> Task[No
 
 
 @task
-async def initial_submerge(self: Task, submerge_dist: float, enable_controls_flag: bool) -> Task[None, None, None]:
+async def initial_submerge(self: Task, submerge_dist: float, enable_controls_flag: bool = False) -> Task[None, None, None]:
     """
     Submerge the robot a given amount.
 
@@ -472,7 +471,7 @@ async def initial_submerge(self: Task, submerge_dist: float, enable_controls_fla
 
 
 @task
-async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
+async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> Task[None, None, None]:
     """
     Perform the coin flip task, adjusting the robot's yaw and depth.
 
@@ -504,7 +503,6 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
         - Uses `geometry_utils` to create poses for yaw and depth corrections.
         - The task continuously loops until the yaw correction is within the specified threshold (±5 degrees).
     """
-    logger.info('Started coin flip')
     DEPTH_LEVEL = State().orig_depth - depth_level
     MAXIMUM_YAW = math.radians(30)
 
@@ -526,7 +524,7 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
 
         return desired_yaw
 
-    def get_gyro_yaw_correction(return_raw=False):
+    def get_gyro_yaw_correction(return_raw=True):
         orig_gyro_orientation = copy.deepcopy(State().orig_gyro.pose.pose.orientation)
         orig_gyro_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(orig_gyro_orientation))
 
@@ -534,7 +532,7 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
         cur_gyro_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(cur_gyro_orientation))
 
         raw_correction = cur_gyro_euler_angles[2] - orig_gyro_euler_angles[2]
-        correction = -raw_correction % (2 * np.pi)
+        correction = (-raw_correction) % (2 * np.pi)
 
         logger.info(f'Coinflip: raw_gyro_yaw_correction = {raw_correction}')
         logger.info(f'Coinflip: processed_gyro_yaw_correction = {correction}')
@@ -544,16 +542,42 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
         else:
             return correction
 
-    while abs(yaw_correction := get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
-        logger.info(f'Yaw correction: {yaw_correction}')
-        await move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),
-            parent=self,
-            # TODO: maybe set yaw tolerance?
-        )
-        logger.info('Step Completed')
+    if (enable_same_direction):
+        while abs(get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
+            yaw_correction = get_gyro_yaw_correction(return_raw=False)
+            logger.info(f'Yaw correction: {yaw_correction}')
+            if (yaw_correction > np.pi):
+                yaw_correction -= np.pi
+                await move_tasks.move_to_pose_local(
+                    geometry_utils.create_pose(0, 0, 0, 0, 0, np.pi),
+                    parent=self,
+                    # TODO: maybe set yaw tolerance?
+                )
 
-    logger.info(f'Final yaw correction: {get_gyro_yaw_correction()}')
+                logger.info('Yaw correct 180')
+
+            logger.info(f'Yaw correct remainder: {yaw_correction}')
+            await move_tasks.move_to_pose_local(
+                geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),
+                parent=self,
+                # TODO: maybe set yaw tolerance?
+            )
+
+            logger.info('Step Completed')
+    else:
+        while abs(get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
+            yaw_correction = get_gyro_yaw_correction(return_raw=False)
+            logger.info(f'Yaw correction: {yaw_correction}')
+
+            await move_tasks.move_to_pose_local(
+                geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),
+                parent=self,
+                # TODO: maybe set yaw tolerance?
+            )
+            logger.info('Step Completed')
+
+
+    logger.info(f'Final yaw offset: {get_gyro_yaw_correction(return_raw=True)}')
 
     depth_delta = DEPTH_LEVEL - State().depth
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0), parent=self)
@@ -1172,7 +1196,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
 
     async def correct_yaw():
-        yaw_correction = CV().cv_data['bin_pink_front'].yaw
+        yaw_correction = CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].yaw
         logger.info(f'Yaw correction: {yaw_correction}')
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction * 0.7),
@@ -1183,10 +1207,10 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     self.correct_yaw = correct_yaw
 
     def is_receiving_pink_bin_data(latest_detection_time):
-        return latest_detection_time and 'bin_pink_bottom' in CV().cv_data and \
-            CV().cv_data['bin_pink_bottom'].score >= CONTOUR_SCORE_THRESHOLD and \
-            Clock().now().seconds_nanoseconds()[0] - CV().cv_data['bin_pink_bottom'].header.stamp.secs < LATENCY_THRESHOLD and \
-            abs(CV().cv_data['bin_pink_bottom'].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
+        return latest_detection_time and CVObjectType.BIN_PINK_BOTTOM in CV().bounding_boxes and \
+            CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].score >= CONTOUR_SCORE_THRESHOLD and \
+            Clock().now().seconds_nanoseconds()[0] - CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.secs < LATENCY_THRESHOLD and \
+            abs(CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
 
     def publish_power() -> None:
         power = Twist()
@@ -1202,7 +1226,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         Controls().publish_desired_position(pose_to_hold)
 
     def get_step_size(last_step_size):
-        bin_pink_score = CV().cv_data['bin_pink_front'].score
+        bin_pink_score = CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score
         step = 0
 
         low_score = 200
@@ -1228,8 +1252,8 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         last_step_size = float('inf')
         await move_x(step=1)
         while not is_receiving_pink_bin_data(latest_detection_time) and not moved_above:
-            if 'bin_pink_bottom' in CV().cv_data:
-                latest_detection_time = CV().cv_data['bin_pink_bottom'].header.stamp.secs
+            if CVObjectType.BIN_PINK_BOTTOM in CV().bounding_boxes:
+                latest_detection_time = CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.secs
 
             await correct_depth(DEPTH_LEVEL_AT_BINS if not moved_above else DEPTH_LEVEL_ABOVE_BINS)
             if not moved_above:
@@ -1240,10 +1264,10 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             await move_x(step=step)
             last_step_size = step
 
-            logger.info(f'Bin pink front score: {CV().cv_data['bin_pink_front'].score}')
+            logger.info(f'Bin pink front score: {CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score}')
 
             score_threshold = 4000
-            if CV().cv_data['bin_pink_front'].score > score_threshold and not moved_above:
+            if CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score > score_threshold and not moved_above:
                 await correct_depth(DEPTH_LEVEL_ABOVE_BINS + 0.1)
                 moved_above = True
 
@@ -1361,3 +1385,8 @@ async def torpedo_task(self: Task,
         # await Servos().fire_torpedo(TorpedoStates.RIGHT)
 
     await center_with_torpedo_target()
+
+@task
+def first_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
+
+

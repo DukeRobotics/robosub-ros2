@@ -32,6 +32,8 @@ class CVObjectType(Enum):
     TORPEDO_SAWFISH = 'torpedo_sawfish'
     TORPEDO_LOWER_TARGET = 'h'
     TORPEDO_UPPER_TARGET = 'g'
+    BIN_PINK_FRONT = 'bin_pink_front'
+    BIN_PINK_BOTTOM = 'bin_pink_bottom'
 
 
 @singleton
@@ -68,6 +70,8 @@ class CV:
         CVObjectType.TORPEDO_BANNER: '/cv/front/torpedo_banner',
         CVObjectType.TORPEDO_REEF_SHARK: '/cv/front/shark_front',
         CVObjectType.TORPEDO_SAWFISH: '/cv/front/swordfish_front',
+        CVObjectType.BIN_PINK_FRONT: 'cv/front_usb/bin_pink_front/bounding_box',
+        CVObjectType.BIN_PINK_BOTTOM: 'cv/front_usb/bin_pink_bottom/bounding_box',
     }
 
     DISTANCE_TOPICS: ClassVar[dict[CVObjectType, str]] = {
@@ -75,6 +79,8 @@ class CV:
         CVObjectType.BIN_RED: '/cv/bottom/bin_red/distance',
         CVObjectType.LANE_MARKER: '/cv/bottom/lane_marker/distance',
         CVObjectType.PATH_MARKER: '/cv/bottom/path_marker/distance',
+        CVObjectType.BIN_PINK_FRONT: '/cv/front_usb/bin_pink_front/distance',
+        CVObjectType.BIN_PINK_BOTTOM: '/cv/front_usb/bin_pink_bottom/distance',
     }
 
     ANGLE_TOPICS: ClassVar[dict[CVObjectType, str]] = {
@@ -173,7 +179,7 @@ class CV:
             object_type (CVObjectType): The name/type of the object.
             filter_len (int, optional): The maximum number of distance data points to retain
                 for the moving average filter. Defaults to 10.
-            
+
         """
         self._bounding_boxes[object_type] = cv_data
 
@@ -323,3 +329,21 @@ class CV:
             return recent and abs(detection_time - last_detection_time) < latency
 
         return recent
+
+    def get_sonar_sweep_params(self, name: CVObjectType) -> tuple[float, float, float] | None:
+        """
+        Get sonar sweep parameters for a detected object.
+
+        Args:
+            name (CVObjectType): The name/type of the object.
+
+        Returns:
+            tuple[float, float, float] | None: Tuple containing (start_angle, end_angle, scan_distance)
+                in degrees and meters respectively, or None if object not found.
+        """
+        if name not in self._bounding_boxes:
+            logger.warning(f'Attempted to get sonar params of unrecognized CV object {name}')
+            return None
+
+        data = self._bounding_boxes[name]
+        return (data.sonar_start_angle, data.sonar_end_angle, data.sonar_scan_distance)
