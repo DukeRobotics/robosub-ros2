@@ -440,13 +440,17 @@ async def buoy_circumnavigation_power(self: Task, depth: float = 0.7) -> Task[No
 
 
 @task
-async def initial_submerge(self: Task, submerge_dist: float) -> Task[None, None, None]:
+async def initial_submerge(self: Task, submerge_dist: float, enable_controls_flag: bool) -> Task[None, None, None]:
     """
     Submerge the robot a given amount.
 
     Args:
         submerge_dist: The distance to submerge the robot in meters.
+        enable_controls_flag: Flag to wait for ENABLE_CONTROLS status when true.
     """
+    while enable_controls_flag and not Controls().enable_controls_status.data:
+        await Yield()
+
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, submerge_dist, 0, 0, 0),
         keep_orientation=False,
@@ -518,23 +522,29 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
 
         sign_correction = np.sign(correction)
         desired_yaw = sign_correction * get_step_size(correction)
-        logger.info(f'Coinflip: imu_desired_yaw = {desired_yaw}')
+        logger.info(f'Coinflip: imu_yaw_correction = {desired_yaw}')
 
         return desired_yaw
 
-    def get_gyro_yaw_correction():
+    def get_gyro_yaw_correction(return_raw=False):
         orig_gyro_orientation = copy.deepcopy(State().orig_gyro.pose.pose.orientation)
         orig_gyro_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(orig_gyro_orientation))
 
         cur_gyro_orientation = copy.deepcopy(State().gyro.pose.pose.orientation)
         cur_gyro_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(cur_gyro_orientation))
 
-        desired_yaw = orig_gyro_euler_angles[2] - cur_gyro_euler_angles[2]
-        logger.info(f'Coinflip: gyro_desired_yaw = {desired_yaw}')
+        raw_correction = cur_gyro_euler_angles[2] - orig_gyro_euler_angles[2]
+        correction = -raw_correction % (2 * np.pi)
 
-        return desired_yaw
+        logger.info(f'Coinflip: raw_gyro_yaw_correction = {raw_correction}')
+        logger.info(f'Coinflip: processed_gyro_yaw_correction = {correction}')
 
-    while abs(yaw_correction := get_gyro_yaw_correction()) > math.radians(5):
+        if return_raw:
+            return raw_correction
+        else:
+            return correction
+
+    while abs(yaw_correction := get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
         logger.info(f'Yaw correction: {yaw_correction}')
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),

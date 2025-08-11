@@ -44,15 +44,15 @@ class BlueRect:
 class PathMarker:
     """Path marker color bounds and contour parameters."""
     ORANGE_BOT = np.array([0, 130, 100])
-    ORANGE_TOP = np.array([20, 255, 255])
+    ORANGE_TOP = np.array([50, 255, 255])
 
     MIN_CONTOUR_LENGTH = 5
     MIN_CONTOUR_AREA = 500
 
 class PinkBins:
     """Pink bins color bounds."""
-    PINK_1_BOT = np.array([110, 50, 130])
-    PINK_1_TOP = np.array([130, 100, 200])
+    PINK_1_BOT = np.array([4, 0, 0])
+    PINK_1_TOP = np.array([20, 100, 100])
 
     PINK_2_BOT = np.array([130, 80, 130])
     PINK_2_TOP = np.array([160, 150, 255])

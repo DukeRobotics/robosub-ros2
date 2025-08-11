@@ -35,6 +35,24 @@ class HSVFilter(Node):
         self.hsv_filtered_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/hsv_filtered', 10)
         self.contour_image_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/contour_image', 10)
         self.distance_pub = self.create_publisher(Point, f'/cv/{camera}_usb/{name}/distance', 10)
+    
+    def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:
+        """
+        Convert actual HSV values to OpenCV HSV.
+
+        Parameters:
+            hsv_actual (np.ndarray): Array of shape (..., 3) with HSV values:
+                                    H in [0, 360], S and V in [0, 100]
+
+        Returns:
+            np.ndarray: Converted HSV in OpenCV format:
+                        H in [0,179], S and V in [0,255], same shape as input
+        """
+        hsv_opencv = np.empty_like(hsv_actual, dtype=np.uint8)
+        hsv_opencv[..., 0] = (hsv_actual[..., 0] / 2).astype(np.uint8)          # Hue
+        hsv_opencv[..., 1] = (hsv_actual[..., 1] / 100 * 255).astype(np.uint8)  # Saturation
+        hsv_opencv[..., 2] = (hsv_actual[..., 2] / 100 * 255).astype(np.uint8)  # Value
+        return hsv_opencv
 
     def image_callback(self, data: CompressedImage) -> None:
         """Attemp to convert image and apply contours."""
@@ -47,7 +65,7 @@ class HSVFilter(Node):
             self.get_logger().error(f'Failed to convert image: {t}')
 
         # Apply HSV filtering on the image
-        masks = [cv2.inRange(hsv_image, r[0], r[1]) for r in self.mask_ranges]
+        masks = [cv2.inRange(hsv_image, self.actual_to_opencv_hsv(r[0]), self.actual_to_opencv_hsv(r[1])) for r in self.mask_ranges]
         mask = reduce(cv2.bitwise_or, masks)
 
         # Apply morphological filters as necessary to clean up binary image
@@ -65,6 +83,10 @@ class HSVFilter(Node):
 
         # Filter contours as desired
         final_contour = self.filter(contours)
+
+        # Allow filter function to determine that a contour set is invalid, even if detections exist
+        if final_contour is None:
+            return
 
         # Combine all contours to form the large rectangle
         all_points = np.vstack(final_contour)
