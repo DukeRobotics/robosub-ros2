@@ -543,7 +543,7 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
         )
         logger.info('Step Completed')
 
-    logger.info(f'Final yaw correction: {get_yaw_correction()}')
+    logger.info(f'Final yaw correction: {get_gyro_yaw_correction()}')
 
     depth_delta = DEPTH_LEVEL - State().depth
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0), parent=self)
