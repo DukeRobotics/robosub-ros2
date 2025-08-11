@@ -17,6 +17,11 @@ int32 width
 
 float64 distance
 
+# Sonar scan parameters
+float64 sonar_start_angle  # Start angle for sonar sweep (degrees)
+float64 sonar_end_angle    # End angle for sonar sweep (degrees)
+float64 sonar_scan_distance # Distance for sonar scan (meters)
+
 string label
 float64 score
 bool sonar # True = using sonar

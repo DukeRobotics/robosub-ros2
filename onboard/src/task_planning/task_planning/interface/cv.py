@@ -179,7 +179,7 @@ class CV:
             object_type (CVObjectType): The name/type of the object.
             filter_len (int, optional): The maximum number of distance data points to retain
                 for the moving average filter. Defaults to 10.
-            
+
         """
         self._bounding_boxes[object_type] = cv_data
 
@@ -329,3 +329,21 @@ class CV:
             return recent and abs(detection_time - last_detection_time) < latency
 
         return recent
+
+    def get_sonar_sweep_params(self, name: CVObjectType) -> tuple[float, float, float] | None:
+        """
+        Get sonar sweep parameters for a detected object.
+
+        Args:
+            name (CVObjectType): The name/type of the object.
+
+        Returns:
+            tuple[float, float, float] | None: Tuple containing (start_angle, end_angle, scan_distance)
+                in degrees and meters respectively, or None if object not found.
+        """
+        if name not in self._bounding_boxes:
+            logger.warning(f'Attempted to get sonar params of unrecognized CV object {name}')
+            return None
+
+        data = self._bounding_boxes[name]
+        return (data.sonar_start_angle, data.sonar_end_angle, data.sonar_scan_distance)
