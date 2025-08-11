@@ -18,6 +18,7 @@ from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV, CVObjectType
 from task_planning.interface.servos import Servos, MarkerDropperStates, TorpedoStates
 from task_planning.interface.state import State
+from task_planning.interface.sonar import Sonar
 from task_planning.task import Task, Yield, task
 from task_planning.tasks import cv_tasks, move_tasks, util_tasks
 from task_planning.utils import geometry_utils
@@ -568,10 +569,62 @@ async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[Non
 
     logger.info('Moved through gate')
 
+@task
+async def yaw_to_cv_object_vel(self: Task, cv_object: CVObjectType, direction=1,
+                                yaw_threshold=math.radians(40), latency_threshold=10,
+                                depth_level=0.5) -> Task[None, None, None]:
+    """
+    Corrects the yaw relative to the CV object via simple linear velocity control.
+    """
+    DEPTH_LEVEL = State().orig_depth - depth_level
+    MAXIMUM_YAW = math.radians(20)
+    SCALE_FACTOR = 0.1
+
+    logger.info('Starting yaw_to_cv_object')
+
+    async def correct_depth():
+        # await move_tasks.depth_correction(DEPTH_LEVEL, parent=self)
+        await move_tasks.depth_correction(desired_depth=DEPTH_LEVEL, parent=self)
+
+    async def yaw_until_object_detection():
+        while not CV().is_receiving_recent_cv_data(cv_object, latency_threshold):
+            logger.info(f'No {cv_object} detection, setting yaw setpoint {MAXIMUM_YAW}')
+            await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, MAXIMUM_YAW * direction),
+                                                pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.2)),
+                                                parent=self)
+            await correct_depth()
+            await Yield()
+
+    # Yaw until object detection
+    await correct_depth()
+    await yaw_until_object_detection()
+
+    logger.info(f'{cv_object} detected. Now centering {cv_object} in frame...')
+
+    # Center detected object in camera frame
+    cv_object_yaw = CV().bounding_boxes[cv_object].yaw # degrees
+    await correct_depth()
+    logger.info(f'abs(cv_object_yaw): {abs(cv_object_yaw)}')
+    logger.info(f'yaw_threshold: {yaw_threshold}')
+    while abs(cv_object_yaw) > yaw_threshold:
+        logger.info(f'Detected yaw {cv_object_yaw} is greater than threshold {yaw_threshold}. Setting yaw power to: {cv_object_yaw * SCALE_FACTOR}')
+        Controls().publish_desired_power(Twist(angular=Vector3(z=cv_object_yaw * SCALE_FACTOR)))
+        # await correct_depth()
+        # await Yield()
+
+        if (not CV().is_receiving_recent_cv_data(cv_object, latency_threshold)):
+            logger.info(f'{cv_object} detection lost, running yaw_until_object_detection()')
+            await yaw_until_object_detection()
+
+        cv_object_yaw = CV().bounding_boxes[cv_object].yaw
+
+    logger.info(f'{cv_object} centered.')
+
+    await correct_depth()
 
 @task
 async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
-                           yaw_threshold=math.radians(30), latency_threshold=10,
+                           yaw_threshold=math.radians(40), latency_threshold=10,
                            depth_level=0.5) -> Task[None, None, None]:
     """
     Corrects the yaw relative to the CV object
@@ -593,6 +646,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
         while not CV().is_receiving_recent_cv_data(cv_object, latency_threshold):
             logger.info(f'No {cv_object} detection, setting yaw setpoint {MAXIMUM_YAW}')
             await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, MAXIMUM_YAW * direction),
+                                                pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.2)),
                                                 parent=self)
             await correct_depth()
             await Yield()
@@ -1208,16 +1262,13 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     logger.info('Finished surfacing')
 
 @task
-async def torpedo_task(self: Task, depth_level=0.5) -> Task[None, None, None]:
+async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, None, None]:
     # await scan_for_torpedo()
     logger.info('Starting torpedo task')
-    await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=1, yaw_threshold=math.radians(15),
-            depth_level=depth_level, parent=self)
-
     DEPTH_LEVEL = State().orig_depth - depth_level
 
     async def correct_y() -> Coroutine[None, None, None]:
-        await cv_tasks.correct_y(prop=CVObjectType.TORPEDO_BANNER, mult_factor=0.5, parent=self)
+        await cv_tasks.correct_y(prop=CVObjectType.TORPEDO_BANNER, parent=self)
 
     async def correct_z() -> Coroutine[None, None, None]:
         await cv_tasks.correct_z(prop=CVObjectType.TORPEDO_BANNER, parent=self)
@@ -1231,22 +1282,30 @@ async def torpedo_task(self: Task, depth_level=0.5) -> Task[None, None, None]:
 
     def get_step_size(dist:float, dist_threshold:float) -> float:
         if dist > 3:
-            return 2
-        if dist > 2:
             return 1
+        if dist > 2:
+            return 0.5
         if dist > 1.5:
             return 0.5
         return min(dist - dist_threshold + 0.1, 0.25)
 
-    async def move_to_torpedo(torpedo_dist_threshold=1):
+    async def move_to_torpedo(torpedo_dist_threshold=2):
+        await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=direction, yaw_threshold=math.radians(10),
+        depth_level=depth_level, parent=self)
         torpedo_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
         await correct_y()
         await correct_depth()
 
         while torpedo_dist > torpedo_dist_threshold:
+            logger.info(f"Torpedo dist x: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x}")
+            logger.info(f"Torpedo dist y: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.y}")
             await move_x(step=get_step_size(torpedo_dist, torpedo_dist_threshold))
-            logger.info(f"Torpedo dist: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x}")
+
+            await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=direction, yaw_threshold=math.radians(10),
+            depth_level=depth_level, parent=self)
+            logger.info(f"Yaw corrected")
             await correct_y()
+
             if torpedo_dist < 3:
                 await correct_z() # CV-based z-axis correction
             else:
@@ -1254,11 +1313,32 @@ async def torpedo_task(self: Task, depth_level=0.5) -> Task[None, None, None]:
 
             await Yield()
             torpedo_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
-            logger.info(f"Torpedo dist: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x}")
+
+        logger.info(f"Finished moving forwards to torpedo: {torpedo_dist}m away")
 
         await correct_z()
 
+        # Get sonar sweep parameters from CV banner
+        sonar_params = CV().get_sonar_sweep_params(CVObjectType.TORPEDO_BANNER)
+        if sonar_params is not None:
+            start_angle, end_angle, scan_distance = sonar_params
+            logger.info(f"Sonar sweep params from CV banner: start_angle={start_angle}, end_angle={end_angle}, scan_distance={scan_distance}")
+
+            # Call sonar sweep request
+            sonar_future = Sonar().sweep(start_angle, end_angle, scan_distance)
+            if sonar_future is not None:
+                logger.info("Sonar sweep request sent, waiting for response...")
+                # Wait for the sonar sweep to complete
+                sonar_response = await sonar_future
+                logger.info(f"Sonar sweep response received: {sonar_response}")
+            else:
+                logger.warning("Sonar sweep request failed - bypass mode or service unavailable")
+        else:
+            logger.warning("Could not get sonar sweep parameters from CV banner")
+
     await move_to_torpedo()
+
+    logger.info(f"Finished moving forwards to torpedo")
 
 @task
 async def torpedo_task_old(self: Task,
@@ -1349,8 +1429,3 @@ async def torpedo_task_old(self: Task,
         # await Servos().fire_torpedo(TorpedoStates.RIGHT)
 
     await center_with_torpedo_target()
-
-@task
-def first_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
-
-

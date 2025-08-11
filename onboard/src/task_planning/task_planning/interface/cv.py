@@ -1,6 +1,7 @@
 from enum import Enum
 from pathlib import Path
 from typing import ClassVar
+import time
 
 import numpy as np
 import resource_retriever as rr
@@ -61,6 +62,9 @@ class CV:
     # TODO: add other CV models here as defined in depthai_models.yaml. Modify the Enum strings correspondingly.
     CV_MODELS: ClassVar[list[str]] = ['2025_torpedo']
 
+    # Threshold for TORPEDO_BANNER filtering
+    NUM_RECENT_MESSAGES = 2
+
     BOUNDING_BOX_TOPICS: ClassVar[dict[CVObjectType, str]] = {
         CVObjectType.BUOY: '/cv/front_usb/buoy/bounding_box',
         CVObjectType.BIN_BLUE: '/cv/bottom/bin_blue/bounding_box',
@@ -95,6 +99,10 @@ class CV:
 
         # Subscribe to bounding box topics
         self._bounding_boxes: dict[CVObjectType, CVObject] = dict.fromkeys(self.BOUNDING_BOX_TOPICS, CVObject())
+
+        # Track recent TORPEDO_BANNER messages for filtering
+        self._torpedo_banner_recent_messages = []
+
         with Path(rr.get_filename(self.MODELS_PATH, use_protocol=False)).open() as f:
             models_dict = yaml.safe_load(f)
 
@@ -181,7 +189,26 @@ class CV:
                 for the moving average filter. Defaults to 10.
 
         """
-        self._bounding_boxes[object_type] = cv_data
+        # Special filtering for TORPEDO_BANNER
+        if object_type == CVObjectType.TORPEDO_BANNER:
+            current_time = time.time()
+
+            # Add current message timestamp to recent messages
+            self._torpedo_banner_recent_messages.append(current_time)
+
+            # Remove messages older than 3 seconds
+            self._torpedo_banner_recent_messages = [
+                timestamp for timestamp in self._torpedo_banner_recent_messages
+                if current_time - timestamp <= 1.0
+            ]
+
+            # Only set bounding box if we have enough recent messages
+            if len(self._torpedo_banner_recent_messages) >= self.NUM_RECENT_MESSAGES:
+                self._bounding_boxes[object_type] = cv_data
+                # logger.info("Detected torpedo banner after filter")
+        else:
+            # For all other object types, set bounding box normally
+            self._bounding_boxes[object_type] = cv_data
 
         if object_type == CVObjectType.LANE_MARKER:
             self._lane_marker_data['height'] = self.update_moving_average(self._lane_marker_heights, cv_data.height)
