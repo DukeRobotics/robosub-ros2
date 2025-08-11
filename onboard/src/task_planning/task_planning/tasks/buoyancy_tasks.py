@@ -38,7 +38,7 @@ async def tune_static_power(self: Task) -> Task[None, None, None]:
         logger.info(f'Move to depth: {move_to_depth}')
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, 0),
-            keep_level=False,
+            keep_orientation=False,
             depth_level=move_to_depth,
             pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.3), angular=Vector3(x=0.2, y=0.3, z=0.1)),
             parent=self,
@@ -53,7 +53,7 @@ async def buoyancy_task(self: Task, submerge_depth: float) -> Task[None, None, N
     """Move robot forward and backward 1 meter while submerged."""
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, submerge_depth, 0, 0, 0),
-        keep_level=False,
+        keep_orientation=False,
         parent=self,
     )
     logger.info(f'Submerged {submerge_depth} meters')
@@ -63,7 +63,7 @@ async def buoyancy_task(self: Task, submerge_depth: float) -> Task[None, None, N
     while True:
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(x_pose, 0, 0, 0, 0, 0),
-            keep_level=False,
+            keep_orientation=False,
             parent=self,
         )
         imu_euler_angles = State().imu_euler_angles

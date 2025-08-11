@@ -79,7 +79,7 @@ async def torpedo_task(depth_level=0.9, angle_to_shoot_at=0, animal="shark_front
         sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction + (sign * 0.1)),
-            keep_level=True,
+            keep_orientation=True,
             parent=self,
         )
         logger.info('Corrected yaw')
@@ -117,7 +117,7 @@ async def torpedo_task(depth_level=0.9, angle_to_shoot_at=0, animal="shark_front
         target_dist_z = CV().cv_data[animal].coords.z
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, target_dist_y, target_dist_z, 0, 0, 0),
-            keep_level=True,
+            keep_orientation=True,
             parent=self,
         )
         logger.info(f'Centered on torpedo target, y: {CV().cv_data["torpedo_banner"].coords.y}, z: {CV().cv_data["torpedo_banner"].coords.z}')
@@ -126,7 +126,7 @@ async def torpedo_task(depth_level=0.9, angle_to_shoot_at=0, animal="shark_front
         offset = -0.05
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, offset, 0, 0, 0),
-            keep_level=True,
+            keep_orientation=True,
             parent=self,
         )
 
@@ -256,7 +256,7 @@ async def buoy_task(self: Task, turn_to_face_buoy: bool = False, depth: float = 
         sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction + (sign * 0.1)),
-            keep_level=True,
+            keep_orientation=True,
             parent=self,
         )
         logger.info('Corrected yaw')
@@ -449,7 +449,7 @@ async def initial_submerge(self: Task, submerge_dist: float) -> Task[None, None,
     """
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, submerge_dist, 0, 0, 0),
-        keep_level=True,
+        keep_orientation=False,
         parent=self,
     )
     logger.info(f'Submerged {submerge_dist} meters')
@@ -1047,7 +1047,7 @@ async def bin_task(self: Task) -> Task[None, None, None]:
         sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction + (sign * 0.1)),
-            keep_level=True,
+            keep_orientation=True,
             parent=self,
         )
         logger.info('Corrected yaw')
@@ -1166,7 +1166,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         logger.info(f'Yaw correction: {yaw_correction}')
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction * 0.7),
-            keep_level=True,
+            keep_orientation=True,
             parent=self,
         )
         logger.info('Corrected yaw')
@@ -1298,7 +1298,7 @@ async def torpedo_task(self: Task,
     #     sign = 1 if yaw_correction > 0.1 else (-1 if yaw_correction < -0.1 else 0)
     #     await move_tasks.move_to_pose_local(
     #         geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction + (sign * 0.1)),
-    #         keep_level=True,
+    #         keep_orientation=True,
     #         parent=self,
     #     )
     #     logger.info('Corrected yaw')
@@ -1333,7 +1333,7 @@ async def torpedo_task(self: Task,
         target_dist_z = CV().bounding_boxes[target_animal].coords.z
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, target_dist_y, target_dist_z, 0, 0, 0),
-            keep_level=True,
+            keep_orientation=True,
             parent=self,
         )
         logger.info(f'Centered on torpedo target, y: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.y}, \
@@ -1343,7 +1343,7 @@ async def torpedo_task(self: Task,
         offset = -0.05
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, offset, 0, 0, 0),
-            keep_level=True,
+            keep_orientation=True,
             parent=self,
         )
 

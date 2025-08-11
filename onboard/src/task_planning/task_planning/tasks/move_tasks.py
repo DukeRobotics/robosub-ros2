@@ -56,7 +56,7 @@ async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | 
 
 
 @task
-async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False, depth_level: float | None = None,
+async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = False, depth_level: float | None = None,
                              pose_tolerances: Twist | None = None, time_limit: int = 30) -> \
                                 Task[None, Pose | None, None]:
     """
@@ -69,7 +69,7 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False, d
     Args:
         self (Task): The task instance on which the method is called.
         pose (Pose): The local pose to move to, specified in the "base_link" frame.
-        keep_level (bool, optional): If True, maintains the robot's level orientation during movement. Defaults to
+        keep_orientation (bool, optional): If True, maintains the robot's orientation during movement. Defaults to
             False.
         depth_level (float, optional): The depth, as provided by the pressure sensor, the robot should move to. If this
             is not None, the Z value of the provided pose will be overridden. Defaults to None.
@@ -96,7 +96,7 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_level: bool = False, d
             local_pose.position.z = depth_delta
         global_pose = geometry_utils.local_pose_to_global(State().tf_buffer, pose)
 
-        if keep_level:
+        if keep_orientation:
             orig_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(
                 State().orig_state.pose.pose.orientation))
             euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(global_pose.orientation))
