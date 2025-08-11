@@ -107,7 +107,6 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = Fa
 
     global_pose = send_transformer(pose)
 
-
     return await coroutine_utils.transform(
         move_to_pose_global(global_pose, pose_tolerances=pose_tolerances, timeout=time_limit, parent=self),
             send_transformer=send_transformer)

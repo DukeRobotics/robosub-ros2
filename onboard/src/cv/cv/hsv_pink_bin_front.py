@@ -18,7 +18,7 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
             ],
             width=cv_constants.Bins.WIDTH,
         )
-    
+
     def group_contours_by_distance(self, contours, dist_thresh):
         centers = []
         valid_contours = []
@@ -29,7 +29,7 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
                 cy = int(M["m01"] / M["m00"])
                 centers.append([cx, cy])
                 valid_contours.append(contour)
-        
+
         centers = np.array(centers)
         n = len(centers)
         if n == 0:
@@ -45,7 +45,7 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
             group = {i}
             neighbors = set(np.where(dist_matrix[i] < dist_thresh)[0])
             group = group.union(neighbors)
-            
+
             expanded = True
             while expanded:
                 expanded = False
@@ -56,7 +56,7 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
                         new_neighbors = new_neighbors.union(idx_neighbors.difference(group))
                         expanded = True
                 group = group.union(new_neighbors)
-            
+
             visited = visited.union(group)
             groups.append(list(group))
 
@@ -64,7 +64,7 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
         for group_indices in groups:
             merged_points = np.vstack([valid_contours[idx] for idx in group_indices])
             merged_contours.append(merged_points)
-        
+
         return merged_contours
 
     def filter(self, contours: list) -> list:
@@ -85,7 +85,7 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
                 center_y = int(M["m01"] / M["m00"])
             else:
                 continue
-            
+
             score = cv2.contourArea(contour)
 
             # Pick the contour with the lowest center_y
@@ -93,12 +93,12 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
                 final_x, final_y = center_x, center_y
                 chosen_contour_score = score
                 chosen_contour = contour
-        
+
         MAX_SCORE = 100
         if chosen_contour_score is not None and chosen_contour_score >= MAX_SCORE:
             # Draw chosen contour center in red
             return chosen_contour
-        
+
         return None
 
     def morphology(self, mask: np.ndarray) -> np.ndarray:

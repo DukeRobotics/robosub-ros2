@@ -440,7 +440,7 @@ async def buoy_circumnavigation_power(self: Task, depth: float = 0.7) -> Task[No
 
 
 @task
-async def initial_submerge(self: Task, submerge_dist: float, enable_controls_flag: bool) -> Task[None, None, None]:
+async def initial_submerge(self: Task, submerge_dist: float, enable_controls_flag: bool = False) -> Task[None, None, None]:
     """
     Submerge the robot a given amount.
 
@@ -504,7 +504,6 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
         - Uses `geometry_utils` to create poses for yaw and depth corrections.
         - The task continuously loops until the yaw correction is within the specified threshold (±5 degrees).
     """
-    logger.info('Started coin flip')
     DEPTH_LEVEL = State().orig_depth - depth_level
     MAXIMUM_YAW = math.radians(30)
 
@@ -526,7 +525,7 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
 
         return desired_yaw
 
-    def get_gyro_yaw_correction(return_raw=False):
+    def get_gyro_yaw_correction(return_raw=True):
         orig_gyro_orientation = copy.deepcopy(State().orig_gyro.pose.pose.orientation)
         orig_gyro_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(orig_gyro_orientation))
 
@@ -544,7 +543,8 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
         else:
             return correction
 
-    while abs(yaw_correction := get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
+    while abs(get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
+        yaw_correction = get_gyro_yaw_correction(return_raw=False)
         logger.info(f'Yaw correction: {yaw_correction}')
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),
@@ -553,7 +553,7 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
         )
         logger.info('Step Completed')
 
-    logger.info(f'Final yaw correction: {get_gyro_yaw_correction()}')
+    logger.info(f'Final yaw offset: {get_gyro_yaw_correction(return_raw=True)}')
 
     depth_delta = DEPTH_LEVEL - State().depth
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0), parent=self)
