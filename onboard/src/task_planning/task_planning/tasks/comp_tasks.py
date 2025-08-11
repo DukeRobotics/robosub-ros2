@@ -18,11 +18,13 @@ from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV, CVObjectType
 from task_planning.interface.servos import Servos, MarkerDropperStates, TorpedoStates
 from task_planning.interface.state import State
+from task_planning.interface.sonar import Sonar
 from task_planning.task import Task, Yield, task
 from task_planning.tasks import cv_tasks, move_tasks, util_tasks
 from task_planning.utils import geometry_utils
 
 from task_planning.utils.other_utils import get_robot_name, RobotName
+from sonar.sonar.sonar import Sonar
 
 # TODO: move stablize() to move_tasks.py
 #
@@ -1351,6 +1353,10 @@ async def torpedo_task_old(self: Task,
     await center_with_torpedo_target()
 
 @task
-def first_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
-
-
+async def position_at_distance(self:Task, target_distance_m: int = 10):
+    """
+    Given robot is perpendicular to the wall, this task will position the robot at given distance to the wall using SONAR.
+    """
+    sonar = Sonar()
+    logger.info('Starting position at distance task')
+    CURRENT_DISTANCE = sonar.get_distance_of_sample(sample_index=int(sonar.number_of_samples/2))
