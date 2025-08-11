@@ -472,7 +472,7 @@ async def initial_submerge(self: Task, submerge_dist: float, enable_controls_fla
 
 
 @task
-async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
+async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> Task[None, None, None]:
     """
     Perform the coin flip task, adjusting the robot's yaw and depth.
 
@@ -543,7 +543,8 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
         else:
             return correction
 
-    while abs(get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
+    if (enable_same_direction):
+        while abs(get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
         yaw_correction = get_gyro_yaw_correction(return_raw=False)
         logger.info(f'Yaw correction: {yaw_correction}')
         await move_tasks.move_to_pose_local(
@@ -552,6 +553,19 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
             # TODO: maybe set yaw tolerance?
         )
         logger.info('Step Completed')
+
+    else:
+        while abs(get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
+            yaw_correction = get_gyro_yaw_correction(return_raw=False)
+            logger.info(f'Yaw correction: {yaw_correction}')
+
+            await move_tasks.move_to_pose_local(
+                geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),
+                parent=self,
+                # TODO: maybe set yaw tolerance?
+            )
+            logger.info('Step Completed')
+
 
     logger.info(f'Final yaw offset: {get_gyro_yaw_correction(return_raw=True)}')
 
