@@ -189,7 +189,6 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
     State().reset_pose()
     logger.info('Reset orientation')
 
-
 @task
 async def buoy_task(self: Task, turn_to_face_buoy: bool = False, depth: float = 0.7) -> Task[None, None, None]:
     """Circumnavigate the buoy. Requires robot to have submerged 0.5 meters."""
@@ -533,7 +532,7 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
         cur_gyro_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(cur_gyro_orientation))
 
         raw_correction = cur_gyro_euler_angles[2] - orig_gyro_euler_angles[2]
-        correction = -raw_correction % (2 * np.pi)
+        correction = (-raw_correction) % (2 * np.pi)
 
         logger.info(f'Coinflip: raw_gyro_yaw_correction = {raw_correction}')
         logger.info(f'Coinflip: processed_gyro_yaw_correction = {correction}')
@@ -545,15 +544,26 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
 
     if (enable_same_direction):
         while abs(get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
-        yaw_correction = get_gyro_yaw_correction(return_raw=False)
-        logger.info(f'Yaw correction: {yaw_correction}')
-        await move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),
-            parent=self,
-            # TODO: maybe set yaw tolerance?
-        )
-        logger.info('Step Completed')
+            yaw_correction = get_gyro_yaw_correction(return_raw=False)
+            logger.info(f'Yaw correction: {yaw_correction}')
+            if (yaw_correction > np.pi):
+                yaw_correction -= np.pi
+                await move_tasks.move_to_pose_local(
+                    geometry_utils.create_pose(0, 0, 0, 0, 0, np.pi),
+                    parent=self,
+                    # TODO: maybe set yaw tolerance?
+                )
 
+                logger.info('Yaw correct 180')
+
+            logger.info(f'Yaw correct remainder: {yaw_correction}')
+            await move_tasks.move_to_pose_local(
+                geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),
+                parent=self,
+                # TODO: maybe set yaw tolerance?
+            )
+
+            logger.info('Step Completed')
     else:
         while abs(get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
             yaw_correction = get_gyro_yaw_correction(return_raw=False)
@@ -1375,3 +1385,8 @@ async def torpedo_task(self: Task,
         # await Servos().fire_torpedo(TorpedoStates.RIGHT)
 
     await center_with_torpedo_target()
+
+@task
+def first_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
+
+
