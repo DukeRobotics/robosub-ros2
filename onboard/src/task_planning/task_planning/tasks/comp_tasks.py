@@ -440,13 +440,17 @@ async def buoy_circumnavigation_power(self: Task, depth: float = 0.7) -> Task[No
 
 
 @task
-async def initial_submerge(self: Task, submerge_dist: float) -> Task[None, None, None]:
+async def initial_submerge(self: Task, submerge_dist: float, enable_controls_flag: bool) -> Task[None, None, None]:
     """
     Submerge the robot a given amount.
 
     Args:
         submerge_dist: The distance to submerge the robot in meters.
+        enable_controls_flag: Flag to wait for ENABLE_CONTROLS status when true.
     """
+    while enable_controls_flag and not Controls().enable_controls_status:
+        continue
+
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, submerge_dist, 0, 0, 0),
         keep_orientation=False,

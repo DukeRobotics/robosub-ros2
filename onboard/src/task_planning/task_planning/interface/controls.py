@@ -43,6 +43,9 @@ class Controls:
     THRUSTER_ALLOCS_TOPIC = 'controls/thruster_allocs'
     CONTROL_TYPES_TOPIC = 'controls/control_types'
 
+    # ROS topic for getting control states
+    ENABLE_CONTROLS_TOPIC = '/controls/status'
+
     def __init__(self, node: Node, bypass: bool = False) -> None:
         self.node = node
 
@@ -68,6 +71,7 @@ class Controls:
                 logger.info(f'{self.RESET_PID_LOOPS_SERVICE} not ready, waiting...')
 
         self._enable_controls = node.create_client(SetBool, self.ENABLE_CONTROLS_SERVICE)
+        self._enable_controls_status = node.create_subscription(bool, self.ENABLE_CONTROLS_TOPIC, self._on_receive_enable_controls, 10)
 
         self._desired_position_pub = node.create_publisher(Pose, self.DESIRED_POSITION_TOPIC, 1)
         self._desired_velocity_pub = node.create_publisher(Twist, self.DESIRED_VELOCITY_TOPIC, 1)
@@ -81,6 +85,11 @@ class Controls:
         self.get_thruster_dict()
         self._thruster_pub = node.create_publisher(ThrusterAllocs, self.THRUSTER_ALLOCS_TOPIC, 1)
         self.bypass = bypass
+
+    @property
+    def enable_controls_status(self) -> bool:
+        """Status of the ENABLE_CONTROLS"""
+        return self._enable_controls_status
 
     def _update_control_types(self, control_types: ControlTypes) -> None:
         self.control_types = control_types
@@ -116,6 +125,15 @@ class Controls:
         request = SetBool.Request()
         request.data = enable
         self._enable_controls.call_async(request)
+
+    def _on_receive_enable_controls(self, status: bool) -> None:
+        """
+        Sets controls status object
+
+        Args:
+            status: Status of ENABLE_CONTROLS flag
+        """
+        self._enable_controls_status = status
 
     def _set_all_axes_control_type(self, control_type: ControlTypes) -> None:
         """
