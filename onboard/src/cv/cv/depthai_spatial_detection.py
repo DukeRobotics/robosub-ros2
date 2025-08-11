@@ -383,6 +383,14 @@ class DepthAISpatialDetector(Node):
 
         object_msg.sonar = using_sonar
 
+        # Calculate sonar sweep angles for this detection
+        left_angle = self.compute_angle_from_x_offset(bbox[0] * self.camera_pixel_width)
+        right_angle = self.compute_angle_from_x_offset(bbox[2] * self.camera_pixel_width)
+
+        object_msg.sonar_start_angle = float(left_angle)
+        object_msg.sonar_end_angle = float(right_angle)
+        object_msg.sonar_scan_distance = float(SONAR_DEPTH)
+
         if self.publishers_dict:
             self.get_logger().debug('Publishing')
             self.publishers_dict[label].publish(object_msg)
