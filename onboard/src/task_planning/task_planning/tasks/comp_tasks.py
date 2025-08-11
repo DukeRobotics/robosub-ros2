@@ -526,7 +526,7 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
 
         return desired_yaw
 
-    def get_gyro_yaw_correction():
+    def get_gyro_yaw_correction(return_raw=False):
         orig_gyro_orientation = copy.deepcopy(State().orig_gyro.pose.pose.orientation)
         orig_gyro_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(orig_gyro_orientation))
 
@@ -534,17 +534,17 @@ async def coin_flip(self: Task, depth_level=0.7) -> Task[None, None, None]:
         cur_gyro_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(cur_gyro_orientation))
 
         raw_correction = cur_gyro_euler_angles[2] - orig_gyro_euler_angles[2]
-        if raw_correction > 0:
-            correction = 2*np.pi - raw_correction
-        else:
-            correction = -raw_correction
+        correction = -raw_correction % (2 * np.pi)
 
         logger.info(f'Coinflip: raw_gyro_yaw_correction = {raw_correction}')
         logger.info(f'Coinflip: processed_gyro_yaw_correction = {correction}')
 
-        return correction
+        if return_raw:
+            return raw_correction
+        else:
+            return correction
 
-    while abs(yaw_correction := get_gyro_yaw_correction()) > math.radians(5):
+    while abs(yaw_correction := get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
         logger.info(f'Yaw correction: {yaw_correction}')
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),

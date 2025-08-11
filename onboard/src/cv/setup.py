@@ -39,6 +39,7 @@ setup(
             'usb_camera = cv.usb_camera:main',
             'hsv_filter = cv.hsv_filter:main',
             'hsv_red_bin = cv.hsv_red_bin:main',
+            'hsv_pink_bin_front = cv.hsv_pink_bin_front:main',
         ],
     },
 )

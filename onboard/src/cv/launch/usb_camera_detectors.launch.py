@@ -34,5 +34,9 @@ def generate_launch_description() -> LaunchDescription:
         ld.add_action(IncludeLaunchDescription(
             XMLLaunchDescriptionSource(str(pkg_cv / 'launch' / 'torpedo_target_detector.xml')),
         ))
+    elif robot_name in ['crush']:
+        ld.add_action(IncludeLaunchDescription(
+            XMLLaunchDescriptionSource(str(pkg_cv / 'launch' / 'hsv_pink_bin_front.xml')),
+        ))
 
     return ld
