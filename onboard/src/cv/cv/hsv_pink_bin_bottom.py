@@ -7,11 +7,11 @@ from cv import hsv_filter
 from scipy.spatial.distance import cdist
 
 
-class HSVPinkBinFront(hsv_filter.HSVFilter):
+class HSVPinkBinBottom(hsv_filter.HSVFilter):
     """Parent class for all HSV filtering scripts."""
     def __init__(self) -> None:
         super().__init__(
-            name='bin_pink_front',
+            name='bin_pink_bottom',
             camera='front',
             mask_ranges=[
                 [cv_constants.PinkBins.PINK_1_BOT, cv_constants.PinkBins.PINK_1_TOP],
@@ -115,7 +115,7 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
 def main(args: list[str] | None = None) -> None:
     """Run the node."""
     rclpy.init(args=args)
-    hsv_filter = HSVPinkBinFront()
+    hsv_filter = HSVPinkBinBottom()
 
     try:
         rclpy.spin(hsv_filter)

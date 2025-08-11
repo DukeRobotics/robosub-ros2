@@ -1,0 +1,3 @@
+<launch>
+	<node name="hsv_pink_bin_bottom" pkg="cv" exec="hsv_pink_bin_bottom" output="screen"/>
+</launch>

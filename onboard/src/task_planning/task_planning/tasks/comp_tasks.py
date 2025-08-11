@@ -698,13 +698,13 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
     logger.info(f'{cv_object} detected. Now centering {cv_object} in frame...')
 
     # Center detected object in camera frame
-    cv_object_yaw = CV().bounding_boxes[cv_object].yaw *0.3
+    cv_object_yaw = CV().bounding_boxes[cv_object].yaw
     await correct_depth()
     logger.info(f'abs(cv_object_yaw): {abs(cv_object_yaw)}')
     logger.info(f'yaw_threshold: {yaw_threshold}')
     while abs(cv_object_yaw) > yaw_threshold:
         sign_cv_object_yaw = np.sign(cv_object_yaw)
-        correction = get_step_size(cv_object_yaw)
+        correction = get_step_size(cv_object_yaw * 0.3)
         desired_yaw = sign_cv_object_yaw * correction
 
         logger.info(f'Detected yaw {cv_object_yaw} is greater than threshold {yaw_threshold}. Yawing: {desired_yaw}')
@@ -1193,8 +1193,8 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     # NOTE: due to CV interface refactoring, pink bins are no longer object types available through the CV interface.
     logger.info('Starting octagon task')
 
-    DEPTH_LEVEL_AT_BINS = State().orig_depth - 1.0
-    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.6
+    DEPTH_LEVEL_AT_BINS = State().orig_depth - 0.5
+    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.3
     LATENCY_THRESHOLD = 2
     CONTOUR_SCORE_THRESHOLD = 1000
 
@@ -1236,48 +1236,52 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         step = 0
 
         low_score = 200
-        med_score = 1000
-        high_score = 3000
+        med_score = 700
+        high_score = 1500
 
         if bin_pink_score < low_score:
-            step = 3
-        elif bin_pink_score < med_score:
             step = 2
+        elif bin_pink_score < med_score:
+            step = 1.25
         elif bin_pink_score < high_score:
-            step = 1
-        else:
             step = 0.75
+        else:
+            step = 0.5
 
         return min(step, last_step_size)
 
     async def move_to_pink_bins() -> None:
+        logger.info("Beginning move to pink bins")
+
         count = 1
         latest_detection_time = None
         moved_above = False
 
         last_step_size = float('inf')
-        await move_x(step=1)
         while not is_receiving_pink_bin_data(latest_detection_time) and not moved_above:
             if CVObjectType.BIN_PINK_BOTTOM in CV().bounding_boxes:
-                latest_detection_time = CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.secs
+                latest_detection_time = CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.sec
 
             await correct_depth(DEPTH_LEVEL_AT_BINS if not moved_above else DEPTH_LEVEL_ABOVE_BINS)
             if not moved_above:
-                await yaw_to_cv_object('bin_pink_front', direction=direction, yaw_threshold=math.radians(15),
-                                       depth_level=0.9, parent=Task.MAIN_ID)
-
-            step = get_step_size(last_step_size)
-            await move_x(step=step)
-            last_step_size = step
+                logger.info("Yawing to pink bin front")
+                await yaw_to_cv_object(CVObjectType.BIN_PINK_FRONT, direction=direction, yaw_threshold=math.radians(15),
+                                       depth_level=0.7, parent=Task.MAIN_ID)
 
             logger.info(f'Bin pink front score: {CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score}')
 
             score_threshold = 4000
             if CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score > score_threshold and not moved_above:
+                logger.info(f'Beginning to move above bin')
                 await correct_depth(DEPTH_LEVEL_ABOVE_BINS + 0.1)
                 moved_above = True
 
                 logger.info('Moved above pink bins')
+
+            step = get_step_size(last_step_size)
+            logger.info(f'Moving step size {step}')
+            await move_x(step=step)
+            last_step_size = step
 
             await Yield()
 
@@ -1286,7 +1290,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             logger.info(f'Receiving pink bin data: {is_receiving_pink_bin_data(latest_detection_time)}')
 
         if moved_above:
-            await move_tasks.move_with_directions([(1.5, 0, 0)], parent=self)
+            await move_tasks.move_with_directions([(0.25, 0, 0)], parent=self)
         else:
             logger.info('Detected bin_pink_bottom')
 

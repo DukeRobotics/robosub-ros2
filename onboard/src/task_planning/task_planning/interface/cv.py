@@ -318,6 +318,8 @@ class CV:
             bool: True if recent data has been received, False otherwise.
         """
         if name not in self._bounding_boxes:
+            logger.info(f'{self._bounding_boxes}')
+            logger.info(f'{name} not in bounding boxes')
             return False
 
         current_time = Clock().now().seconds_nanoseconds()[0]
@@ -326,6 +328,8 @@ class CV:
         recent = current_time - detection_time < latency
 
         if last_detection_time is not None:
+            logger.info(f'{recent} is detection time latency')
+            logger.info(f'{abs(detection_time - last_detection_time) < latency} is recency detection')
             return recent and abs(detection_time - last_detection_time) < latency
 
         return recent

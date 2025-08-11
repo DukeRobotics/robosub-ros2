@@ -35,7 +35,7 @@ class HSVFilter(Node):
         self.hsv_filtered_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/hsv_filtered', 10)
         self.contour_image_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/contour_image', 10)
         self.distance_pub = self.create_publisher(Point, f'/cv/{camera}_usb/{name}/distance', 10)
-    
+
     def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:
         """
         Convert actual HSV values to OpenCV HSV.
@@ -123,8 +123,11 @@ class HSVFilter(Node):
         bounding_box.ymin = (y) * meters_per_pixel
         bounding_box.xmax = (x + w) * meters_per_pixel
         bounding_box.ymax = (y + h) * meters_per_pixel
+        bounding_box.score = cv2.contourArea(final_contour)
 
-        bounding_box.yaw = compute_yaw(x, x + w, MonoCam.SENSOR_SIZE[0])  # width of camera in in mm
+        final_x_normalized = x / MonoCam.IMG_SHAPE[0]
+        bounding_box.yaw = compute_yaw(final_x_normalized, final_x_normalized, MonoCam.IMG_SHAPE[0])  # width of camera in in mm
+        #self.get_logger().info(f'yaw thoughts {bounding_box.yaw}')
 
         bounding_box.width = int(w)
         bounding_box.height = int(h)
