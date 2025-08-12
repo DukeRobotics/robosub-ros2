@@ -1282,9 +1282,9 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
 
     def get_step_size(dist:float, dist_threshold:float) -> float:
         if dist > 3:
-            return 1
+            return 2
         if dist > 2:
-            return 0.5
+            return 1
         if dist > 1.5:
             return 0.5
         return min(dist - dist_threshold + 0.1, 0.25)
@@ -1301,7 +1301,7 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
             logger.info(f"Torpedo dist y: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.y}")
             await move_x(step=get_step_size(torpedo_dist, torpedo_dist_threshold))
 
-            await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=direction, yaw_threshold=math.radians(10),
+            await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=-1, yaw_threshold=math.radians(10),
             depth_level=depth_level, parent=self)
             logger.info(f"Yaw corrected")
             await correct_y()
@@ -1325,7 +1325,7 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
             logger.info(f"Sonar sweep params from CV banner: start_angle={start_angle}, end_angle={end_angle}, scan_distance={scan_distance}")
 
             # Call sonar sweep request
-            sonar_future = Sonar().sweep(start_angle, end_angle, scan_distance)
+            sonar_future = Sonar().sweep(start_angle, end_angle, 3)
             if sonar_future is not None:
                 logger.info("Sonar sweep request sent, waiting for response...")
                 # Wait for the sonar sweep to complete
