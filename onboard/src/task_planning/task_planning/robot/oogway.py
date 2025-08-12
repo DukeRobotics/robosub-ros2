@@ -1,5 +1,6 @@
 # ruff: noqa: ERA001, F401
 from math import radians
+import math
 
 from task_planning.interface.cv import CVObjectType
 from task_planning.task import Task, task
@@ -12,10 +13,24 @@ from task_planning.interface.ivc import IVCMessageType
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     tasks = [
+        comp_tasks.initial_submerge(-1.2, parent=self),
+        comp_tasks.torpedo_task(depth_level=1.2, direction=1, parent=self),
+
+
+
+
+        # comp_tasks.yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=1, yaw_threshold=math.radians(10),
+        #     depth_level=0.7, parent=self),
+
+
+        # comp_tasks.coin_flip(parent=self),
+        # comp_tasks.gate_task(steps=3, parent=self),
+        # comp_tasks.gate_style_task(parent=self),
+        # comp_tasks.gate_task(offset=-0.1, direction=-1, parent=self),
+        # comp_tasks.gate_style_task(depth_level=0.9, parent=self),
         # sonar_tasks.test_sonar(-45, 45, 5, parent=self),
         # ivc_tasks.test_ivc(IVCMessageType.OOGWAY_TEST, parent=self),
         # buoyancy_tasks.buoyancy_task(-0.5, parent=self),  # Submerge and stabilize buoyancy
-        comp_tasks.initial_submerge(-0.5, parent=self),
         # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
         # move_tasks.move_with_directions([(2, 0, 0), (0, 2, 0), (-2, 0, 0), (0, -2, 0)], parent=self),
 
@@ -26,8 +41,6 @@ async def main(self: Task) -> Task[None, None, None]:
 
         # comp_tasks.yaw_to_cv_object(CVObjectType.GATE_SAWFISH, direction=1, yaw_threshold=radians(10),
         #                             latency_threshold=1, depth_level=0.7, parent=self),
-        # comp_tasks.gate_task(offset=-0.1, direction=-1, parent=self),
-        # comp_tasks.gate_style_task(depth_level=0.9, parent=self),
         # comp_tasks.yaw_to_cv_object(CVObjectType.BUOY, direction=1, depth_level=0.7, parent=self),
         # comp_tasks.buoy_task(turn_to_face_buoy=False, depth=0.7, parent=self),
         # comp_tasks.after_buoy_task(parent=self),
@@ -43,7 +56,6 @@ async def main(self: Task) -> Task[None, None, None]:
         # comp_tasks.yaw_to_cv_object('bin_pink_front', direction=-1, yaw_threshold=radians(15),
         #                             depth_level=1.0, parent=self),
         # comp_tasks.octagon_task(direction=1, parent=self),
-        comp_tasks.torpedo_task(depth_level=0.5, parent=self),
     ]
 
     for task_to_run in tasks:
