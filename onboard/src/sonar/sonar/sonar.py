@@ -200,7 +200,7 @@ class Sonar(Node):
         https://bluerobotics.com/learn/understanding-and-using-scanning-sonars/.
 
         Args:
-            sample_index (int | float): Index of the sample in the data array, from 0 to N-1,
+            sample_index (int): Index of the sample in the data array, from 0 to N-1,
             where N = number of samples.
 
         Returns:
