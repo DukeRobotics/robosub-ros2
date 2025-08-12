@@ -47,7 +47,7 @@ class TaskPlanning(Node):
         CV(self, bypass=self.bypass)
         # IVC(node=self, bypass=self.bypass)
         Servos(self, bypass=self.bypass)
-        Sonar(self, bypass=self.bypass)
+        # Sonar(self, bypass=self.bypass) # sonar not working 8/12 morning
         State(self, tf_buffer=tf_buffer, bypass=self.bypass)
 
         # Initialize the task update publisher

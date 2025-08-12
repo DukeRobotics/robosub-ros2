@@ -13,8 +13,8 @@ from task_planning.interface.ivc import IVCMessageType
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     tasks = [
-        comp_tasks.initial_submerge(-1.2, parent=self),
-        comp_tasks.torpedo_task(depth_level=1.2, direction=1, parent=self),
+        comp_tasks.initial_submerge(-1, parent=self),
+        comp_tasks.torpedo_task(depth_level=1, direction=-1, parent=self),
 
 
 

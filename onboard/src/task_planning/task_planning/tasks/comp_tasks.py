@@ -27,7 +27,6 @@ from task_planning.utils import geometry_utils
 
 
 from task_planning.utils.other_utils import get_robot_name, RobotName
-from sonar.sonar.sonar import Sonar
 
 # TODO: move stablize() to move_tasks.py
 #
@@ -648,6 +647,16 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
         # desired yaw in radians
         return min(abs(desired_yaw), MAXIMUM_YAW)
 
+    def get_yaw_threshold(desired_yaw, cv_x):
+        if cv_x > 10:
+            yaw_threshold = desired_yaw * 2
+        if cv_x > 6:
+            yaw_threshold = desired_yaw * 1.5
+        else:
+            yaw_threshold = desired_yaw * 1
+
+        return yaw_threshold
+
     async def yaw_until_object_detection():
         while not CV().is_receiving_recent_cv_data(cv_object, latency_threshold):
             logger.info(f'No {cv_object} detection, setting yaw setpoint {MAXIMUM_YAW}')
@@ -668,9 +677,9 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
     await correct_depth()
     logger.info(f'abs(cv_object_yaw): {abs(cv_object_yaw)}')
     logger.info(f'yaw_threshold: {yaw_threshold}')
-    while abs(cv_object_yaw) > yaw_threshold:
+    while abs(cv_object_yaw) > get_yaw_threshold(yaw_threshold, CV().bounding_boxes[cv_object].coords.x):
         sign_cv_object_yaw = np.sign(cv_object_yaw)
-        correction = get_step_size(cv_object_yaw * 0.3)
+        correction = get_step_size(0.5*cv_object_yaw) # Scale down CV yaw value
         desired_yaw = sign_cv_object_yaw * correction
 
         logger.info(f'Detected yaw {cv_object_yaw} is greater than threshold {yaw_threshold}. Yawing: {desired_yaw}')
@@ -1291,6 +1300,8 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
         await move_tasks.move_x(step=step, parent=self)
 
     def get_step_size(dist:float, dist_threshold:float) -> float:
+        if dist > 6:
+            return 3
         if dist > 3:
             return 2
         if dist > 2:
@@ -1328,27 +1339,31 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
 
         await correct_z()
 
-        # Get sonar sweep parameters from CV banner
-        sonar_params = CV().get_sonar_sweep_params(CVObjectType.TORPEDO_BANNER)
-        if sonar_params is not None:
-            start_angle, end_angle, scan_distance = sonar_params
-            logger.info(f"Sonar sweep params from CV banner: start_angle={start_angle}, end_angle={end_angle}, scan_distance={scan_distance}")
-
-            # Call sonar sweep request
-            sonar_future = Sonar().sweep(start_angle, end_angle, 3)
-            if sonar_future is not None:
-                logger.info("Sonar sweep request sent, waiting for response...")
-                # Wait for the sonar sweep to complete
-                sonar_response = await sonar_future
-                logger.info(f"Sonar sweep response received: {sonar_response}")
-            else:
-                logger.warning("Sonar sweep request failed - bypass mode or service unavailable")
-        else:
-            logger.warning("Could not get sonar sweep parameters from CV banner")
 
     await move_to_torpedo()
-
     logger.info(f"Finished moving forwards to torpedo")
+
+    # # Get sonar sweep parameters from CV banner
+    # sonar_params = CV().get_sonar_sweep_params(CVObjectType.TORPEDO_BANNER)
+    # if sonar_params is not None:
+    #     start_angle, end_angle, scan_distance = sonar_params
+    #     logger.info(f"Sonar sweep params from CV banner: start_angle={start_angle}, end_angle={end_angle}, scan_distance={scan_distance}")
+
+    #     # Call sonar sweep request
+    #     sonar_future = Sonar().sweep(start_angle, end_angle, 3)
+    #     if sonar_future is not None:
+    #         logger.info("Sonar sweep request sent, waiting for response...")
+    #         # Wait for the sonar sweep to complete
+    #         sonar_response = await sonar_future
+    #         logger.info(f"Sonar sweep response received: {sonar_response}")
+    #     else:
+    #         logger.warning("Sonar sweep request failed - bypass mode or service unavailable")
+    # else:
+    #     logger.warning("Could not get sonar sweep parameters from CV banner")
+
+    logger.info(f"Firing torpedoes")
+    await Servos().fire_torpedo(TorpedoStates.RIGHT)
+    await Servos().fire_torpedo(TorpedoStates.LEFT)
 
 @task
 async def torpedo_task_old(self: Task,

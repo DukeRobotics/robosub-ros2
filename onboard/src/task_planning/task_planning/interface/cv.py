@@ -63,7 +63,7 @@ class CV:
     CV_MODELS: ClassVar[list[str]] = ['2025_torpedo']
 
     # Threshold for TORPEDO_BANNER filtering
-    NUM_RECENT_MESSAGES = 2
+    NUM_RECENT_MESSAGES = 5 # woollett morning cloudy
 
     BOUNDING_BOX_TOPICS: ClassVar[dict[CVObjectType, str]] = {
         CVObjectType.BUOY: '/cv/front_usb/buoy/bounding_box',
