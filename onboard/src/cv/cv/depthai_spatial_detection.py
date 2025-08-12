@@ -367,9 +367,9 @@ class DepthAISpatialDetector(Node):
         object_msg.label = label
         object_msg.score = confidence
 
-        object_msg.coords.x = det_coords[0]
-        object_msg.coords.y = det_coords[1]
-        object_msg.coords.z = det_coords[2]
+        object_msg.coords.x = -det_coords[0]
+        object_msg.coords.y = -det_coords[1]
+        object_msg.coords.z = -det_coords[2]
 
         object_msg.xmin = bbox[0]
         object_msg.ymin = bbox[1]
