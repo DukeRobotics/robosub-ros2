@@ -60,6 +60,9 @@ class PinkBins:
     PINK_3_BOT = np.array([190, 0, 40])
     PINK_3_TOP = np.array([250, 30, 70])
 
+    PINK_4_BOT = np.array([215, 12, 40])
+    PINK_4_TOP = np.array([280, 33, 50])
+
 class USBCamera(Enum):
     """Enum for different USB cameras."""
     front = 0

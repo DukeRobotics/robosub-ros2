@@ -14,8 +14,11 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
             name='bin_pink_front',
             camera='front',
             mask_ranges=[
-                [cv_constants.PinkBins.PINK_1_BOT, cv_constants.PinkBins.PINK_1_TOP],
-            ],
+                [cv_constants.PinkBins.PINK_1_BOT, cv_constants.PinkBins.PINK_1_TOP,
+                cv_constants.PinkBins.PINK_2_BOT, cv_constants.PinkBins.PINK_2_TOP,
+                cv_constants.PinkBins.PINK_3_BOT, cv_constants.PinkBins.PINK_3_TOP,
+                cv_constants.PinkBins.PINK_4_BOT, cv_constants.PinkBins.PINK_4_TOP,
+            ]],
             width=cv_constants.Bins.WIDTH,
         )
 
@@ -78,8 +81,15 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
         chosen_contour_score = None
         chosen_contour = None
 
+        MAX_SCORE = 300
+        THRESHOLD_RATIO = 0.5
+
         #self.get_logger().info(f'grouped count {len(grouped_contours)}')
-        for contour in grouped_contours[:min(2,len(grouped_contours))]:
+        max_coutour_area = 0
+        for contour in grouped_contours:
+            max_coutour_area = max(max_coutour_area, cv2.contourArea(contour))
+        
+        for contour in grouped_contours:
             # Get center (mean of all contour points)
             M = cv2.moments(contour)
             if M["m00"] != 0:
@@ -88,15 +98,16 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
             else:
                 continue
 
-            score = cv2.contourArea(contour)
+            cluster_point_count = cv2.contourArea(contour)
+            if cluster_point_count < THRESHOLD_RATIO * max_coutour_area or cluster_point_count < MAX_SCORE:
+                continue
 
             # Pick the contour with the lowest center_y
             if center_y > final_y:
                 final_x, final_y = center_x, center_y
-                chosen_contour_score = score
+                chosen_contour_score = cluster_point_count
                 chosen_contour = contour
 
-        MAX_SCORE = 300
         if chosen_contour_score is not None and chosen_contour_score >= MAX_SCORE:
             # Draw chosen contour center in red
             return chosen_contour
