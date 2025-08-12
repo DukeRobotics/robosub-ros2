@@ -191,7 +191,7 @@ async def depth_correction(self: Task, desired_depth: float) -> Task[None, None,
     logger.info(f'Started depth correction {depth_delta}')
     await move_to_pose_local(
         geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0),
-        pose_tolerances = create_twist_tolerance(linear_z = 0.12),
+        pose_tolerances = create_twist_tolerance(linear_z = 0.15),
         parent=self)
     logger.info(f'Finished depth correction {depth_delta}')
 

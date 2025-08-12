@@ -356,7 +356,7 @@ async def buoy_circumnavigation_power(self: Task, depth: float = 0.7) -> Task[No
 
 
 @task
-async def initial_submerge(self: Task, submerge_dist: float, enable_controls_flag: bool = False) -> Task[None, None, None]:
+async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float = 0.1, enable_controls_flag: bool = False) -> Task[None, None, None]:
     """
     Submerge the robot a given amount.
 
@@ -370,7 +370,7 @@ async def initial_submerge(self: Task, submerge_dist: float, enable_controls_fla
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, submerge_dist, 0, 0, 0),
         keep_orientation=False,
-        pose_tolerances = move_tasks.create_twist_tolerance(linear_z = 0.1),
+        pose_tolerances = move_tasks.create_twist_tolerance(linear_z = z_tolerance),
         parent=self,
     )
     logger.info(f'Submerged {submerge_dist} meters')
@@ -681,10 +681,11 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
     while abs(cv_object_yaw) > get_yaw_threshold(yaw_threshold, CV().bounding_boxes[cv_object].coords.x):
         sign_cv_object_yaw = np.sign(cv_object_yaw)
         correction = get_step_size(0.5*cv_object_yaw) # Scale down CV yaw value
-        desired_yaw = sign_cv_object_yaw * correction
+        desired_yaw = -1 * sign_cv_object_yaw * correction # Flip value to determine actual way we need to turn
 
-        logger.info(f'Detected yaw {cv_object_yaw} is greater than threshold {yaw_threshold}. Yawing: {desired_yaw}')
+        logger.info(f'Detected yaw {cv_object_yaw} is greater than threshold {yaw_threshold}. Actually yawing: {desired_yaw}')
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, desired_yaw),
+                                            pose_tolerances = move_tasks.create_twist_tolerance(angular_yaw = 0.15),
                                             parent=self)
         await correct_depth()
         await Yield()
@@ -1169,8 +1170,8 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     # NOTE: due to CV interface refactoring, pink bins are no longer object types available through the CV interface.
     logger.info('Starting octagon task')
 
-    DEPTH_LEVEL_AT_BINS = State().orig_depth - 0.5
-    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.3
+    DEPTH_LEVEL_AT_BINS = State().orig_depth - 0.7
+    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.5
     LATENCY_THRESHOLD = 2
     CONTOUR_SCORE_THRESHOLD = 1000
 
@@ -1191,7 +1192,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     def is_receiving_pink_bin_data(latest_detection_time):
         return latest_detection_time and CVObjectType.BIN_PINK_BOTTOM in CV().bounding_boxes and \
             CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].score >= CONTOUR_SCORE_THRESHOLD and \
-            Clock().now().seconds_nanoseconds()[0] - CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.secs < LATENCY_THRESHOLD and \
+            Clock().now().seconds_nanoseconds()[0] - CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.sec < LATENCY_THRESHOLD and \
             abs(CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
 
     def publish_power() -> None:
@@ -1211,9 +1212,9 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         bin_pink_score = CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score
         step = 0
 
-        low_score = 200
-        med_score = 700
-        high_score = 1500
+        low_score = 700
+        med_score = 3000
+        high_score = 7000
 
         if bin_pink_score < low_score:
             step = 2
@@ -1244,20 +1245,21 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
                 await yaw_to_cv_object(CVObjectType.BIN_PINK_FRONT, direction=direction, yaw_threshold=math.radians(15),
                                        depth_level=0.7, parent=Task.MAIN_ID)
 
-            logger.info(f'Bin pink front score: {CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score}')
+            #logger.info(f'Bin pink front score: {CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score}')
 
-            score_threshold = 4000
+            score_threshold = 30000
             if CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score > score_threshold and not moved_above:
                 logger.info(f'Beginning to move above bin')
-                await correct_depth(DEPTH_LEVEL_ABOVE_BINS + 0.1)
+                await correct_depth(DEPTH_LEVEL_ABOVE_BINS)
                 moved_above = True
 
                 logger.info('Moved above pink bins')
 
-            step = get_step_size(last_step_size)
-            logger.info(f'Moving step size {step}')
-            await move_x(step=step)
-            last_step_size = step
+            if not moved_above
+                step = get_step_size(last_step_size)
+                logger.info(f'Moving step size {step}')
+                await move_x(step=step)
+                last_step_size = step
 
             await Yield()
 

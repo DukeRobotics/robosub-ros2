@@ -12,9 +12,9 @@ class HSVPinkBinBottom(hsv_filter.HSVFilter):
     def __init__(self) -> None:
         super().__init__(
             name='bin_pink_bottom',
-            camera='front',
+            camera='bottom',
             mask_ranges=[
-                [cv_constants.PinkBins.PINK_1_BOT, cv_constants.PinkBins.PINK_1_TOP],
+                [cv_constants.YellowBins.YELLOW_2_BOT, cv_constants.YellowBins.YELLOW_2_TOP],
             ],
             width=cv_constants.Bins.WIDTH,
         )
@@ -72,14 +72,21 @@ class HSVPinkBinBottom(hsv_filter.HSVFilter):
         final_contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
         #self.get_logger().info(f'final count {len(final_contours)}')
-        grouped_contours = self.group_contours_by_distance(final_contours[:min(20,len(final_contours))], dist_thresh=20)
+        grouped_contours = self.group_contours_by_distance(final_contours[:min(20,len(final_contours))], dist_thresh=35)
 
         final_x, final_y = 0, 0
         chosen_contour_score = None
         chosen_contour = None
 
+        MIN_AREA = 100
+        THRESHOLD_RATIO = 0.5
+
         #self.get_logger().info(f'grouped count {len(grouped_contours)}')
-        for contour in grouped_contours[:min(2,len(grouped_contours))]:
+        max_coutour_area = 0
+        for contour in grouped_contours:
+            max_coutour_area = max(max_coutour_area, cv2.contourArea(contour))
+
+        for contour in grouped_contours:
             # Get center (mean of all contour points)
             M = cv2.moments(contour)
             if M["m00"] != 0:
@@ -88,16 +95,17 @@ class HSVPinkBinBottom(hsv_filter.HSVFilter):
             else:
                 continue
 
-            score = cv2.contourArea(contour)
+            cluster_point_count = cv2.contourArea(contour)
+            if cluster_point_count < THRESHOLD_RATIO * max_coutour_area or cluster_point_count < MIN_AREA:
+                continue
 
             # Pick the contour with the lowest center_y
             if center_y > final_y:
                 final_x, final_y = center_x, center_y
-                chosen_contour_score = score
+                chosen_contour_score = cluster_point_count
                 chosen_contour = contour
 
-        MAX_SCORE = 300
-        if chosen_contour_score is not None and chosen_contour_score >= MAX_SCORE:
+        if chosen_contour_score is not None and chosen_contour_score >= MIN_AREA:
             # Draw chosen contour center in red
             return chosen_contour
 
@@ -105,12 +113,8 @@ class HSVPinkBinBottom(hsv_filter.HSVFilter):
 
     def morphology(self, mask: np.ndarray) -> np.ndarray:
         """Apply a kernel morphology."""
-        kernel_h = np.ones((2, 10), np.uint8)
-        kernel_v = np.ones((5, 2), np.uint8)
-        mask_h = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_h)
-        mask_v = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_v)
-
-        return cv2.bitwise_or(mask_h, mask_v)
+        kernel = np.ones((5, 5), np.uint8)
+        return cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
 def main(args: list[str] | None = None) -> None:
     """Run the node."""
