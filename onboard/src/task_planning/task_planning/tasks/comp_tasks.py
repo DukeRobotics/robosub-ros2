@@ -1497,13 +1497,10 @@ async def ivc_receive(self: Task[None, None, None], timeout: float = 10):
 
     return True
 
-
-
 @task
 async def first_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
     await ivc_send(self, msg)
     await ivc_receive(self, timeout = 60)
-
 
 @task
 async def second_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:

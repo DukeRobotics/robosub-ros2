@@ -107,7 +107,7 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
 
         if chosen_contour_score is not None and chosen_contour_score >= MIN_AREA:
             # Draw chosen contour center in red
-            self.get_logger().info(f'Octagon bin score {chosen_contour_score}')
+            # self.get_logger().info(f'Octagon bin score {chosen_contour_score}')
             return chosen_contour
 
         return None
