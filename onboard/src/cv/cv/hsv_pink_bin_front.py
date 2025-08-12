@@ -81,7 +81,7 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
         chosen_contour_score = None
         chosen_contour = None
 
-        MAX_SCORE = 300
+        MIN_AREA = 100
         THRESHOLD_RATIO = 0.5
 
         #self.get_logger().info(f'grouped count {len(grouped_contours)}')
@@ -99,7 +99,7 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
                 continue
 
             cluster_point_count = cv2.contourArea(contour)
-            if cluster_point_count < THRESHOLD_RATIO * max_coutour_area or cluster_point_count < MAX_SCORE:
+            if cluster_point_count < THRESHOLD_RATIO * max_coutour_area or cluster_point_count < MIN_AREA:
                 continue
 
             # Pick the contour with the lowest center_y
