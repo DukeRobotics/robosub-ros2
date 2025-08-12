@@ -27,6 +27,7 @@ from task_planning.utils import geometry_utils
 
 
 from task_planning.utils.other_utils import get_robot_name, RobotName
+# from sonar.sonar.sonar import Sonar
 
 # TODO: move stablize() to move_tasks.py
 #
