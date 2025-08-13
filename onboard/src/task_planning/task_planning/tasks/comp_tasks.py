@@ -700,7 +700,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
     while abs(cv_object_yaw) > get_yaw_threshold(yaw_threshold, CV().bounding_boxes[cv_object].coords.x):
         sign_cv_object_yaw = np.sign(cv_object_yaw)
         correction = get_step_size(SCALE_FACTOR*cv_object_yaw) # Scale down CV yaw value
-        desired_yaw = -1 * sign_cv_object_yaw * correction # Flip value to determine actual way we need to turn
+        desired_yaw = sign_cv_object_yaw * correction
 
         logger.info(f'Detected yaw {cv_object_yaw} is greater than threshold {yaw_threshold}. Actually yawing: {desired_yaw}')
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, desired_yaw),
