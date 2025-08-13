@@ -90,9 +90,13 @@ async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]
     await move_tasks.depth_correction(DEPTH_LEVEL, parent=self)
     await roll()
     State().reset_pose()
+    await util_tasks.sleep(3, parent=self)
+
+    await move_tasks.depth_correction(DEPTH_LEVEL, parent=self)
     await roll()
     State().reset_pose()
     await util_tasks.sleep(3, parent=self)
+
     await move_tasks.depth_correction(DEPTH_LEVEL, parent=self)
     await util_tasks.sleep(3, parent=self)
 
@@ -319,21 +323,16 @@ async def gate_to_octagon(self: Task, direction: int = 1, move_forward: int = 0)
 
     logger.info('Started gate to octagon')
 
-    async def move_with_directions(directions):
-        await move_tasks.move_with_directions(directions, correct_yaw=False, correct_depth=True, parent=self)
+    async def move_with_directions(directions, depth_level=-0.7):
+        await move_tasks.move_with_directions(directions, depth_level, correct_yaw=False, correct_depth=True, parent=self)
 
-    async def correct_depth() -> Coroutine[None, None, None]:
-        await move_tasks.correct_depth(desired_depth=DEPTH_LEVEL, parent=self)
-    self.correct_depth = correct_depth
-
-    # Move towards octagon (edit this for 2025 plz!)
     directions = [
         (4, 0, 0),
         (4, 0, 0),
         (4, 0, 0),
         (4, 0, 0),
     ]
-    await move_with_directions(directions)
+    await move_with_directions(directions, depth_correction=DEPTH_LEVEL)
 
 
 @task
@@ -531,7 +530,8 @@ async def gate_task_dead_reckoning(self: Task) -> Task[None, None, None]:
     if get_robot_name() == RobotName.OOGWAY:
         await move_tasks.move_with_directions([(5, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self)
     elif get_robot_name() == RobotName.CRUSH:
-        await move_tasks.move_with_directions([(5, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(3, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self)
     logger.info('Moved through gate')
 
 
