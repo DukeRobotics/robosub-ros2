@@ -89,3 +89,44 @@ async def test_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
         sleep_task = util_tasks.sleep(5, parent=self)
         while not sleep_task.done:
             sleep_task.step()
+
+@task
+async def ivc_send(self: Task[None, None, None], msg: IVCMessageType) -> None:
+    await wait_for_modem_ready(parent=self)
+
+    future = IVC().send_message(msg)
+    if future is None:
+        logger.error('Could not call IVC send message service.')
+    else:
+        service_response = cast('SendModemMessage.Response', await future)
+        if service_response.success:
+            logger.info(f'Sent IVC message: {msg.name}')
+        else:
+            logger.error(f'Modem failed to send message. Response: {service_response.message}')
+
+@task
+async def ivc_receive(self: Task[None, None, None], timeout: float = 10) -> IVCMessageType:
+    await wait_for_modem_ready(parent=self)
+
+    messages_received = len(IVC().messages)
+
+    sleep_task = util_tasks.sleep(timeout, parent=self)
+    while not (len(IVC().messages) > messages_received):
+        remaining_duration = sleep_task.step()
+        if not remaining_duration:
+            logger.error('Timeout waiting for message.')
+            return False
+
+        logger.info('Waiting for message...')
+        await util_tasks.sleep(min(remaining_duration, Duration(seconds=1)), parent=self)
+
+    sleep_task.close()
+
+    logger.info(f'Received IVC message: {IVC().messages[-1].msg.name}')
+    messages_received = len(IVC().messages)
+
+    if IVC().messages[-1].msg != IVCMessageType.UNKNOWN:
+        return IVC().messages[-1].msg
+
+    logger.warning(f'Received message {IVC().messages[-1].msg.name} does not match expected message {msg.name}.')
+    return IVCMessageType.UNKNOWN

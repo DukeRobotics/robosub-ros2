@@ -313,6 +313,26 @@ async def buoy_to_octagon(self: Task, direction: int = 1, move_forward: int = 0)
     ]
     await move_with_directions(directions)
 
+@task
+async def gate_to_octagon(self: Task, direction: int = 1, move_forward: int = 0):
+    DEPTH_LEVEL = State().orig_depth - 0.7
+
+    logger.info('Started gate to octagon')
+
+    async def move_with_directions(directions):
+        await move_tasks.move_with_directions(directions, correct_yaw=False, correct_depth=True, parent=self)
+
+    async def correct_depth() -> Coroutine[None, None, None]:
+        await move_tasks.correct_depth(desired_depth=DEPTH_LEVEL, parent=self)
+    self.correct_depth = correct_depth
+
+    # Move towards octagon (edit this for 2025 plz!)
+    directions = [
+        (3, 0, 0),
+        (3, 0, 0),
+    ]
+    await move_with_directions(directions)
+
 
 @task
 async def buoy_circumnavigation_power(self: Task, depth: float = 0.7) -> Task[None, None, None]:
@@ -638,6 +658,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
     """
     DEPTH_LEVEL = State().orig_depth - depth_level
     MAXIMUM_YAW = math.radians(20)
+    SCALE_FACTOR = 0.5 # How much the correction should be scaled down from yaw calculation
 
     logger.info('Starting yaw_to_cv_object')
 
@@ -681,7 +702,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
     logger.info(f'yaw_threshold: {yaw_threshold}')
     while abs(cv_object_yaw) > get_yaw_threshold(yaw_threshold, CV().bounding_boxes[cv_object].coords.x):
         sign_cv_object_yaw = np.sign(cv_object_yaw)
-        correction = get_step_size(0.5*cv_object_yaw) # Scale down CV yaw value
+        correction = get_step_size(SCALE_FACTOR*cv_object_yaw) # Scale down CV yaw value
         desired_yaw = -1 * sign_cv_object_yaw * correction # Flip value to determine actual way we need to turn
 
         logger.info(f'Detected yaw {cv_object_yaw} is greater than threshold {yaw_threshold}. Actually yawing: {desired_yaw}')
@@ -1165,15 +1186,26 @@ async def bin_task(self: Task) -> Task[None, None, None]:
 @task
 async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]:
     """
-    Detects, move towards the pink bins, then surfaces inside the octagon. Requires robot to have submerged 0.7 meters.
+    Detects, move towards the yellow bins, then surfaces inside the octagon. Requires robot to have submerged 0.7 meters.
     """
-    # NOTE: due to CV interface refactoring, pink bins are no longer object types available through the CV interface.
     logger.info('Starting octagon task')
+`   `
+    DEPTH_LEVEL_AT_BINS = State().orig_depth - 0.7 # Depth for beginning of task and corrections during forward movement
+    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.5 # Depth for going above bin before forward move
+    LATENCY_THRESHOLD = 2 # Latency for seeing the bottom bin
+    CONTOUR_SCORE_THRESHOLD = 1000 # Required bottom bin area for valid detection
 
-    DEPTH_LEVEL_AT_BINS = State().orig_depth - 0.7
-    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.5
-    LATENCY_THRESHOLD = 2
-    CONTOUR_SCORE_THRESHOLD = 1000
+    SCORE_THRESHOLD = 30000 # Area of bin before beginning surface logic for front camera
+    POST_FRONT_THRESHOLD_FORWARD_DISTANCE = 0.25 # in meters
+
+    # Forward navigation case constants
+    LOW_SCORE = 700
+    LOW_STEP_SIZE = 2
+    MED_SCORE = 3000
+    MED_STEP_SIZE = 1.25
+    HIGH_SCORE = 7000
+    HIGH_STEP_SIZE = 0.75
+    VERY_HIGH_STEP_SIZE = 0.5
 
     async def correct_depth(desired_depth):
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
@@ -1187,6 +1219,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             parent=self,
         )
         logger.info('Corrected yaw')
+
     self.correct_yaw = correct_yaw
 
     def is_receiving_pink_bin_data(latest_detection_time):
@@ -1194,12 +1227,6 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].score >= CONTOUR_SCORE_THRESHOLD and \
             Clock().now().seconds_nanoseconds()[0] - CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.sec < LATENCY_THRESHOLD and \
             abs(CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
-
-    def publish_power() -> None:
-        power = Twist()
-        power.linear.x = 0.3
-        Controls().set_axis_control_type(x=ControlTypes.DESIRED_POWER)
-        Controls().publish_desired_power(power, set_control_types=False)
 
     async def move_x(step=1) -> None:
         await move_tasks.move_x(step=step, parent=self)
@@ -1212,18 +1239,14 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         bin_pink_score = CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score
         step = 0
 
-        low_score = 700
-        med_score = 3000
-        high_score = 7000
-
-        if bin_pink_score < low_score:
-            step = 2
-        elif bin_pink_score < med_score:
-            step = 1.25
-        elif bin_pink_score < high_score:
-            step = 0.75
+        if bin_pink_score < LOW_SCORE:
+            step = LOW_STEP_SIZE
+        elif bin_pink_score < MED_SCORE:
+            step = MED_STEP_SIZE
+        elif bin_pink_score < HIGH_SCORE:
+            step = HIGH_STEP_SIZE
         else:
-            step = 0.5
+            step = VERY_HIGH_STEP_SIZE
 
         return min(step, last_step_size)
 
@@ -1243,12 +1266,11 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             if not moved_above:
                 logger.info("Yawing to pink bin front")
                 await yaw_to_cv_object(CVObjectType.BIN_PINK_FRONT, direction=direction, yaw_threshold=math.radians(15),
-                                       depth_level=0.7, parent=Task.MAIN_ID)
+                                       depth_level=DEPTH_LEVEL_AT_BINS, parent=Task.MAIN_ID)
 
             #logger.info(f'Bin pink front score: {CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score}')
-
-            score_threshold = 30000
-            if CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score > score_threshold and not moved_above:
+      
+            if CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score > SCORE_THRESHOLD and not moved_above:
                 logger.info(f'Beginning to move above bin')
                 await correct_depth(DEPTH_LEVEL_ABOVE_BINS)
                 moved_above = True
@@ -1268,7 +1290,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             logger.info(f'Receiving pink bin data: {is_receiving_pink_bin_data(latest_detection_time)}')
 
         if moved_above:
-            await move_tasks.move_with_directions([(0.25, 0, 0)], parent=self)
+            await move_tasks.move_with_directions([(POST_FRONT_THRESHOLD_FORWARD_DISTANCE, 0, 0)], parent=self)
         else:
             logger.info('Detected bin_pink_bottom')
 
@@ -1484,53 +1506,11 @@ async def torpedo_task_old(self: Task,
     await center_with_torpedo_target()
 
 @task
-async def ivc_send(self: Task[None, None, None], msg: IVCMessageType) -> None:
-    await ivc_tasks.wait_for_modem_ready(parent=self)
-
-    future = IVC().send_message(msg)
-    if future is None:
-        logger.error('Could not call IVC send message service.')
-    else:
-        service_response = cast('SendModemMessage.Response', await future)
-        if service_response.success:
-            logger.info(f'Sent IVC message: {msg.name}')
-        else:
-            logger.error(f'Modem failed to send message. Response: {service_response.message}')
-
-@task
-async def ivc_receive(self: Task[None, None, None], timeout: float = 10) -> IVCMessageType:
-    await ivc_tasks.wait_for_modem_ready(parent=self)
-
-    messages_received = len(IVC().messages)
-
-    sleep_task = util_tasks.sleep(timeout, parent=self)
-    while not (len(IVC().messages) > messages_received):
-        remaining_duration = sleep_task.step()
-        if not remaining_duration:
-            logger.error('Timeout waiting for message.')
-            return False
-
-        logger.info('Waiting for message...')
-        await util_tasks.sleep(min(remaining_duration, Duration(seconds=1)), parent=self)
-
-    sleep_task.close()
-
-    logger.info(f'Received IVC message: {IVC().messages[-1].msg.name}')
-    messages_received = len(IVC().messages)
-
-    if IVC().messages[-1].msg != IVCMessageType.UNKNOWN:
-        return IVC().messages[-1].msg
-
-    logger.warning(f'Received message {IVC().messages[-1].msg.name} does not match expected message {msg.name}.')
-    return IVCMessageType.UNKNOWN
-
-@task
 async def first_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> Task[None, None, None]:
-    await ivc_send(msg, parent = self)
-    await ivc_receive(timeout = 60, parent = self)
+    await ivc_tasks.ivc_send(msg, parent = self) # Send crush is done with gate
+    await ivc_tasks.ivc_receive(timeout = 60, parent = self) # Wait for Oogway to say starting
 
 @task
 async def oogway_ivc_start(self: Task[None, None, None], msg: IVCMessageType) -> Task[None, None, None]:
-    await ivc_receive(timeout = 60, parent = self) # Receive Crush is done
-    await ivc_send(msg, parent = self) # Oogway says ok and starting
-
+    await ivc_tasks.ivc_receive(timeout = 60, parent = self) # Receive Crush is done
+    await ivc_tasks.ivc_send(msg, parent = self) # Oogway says ok and starting

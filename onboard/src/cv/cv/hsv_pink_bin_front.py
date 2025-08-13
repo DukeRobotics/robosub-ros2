@@ -69,17 +69,18 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
 
     def filter(self, contours: list) -> list:
         """Pick the largest and lowest contour only."""
+        MIN_AREA = 100 # Minimum area of contour to be valid
+        THRESHOLD_RATIO = 0.5 # Contour within scaled of max contour area
+        DIST_THRESH = 35 # Group all contours within this threshold
+
         final_contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
         #self.get_logger().info(f'final count {len(final_contours)}')
-        grouped_contours = self.group_contours_by_distance(final_contours[:min(20,len(final_contours))], dist_thresh=35)
+        grouped_contours = self.group_contours_by_distance(final_contours[:min(20,len(final_contours))], dist_thresh=DIST_THRESH)
 
         final_x, final_y = 0, 0
         chosen_contour_score = None
         chosen_contour = None
-
-        MIN_AREA = 100
-        THRESHOLD_RATIO = 0.5
 
         #self.get_logger().info(f'grouped count {len(grouped_contours)}')
         for contour in grouped_contours[:min(2,len(grouped_contours))]:
