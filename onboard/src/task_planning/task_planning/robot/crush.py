@@ -16,7 +16,7 @@ async def main(self: Task) -> Task[None, None, None]:
         comp_tasks.initial_submerge(-0.7, z_tolerance=0.15, enable_controls_flag=True, parent=self),
         comp_tasks.coin_flip(enable_same_direction=False, parent=self),
 
-        comp_tasks.gate_task_dead_reckoning(parent=self),
+        comp_tasks.gate_task_dead_reckoning(depth_level=-0.7, parent=self),
         comp_tasks.gate_style_task(depth_level=0.8, parent=self),
         # comp_tasks.crush_robot_ivc(IVCMessageType.CRUSH_GATE, timeout=90, parent = self),
 

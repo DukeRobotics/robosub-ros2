@@ -525,13 +525,14 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
 
 
 @task
-async def gate_task_dead_reckoning(self: Task) -> Task[None, None, None]:
+async def gate_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None, None, None]:
     logger.info('Started gate task')
     if get_robot_name() == RobotName.OOGWAY:
-        await move_tasks.move_with_directions([(5, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
     elif get_robot_name() == RobotName.CRUSH:
-        await move_tasks.move_with_directions([(3, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self)
-        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
     logger.info('Moved through gate')
 
 
