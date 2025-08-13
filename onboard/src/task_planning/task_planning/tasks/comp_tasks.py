@@ -1189,7 +1189,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     Detects, move towards the yellow bins, then surfaces inside the octagon. Requires robot to have submerged 0.7 meters.
     """
     logger.info('Starting octagon task')
-`   `
+
     DEPTH_LEVEL_AT_BINS = State().orig_depth - 0.7 # Depth for beginning of task and corrections during forward movement
     DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.5 # Depth for going above bin before forward move
     LATENCY_THRESHOLD = 2 # Latency for seeing the bottom bin
@@ -1371,24 +1371,6 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
     await move_to_torpedo()
     logger.info(f"Finished moving forwards to torpedo")
 
-    # # Get sonar sweep parameters from CV banner
-    # sonar_params = CV().get_sonar_sweep_params(CVObjectType.TORPEDO_BANNER)
-    # if sonar_params is not None:
-    #     start_angle, end_angle, scan_distance = sonar_params
-    #     logger.info(f"Sonar sweep params from CV banner: start_angle={start_angle}, end_angle={end_angle}, scan_distance={scan_distance}")
-
-    #     # Call sonar sweep request
-    #     sonar_future = Sonar().sweep(start_angle, end_angle, 3)
-    #     if sonar_future is not None:
-    #         logger.info("Sonar sweep request sent, waiting for response...")
-    #         # Wait for the sonar sweep to complete
-    #         sonar_response = await sonar_future
-    #         logger.info(f"Sonar sweep response received: {sonar_response}")
-    #     else:
-    #         logger.warning("Sonar sweep request failed - bypass mode or service unavailable")
-    # else:
-    #     logger.warning("Could not get sonar sweep parameters from CV banner")
-
     # Small offset to counteract camera positioning
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, -0.8, 0.2, 0, 0, 0),
@@ -1397,17 +1379,18 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
         parent=self,
     )
 
-    # TEMP
-    # target_y = CV().bounding_boxes[CVObjectType.TORPEDO_REEF_SHARK_TARGET].coords.y
-    # target_z = CV().bounding_boxes[CVObjectType.TORPEDO_REEF_SHARK_TARGET].coords.z
-    # if CV().is_receiving_recent_cv_data(CVObjectType.TORPEDO_REEF_SHARK_TARGET, 5.0):
-    #     await move_tasks.move_to_pose_local(
-    #         geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
-    #         keep_orientation=False,
-    #         parent=self,
-    #     )
-    # END TEMP
-
+    # Center to some animal
+    animal = CVObjectType.TORPEDO_REEF_SHARK_TARGET
+    target_y = CV().bounding_boxes[animal].coords.y
+    target_z = CV().bounding_boxes[animal].coords.z
+    if CV().is_receiving_recent_cv_data(animal, 5.0):
+        logger.info(f"Aligning to {animal}")
+        await move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
+            keep_orientation=False,
+            parent=self,
+        )
+    # End
 
     logger.info(f"Firing torpedoes")
     await Servos().fire_torpedo(TorpedoStates.LEFT)
