@@ -1269,7 +1269,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
                                        depth_level=DEPTH_LEVEL_AT_BINS, parent=Task.MAIN_ID)
 
             logger.info(f'Bin pink front score: {CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score}')
-      
+
             if CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score > SCORE_THRESHOLD and not moved_above:
                 logger.info(f'Beginning to move above bin')
                 await correct_depth(DEPTH_LEVEL_ABOVE_BINS)
@@ -1514,7 +1514,7 @@ async def crush_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> 
     while count != 0 and await ivc_tasks.ivc_receive(timeout = 60, parent = self) != IVCMessageType.OOGWAY_ACKNOWLEDGE:
         logger.info(f'Unexpected message receieved. Remaining attempts: {count}')
         count -= 1
-     
+
 
 @task
 async def oogway_ivc_start(self: Task[None, None, None], msg: IVCMessageType) -> Task[None, None, None]:

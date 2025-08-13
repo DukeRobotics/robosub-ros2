@@ -42,10 +42,10 @@ class Torpedo:
     # HIGH_BOT = np.array([345, 10, 40])
     # HIGH_TOP = np.array([360, 65, 100])
 
-    LOW_BOT = np.array([0, 45, 35])
-    LOW_TOP = np.array([10, 75, 95])
-    HIGH_BOT = np.array([330, 45, 35])
-    HIGH_TOP = np.array([360, 75, 95])
+    LOW_BOT = np.array([0, 55, 35])
+    LOW_TOP = np.array([5, 95, 65])
+    HIGH_BOT = np.array([330, 55, 35])
+    HIGH_TOP = np.array([360, 95, 65])
 
 class BlueRect:
     """BlueRect color constants."""

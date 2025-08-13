@@ -101,6 +101,10 @@ async def ivc_send(self: Task[None, None, None], msg: IVCMessageType) -> None:
         service_response = cast('SendModemMessage.Response', await future)
         if service_response.success:
             logger.info(f'Sent IVC message: {msg.name}')
+
+            # Log to text file
+            with open("ivc_log.txt", "a") as f:
+                f.write(f'Sent IVC message: {msg.name} at {IVC().modem_status.header.stamp.sec}.{IVC().modem_status.header.stamp.nanosec}\n')
         else:
             logger.error(f'Modem failed to send message. Response: {service_response.message}')
 
@@ -121,6 +125,10 @@ async def ivc_receive(self: Task[None, None, None], timeout: float = 10) -> IVCM
         await util_tasks.sleep(min(remaining_duration, Duration(seconds=1)), parent=self)
 
     sleep_task.close()
+
+    # Log to text file
+    with open("ivc_log.txt", "a") as f:
+        f.write(f'Sent IVC message: {IVC().messages[-1].msg.name} at {IVC().messages[-1].header.stamp.sec}.{IVC().messages[-1].header.stamp.nanosec}\n')
 
     logger.info(f'Received IVC message: {IVC().messages[-1].msg.name}')
     messages_received = len(IVC().messages)
