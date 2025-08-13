@@ -1268,7 +1268,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
                 await yaw_to_cv_object(CVObjectType.BIN_PINK_FRONT, direction=direction, yaw_threshold=math.radians(15),
                                        depth_level=DEPTH_LEVEL_AT_BINS, parent=Task.MAIN_ID)
 
-            #logger.info(f'Bin pink front score: {CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score}')
+            logger.info(f'Bin pink front score: {CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score}')
       
             if CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score > SCORE_THRESHOLD and not moved_above:
                 logger.info(f'Beginning to move above bin')
@@ -1506,11 +1506,22 @@ async def torpedo_task_old(self: Task,
     await center_with_torpedo_target()
 
 @task
-async def first_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> Task[None, None, None]:
+async def crush_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> Task[None, None, None]:
     await ivc_tasks.ivc_send(msg, parent = self) # Send crush is done with gate
-    await ivc_tasks.ivc_receive(timeout = 60, parent = self) # Wait for Oogway to say starting
+
+    count = 2
+    # Wait for Oogway to say starting/acknowledge command
+    while count != 0 and await ivc_tasks.ivc_receive(timeout = 60, parent = self) != IVCMessageType.OOGWAY_ACKNOWLEDGE:
+        logger.info(f'Unexpected message receieved. Remaining attempts: {count}')
+        count -= 1
+     
 
 @task
 async def oogway_ivc_start(self: Task[None, None, None], msg: IVCMessageType) -> Task[None, None, None]:
-    await ivc_tasks.ivc_receive(timeout = 60, parent = self) # Receive Crush is done
+    count = 2
+    # Receieve Crush is done with gate
+    while count != 0 and await ivc_tasks.ivc_receieve(timeout = 60, parent = self) != IVCMessageType.CRUSH_GATE:
+        logger.info(f'Unexpected message receieved. Remaining attempts: {count}')
+        count -= 1
+
     await ivc_tasks.ivc_send(msg, parent = self) # Oogway says ok and starting

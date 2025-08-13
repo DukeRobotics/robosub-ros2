@@ -17,7 +17,7 @@ async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     tasks = [
 
-        comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_GATE, parent = self),
+        comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent = self),
         comp_tasks.initial_submerge(-1.2, parent=self),
 
         # test(parent=self),
