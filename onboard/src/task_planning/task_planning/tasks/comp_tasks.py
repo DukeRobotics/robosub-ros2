@@ -24,7 +24,8 @@ from task_planning.task import Task, Yield, task
 from task_planning.tasks import cv_tasks, move_tasks, util_tasks, ivc_tasks
 from task_planning.utils import geometry_utils
 
-
+if TYPE_CHECKING:
+    from custom_msgs.srv import SendModemMessage
 
 from task_planning.utils.other_utils import get_robot_name, RobotName
 # from sonar.sonar.sonar import Sonar
@@ -904,7 +905,6 @@ async def path_marker_to_pink_bin(self: Task, maximum_distance: int = 6):
 
     await move_to_bins()
 
-
 @task
 async def spiral_bin_search(self: Task) -> Task[None, None, None]:
     DEPTH_LEVEL = State().orig_depth - 0.5
@@ -1301,17 +1301,20 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
         await move_tasks.move_x(step=step, parent=self)
 
     def get_step_size(dist:float, dist_threshold:float) -> float:
-        if dist > 6:
-            return 3
-        if dist > 3:
-            return 2
-        if dist > 2:
-            return 1
-        if dist > 1.5:
-            return 0.5
-        return min(dist - dist_threshold + 0.1, 0.25)
+        goal_step = 0.25
+        if dist > 10:
+            goal_step = 4
+        elif dist > 6:
+            goal_step = 3
+        elif dist > 4:
+            goal_step = 2
+        elif dist > 3:
+            goal_step = 1
+        elif dist > 1.5:
+            goal_step = 0.5
+        return min(dist - dist_threshold + 0.1, goal_step)
 
-    async def move_to_torpedo(torpedo_dist_threshold=2):
+    async def move_to_torpedo(torpedo_dist_threshold=2.25):
         await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=direction, yaw_threshold=math.radians(10),
         depth_level=depth_level, parent=self)
         torpedo_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
@@ -1362,9 +1365,31 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
     # else:
     #     logger.warning("Could not get sonar sweep parameters from CV banner")
 
+    # Small offset to counteract camera positioning
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(0, -0.8, 0.2, 0, 0, 0),
+        keep_orientation=False,
+        # pose_tolerances = move_tasks.create_twist_tolerance(linear_z = 0.1),
+        parent=self,
+    )
+
+    # TEMP
+    # target_y = CV().bounding_boxes[CVObjectType.TORPEDO_REEF_SHARK_TARGET].coords.y
+    # target_z = CV().bounding_boxes[CVObjectType.TORPEDO_REEF_SHARK_TARGET].coords.z
+    # if CV().is_receiving_recent_cv_data(CVObjectType.TORPEDO_REEF_SHARK_TARGET, 5.0):
+    #     await move_tasks.move_to_pose_local(
+    #         geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
+    #         keep_orientation=False,
+    #         parent=self,
+    #     )
+    # END TEMP
+
+
     logger.info(f"Firing torpedoes")
-    await Servos().fire_torpedo(TorpedoStates.RIGHT)
     await Servos().fire_torpedo(TorpedoStates.LEFT)
+    await util_tasks.sleep(Duration(seconds=5), parent=self)
+    await Servos().fire_torpedo(TorpedoStates.RIGHT)
+    logger.info(f"Torpedo task completed")
 
 @task
 async def torpedo_task_old(self: Task,
@@ -1456,9 +1481,6 @@ async def torpedo_task_old(self: Task,
 
     await center_with_torpedo_target()
 
-if TYPE_CHECKING:
-    from custom_msgs.srv import SendModemMessage
-
 @task
 async def ivc_send(self: Task[None, None, None], msg: IVCMessageType) -> None:
     await ivc_tasks.wait_for_modem_ready(parent=self)
@@ -1494,8 +1516,6 @@ async def ivc_receive(self: Task[None, None, None], timeout: float = 10):
     messages_received = len(IVC().messages)
 
     return True
-
-
 
 @task
 async def first_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
