@@ -1491,18 +1491,18 @@ async def torpedo_task_old(self: Task,
     await center_with_torpedo_target()
 
 @task
-async def crush_robot_ivc(self: Task[None, None, None], timeout: float = 60, msg: IVCMessageType) -> Task[None, None, None]:
+async def crush_robot_ivc(self: Task[None, None, None], msg: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
     await ivc_tasks.ivc_send(msg, parent = self) # Send crush is done with gate
 
     count = 2
     # Wait for Oogway to say starting/acknowledge command
     while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != IVCMessageType.OOGWAY_ACKNOWLEDGE:
-        logger.info(f'Unexpected message receieved. Remaining attempts: {count}')
+        logger.info(f'Unexpected message received. Remaining attempts: {count}')
         count -= 1
 
 
 @task
-async def oogway_ivc_start(self: Task[None, None, None], timeout: float = 60, msg: IVCMessageType) -> Task[None, None, None]:
+async def oogway_ivc_start(self: Task[None, None, None], msg: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
     count = 2
     # Receieve Crush is done with gate
     while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != IVCMessageType.CRUSH_GATE:
