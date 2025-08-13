@@ -16,15 +16,18 @@ from task_planning.tasks import util_tasks
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     tasks = [
-
-        comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent = self),
-        comp_tasks.initial_submerge(-1.2, parent=self),
-
+        # comp_tasks.initial_submerge(-1.2, parent=self),
         # test(parent=self),
 
         ##### COMP
-        # comp_tasks.initial_submerge(-1, parent=self),
-        # comp_tasks.torpedo_task(depth_level=1, direction=-1, parent=self),
+        comp_tasks.initial_submerge(-1, parent=self),
+        comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent = self),
+
+        # Gate
+        move_tasks.move_with_directions([(3, 0, 0)], depth_level=-1, correct_depth=True, correct_yaw=True, parent=self),
+        move_tasks.move_with_directions([(3, 0, 0)], depth_level=-1, correct_depth=True, correct_yaw=True, parent=self),
+
+        comp_tasks.torpedo_task(depth_level=1, direction=-1, parent=self),
         ##### END COMP
 
         # comp_tasks.initial_submerge(-1.2, parent=self),
