@@ -14,7 +14,7 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
             name='bin_pink_front',
             camera='front',
             mask_ranges=[
-                [cv_constants.PinkBins.PINK_1_BOT, cv_constants.PinkBins.PINK_1_TOP],
+                [cv_constants.YellowBins.YELLOW_2_BOT, cv_constants.YellowBins.YELLOW_2_TOP],
             ],
             width=cv_constants.Bins.WIDTH,
         )
@@ -101,8 +101,7 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
                 chosen_contour_score = cluster_point_count
                 chosen_contour = contour
 
-        MAX_SCORE = 300
-        if chosen_contour_score is not None and chosen_contour_score >= MAX_SCORE:
+        if chosen_contour_score is not None and chosen_contour_score >= MIN_AREA:
             # Draw chosen contour center in red
             # self.get_logger().info(f'Octagon bin score {chosen_contour_score}')
             return chosen_contour
