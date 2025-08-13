@@ -259,6 +259,7 @@ async def move_with_directions(self: Task,
                                correct_yaw: bool = False,
                                correct_depth: bool = False,
                                keep_orientation: bool = False,
+                               time_limit: int = 30,
                                ) -> None:
     """
     Move the robot to multiple poses defined by the provided directions.
@@ -275,6 +276,7 @@ async def move_with_directions(self: Task,
         correct_yaw (bool, optional): If True, corrects the yaw after moving to a pose. Defaults to False.
         correct_depth (bool, optional): If True, corrects the depth after moving to a pose. Defaults to False.
         keep_orientation (bool, optional): If True, corrects orientation after moving to a pose. Defaults to False.
+        time_limit (int, optional): The time limit (in seconds) for reaching the pose. Defaults to 30.
 
     Raises:
         ValueError: If a direction tuple in the list is not of length 3 or 6.
@@ -292,13 +294,15 @@ async def move_with_directions(self: Task,
             keep_orientation=keep_orientation,
             depth_level=depth_level,
             pose_tolerances = create_twist_tolerance(linear_x = 0.1, linear_y = 0.07, linear_z = 0.07),
-            time_limit=30,
+            time_limit=time_limit,
             parent=self)
         logger.info(f'Moved to {direction}')
 
         if correct_yaw:
             logger.info(f'Correcting yaw {orig_gyro - State().gyro_euler_angles.z}')
-            await move_to_pose_local(geometry_utils.create_pose(0,0,0,0,0,orig_gyro - State().gyro_euler_angles.z), parent=self)
+            await move_to_pose_local(geometry_utils.create_pose(0,0,0,0,0,orig_gyro - State().gyro_euler_angles.z),
+                                     time_limit=time_limit,
+                                     parent=self)
         if correct_depth:
             await depth_correction(depth_level, parent=self)
 
