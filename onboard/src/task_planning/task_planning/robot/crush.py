@@ -12,6 +12,9 @@ from task_planning.utils import geometry_utils
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Crush."""
     tasks = [
+        # comp_tasks.gate_task_dead_reckoning(),
+        comp_tasks.initial_submerge(-0.5, z_tolerance=0.15, enable_controls_flag=True, parent=self),
+        comp_tasks.first_robot_ivc(IVCMessageType.CRUSH_GATE, parent = self),
         # ivc_tasks.test_ivc(IVCMessageType.CRUSH_TEST, parent=self),
         # buoyancy_tasks.tune_static_power(parent=self),
         # comp_tasks.initial_submerge(-0.5, z_tolerance=0.15, enable_controls_flag=True, parent=self),

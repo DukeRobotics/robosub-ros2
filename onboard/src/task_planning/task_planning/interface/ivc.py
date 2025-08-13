@@ -8,6 +8,8 @@ from rclpy.node import Node
 from rclpy.task import Future
 from rclpy.time import Time
 
+from task_planning.utils.other_utils import singleton
+
 logger = get_logger('ivc_interface')
 
 class IVCMessageType(Enum):
@@ -47,7 +49,7 @@ class IVCMessage:
     timestamp: Time
     msg: IVCMessageType
 
-
+@singleton
 class IVC:
     """Interface for inter-vehicle communication (IVC)."""
 

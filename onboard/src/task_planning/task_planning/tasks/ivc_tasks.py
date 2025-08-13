@@ -88,5 +88,4 @@ async def test_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
 
         sleep_task = util_tasks.sleep(5, parent=self)
         while not sleep_task.done:
-            
             sleep_task.step()

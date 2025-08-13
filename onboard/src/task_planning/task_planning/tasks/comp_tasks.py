@@ -1255,7 +1255,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
                 logger.info('Moved above pink bins')
 
-            if not moved_above
+            if not moved_above:
                 step = get_step_size(last_step_size)
                 logger.info(f'Moving step size {step}')
                 await move_x(step=step)
@@ -1498,7 +1498,7 @@ async def ivc_send(self: Task[None, None, None], msg: IVCMessageType) -> None:
             logger.error(f'Modem failed to send message. Response: {service_response.message}')
 
 @task
-async def ivc_receive(self: Task[None, None, None], timeout: float = 10, msg: IVCMessageType = IVCMessageType.UNKNOWN) -> IVCMessageType:
+async def ivc_receive(self: Task[None, None, None], timeout: float = 10) -> IVCMessageType:
     await ivc_tasks.wait_for_modem_ready(parent=self)
 
     messages_received = len(IVC().messages)
@@ -1526,11 +1526,11 @@ async def ivc_receive(self: Task[None, None, None], timeout: float = 10, msg: IV
 
 @task
 async def first_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
-    await ivc_send(self, msg)
-    await ivc_receive(self, timeout = 60)
+    await ivc_send(msg, parent = self)
+    await ivc_receive(timeout = 60, parent = self)
 
 @task
 async def second_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
-    await ivc_receive(self, timeout = 60)
-    await ivc_send(self, msg)
+    await ivc_receive(timeout = 60, parent = self)
+    await ivc_send(msg, parent = self)
 
