@@ -1,5 +1,8 @@
+import io
 import os
 from pathlib import Path
+import time
+from sklearn.decomposition import PCA
 
 import numpy as np
 import rclpy
@@ -14,9 +17,9 @@ from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 from serial.tools import list_ports
 from std_msgs.msg import String
+import matplotlib.pyplot as plt
 
 from sonar import sonar_image_processing, sonar_utils
-
 
 class Sonar(Node):
     """Class to interface with the Sonar device."""
@@ -253,7 +256,10 @@ class Sonar(Node):
         for i in range(range_end, range_start + 1, -1 if self.increase_ccw else 1):
             sonar_scan = self.request_data_at_angle(i)
             sonar_sweep_data.append(sonar_scan)
-        return np.vstack(sonar_sweep_data)
+        # np.save("sonar_data.npy", sonar_sweep_data)
+        sweep = np.vstack(sonar_sweep_data)
+        cart_grid = sonar_utils.polar2cart(sweep, range_start, range_end)
+        return sweep, cart_grid
 
     def to_robot_position(self, angle: float, index: int) -> PoseStamped:
         """
@@ -284,7 +290,7 @@ class Sonar(Node):
 
         return pos_of_point
 
-    def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int) -> \
+    def get_xy_of_object_in_sweep_old(self, start_angle: int, end_angle: int) -> \
             tuple[PoseStamped | None, np.ndarray, float | None]:
         """
         Get the depth of the sweep of a detected object. For now uses mean value.
@@ -297,12 +303,13 @@ class Sonar(Node):
             (PoseStamped, np.ndarray, float): Pose of the object in robot reference frame, sonar sweep array, and normal
                 angle.
         """
-        sonar_sweep_array = self.get_sweep(start_angle, end_angle)
+        sonar_sweep_array, cart_grid = self.get_sweep(start_angle, end_angle)
+
         sonar_index, normal_angle, plot = sonar_image_processing.find_center_point_and_angle(
-            sonar_sweep_array, self.VALUE_THRESHOLD, self.DBSCAN_EPS,
+            cart_grid, self.VALUE_THRESHOLD, self.DBSCAN_EPS,
             self.DBSCAN_MIN_SAMPLES, True)
 
-        color_image = sonar_image_processing.build_color_sonar_image_from_int_array(sonar_sweep_array)
+        color_image = sonar_image_processing.build_color_sonar_image_from_int_array(cart_grid)
 
         if sonar_index is None:
             return (None, color_image, None)
@@ -310,7 +317,141 @@ class Sonar(Node):
         sonar_angle = (start_angle + end_angle) / 2  # Take the middle of the sweep
 
         return (self.to_robot_position(sonar_angle, sonar_index), plot, normal_angle)
+    
+    def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int) -> \
+                tuple[PoseStamped | None, np.ndarray, float | None]:
+        """
+        Get the depth of the sweep of a detected object. For now uses mean value.
 
+        Args:
+            start_angle (int): Angle to start sweep in gradians.
+            end_angle (int): Angle to end sweep in gradians.
+
+        Returns:
+            (PoseStamped, np.ndarray, float): Pose of the object in robot reference frame, sonar sweep array, and normal
+                angle.
+        """
+
+        sonar_sweep_array, cart_grid = self.get_sweep(start_angle, end_angle)
+
+        intensity_threshold = 0.6*np.max(sonar_sweep_array) # Example threshold
+        line_points_mask = cart_grid > intensity_threshold
+
+        # Get the coordinates of the line points
+        line_points_coords = np.argwhere(line_points_mask)
+
+        center_x = None
+        center_y = None
+        line_angle_deg = None
+        normal_angle_deg = None
+
+        if len(line_points_coords) > 1:
+            # PCA works best with features as columns, so transpose the coordinates
+            pca = PCA(n_components=2)
+            pca.fit(line_points_coords)
+
+            # The center of the points is the mean
+            center_y, center_x = pca.mean_ # Note: pca.mean_ gives [mean_y, mean_x]
+            self.get_logger().info(f"Sonar: Got center of object at ({center_x:.2f}, {center_y:.2f})")
+            # print(f"Estimated center point (x, y): ({center_x:.2f}, {center_y:.2f})")
+
+            # The first principal component gives the direction of the line
+            # The components are the eigenvectors, pca.components_[0] is the first eigenvector [dy, dx]
+            direction_vector = pca.components_[0]
+            # Calculate the angle from the direction vector (arctan2 handles quadrants)
+            line_angle_rad = np.arctan2(direction_vector[0], direction_vector[1]) # arctan2(dy, dx)
+            line_angle_deg = np.degrees(line_angle_rad)
+
+            # Normalize the angle to be within a specific range (e.g., -180 to 180)
+            if line_angle_deg > 180:
+                line_angle_deg -= 360
+            elif line_angle_deg < -180:
+                line_angle_deg += 360
+
+
+            # print(f"Estimated line angle (from PCA): {line_angle_deg:.2f} degrees")
+
+            # Calculate the normal angle (perpendicular to the line)
+            normal_angle_rad = line_angle_rad + np.pi/2
+            normal_angle_deg = np.degrees(normal_angle_rad)
+            self.get_logger().info(f"Sonar: Got normal angle at {normal_angle_deg:.2f} degrees")
+            # Normalize the normal angle to be within a specific range (e.g., -180 to 180)
+            if normal_angle_deg > 180:
+                normal_angle_deg -= 360
+            elif normal_angle_deg < -180:
+                normal_angle_deg += 360
+
+            # print(f"Estimated normal angle (from PCA): {normal_angle_deg:.2f} degrees")
+
+
+        else:
+            self.get_logger().info("Not enough line points found to apply PCA.")
+            color_image = sonar_image_processing.build_color_sonar_image_from_int_array(cart_grid)
+            return (None, color_image, normal_angle_deg)
+
+
+        # Step 3: Visualize the center point and the principal axis (representing the line)
+        # Overlay the identified center point and the principal axis onto the Cartesian grid visualization to verify the result.
+        plot = plt.figure()
+        plt.imshow(cart_grid, cmap='viridis')
+        plt.colorbar(label='Intensity')
+        plt.xlabel('X')
+        plt.ylabel('Y')
+
+        # Plot the identified center point if found
+        if center_x is not None and center_y is not None:
+            plt.plot(center_x, center_y, 'ro') # 'ro' for red circle marker
+            plt.text(center_x, center_y, f' Center ({center_x:.0f}, {center_y:.0f})', color='red', fontsize=10, ha='left')
+
+        # Plot the principal axis if PCA was applied
+        if len(line_points_coords) > 1:
+            # To plot the line, we can use the center and the direction vector
+            # We'll plot a line segment around the center
+            scale_factor = 1000 # Adjust this to make the line visible
+            start_point = pca.mean_ - direction_vector * scale_factor
+            end_point = pca.mean_ + direction_vector * scale_factor
+            plt.plot([start_point[1], end_point[1]], [start_point[0], end_point[0]], 'r-', label='Principal Axis (PCA)') # Note: plot takes [x_coords], [y_coords]
+            plt.legend()
+
+        # Converting stuff to fit return format:
+        # Convert plt to array, and convert center_x and center_y to distances.
+        converted_image_array = self.convert_plt_to_array(plot)
+        center = self.DEFAULT_NUMER_OF_SAMPLES
+        dx = center_x - center
+        dy = center_y - center
+        distance = np.sqrt(dx**2 + dy**2)
+        angle_rad = np.arctan2(dy, dx)
+        sample_index = int(round(distance))
+        meters = self.get_distance_of_sample(sample_index)
+        x_pos = meters * np.cos(angle_rad)
+        y_pos = meters * np.sin(angle_rad)
+        pose = PoseStamped()
+        pose.header.stamp = self.get_clock().now().to_msg()
+        pose.header.frame_id = "map"
+        pose.pose.position.x = x_pos
+        pose.pose.position.y = y_pos
+        pose.pose.position.z = 0.0
+        plot.savefig("sonar_plot.png")
+        self.get_logger().info(f"Sonar: Got pose at ({x_pos:.2f}, {y_pos:.2f}, 0.0)")
+        
+        return (pose, converted_image_array, normal_angle_deg)
+
+    def convert_plt_to_array(self, plt_fig:plt.Figure) -> np.ndarray:
+        """
+        Convert a Matplotlib figure to a NumPy array.
+
+        Args:
+            plt_fig (plt.Figure): The Matplotlib figure to convert.
+
+        Returns:
+            np.ndarray: The resulting image as a NumPy array.
+        """
+        buf = io.BytesIO()
+        plt_fig.savefig(buf, format='png')
+        buf.seek(0)
+        img = plt.imread(buf)
+        return img
+    
     def convert_to_ros_compressed_img(self, sonar_sweep: np.ndarray, compressed_format: str = 'jpg',
                                       is_color: bool = False) -> CompressedImage:
         """

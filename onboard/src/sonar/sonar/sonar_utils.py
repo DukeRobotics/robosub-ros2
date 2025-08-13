@@ -66,37 +66,39 @@ def degrees_to_centered_gradians(angle_degrees: float, center_gradians: float, i
     angle_gradians_centered = angle_gradians + center_gradians
     return int(angle_gradians_centered)
 
-def polar_to_cartesian_points(sonar_array: np.ndarray, start_angle: int, end_angle: int, center_gradians: float, increase_ccw: bool) -> np.ndarray:
-    """
-    Convert sonar polar data to (x, y) points based on pixel intensity.
+def polar2cart(sonar_sweep: np.ndarray, deg_low: int, deg_high: int) -> np.ndarray:
+    num_angles, num_samples = sonar_sweep.shape
+    print(num_angles, num_samples)
+    grid_size = 2 * (num_samples - 1) + 1
+    center = num_samples
+    cartesian_grid = np.zeros((grid_size, grid_size), dtype=float)
 
-    Args:
-        sonar_array (np.ndarray): 2D array (angle x range) of sonar intensities
-        start_angle (int): start angle in gradians
-        end_angle (int): end angle in gradians
-        center_gradians (float): Center gradians to use for conversion.
-        increase_ccw (bool): If True, sonar angles increase counter-clockwise when viewed from above the robot.
+    angles = np.linspace(deg_low, deg_high, num_angles, endpoint=True)
 
-    Returns:
-        List of (x, y) points
-    """
-    angle_count, range_count = sonar_array.shape
-    points = []
+    for i, angle_deg in enumerate(angles):
+        angle_rad = angle_deg * np.pi / 200.0
+        for j in range(num_samples):
+            distance = j
+            x = int(round(center + distance * np.cos(angle_rad))) # negative bcs idk why lol
+            y = int(round(center + distance * np.sin(angle_rad)))
+            val = sonar_sweep[i, j]
+            intensity = val
+            if 0 <= x < grid_size and 0 <= y < grid_size:
+                cartesian_grid[y, x] = max(cartesian_grid[y, x], intensity)
+    import matplotlib.pyplot as plt
 
-    # Linearly spaced angles across the sweep
-    angles_grad = np.linspace(start_angle, end_angle, angle_count)
-    for i, grad in enumerate(angles_grad):
-        angle_rad = centered_gradians_to_radians(
-            grad, center_gradians, increase_ccw)
+# cartesian_grid: your np.ndarray from polar2cart
 
-        for j in range(range_count):
-            intensity = sonar_array[i, j]
-            if intensity < sonar_obj.VALUE_THRESHOLD:
-                continue  # skip weak returns
+    center = num_samples
+    max_sample = cartesian_grid.shape[0] - center
+    max_distance = 10 # mebe lol
 
-            r = sonar_obj.get_distance_of_sample(j)
-            x = r * np.cos(angle_rad)
-            y = r * np.sin(angle_rad)
-            points.append((x, y))
-
-    return np.array(points)
+    plt.imshow(cartesian_grid, cmap='viridis', origin='lower',
+           extent=[-max_distance, max_distance, -max_distance, max_distance])
+    plt.xlabel('X (meters)')
+    plt.ylabel('Y (meters)')
+    plt.colorbar(label='Intensity')
+    plt.show()
+    plt.title('Sonar Cartesian Grid')
+    # plt.savefig("sonar_plot.png")
+    return cartesian_grid
