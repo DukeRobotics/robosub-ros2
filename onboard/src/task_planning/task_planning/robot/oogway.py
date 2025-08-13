@@ -23,10 +23,10 @@ async def main(self: Task) -> Task[None, None, None]:
         # test(parent=self),
 
         ##### COMP
-        comp_tasks.initial_submerge(-0.7, parent=self),
+        comp_tasks.initial_submerge(-1, parent=self),
         comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent = self),
-        comp_tasks.gate_task_dead_reckoning(depth_level=-0.7, parent=self),
-        comp_tasks.torpedo_task(depth_level=0.7, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        comp_tasks.gate_task_dead_reckoning(depth_level=-1, parent=self),
+        comp_tasks.torpedo_task(depth_level=1, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
         ##### END COMP
 
         # comp_tasks.initial_submerge(-1.2, parent=self),
