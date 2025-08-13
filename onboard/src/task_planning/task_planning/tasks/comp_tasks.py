@@ -1497,7 +1497,7 @@ async def crush_robot_ivc(self: Task[None, None, None], timeout: float = 60, msg
     count = 2
     # Wait for Oogway to say starting/acknowledge command
     while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != IVCMessageType.OOGWAY_ACKNOWLEDGE:
-        logger.info(f'Unexpected message receieved. Remaining attempts: {count}')
+        logger.info(f'Unexpected message received. Remaining attempts: {count}')
         count -= 1
 
 
