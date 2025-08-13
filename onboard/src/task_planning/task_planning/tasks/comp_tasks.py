@@ -328,8 +328,10 @@ async def gate_to_octagon(self: Task, direction: int = 1, move_forward: int = 0)
 
     # Move towards octagon (edit this for 2025 plz!)
     directions = [
-        (3, 0, 0),
-        (3, 0, 0),
+        (4, 0, 0),
+        (4, 0, 0),
+        (4, 0, 0),
+        (4, 0, 0),
     ]
     await move_with_directions(directions)
 
@@ -1190,8 +1192,8 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     """
     logger.info('Starting octagon task')
 
-    DEPTH_LEVEL_AT_BINS = State().orig_depth - 0.7 # Depth for beginning of task and corrections during forward movement
-    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.5 # Depth for going above bin before forward move
+    DEPTH_LEVEL_AT_BINS = State().orig_depth - 0.9 # Depth for beginning of task and corrections during forward movement
+    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.6 # Depth for going above bin before forward move
     LATENCY_THRESHOLD = 2 # Latency for seeing the bottom bin
     CONTOUR_SCORE_THRESHOLD = 1000 # Required bottom bin area for valid detection
 
@@ -1489,21 +1491,21 @@ async def torpedo_task_old(self: Task,
     await center_with_torpedo_target()
 
 @task
-async def crush_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> Task[None, None, None]:
+async def crush_robot_ivc(self: Task[None, None, None], timeout: float = 60, msg: IVCMessageType) -> Task[None, None, None]:
     await ivc_tasks.ivc_send(msg, parent = self) # Send crush is done with gate
 
     count = 2
     # Wait for Oogway to say starting/acknowledge command
-    while count != 0 and await ivc_tasks.ivc_receive(timeout = 60, parent = self) != IVCMessageType.OOGWAY_ACKNOWLEDGE:
+    while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != IVCMessageType.OOGWAY_ACKNOWLEDGE:
         logger.info(f'Unexpected message receieved. Remaining attempts: {count}')
         count -= 1
 
 
 @task
-async def oogway_ivc_start(self: Task[None, None, None], msg: IVCMessageType) -> Task[None, None, None]:
+async def oogway_ivc_start(self: Task[None, None, None], timeout: float = 60, msg: IVCMessageType) -> Task[None, None, None]:
     count = 2
     # Receieve Crush is done with gate
-    while count != 0 and await ivc_tasks.ivc_receieve(timeout = 60, parent = self) != IVCMessageType.CRUSH_GATE:
+    while count != 0 and await ivc_tasks.ivc_receieve(timeout = timeout, parent = self) != IVCMessageType.CRUSH_GATE:
         logger.info(f'Unexpected message receieved. Remaining attempts: {count}')
         count -= 1
 
