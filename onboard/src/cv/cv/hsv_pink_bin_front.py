@@ -82,8 +82,12 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
         chosen_contour_score = None
         chosen_contour = None
 
+        max_coutour_area = 0
+        for contour in grouped_contours:
+            max_coutour_area = max(max_coutour_area, cv2.contourArea(contour))
+
         #self.get_logger().info(f'grouped count {len(grouped_contours)}')
-        for contour in grouped_contours[:min(2,len(grouped_contours))]:
+        for contour in grouped_contours:
             # Get center (mean of all contour points)
             M = cv2.moments(contour)
             if M["m00"] != 0:

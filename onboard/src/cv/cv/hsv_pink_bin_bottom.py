@@ -4,6 +4,7 @@ import rclpy
 
 import cv.config as cv_constants
 from cv import hsv_filter
+from scipy.spatial.distance import cdist
 
 
 

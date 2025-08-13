@@ -528,16 +528,10 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
 @task
 async def gate_task_dead_reckoning(self: Task) -> Task[None, None, None]:
     logger.info('Started gate task')
-    DEPTH_LEVEL = State().orig_depth - 0.6
-    directions = [
-        (2, 0, 0),
-        (0, 0.2 * direction, 0),
-        (2, 0, 0),
-        (1, 0, 0),
-    ]
-
-    await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_yaw=False, correct_depth=True, parent=self)
-
+    if get_robot_name() == RobotName.OOGWAY:
+        await move_tasks.move_with_directions([(5, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self)
+    elif get_robot_name() == RobotName.CRUSH:
+        await move_tasks.move_with_directions([(5, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self)
     logger.info('Moved through gate')
 
 
