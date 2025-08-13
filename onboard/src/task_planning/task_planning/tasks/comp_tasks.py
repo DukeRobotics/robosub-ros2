@@ -332,7 +332,7 @@ async def gate_to_octagon(self: Task, direction: int = 1, move_forward: int = 0)
         (4, 0, 0),
         (4, 0, 0),
     ]
-    await move_with_directions(directions, depth_correction=DEPTH_LEVEL)
+    await move_with_directions(directions, depth_level=DEPTH_LEVEL)
 
 
 @task

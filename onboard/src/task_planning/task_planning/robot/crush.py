@@ -12,16 +12,24 @@ from task_planning.utils import geometry_utils
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Crush."""
     tasks = [
-        # 2025 Comp flow
-        comp_tasks.initial_submerge(-0.7, z_tolerance=0.15, enable_controls_flag=True, parent=self),
-        comp_tasks.coin_flip(enable_same_direction=False, parent=self),
+        # || START 2025 COMP FLOW
+        # comp_tasks.initial_submerge(-0.7, z_tolerance=0.15, enable_controls_flag=True, parent=self),
+        # comp_tasks.coin_flip(enable_same_direction=False, parent=self),
 
-        comp_tasks.gate_task_dead_reckoning(depth_level=-0.7, parent=self),
-        comp_tasks.gate_style_task(depth_level=0.8, parent=self),
+        # comp_tasks.gate_task_dead_reckoning(depth_level=-0.7, parent=self),
+        # comp_tasks.gate_style_task(depth_level=1.1, parent=self),
         # comp_tasks.crush_robot_ivc(IVCMessageType.CRUSH_GATE, timeout=90, parent = self),
 
         comp_tasks.gate_to_octagon(direction=1, move_forward=0, parent=self),
         comp_tasks.octagon_task(direction=1, parent=self),
+
+        # || END 2025 COMP FLOW
+
+        comp_tasks.initial_submerge(-0.4, z_tolerance=0.15, enable_controls_flag=True, parent=self),
+        move_tasks.move_with_directions([(1, 0, 0)], depth_level=-0.4, correct_depth=True, correct_yaw=True, parent=self),
+        move_tasks.move_with_directions([(0, 1, 0)], depth_level=-0.4, correct_depth=True, correct_yaw=True, parent=self),
+        move_tasks.move_with_directions([(-1, 0, 0)], depth_level=-0.4, correct_depth=True, correct_yaw=True, parent=self),
+        move_tasks.move_with_directions([(0, -1, 0)], depth_level=-0.4, correct_depth=True, correct_yaw=True, parent=self),
 
         # comp_tasks.gate_task_dead_reckoning(),
         # comp_tasks.initial_submerge(-0.5, z_tolerance=0.15, enable_controls_flag=True, parent=self),
