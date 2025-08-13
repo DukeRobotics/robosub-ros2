@@ -128,7 +128,7 @@ async def ivc_receive(self: Task[None, None, None], timeout: float = 10) -> IVCM
 
     # Log to text file
     with open("ivc_log.txt", "a") as f:
-        f.write(f'Sent IVC message: {IVC().messages[-1].msg.name} at {IVC().messages[-1].header.stamp.sec}.{IVC().messages[-1].header.stamp.nanosec}\n')
+        f.write(f'Received IVC message: {IVC().messages[-1].msg.name} at {IVC().messages[-1].header.stamp.sec}.{IVC().messages[-1].header.stamp.nanosec}\n')
 
     logger.info(f'Received IVC message: {IVC().messages[-1].msg.name}')
     messages_received = len(IVC().messages)
