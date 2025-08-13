@@ -317,7 +317,7 @@ class Sonar(Node):
         sonar_angle = (start_angle + end_angle) / 2  # Take the middle of the sweep
 
         return (self.to_robot_position(sonar_angle, sonar_index), plot, normal_angle)
-    
+
     def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int) -> \
                 tuple[PoseStamped | None, np.ndarray, float | None]:
         """
@@ -433,7 +433,7 @@ class Sonar(Node):
         pose.pose.position.z = 0.0
         plot.savefig("sonar_plot.png")
         self.get_logger().info(f"Sonar: Got pose at ({x_pos:.2f}, {y_pos:.2f}, 0.0)")
-        
+
         return (pose, converted_image_array, normal_angle_deg)
 
     def convert_plt_to_array(self, plt_fig:plt.Figure) -> np.ndarray:
@@ -451,7 +451,7 @@ class Sonar(Node):
         buf.seek(0)
         img = plt.imread(buf)
         return img
-    
+
     def convert_to_ros_compressed_img(self, sonar_sweep: np.ndarray, compressed_format: str = 'jpg',
                                       is_color: bool = False) -> CompressedImage:
         """
@@ -573,6 +573,20 @@ class Sonar(Node):
         else:
             self.create_service(SonarSweepRequest, 'sonar/request', self.perform_sonar_request)
 
+    # def position_at_distance(self, deg: int, low_deg: int, high_deg: int, sonar_sweep: np.ndarray):
+    #     """
+    #     Given robot is perpendicular to the wall, this task will position the robot at given distance to the wall using SONAR.
+    #     """
+    #     if (deg < low_deg or deg > high_deg):
+    #         self.get_logger().error(f'Degrees {deg} out of range {low_deg} to {high_deg}.')
+    #         return None
+
+    #     sonar_sweep, cart = self.get_sweep(low_deg, high_deg)
+    #     index = sonar_sweep.shape[0] - (high_deg - deg)
+    #     sonar_sweep[index]
+
+    #     np.ndarray
+    #     CURRENT_DISTANCE = self.get_distance_of_sample(sample_index=int(self.number_of_samples/2))
 
 def main(args: list[str] | None = None) -> None:
     """Initialize and run the Sonar node."""

@@ -1496,8 +1496,9 @@ async def ivc_send(self: Task[None, None, None], msg: IVCMessageType) -> None:
             logger.info(f'Sent IVC message: {msg.name}')
         else:
             logger.error(f'Modem failed to send message. Response: {service_response.message}')
+
 @task
-async def ivc_receive(self: Task[None, None, None], timeout: float = 10):
+async def ivc_receive(self: Task[None, None, None], timeout: float = 10, msg: IVCMessageType = IVCMessageType.UNKNOWN) -> IVCMessageType:
     await ivc_tasks.wait_for_modem_ready(parent=self)
 
     messages_received = len(IVC().messages)
@@ -1517,7 +1518,11 @@ async def ivc_receive(self: Task[None, None, None], timeout: float = 10):
     logger.info(f'Received IVC message: {IVC().messages[-1].msg.name}')
     messages_received = len(IVC().messages)
 
-    return True
+    if IVC().messages[-1].msg != IVCMessageType.UNKNOWN:
+        return IVC().messages[-1].msg
+
+    logger.warning(f'Received message {IVC().messages[-1].msg.name} does not match expected message {msg.name}.')
+    return IVCMessageType.UNKNOWN
 
 @task
 async def first_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
