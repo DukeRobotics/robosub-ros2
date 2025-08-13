@@ -16,6 +16,10 @@ from task_planning.tasks import util_tasks
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     tasks = [
+
+        comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_GATE, parent = self),
+        comp_tasks.initial_submerge(-1.2, parent=self),
+
         # test(parent=self),
 
         ##### COMP
@@ -23,7 +27,8 @@ async def main(self: Task) -> Task[None, None, None]:
         # comp_tasks.torpedo_task(depth_level=1, direction=-1, parent=self),
         ##### END COMP
 
-        comp_tasks.initial_submerge(-1.2, parent=self),
+        # comp_tasks.initial_submerge(-1.2, parent=self),
+
 
         # comp_tasks.yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=1, yaw_threshold=math.radians(10),
         #     depth_level=0.7, parent=self),

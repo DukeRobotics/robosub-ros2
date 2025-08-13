@@ -162,11 +162,11 @@ class TorpedoTargetDetector(Node):
 
         LATENCY_SEC = 2
 
-        logger.info(f'S: {self.last_update_shark}, N: {Clock().now().seconds_nanoseconds()[0]}')
+        # logger.info(f'S: {self.last_update_shark}, N: {Clock().now().seconds_nanoseconds()[0]}')
 
         # Find highest and lower contour, assuming that those two will represent the upper and lower holes
         if abs(self.last_update_shark - Clock().now().seconds_nanoseconds()[0]) < LATENCY_SEC and len(similar_size_contours) == 2 and self.shark_coords is not None:
-            logger.info("equals 2")
+            # logger.info("equals 2")
 
             x0, y0, _, _ = cv2.boundingRect(similar_size_contours[0])
             x1, y1, _, _ = cv2.boundingRect(similar_size_contours[1])
@@ -182,7 +182,7 @@ class TorpedoTargetDetector(Node):
                 fish_cnt = similar_size_contours[1]
 
         elif abs(self.last_update_shark - Clock().now().seconds_nanoseconds()[0]) < LATENCY_SEC and abs(self.last_update_sawfish - Clock().now().seconds_nanoseconds()[0]) < LATENCY_SEC and len(similar_size_contours) == 1 and self.shark_coords is not None and self.sawfish_coords is not None:
-                logger.info("equals 1")
+                # logger.info("equals 1")
 
                 x, y, _, _ = cv2.boundingRect(similar_size_contours[0])
                 dist_shark = (x - self.shark_coords.x) ** 2 + (y - self.shark_coords.y) ** 2

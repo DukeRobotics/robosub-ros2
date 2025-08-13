@@ -1525,12 +1525,12 @@ async def ivc_receive(self: Task[None, None, None], timeout: float = 10) -> IVCM
     return IVCMessageType.UNKNOWN
 
 @task
-async def first_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
+async def first_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> Task[None, None, None]:
     await ivc_send(msg, parent = self)
     await ivc_receive(timeout = 60, parent = self)
 
 @task
-async def second_robot_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
-    await ivc_receive(timeout = 60, parent = self)
-    await ivc_send(msg, parent = self)
+async def oogway_ivc_start(self: Task[None, None, None], msg: IVCMessageType) -> Task[None, None, None]:
+    await ivc_receive(timeout = 60, parent = self) # Receive Crush is done
+    await ivc_send(msg, parent = self) # Oogway says ok and starting
 
