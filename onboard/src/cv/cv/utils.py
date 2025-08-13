@@ -7,6 +7,8 @@ import numpy as np
 from custom_msgs.msg import CVObject
 from geometry_msgs.msg import Point, Polygon
 
+from scipy.spatial.distance import cdist
+
 
 def check_file_writable(filepath: Path) -> bool:
     """
@@ -180,6 +182,54 @@ def compute_center_distance(bbox_center_x: float, bbox_center_y: float, frame_wi
     distance_y = bbox_center_y - frame_center_y + width_adjustment_constant
 
     return distance_x, distance_y
+
+def group_contours_by_distance(self, contours, dist_thresh):
+        centers = []
+        valid_contours = []
+        for contour in contours:
+            M = cv2.moments(contour)
+            if M["m00"] != 0:
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                centers.append([cx, cy])
+                valid_contours.append(contour)
+
+        centers = np.array(centers)
+        n = len(centers)
+        if n == 0:
+            return []
+
+        dist_matrix = cdist(centers, centers)
+        groups = []
+        visited = set()
+
+        for i in range(n):
+            if i in visited:
+                continue
+            group = {i}
+            neighbors = set(np.where(dist_matrix[i] < dist_thresh)[0])
+            group = group.union(neighbors)
+
+            expanded = True
+            while expanded:
+                expanded = False
+                new_neighbors = set()
+                for idx in group:
+                    idx_neighbors = set(np.where(dist_matrix[idx] < dist_thresh)[0])
+                    if not idx_neighbors.issubset(group):
+                        new_neighbors = new_neighbors.union(idx_neighbors.difference(group))
+                        expanded = True
+                group = group.union(new_neighbors)
+
+            visited = visited.union(group)
+            groups.append(list(group))
+
+        merged_contours = []
+        for group_indices in groups:
+            merged_points = np.vstack([valid_contours[idx] for idx in group_indices])
+            merged_contours.append(merged_points)
+
+        return merged_contours
 
 
 class DetectionVisualizer:

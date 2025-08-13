@@ -31,6 +31,8 @@ class CVObjectType(Enum):
     TORPEDO_BANNER = 'torpedo_banner'
     TORPEDO_REEF_SHARK = 'torpedo_reef_shark'
     TORPEDO_SAWFISH = 'torpedo_sawfish'
+    TORPEDO_REEF_SHARK_TARGET = 'torpedo_reef_shark_target'
+    TORPEDO_SAWFISH_TARGET = 'torpedo_sawfish_target'
     TORPEDO_LOWER_TARGET = 'h'
     TORPEDO_UPPER_TARGET = 'g'
     BIN_PINK_FRONT = 'bin_pink_front'
