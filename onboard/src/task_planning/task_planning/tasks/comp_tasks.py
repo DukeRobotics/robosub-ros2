@@ -1505,8 +1505,8 @@ async def crush_robot_ivc(self: Task[None, None, None], timeout: float = 60, msg
 async def oogway_ivc_start(self: Task[None, None, None], timeout: float = 60, msg: IVCMessageType) -> Task[None, None, None]:
     count = 2
     # Receieve Crush is done with gate
-    while count != 0 and await ivc_tasks.ivc_receieve(timeout = timeout, parent = self) != IVCMessageType.CRUSH_GATE:
-        logger.info(f'Unexpected message receieved. Remaining attempts: {count}')
+    while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != IVCMessageType.CRUSH_GATE:
+        logger.info(f'Unexpected message received. Remaining attempts: {count}')
         count -= 1
 
     await ivc_tasks.ivc_send(msg, parent = self) # Oogway says ok and starting
