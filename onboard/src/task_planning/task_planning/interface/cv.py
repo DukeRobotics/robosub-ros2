@@ -76,6 +76,8 @@ class CV:
         CVObjectType.TORPEDO_BANNER: '/cv/front/torpedo_banner',
         CVObjectType.TORPEDO_REEF_SHARK: '/cv/front/shark_front',
         CVObjectType.TORPEDO_SAWFISH: '/cv/front/swordfish_front',
+        CVObjectType.TORPEDO_REEF_SHARK_TARGET: '/cv/front_usb/torpedo_reef_shark_target/bounding_box',
+        CVObjectType.TORPEDO_SAWFISH_TARGET: '/cv/front_usb/torpedo_sawfish_target/bounding_box',
         CVObjectType.BIN_PINK_FRONT: 'cv/front_usb/bin_pink_front/bounding_box',
         CVObjectType.BIN_PINK_BOTTOM: 'cv/front_usb/bin_pink_bottom/bounding_box',
     }
