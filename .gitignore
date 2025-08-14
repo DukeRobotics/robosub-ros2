@@ -28,3 +28,4 @@ metadata.yaml
 node_modules
 dist
 *.foxe
+ivc_log.txt

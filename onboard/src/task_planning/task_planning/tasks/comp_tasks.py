@@ -697,6 +697,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
     await correct_depth()
     logger.info(f'abs(cv_object_yaw): {abs(cv_object_yaw)}')
     logger.info(f'yaw_threshold: {yaw_threshold}')
+
     while abs(cv_object_yaw) > get_yaw_threshold(yaw_threshold, CV().bounding_boxes[cv_object].coords.x):
         sign_cv_object_yaw = np.sign(cv_object_yaw)
         correction = get_step_size(SCALE_FACTOR*cv_object_yaw) # Scale down CV yaw value
@@ -1339,8 +1340,8 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
             goal_step = 0.5
         return min(dist - dist_threshold + 0.1, goal_step)
 
-    async def move_to_torpedo(torpedo_dist_threshold=2.25):
-        await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=direction, yaw_threshold=math.radians(10),
+    async def move_to_torpedo(torpedo_dist_threshold=2):
+        await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=direction, yaw_threshold=math.radians(15),
         depth_level=depth_level, parent=self)
         torpedo_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
         await correct_y()
@@ -1351,7 +1352,7 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
             logger.info(f"Torpedo dist y: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.y}")
             await move_x(step=get_step_size(torpedo_dist, torpedo_dist_threshold))
 
-            await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=-1, yaw_threshold=math.radians(10),
+            await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=-1, yaw_threshold=math.radians(15),
             depth_level=depth_level, parent=self)
             logger.info(f"Yaw corrected")
             await correct_y()
@@ -1384,18 +1385,24 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
     animal = CVObjectType.TORPEDO_REEF_SHARK_TARGET
     target_y = CV().bounding_boxes[animal].coords.y
     target_z = CV().bounding_boxes[animal].coords.z
-    if CV().is_receiving_recent_cv_data(animal, 5.0):
-        logger.info(f"Aligning to {animal}")
-        await move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
-            keep_orientation=False,
-            parent=self,
-        )
-    # End
-
+    logger.info(f"Aligning to {animal} at y={target_y} and z={target_z}")
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(0, target_y, target_z-0.1, 0, 0, 0),
+        keep_orientation=False,
+        parent=self,
+    )
     logger.info(f"Firing torpedoes")
     await Servos().fire_torpedo(TorpedoStates.LEFT)
+
     await util_tasks.sleep(Duration(seconds=5), parent=self)
+    animal = CVObjectType.TORPEDO_SAWFISH_TARGET
+    target_y = CV().bounding_boxes[animal].coords.y
+    target_z = CV().bounding_boxes[animal].coords.z
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(0, target_y, target_z-0.1, 0, 0, 0),
+        keep_orientation=False,
+        parent=self,
+    )
     await Servos().fire_torpedo(TorpedoStates.RIGHT)
     logger.info(f"Torpedo task completed")
 
