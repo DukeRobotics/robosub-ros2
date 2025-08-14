@@ -1497,7 +1497,7 @@ async def torpedo_task_old(self: Task,
     await center_with_torpedo_target()
 
 @task
-async def ivc_send_then_receive(self: Task[None, None, None], msg_to_send: IVCMessageType, msg_to_receive: IVCMessageType timeout: float = 60) -> Task[None, None, None]:
+async def ivc_send_then_receive(self: Task[None, None, None], msg_to_send: IVCMessageType, msg_to_receive: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
     await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
 
     count = 2
