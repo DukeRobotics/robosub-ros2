@@ -42,19 +42,20 @@ class TorpedoTargetDetector(Node):
                                                   10)
         self.fish_bbox_pub = self.create_publisher(CVObject,'/cv/front_usb/torpedo_sawfish_target/bounding_box', 1) # named differently so as to accomodate CV object
         self.shark_bbox_pub = self.create_publisher(CVObject,'/cv/front_usb/torpedo_reef_shark_target/bounding_box', 1)
+        self.largest_bbox_pub = self.create_publisher(Image, '/cv/front_usb/torpedo_largest_target/bounding_box', 1)
         self.hsv_filtered_pub = self.create_publisher(Image, '/cv/front_usb/torpedo/hsv_filtered', 1)
         self.contour_image_pub = self.create_publisher(Image, '/cv/front_usb/torpedo/contour_image', 1)
         self.contour_image_with_bbox_pub = self.create_publisher(Image, '/cv/front_usb/torpedo/detections', 1)
         self.shark_target = self.create_publisher(Image, '/cv/front_usb/torpedo/shark_target', 1)
         self.fish_target = self.create_publisher(Image, '/cv/front_usb/torpedo/fish_target', 1)
+        self.largest_target = self.create_publisher(Image, '/cv/front_usb/torpedo/largest_target/', 1)
 
         self.torpedo_shark_sub = self.create_subscription(CVObject, '/cv/front/shark_front', self.update_shark_bounding_boxes, 1)
+        self.torpedo_sawfish_sub = self.create_subscription(CVObject, '/cv/front/swordfish_front', self.update_sawfish_bounding_boxes, 1)
         self.shark_coords = None
-        self.shark_coords = None
+        self.sawfish_coords = None
         self.last_update_shark = 0
         self.last_update_sawfish = 0
-
-        self.torpedo_sawfish_sub = self.create_subscription(CVObject, '/cv/front/swordfish_front', self.update_sawfish_bounding_boxes, 1)
 
         self.last_n_bboxes = []
         self.n = 10  # Set the number of last bounding boxes to store
@@ -152,6 +153,7 @@ class TorpedoTargetDetector(Node):
 
         shark_cnt = None
         fish_cnt = None
+        largest_cnt = None
         similar_size_contours = []
 
         # Match contours with the reference image contours
@@ -160,13 +162,13 @@ class TorpedoTargetDetector(Node):
             if match < self.MATCH_TOLERANCE:
                 similar_size_contours.append(cnt)
 
-        LATENCY_SEC = 2
+        similar_size_contours = sorted(similar_size_contours, key=cv2.contourArea, reverse=True)
 
-        # logger.info(f'L: {len(contours)}')  # noqa: ERA001
+        LATENCY_SEC = 2
 
         # Find highest and lower contour, assuming that those two will represent the upper and lower holes
         if abs(self.last_update_shark - Clock().now().seconds_nanoseconds()[0]) < LATENCY_SEC and len(similar_size_contours) == 2 and self.shark_coords is not None:
-            # logger.info("equals 2")
+            largest_cnt = similar_size_contours[0]
 
             x0, y0, _, _ = cv2.boundingRect(similar_size_contours[0])
             x1, y1, _, _ = cv2.boundingRect(similar_size_contours[1])
@@ -182,16 +184,16 @@ class TorpedoTargetDetector(Node):
                 shark_cnt = similar_size_contours[1]
 
         elif abs(self.last_update_shark - Clock().now().seconds_nanoseconds()[0]) < LATENCY_SEC and abs(self.last_update_sawfish - Clock().now().seconds_nanoseconds()[0]) < LATENCY_SEC and len(similar_size_contours) == 1 and self.shark_coords is not None and self.sawfish_coords is not None:
-                # logger.info("equals 1")
+            largest_cnt = similar_size_contours[0]
 
-                x, y, _, _ = cv2.boundingRect(similar_size_contours[0])
-                dist_shark = (x - self.shark_coords.x) ** 2 + (y - self.shark_coords.y) ** 2
-                dist_sawfish = (x - self.sawfish_coords.x) ** 2 + (y - self.sawfish_coords.y) ** 2
+            x, y, _, _ = cv2.boundingRect(similar_size_contours[0])
+            dist_shark = (x - self.shark_coords.x) ** 2 + (y - self.shark_coords.y) ** 2
+            dist_sawfish = (x - self.sawfish_coords.x) ** 2 + (y - self.sawfish_coords.y) ** 2
 
-                if (dist_shark > dist_sawfish):
-                    shark_cnt = similar_size_contours[0]
-                else:
-                    fish_cnt = similar_size_contours[0]
+            if (dist_shark > dist_sawfish):
+                shark_cnt = similar_size_contours[0]
+            else:
+                fish_cnt = similar_size_contours[0]
 
         bbox_img = image.copy()
 
@@ -215,6 +217,18 @@ class TorpedoTargetDetector(Node):
             cv2.rectangle(shark_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
             shark_img_msg = self.bridge.cv2_to_imgmsg(shark_img, 'bgr8')
             self.shark_target.publish(shark_img_msg)
+
+            # Draw bounding box on the image
+            cv2.rectangle(bbox_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+        if largest_cnt is not None:
+            x, y, w, h = cv2.boundingRect(largest_cnt)
+            bbox = (x, y, w, h)
+            self.publish_bbox(bbox, self.largest_bbox_pub)
+            largest_img = image.copy()
+            cv2.rectangle(largest_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            largest_img_msg = self.bridge.cv2_to_imgmsg(largest_img, 'bgr8')
+            self.largest_target.publish(largest_img_msg)
 
             # Draw bounding box on the image
             cv2.rectangle(bbox_img, (x, y), (x + w, y + h), (0, 255, 0), 2)

@@ -33,7 +33,7 @@ async def main(self: Task) -> Task[None, None, None]:
 
         ##### COMP
         comp_tasks.initial_submerge(-DEPTH, parent=self),
-        comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self),
+        comp_tasks.ivc_receive_then_send(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self),
         comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
         comp_tasks.torpedo_task(depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
         ##### END COMP
