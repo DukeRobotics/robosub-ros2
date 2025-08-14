@@ -1338,7 +1338,7 @@ async def torpedo_task(self: Task, first_target: CVObjectType, depth_level=0.5, 
             goal_step = 0.5
         return min(dist - dist_threshold + 0.1, goal_step)
 
-    async def move_to_torpedo(torpedo_dist_threshold=2.5):
+    async def move_to_torpedo(torpedo_dist_threshold=2):
         await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=direction, yaw_threshold=math.radians(15),
         depth_level=depth_level, parent=self)
         torpedo_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
