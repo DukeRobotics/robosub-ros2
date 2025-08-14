@@ -413,7 +413,7 @@ async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float 
 
 
 @task
-async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> Task[None, None, None]:
+async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True, time_limit: int=15) -> Task[None, None, None]:
     """
     Perform the coin flip task, adjusting the robot's yaw and depth.
 
@@ -451,20 +451,20 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
     def get_step_size(desired_yaw):
         return min(abs(desired_yaw), MAXIMUM_YAW)
 
-    def get_yaw_correction():
-        orig_imu_orientation = copy.deepcopy(State().orig_imu.orientation)
-        orig_imu_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(orig_imu_orientation))
+    # def get_yaw_correction():
+    #     orig_imu_orientation = copy.deepcopy(State().orig_imu.orientation)
+    #     orig_imu_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(orig_imu_orientation))
 
-        cur_imu_orientation = copy.deepcopy(State().imu.orientation)
-        cur_imu_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(cur_imu_orientation))
+    #     cur_imu_orientation = copy.deepcopy(State().imu.orientation)
+    #     cur_imu_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(cur_imu_orientation))
 
-        correction = orig_imu_euler_angles[2] - cur_imu_euler_angles[2]
+    #     correction = orig_imu_euler_angles[2] - cur_imu_euler_angles[2]
 
-        sign_correction = np.sign(correction)
-        desired_yaw = sign_correction * get_step_size(correction)
-        logger.info(f'Coinflip: imu_yaw_correction = {desired_yaw}')
+    #     sign_correction = np.sign(correction)
+    #     desired_yaw = sign_correction * get_step_size(correction)
+    #     logger.info(f'Coinflip: imu_yaw_correction = {desired_yaw}')
 
-        return desired_yaw
+    #     return desired_yaw
 
     def get_gyro_yaw_correction(return_raw=True):
         orig_gyro_orientation = copy.deepcopy(State().orig_gyro.pose.pose.orientation)
@@ -493,6 +493,7 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, 0, 0, 0, 0, np.pi),
                     pose_tolerances = move_tasks.create_twist_tolerance(angular_yaw = 0.05),
+                    time_limit=time_limit,
                     parent=self,
                     # TODO: maybe set yaw tolerance?
                 )
@@ -512,7 +513,7 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
 
             await move_tasks.move_to_pose_local(
                 geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),
-                time_limit=15,
+                time_limit=time_limit,
                 parent=self,
                 # TODO: maybe set yaw tolerance?
             )
