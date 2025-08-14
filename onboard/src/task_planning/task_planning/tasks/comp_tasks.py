@@ -1308,7 +1308,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     logger.info('Finished surfacing')
 
 @task
-async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, None, None]:
+async def torpedo_task(self: Task, first_target: CVObjectType, depth_level=0.5, direction=1) -> Task[None, None, None]:
     # await scan_for_torpedo()
     logger.info('Starting torpedo task')
     DEPTH_LEVEL = State().orig_depth - depth_level
@@ -1333,14 +1333,12 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
         elif dist > 6:
             goal_step = 3
         elif dist > 4:
-            goal_step = 2
-        elif dist > 3:
             goal_step = 1
         elif dist > 1.5:
             goal_step = 0.5
         return min(dist - dist_threshold + 0.1, goal_step)
 
-    async def move_to_torpedo(torpedo_dist_threshold=2):
+    async def move_to_torpedo(torpedo_dist_threshold=2.5):
         await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=direction, yaw_threshold=math.radians(15),
         depth_level=depth_level, parent=self)
         torpedo_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
@@ -1376,34 +1374,39 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
     # Small offset to counteract camera positioning
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, 0.2, 0, 0, 0),
-        keep_orientation=False,
-        # pose_tolerances = move_tasks.create_twist_tolerance(linear_z = 0.1),
         parent=self,
     )
 
-    # Center to ANIMAL 1
-    animal = CVObjectType.TORPEDO_REEF_SHARK_TARGET
+    # Determine which animal to target first and which to target second
+    if first_target == CVObjectType.TORPEDO_REEF_SHARK_TARGET:
+        second_target = CVObjectType.TORPEDO_SAWFISH_TARGET
+    elif first_target == CVObjectType.TORPEDO_SAWFISH_TARGET:
+        second_target = CVObjectType.TORPEDO_REEF_SHARK_TARGET
+    else:
+        raise ValueError(f"Invalid first_animal: {first_target}. Must be CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET")
+
+    # Center to first animal
+    animal = first_target
     target_y = CV().bounding_boxes[animal].coords.y
     target_z = CV().bounding_boxes[animal].coords.z
-    logger.info(f"Aligning to {animal} at y={target_y} and z={target_z}")
+    logger.info(f"Aligning to first target {animal} at y={target_y} and z={target_z}")
     await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, target_y, target_z-0.1, 0, 0, 0),
-        keep_orientation=False,
+        geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
         parent=self,
     )
     logger.info(f"Firing torpedo LEFT")
     await Servos().fire_torpedo(TorpedoStates.LEFT)
 
+    # Wait for torpedo servo is available
     await util_tasks.sleep(Duration(seconds=3), parent=self)
 
-    # Center to ANIMAL 2
-    animal = CVObjectType.TORPEDO_SAWFISH_TARGET
+    # Center to second animal
+    animal = second_target
     target_y = CV().bounding_boxes[animal].coords.y
     target_z = CV().bounding_boxes[animal].coords.z
-    logger.info(f"Aligning to {animal} at y={target_y} and z={target_z}")
+    logger.info(f"Aligning to second target {animal} at y={target_y} and z={target_z}")
     await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, target_y, target_z-0.1, 0, 0, 0),
-        keep_orientation=False,
+        geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
         parent=self,
     )
     logger.info(f"Firing torpedo RIGHT")
