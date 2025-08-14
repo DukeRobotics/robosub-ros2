@@ -1534,7 +1534,7 @@ async def torpedo_task_old(self: Task,
     await center_with_torpedo_target()
 
 @task
-async def crush_ivc_sent(self: Task[None, None, None], msg_to_send: IVCMessageType, msg_to_receive: IVCMessageType timeout: float = 60) -> Task[None, None, None]:
+async def ivc_send_then_receive(self: Task[None, None, None], msg_to_send: IVCMessageType, msg_to_receive: IVCMessageType timeout: float = 60) -> Task[None, None, None]:
     await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
 
     count = 2
@@ -1544,24 +1544,26 @@ async def crush_ivc_sent(self: Task[None, None, None], msg_to_send: IVCMessageTy
         count -= 1
 
 @task
-async def crush_ivc_receive(self: Task[None, None, None], msg: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
+async def ivc_receive_then_send(self: Task[None, None, None], msg: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
     count = 2
     # Wait for Oogway to say starting/acknowledge command
     while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != IVCMessageType.OOGWAY_ACKNOWLEDGE:
         logger.info(f'Unexpected message received. Remaining attempts: {count}')
         count -= 1
-    
+
     await ivc_tasks.ivc_send(msg, parent = self) # Send crush is done with gate
 
 @task
-async def oogway_ivc_start(self: Task[None, None, None], msg: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
-    count = 2
-    # Receieve Crush is done with gate
-    while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != IVCMessageType.CRUSH_GATE:
-        logger.info(f'Unexpected message received. Remaining attempts: {count}')
-        count -= 1
+async def reset_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:
+    """Reset the IVC log file by clearing its contents."""
+    with open("ivc_log.txt", "w") as f:
+        f.write("")
 
-    await ivc_tasks.ivc_send(msg, parent = self) # Oogway says ok and starting
+@task
+async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[None, None, None]:
+    """Add a message to the IVC log file."""
+    with open("ivc_log.txt", "a") as f:
+        f.write(f'{message}\n')
 
 @task
 async def orient_to_wall(self: Task[None, None, None],
