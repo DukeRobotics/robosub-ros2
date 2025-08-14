@@ -1554,10 +1554,10 @@ async def ivc_receive_then_send(self: Task[None, None, None], msg: IVCMessageTyp
     await ivc_tasks.ivc_send(msg, parent = self) # Send crush is done with gate
 
 @task
-async def reset_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:
-    """Reset the IVC log file by clearing its contents."""
-    with open("ivc_log.txt", "w") as f:
-        f.write("")
+async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:
+    """Append a header to the IVC log file."""
+    with open("ivc_log.txt", "a") as f:
+        f.write("----- NEW RUN STARTED -----")
 
 @task
 async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[None, None, None]:
