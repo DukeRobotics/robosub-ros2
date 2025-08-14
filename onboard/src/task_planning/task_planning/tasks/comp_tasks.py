@@ -535,6 +535,27 @@ async def gate_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None, N
         await move_tasks.move_with_directions([(2, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
     logger.info('Moved through gate')
 
+@task
+async def slalom_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None, None, None]:
+    logger.info('Started slalom task')
+    if get_robot_name() == RobotName.OOGWAY:
+        pass
+    elif get_robot_name() == RobotName.CRUSH:
+        await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+    logger.info('Moved through slalom')
+
+task
+async def return_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None, None, None]:
+    logger.info('Started gate return task')
+    if get_robot_name() == RobotName.OOGWAY:
+        pass
+    elif get_robot_name() == RobotName.CRUSH:
+        await move_tasks.move_with_directions([(-3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(-3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(-3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(-3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+    logger.info('Moved through gate return')
 
 @task
 async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[None, None, None]:
@@ -1490,15 +1511,24 @@ async def torpedo_task_old(self: Task,
     await center_with_torpedo_target()
 
 @task
-async def crush_robot_ivc(self: Task[None, None, None], msg: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
-    await ivc_tasks.ivc_send(msg, parent = self) # Send crush is done with gate
+async def crush_ivc_sent(self: Task[None, None, None], msg_to_send: IVCMessageType, msg_to_receive: IVCMessageType timeout: float = 60) -> Task[None, None, None]:
+    await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
 
+    count = 2
+    # Wait for Oogway to say starting/acknowledge command
+    while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != msg_to_receive:
+        logger.info(f'Unexpected message received. Remaining attempts: {count}')
+        count -= 1
+
+@task
+async def crush_ivc_receive(self: Task[None, None, None], msg: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
     count = 2
     # Wait for Oogway to say starting/acknowledge command
     while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != IVCMessageType.OOGWAY_ACKNOWLEDGE:
         logger.info(f'Unexpected message received. Remaining attempts: {count}')
         count -= 1
-
+    
+    await ivc_tasks.ivc_send(msg, parent = self) # Send crush is done with gate
 
 @task
 async def oogway_ivc_start(self: Task[None, None, None], msg: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
