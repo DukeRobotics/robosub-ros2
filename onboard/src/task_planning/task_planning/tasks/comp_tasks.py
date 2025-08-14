@@ -1373,7 +1373,7 @@ async def torpedo_task(self: Task, first_target: CVObjectType, depth_level=0.5, 
 
     # Small offset to counteract camera positioning
     await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, 0, 0.2, 0, 0, 0),
+        geometry_utils.create_pose(0, -0.5, 0.2, 0, 0, 0),
         parent=self,
     )
 
@@ -1391,7 +1391,7 @@ async def torpedo_task(self: Task, first_target: CVObjectType, depth_level=0.5, 
     target_z = CV().bounding_boxes[animal].coords.z
     logger.info(f"Aligning to first target {animal} at y={target_y} and z={target_z}")
     await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
+        geometry_utils.create_pose(0, target_y, target_z+0.15, 0, 0, 0),
         parent=self,
     )
 
@@ -1403,14 +1403,14 @@ async def torpedo_task(self: Task, first_target: CVObjectType, depth_level=0.5, 
     await util_tasks.sleep(Duration(seconds=3), parent=self)
 
     # Center to second animal
-    animal = second_target
-    target_y = CV().bounding_boxes[animal].coords.y
-    target_z = CV().bounding_boxes[animal].coords.z
-    logger.info(f"Aligning to second target {animal} at y={target_y} and z={target_z}")
-    await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
-        parent=self,
-    )
+    # animal = second_target
+    # target_y = CV().bounding_boxes[animal].coords.y
+    # target_z = CV().bounding_boxes[animal].coords.z
+    # logger.info(f"Aligning to second target {animal} at y={target_y} and z={target_z}")
+    # await move_tasks.move_to_pose_local(
+    #     geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
+    #     parent=self,
+    # )
 
     # Fire second torpedo
     logger.info(f"Firing torpedo RIGHT")
