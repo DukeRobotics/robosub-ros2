@@ -1394,6 +1394,8 @@ async def torpedo_task(self: Task, first_target: CVObjectType, depth_level=0.5, 
         geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
         parent=self,
     )
+
+    # Fire first torpedo
     logger.info(f"Firing torpedo LEFT")
     await Servos().fire_torpedo(TorpedoStates.LEFT)
 
@@ -1409,6 +1411,8 @@ async def torpedo_task(self: Task, first_target: CVObjectType, depth_level=0.5, 
         geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
         parent=self,
     )
+
+    # Fire second torpedo
     logger.info(f"Firing torpedo RIGHT")
     await Servos().fire_torpedo(TorpedoStates.RIGHT)
 
