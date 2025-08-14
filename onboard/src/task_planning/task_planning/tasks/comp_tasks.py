@@ -20,6 +20,7 @@ from task_planning.interface.cv import CV, CVObjectType
 from task_planning.interface.servos import Servos, MarkerDropperStates, TorpedoStates
 from task_planning.interface.state import State
 from task_planning.interface.ivc import IVC, IVCMessageType
+from task_planning.interface.sonar import Sonar
 from task_planning.task import Task, Yield, task
 from task_planning.tasks import cv_tasks, move_tasks, util_tasks, ivc_tasks
 from task_planning.utils import geometry_utils
@@ -1523,3 +1524,39 @@ async def oogway_ivc_start(self: Task[None, None, None], msg: IVCMessageType, ti
         count -= 1
 
     await ivc_tasks.ivc_send(msg, parent = self) # Oogway says ok and starting
+
+@task
+async def orient_to_wall(self: Task[None, None, None],
+                         start_angle: float = -15.0,
+                         end_angle: float = 15.0,
+                         distance: float = 20.0) -> Task[None, None, None]:
+    """
+    Orient the robot to a wall using sonar sweep.
+    """
+    async def get_yaw_angle() -> float:
+        """
+        Returns the yaw angle of the wall in radians.
+        """
+        # Call sonar sweep request
+        sonar_future = Sonar().sweep(start_angle, end_angle, distance)
+        if sonar_future is not None:
+            logger.info("Sonar sweep request sent, waiting for response...")
+            # Wait for the sonar sweep to complete
+            sonar_response = await sonar_future
+            logger.info(f"Sonar sweep response received: {sonar_response}")
+            return sonar_response.normal_angle
+        else:
+            logger.warning("Sonar sweep request failed - bypass mode or service unavailable")
+            return math.nan
+
+    yaw_delta = await get_yaw_angle()
+
+    if yaw_delta != math.nan:
+        logger.info(f"Yaw delta from sonar sweep: {yaw_delta} degrees")
+        # Move to the desired yaw angle
+        await move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_delta),
+            parent=self,
+        )
+    else:
+        logger.warning("No yaw delta received from sonar sweep, skipping orientation.")
