@@ -18,6 +18,7 @@ async def main(self: Task) -> Task[None, None, None]:
 
     DIRECTION_OF_TORPEDO_BANNER = -1
     DEPTH = 1
+    # DEPTH = 1.2 # don't commit
 
     tasks = [
         # comp_tasks.initial_submerge(-1.2, parent=self),
@@ -30,6 +31,20 @@ async def main(self: Task) -> Task[None, None, None]:
         # ),
 
         # comp_tasks.yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=1, yaw_threshold=math.radians(10), parent=self)
+
+        # Home pool test 8/13
+        # comp_tasks.initial_submerge(-DEPTH, parent=self),
+        # comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self),
+        # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
+        # comp_tasks.torpedo_task(depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+
+        # IVC 8/13
+        # comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self), # Crush thru gate, Oogway acknowledges
+        # comp_tasks.initial_submerge(-0.8, parent=self), # Oogway gate
+        # Oogway does stuff
+        # Oogway sends Crush done
+        # Crush returns to gate
+
 
         ##### COMP
         comp_tasks.initial_submerge(-DEPTH, parent=self),
