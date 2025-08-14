@@ -523,7 +523,10 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True, tim
     logger.info(f'Final yaw offset: {get_gyro_yaw_correction(return_raw=True)}')
 
     depth_delta = DEPTH_LEVEL - State().depth
-    await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0), parent=self)
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0),
+        keep_orientation=True,
+        parent=self)
     logger.info(f'Corrected depth {depth_delta}')
 
     logger.info('Completed coin flip')
@@ -549,21 +552,27 @@ async def slalom_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None,
     if get_robot_name() == RobotName.OOGWAY:
         pass
     elif get_robot_name() == RobotName.CRUSH:
-        await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
-        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+        directions = [
+            (3, 0, 0),
+            (2, 0, 0),
+        ]
+        await move_tasks.move_with_directions(directions, depth_level=depth_level, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
     logger.info('Moved through slalom')
 
-task
+@task
 async def return_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None, None, None]:
     logger.info('Started gate return task')
     if get_robot_name() == RobotName.OOGWAY:
         pass
     elif get_robot_name() == RobotName.CRUSH:
-        await move_tasks.move_with_directions([(-3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
-        await move_tasks.move_with_directions([(-3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
-        await move_tasks.move_with_directions([(-3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
-        await move_tasks.move_with_directions([(-3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
-    logger.info('Moved through gate return')
+        directions = [
+            (-3, 0, 0),
+            (-3, 0, 0),
+            (-3, 0, 0),
+            (-3, 0, 0),
+        ]
+        await move_tasks.move_with_directions(directions, depth_level=depth_level, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
+        logger.info('Moved through gate return')
 
 @task
 async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[None, None, None]:
@@ -1230,21 +1239,21 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     POST_FRONT_THRESHOLD_FORWARD_DISTANCE = 0.15 # in meters
 
     # Forward navigation case constants
-    # LOW_SCORE = 3500
-    # LOW_STEP_SIZE = 2
-    # MED_SCORE = 7000
-    # MED_STEP_SIZE = 1.25
-    # HIGH_SCORE = 15000
-    # HIGH_STEP_SIZE = 0.75
-    # VERY_HIGH_STEP_SIZE = 0.5
-
-    LOW_SCORE = 1000
-    LOW_STEP_SIZE = 1.75
-    MED_SCORE = 2000
+    LOW_SCORE = 3500
+    LOW_STEP_SIZE = 2
+    MED_SCORE = 7000
     MED_STEP_SIZE = 1.25
-    HIGH_SCORE = 4000
+    HIGH_SCORE = 15000
     HIGH_STEP_SIZE = 0.75
-    VERY_HIGH_STEP_SIZE = 0.25
+    VERY_HIGH_STEP_SIZE = 0.5
+
+    # LOW_SCORE = 1000
+    # LOW_STEP_SIZE = 1.75
+    # MED_SCORE = 2000
+    # MED_STEP_SIZE = 1.25
+    # HIGH_SCORE = 4000
+    # HIGH_STEP_SIZE = 0.75
+    # VERY_HIGH_STEP_SIZE = 0.25
 
     async def correct_depth(desired_depth):
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
@@ -1534,7 +1543,7 @@ async def torpedo_task_old(self: Task,
     await center_with_torpedo_target()
 
 @task
-async def ivc_send_then_receive(self: Task[None, None, None], msg_to_send: IVCMessageType, msg_to_receive: IVCMessageType timeout: float = 60) -> Task[None, None, None]:
+async def crush_ivc_send(self: Task[None, None, None], msg_to_send: IVCMessageType, msg_to_receive: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
     await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
 
     count = 2
@@ -1544,14 +1553,15 @@ async def ivc_send_then_receive(self: Task[None, None, None], msg_to_send: IVCMe
         count -= 1
 
 @task
-async def ivc_receive_then_send(self: Task[None, None, None], msg: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
+async def crush_ivc_receive(self: Task[None, None, None], msg_to_receive: IVCMessageType,
+    msg_to_send: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
     count = 2
     # Wait for Oogway to say starting/acknowledge command
-    while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != IVCMessageType.OOGWAY_ACKNOWLEDGE:
+    while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != msg_to_receive:
         logger.info(f'Unexpected message received. Remaining attempts: {count}')
         count -= 1
-
-    await ivc_tasks.ivc_send(msg, parent = self) # Send crush is done with gate
+    
+    await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
 
 @task
 async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:
