@@ -399,15 +399,15 @@ async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float 
     )
     logger.info(f'Submerged {submerge_dist} meters')
 
-    async def correct_roll_and_pitch():
-        imu_orientation = State().imu.orientation
-        euler_angles = quat2euler([imu_orientation.w, imu_orientation.x, imu_orientation.y, imu_orientation.z])
-        roll_correction = -euler_angles[0] * 1.2
-        pitch_correction = -euler_angles[1] * 1.2
+    # async def correct_roll_and_pitch():
+    #     imu_orientation = State().imu.orientation
+    #     euler_angles = quat2euler([imu_orientation.w, imu_orientation.x, imu_orientation.y, imu_orientation.z])
+    #     roll_correction = -euler_angles[0] * 1.2
+    #     pitch_correction = -euler_angles[1] * 1.2
 
-        logger.info(f'Roll, pitch correction: {roll_correction, pitch_correction}')
-        await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, 0),
-                                            parent=self)
+    #     logger.info(f'Roll, pitch correction: {roll_correction, pitch_correction}')
+    #     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, 0),
+    #                                         parent=self)
 
     # await correct_roll_and_pitch()
 
