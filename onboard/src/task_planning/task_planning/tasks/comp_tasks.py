@@ -1375,13 +1375,13 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
 
     # Small offset to counteract camera positioning
     await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, -0.8, 0.2, 0, 0, 0),
+        geometry_utils.create_pose(0, 0, 0.2, 0, 0, 0),
         keep_orientation=False,
         # pose_tolerances = move_tasks.create_twist_tolerance(linear_z = 0.1),
         parent=self,
     )
 
-    # Center to some animal
+    # Center to ANIMAL 1
     animal = CVObjectType.TORPEDO_REEF_SHARK_TARGET
     target_y = CV().bounding_boxes[animal].coords.y
     target_z = CV().bounding_boxes[animal].coords.z
@@ -1391,19 +1391,24 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
         keep_orientation=False,
         parent=self,
     )
-    logger.info(f"Firing torpedoes")
+    logger.info(f"Firing torpedo LEFT")
     await Servos().fire_torpedo(TorpedoStates.LEFT)
 
-    await util_tasks.sleep(Duration(seconds=5), parent=self)
+    await util_tasks.sleep(Duration(seconds=3), parent=self)
+
+    # Center to ANIMAL 2
     animal = CVObjectType.TORPEDO_SAWFISH_TARGET
     target_y = CV().bounding_boxes[animal].coords.y
     target_z = CV().bounding_boxes[animal].coords.z
+    logger.info(f"Aligning to {animal} at y={target_y} and z={target_z}")
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, target_y, target_z-0.1, 0, 0, 0),
         keep_orientation=False,
         parent=self,
     )
+    logger.info(f"Firing torpedo RIGHT")
     await Servos().fire_torpedo(TorpedoStates.RIGHT)
+
     logger.info(f"Torpedo task completed")
 
 @task
@@ -1520,7 +1525,7 @@ async def ivc_receive_then_send(self: Task[None, None, None], msg: IVCMessageTyp
 async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:
     """Append a header to the IVC log file."""
     with open("ivc_log.txt", "a") as f:
-        f.write("----- NEW RUN STARTED -----")
+        f.write("----- NEW RUN STARTED -----\n")
 
 @task
 async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[None, None, None]:

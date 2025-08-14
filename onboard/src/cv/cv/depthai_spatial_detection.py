@@ -368,13 +368,13 @@ class DepthAISpatialDetector(Node):
         object_msg.score = confidence
 
         if label == "torpedo_banner":
-            object_msg.coords.x = -1.2 * det_coords[0]
-            object_msg.coords.y = -0.5 * det_coords[1]
-            object_msg.coords.z = -det_coords[2]
+            object_msg.coords.x = 1.2 * det_coords[0]
+            object_msg.coords.y = 0.5 * det_coords[1]
+            object_msg.coords.z = det_coords[2]
         else:
-            object_msg.coords.x = -det_coords[0]
-            object_msg.coords.y = -det_coords[1]
-            object_msg.coords.z = -det_coords[2]
+            object_msg.coords.x = det_coords[0]
+            object_msg.coords.y = det_coords[1]
+            object_msg.coords.z = det_coords[2]
 
         object_msg.xmin = bbox[0]
         object_msg.ymin = bbox[1]
