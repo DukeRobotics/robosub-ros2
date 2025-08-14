@@ -1573,7 +1573,7 @@ async def crush_ivc_receive(self: Task[None, None, None], msg_to_receive: IVCMes
 async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:
     """Append a header to the IVC log file."""
     with open("ivc_log.txt", "a") as f:
-        f.write("----- NEW RUN STARTED -----")
+        f.write("----- NEW RUN STARTED -----\n")
 
 @task
 async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[None, None, None]:
