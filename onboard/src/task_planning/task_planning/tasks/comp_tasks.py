@@ -1408,7 +1408,7 @@ async def torpedo_task(self: Task, first_target: CVObjectType, depth_level=0.5, 
     # target_z = CV().bounding_boxes[animal].coords.z
     # logger.info(f"Aligning to second target {animal} at y={target_y} and z={target_z}")
     # await move_tasks.move_to_pose_local(
-    #     geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
+    #     geometry_utils.create_pose(0, target_y, target_z+0.15, 0, 0, 0),
     #     parent=self,
     # )
 
