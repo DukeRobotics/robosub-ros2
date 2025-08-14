@@ -1509,12 +1509,12 @@ async def ivc_send_then_receive(self: Task[None, None, None], msg_to_send: IVCMe
 @task
 async def ivc_receive_then_send(self: Task[None, None, None], msg: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
     count = 2
-    # Wait for Oogway to say starting/acknowledge command
-    while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != IVCMessageType.OOGWAY_ACKNOWLEDGE:
+    # Wait until Crush is done with gate
+    while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != IVCMessageType.CRUSH_GATE:
         logger.info(f'Unexpected message received. Remaining attempts: {count}')
         count -= 1
 
-    await ivc_tasks.ivc_send(msg, parent = self) # Send crush is done with gate
+    await ivc_tasks.ivc_send(msg, parent = self) # Oogway says ok and starting
 
 @task
 async def reset_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:
