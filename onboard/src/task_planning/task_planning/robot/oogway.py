@@ -47,6 +47,7 @@ async def main(self: Task) -> Task[None, None, None]:
 
 
         ##### COMP
+        comp_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(-DEPTH, parent=self),
         comp_tasks.ivc_receive_then_send(IVCMessageType.OOGWAY_ACKNOWLEDGE, timeout=60, parent=self),
         comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
