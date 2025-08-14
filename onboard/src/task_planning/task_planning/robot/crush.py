@@ -18,18 +18,27 @@ async def main(self: Task) -> Task[None, None, None]:
 
         # comp_tasks.gate_task_dead_reckoning(depth_level=-0.7, parent=self),
         # comp_tasks.gate_style_task(depth_level=1.1, parent=self),
-        # comp_tasks.crush_robot_ivc(IVCMessageType.CRUSH_GATE, timeout=90, parent = self),
 
-        comp_tasks.gate_to_octagon(direction=1, move_forward=0, parent=self),
+        # comp_tasks.crush_robot_ivc(IVCMessageType.CRUSH_GATE, timeout=90, parent = self),
+        comp_tasks.initial_submerge(-1.0, z_tolerance=0.15, enable_controls_flag=True, parent=self),
+        # comp_tasks.gate_to_octagon(direction=1, move_forward=0, timeout=15, parent=self),
         comp_tasks.octagon_task(direction=1, parent=self),
+        # comp_tasks.yaw_to_cv_object(CVObjectType.BUOY, direction=1, depth_level=0.2, parent=self),
+
+        # comp_tasks.gate_to_octagon(direction=1, move_forward=0, parent=self),
+        # comp_tasks.octagon_task(direction=1, parent=self),
 
         # || END 2025 COMP FLOW
 
-        comp_tasks.initial_submerge(-0.4, z_tolerance=0.15, enable_controls_flag=True, parent=self),
-        move_tasks.move_with_directions([(1, 0, 0)], depth_level=-0.4, correct_depth=True, correct_yaw=True, parent=self),
-        move_tasks.move_with_directions([(0, 1, 0)], depth_level=-0.4, correct_depth=True, correct_yaw=True, parent=self),
-        move_tasks.move_with_directions([(-1, 0, 0)], depth_level=-0.4, correct_depth=True, correct_yaw=True, parent=self),
-        move_tasks.move_with_directions([(0, -1, 0)], depth_level=-0.4, correct_depth=True, correct_yaw=True, parent=self),
+        # test yaw
+        # comp_tasks.initial_submerge(-0.2, z_tolerance=0.15, enable_controls_flag=True, parent=self),
+        # comp_tasks.yaw_to_cv_object(CVObjectType.BUOY, direction=1, depth_level=0.2, parent=self),
+
+        # comp_tasks.initial_submerge(-0.2, z_tolerance=0.15, enable_controls_flag=True, parent=self),
+        # move_tasks.move_with_directions([(0.3, 0, 0)], depth_level=-0.4, correct_depth=True, correct_yaw=True, parent=self),
+        # move_tasks.move_with_directions([(0, 0.3, 0)], depth_level=-0.4, correct_depth=True, correct_yaw=True, parent=self),
+        # move_tasks.move_with_directions([(-0.3, 0, 0)], depth_level=-0.4, correct_depth=True, correct_yaw=True, parent=self),
+        # move_tasks.move_with_directions([(0, -0.3, 0)], depth_level=-0.4, correct_depth=True, correct_yaw=True, parent=self),
 
         # comp_tasks.gate_task_dead_reckoning(),
         # comp_tasks.initial_submerge(-0.5, z_tolerance=0.15, enable_controls_flag=True, parent=self),

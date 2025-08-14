@@ -318,19 +318,18 @@ async def buoy_to_octagon(self: Task, direction: int = 1, move_forward: int = 0)
     await move_with_directions(directions)
 
 @task
-async def gate_to_octagon(self: Task, direction: int = 1, move_forward: int = 0):
-    DEPTH_LEVEL = State().orig_depth - 0.7
+async def gate_to_octagon(self: Task, direction: int = 1, move_forward: int = 0, timeout: int=30):
+    DEPTH_LEVEL = State().orig_depth - 1.0
 
     logger.info('Started gate to octagon')
 
-    async def move_with_directions(directions, depth_level=-0.7):
-        await move_tasks.move_with_directions(directions, depth_level, correct_yaw=False, correct_depth=True, parent=self)
+    async def move_with_directions(directions, depth_level=-1.0):
+        await move_tasks.move_with_directions(directions, depth_level, correct_yaw=True, correct_depth=True, time_limit=timeout, parent=self)
 
     directions = [
-        (4, 0, 0),
-        (4, 0, 0),
-        (4, 0, 0),
-        (4, 0, 0),
+        (3, 0, 0),
+        (3, 0, 0),
+        (3, 0, 0),
     ]
     await move_with_directions(directions, depth_level=DEPTH_LEVEL)
 
@@ -510,6 +509,7 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
 
             await move_tasks.move_to_pose_local(
                 geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),
+                time_limit=15,
                 parent=self,
                 # TODO: maybe set yaw tolerance?
             )
@@ -531,8 +531,8 @@ async def gate_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None, N
         await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
         await move_tasks.move_with_directions([(2, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
     elif get_robot_name() == RobotName.CRUSH:
-        await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
-        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, time_limit=15, parent=self)
+        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, time_limit=15, parent=self)
     logger.info('Moved through gate')
 
 
@@ -1191,20 +1191,20 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     """
     logger.info('Starting octagon task')
 
-    DEPTH_LEVEL_AT_BINS = State().orig_depth - 0.9 # Depth for beginning of task and corrections during forward movement
-    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.6 # Depth for going above bin before forward move
+    DEPTH_LEVEL_AT_BINS = State().orig_depth - 1.5 # Depth for beginning of task and corrections during forward movement
+    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 1.0 # Depth for going above bin before forward move
     LATENCY_THRESHOLD = 2 # Latency for seeing the bottom bin
     CONTOUR_SCORE_THRESHOLD = 1000 # Required bottom bin area for valid detection
 
     SCORE_THRESHOLD = 30000 # Area of bin before beginning surface logic for front camera
-    POST_FRONT_THRESHOLD_FORWARD_DISTANCE = 0.25 # in meters
+    POST_FRONT_THRESHOLD_FORWARD_DISTANCE = 0.15 # in meters
 
     # Forward navigation case constants
-    LOW_SCORE = 700
+    LOW_SCORE = 3500
     LOW_STEP_SIZE = 2
-    MED_SCORE = 3000
+    MED_SCORE = 7000
     MED_STEP_SIZE = 1.25
-    HIGH_SCORE = 7000
+    HIGH_SCORE = 15000
     HIGH_STEP_SIZE = 0.75
     VERY_HIGH_STEP_SIZE = 0.5
 
