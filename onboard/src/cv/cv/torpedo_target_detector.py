@@ -42,13 +42,13 @@ class TorpedoTargetDetector(Node):
                                                   10)
         self.fish_bbox_pub = self.create_publisher(CVObject,'/cv/front_usb/torpedo_sawfish_target/bounding_box', 1) # named differently so as to accomodate CV object
         self.shark_bbox_pub = self.create_publisher(CVObject,'/cv/front_usb/torpedo_reef_shark_target/bounding_box', 1)
-        self.largest_bbox_pub = self.create_publisher(Image, '/cv/front_usb/torpedo_largest_target/bounding_box', 1)
+        self.largest_bbox_pub = self.create_publisher(CVObject, '/cv/front_usb/torpedo_largest_target/bounding_box', 1)
         self.hsv_filtered_pub = self.create_publisher(Image, '/cv/front_usb/torpedo/hsv_filtered', 1)
         self.contour_image_pub = self.create_publisher(Image, '/cv/front_usb/torpedo/contour_image', 1)
         self.contour_image_with_bbox_pub = self.create_publisher(Image, '/cv/front_usb/torpedo/detections', 1)
         self.shark_target = self.create_publisher(Image, '/cv/front_usb/torpedo/shark_target', 1)
         self.fish_target = self.create_publisher(Image, '/cv/front_usb/torpedo/fish_target', 1)
-        self.largest_target = self.create_publisher(Image, '/cv/front_usb/torpedo/largest_target/', 1)
+        self.largest_target = self.create_publisher(Image, '/cv/front_usb/torpedo/largest_target', 1)
 
         self.torpedo_shark_sub = self.create_subscription(CVObject, '/cv/front/shark_front', self.update_shark_bounding_boxes, 1)
         self.torpedo_sawfish_sub = self.create_subscription(CVObject, '/cv/front/swordfish_front', self.update_sawfish_bounding_boxes, 1)
