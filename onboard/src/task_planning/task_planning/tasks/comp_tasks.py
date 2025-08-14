@@ -324,7 +324,7 @@ async def gate_to_octagon(self: Task, direction: int = 1, move_forward: int = 0,
     logger.info('Started gate to octagon')
 
     async def move_with_directions(directions, depth_level=-1.0):
-        await move_tasks.move_with_directions(directions, depth_level, correct_yaw=True, correct_depth=True, time_limit=timeout, parent=self)
+        await move_tasks.move_with_directions(directions, depth_level, correct_yaw=True, correct_depth=True, keep_orientation=True, time_limit=timeout, parent=self)
 
     directions = [
         (3, 0, 0),
