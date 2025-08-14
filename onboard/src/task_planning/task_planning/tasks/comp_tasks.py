@@ -377,7 +377,7 @@ async def buoy_circumnavigation_power(self: Task, depth: float = 0.7) -> Task[No
 
 
 @task
-async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float = 0.1, enable_controls_flag: bool = False) -> Task[None, None, None]:
+async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float = 0.1, enable_controls_flag: bool = False, time_limit: int = 30) -> Task[None, None, None]:
     """
     Submerge the robot a given amount.
 
@@ -385,13 +385,16 @@ async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float 
         submerge_dist: The distance to submerge the robot in meters.
         enable_controls_flag: Flag to wait for ENABLE_CONTROLS status when true.
     """
+    logger.info("Starting initial submerge")
+
     while enable_controls_flag and not Controls().enable_controls_status.data:
         await Yield()
 
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, submerge_dist, 0, 0, 0),
-        keep_orientation=False,
+        keep_orientation=True,
         pose_tolerances = move_tasks.create_twist_tolerance(linear_z = z_tolerance),
+        time_limit=time_limit,
         parent=self,
     )
     logger.info(f'Submerged {submerge_dist} meters')
@@ -406,7 +409,7 @@ async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float 
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, 0),
                                             parent=self)
 
-    await correct_roll_and_pitch()
+    # await correct_roll_and_pitch()
 
 
 @task
