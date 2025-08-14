@@ -14,7 +14,7 @@ async def main(self: Task) -> Task[None, None, None]:
     tasks = [
         # || START 2025 COMP FLOW
         # comp_tasks.initial_submerge(-0.7, z_tolerance=0.15, enable_controls_flag=True, time_limit=10, parent=self),
-        # comp_tasks.coin_flip(enable_same_direction=False, parent=self),
+        # comp_tasks.coin_flip(enable_same_direction=False, time_limit=15, parent=self),
 
         # comp_tasks.gate_task_dead_reckoning(depth_level=-0.7, parent=self),
         # comp_tasks.gate_style_task(depth_level=1.1, parent=self),
