@@ -215,6 +215,7 @@ async def depth_correction(self: Task, desired_depth: float) -> Task[None, None,
     await move_to_pose_local(
         geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0),
         pose_tolerances = create_twist_tolerance(linear_z = 0.17),
+        time_limit=10,
         parent=self)
     logger.info(f'Finished depth correction {depth_delta}')
 
@@ -248,9 +249,12 @@ async def move_x(self: Task, step: float = 1.0) -> None:
     Returns:
         None
     """
-    await move_to_pose_local(geometry_utils.create_pose(step, 0, 0, 0, 0, 0), parent=self)
+    await move_to_pose_local(geometry_utils.create_pose(step, 0, 0, 0, 0, 0),
+        keep_orientation = True,
+        time_limit = 10,
+        pose_tolerances = create_twist_tolerance(linear_x = 0.15),
+        parent=self)
     logger.info(f'Moved x {step}')
-
 
 @task
 async def move_y(self: Task, step: float = 1.0) -> None:

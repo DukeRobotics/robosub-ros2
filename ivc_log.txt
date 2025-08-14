@@ -3,4 +3,5 @@ Sent IVC message: CRUSH_GATE at 2025-08-13 13:06:56 PDT
 Sent IVC message: CRUSH_GATE at 2025-08-13 13:09:11 PDT
 Sent IVC message: CRUSH_GATE at 2025-08-13 13:23:56 PDT
 Sent IVC message: CRUSH_GATE at 2025-08-13 13:26:15 PDT
------ NEW RUN STARTED ---------- NEW RUN STARTED -----
+----- NEW RUN STARTED ---------- NEW RUN STARTED ---------- NEW RUN STARTED -----Sent IVC message: CRUSH_GATE at 2025-08-14 08:01:15 PDT
+----- NEW RUN STARTED ---------- NEW RUN STARTED ---------- NEW RUN STARTED ---------- NEW RUN STARTED -----
