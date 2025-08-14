@@ -20,6 +20,7 @@ from task_planning.interface.cv import CV, CVObjectType
 from task_planning.interface.servos import Servos, MarkerDropperStates, TorpedoStates
 from task_planning.interface.state import State
 from task_planning.interface.ivc import IVC, IVCMessageType
+from task_planning.interface.sonar import Sonar
 from task_planning.task import Task, Yield, task
 from task_planning.tasks import cv_tasks, move_tasks, util_tasks, ivc_tasks
 from task_planning.utils import geometry_utils
@@ -318,19 +319,18 @@ async def buoy_to_octagon(self: Task, direction: int = 1, move_forward: int = 0)
     await move_with_directions(directions)
 
 @task
-async def gate_to_octagon(self: Task, direction: int = 1, move_forward: int = 0):
-    DEPTH_LEVEL = State().orig_depth - 0.7
+async def gate_to_octagon(self: Task, direction: int = 1, move_forward: int = 0, timeout: int=30):
+    DEPTH_LEVEL = State().orig_depth - 1.0
 
     logger.info('Started gate to octagon')
 
-    async def move_with_directions(directions, depth_level=-0.7):
-        await move_tasks.move_with_directions(directions, depth_level, correct_yaw=False, correct_depth=True, parent=self)
+    async def move_with_directions(directions, depth_level=-1.0):
+        await move_tasks.move_with_directions(directions, depth_level, correct_yaw=True, correct_depth=True, keep_orientation=True, time_limit=timeout, parent=self)
 
     directions = [
-        (4, 0, 0),
-        (4, 0, 0),
-        (4, 0, 0),
-        (4, 0, 0),
+        (3, 0, 0),
+        (3, 0, 0),
+        (3, 0, 0),
     ]
     await move_with_directions(directions, depth_level=DEPTH_LEVEL)
 
@@ -378,7 +378,7 @@ async def buoy_circumnavigation_power(self: Task, depth: float = 0.7) -> Task[No
 
 
 @task
-async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float = 0.1, enable_controls_flag: bool = False) -> Task[None, None, None]:
+async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float = 0.1, enable_controls_flag: bool = False, time_limit: int = 30) -> Task[None, None, None]:
     """
     Submerge the robot a given amount.
 
@@ -386,32 +386,35 @@ async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float 
         submerge_dist: The distance to submerge the robot in meters.
         enable_controls_flag: Flag to wait for ENABLE_CONTROLS status when true.
     """
+    logger.info("Starting initial submerge")
+
     while enable_controls_flag and not Controls().enable_controls_status.data:
         await Yield()
 
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, submerge_dist, 0, 0, 0),
-        keep_orientation=False,
+        keep_orientation=True,
         pose_tolerances = move_tasks.create_twist_tolerance(linear_z = z_tolerance),
+        time_limit=time_limit,
         parent=self,
     )
     logger.info(f'Submerged {submerge_dist} meters')
 
-    async def correct_roll_and_pitch():
-        imu_orientation = State().imu.orientation
-        euler_angles = quat2euler([imu_orientation.w, imu_orientation.x, imu_orientation.y, imu_orientation.z])
-        roll_correction = -euler_angles[0] * 1.2
-        pitch_correction = -euler_angles[1] * 1.2
+    # async def correct_roll_and_pitch():
+    #     imu_orientation = State().imu.orientation
+    #     euler_angles = quat2euler([imu_orientation.w, imu_orientation.x, imu_orientation.y, imu_orientation.z])
+    #     roll_correction = -euler_angles[0] * 1.2
+    #     pitch_correction = -euler_angles[1] * 1.2
 
-        logger.info(f'Roll, pitch correction: {roll_correction, pitch_correction}')
-        await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, 0),
-                                            parent=self)
+    #     logger.info(f'Roll, pitch correction: {roll_correction, pitch_correction}')
+    #     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, roll_correction, pitch_correction, 0),
+    #                                         parent=self)
 
-    await correct_roll_and_pitch()
+    # await correct_roll_and_pitch()
 
 
 @task
-async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> Task[None, None, None]:
+async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True, time_limit: int=15) -> Task[None, None, None]:
     """
     Perform the coin flip task, adjusting the robot's yaw and depth.
 
@@ -449,20 +452,20 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
     def get_step_size(desired_yaw):
         return min(abs(desired_yaw), MAXIMUM_YAW)
 
-    def get_yaw_correction():
-        orig_imu_orientation = copy.deepcopy(State().orig_imu.orientation)
-        orig_imu_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(orig_imu_orientation))
+    # def get_yaw_correction():
+    #     orig_imu_orientation = copy.deepcopy(State().orig_imu.orientation)
+    #     orig_imu_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(orig_imu_orientation))
 
-        cur_imu_orientation = copy.deepcopy(State().imu.orientation)
-        cur_imu_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(cur_imu_orientation))
+    #     cur_imu_orientation = copy.deepcopy(State().imu.orientation)
+    #     cur_imu_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(cur_imu_orientation))
 
-        correction = orig_imu_euler_angles[2] - cur_imu_euler_angles[2]
+    #     correction = orig_imu_euler_angles[2] - cur_imu_euler_angles[2]
 
-        sign_correction = np.sign(correction)
-        desired_yaw = sign_correction * get_step_size(correction)
-        logger.info(f'Coinflip: imu_yaw_correction = {desired_yaw}')
+    #     sign_correction = np.sign(correction)
+    #     desired_yaw = sign_correction * get_step_size(correction)
+    #     logger.info(f'Coinflip: imu_yaw_correction = {desired_yaw}')
 
-        return desired_yaw
+    #     return desired_yaw
 
     def get_gyro_yaw_correction(return_raw=True):
         orig_gyro_orientation = copy.deepcopy(State().orig_gyro.pose.pose.orientation)
@@ -491,6 +494,7 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, 0, 0, 0, 0, np.pi),
                     pose_tolerances = move_tasks.create_twist_tolerance(angular_yaw = 0.05),
+                    time_limit=time_limit,
                     parent=self,
                     # TODO: maybe set yaw tolerance?
                 )
@@ -510,6 +514,7 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True) -> 
 
             await move_tasks.move_to_pose_local(
                 geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),
+                time_limit=time_limit,
                 parent=self,
                 # TODO: maybe set yaw tolerance?
             )
@@ -531,8 +536,11 @@ async def gate_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None, N
         await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
         await move_tasks.move_with_directions([(2, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
     elif get_robot_name() == RobotName.CRUSH:
-        await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
-        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+        directions = [
+            (3, 0, 0),
+            (2, 0, 0),
+        ]
+        await move_tasks.move_with_directions(directions, depth_level=depth_level, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
     logger.info('Moved through gate')
 
 @task
@@ -675,7 +683,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
     Corrects the yaw relative to the CV object
     """
     DEPTH_LEVEL = State().orig_depth - depth_level
-    MAXIMUM_YAW = math.radians(20)
+    MAXIMUM_YAW = math.radians(45)
     SCALE_FACTOR = 0.5 # How much the correction should be scaled down from yaw calculation
 
     logger.info('Starting yaw_to_cv_object')
@@ -702,7 +710,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
         while not CV().is_receiving_recent_cv_data(cv_object, latency_threshold):
             logger.info(f'No {cv_object} detection, setting yaw setpoint {MAXIMUM_YAW}')
             await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, MAXIMUM_YAW * direction),
-                                                pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.2)),
+                                                pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
                                                 parent=self)
             await correct_depth()
             await Yield()
@@ -718,6 +726,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
     await correct_depth()
     logger.info(f'abs(cv_object_yaw): {abs(cv_object_yaw)}')
     logger.info(f'yaw_threshold: {yaw_threshold}')
+
     while abs(cv_object_yaw) > get_yaw_threshold(yaw_threshold, CV().bounding_boxes[cv_object].coords.x):
         sign_cv_object_yaw = np.sign(cv_object_yaw)
         correction = get_step_size(SCALE_FACTOR*cv_object_yaw) # Scale down CV yaw value
@@ -1212,22 +1221,30 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     """
     logger.info('Starting octagon task')
 
-    DEPTH_LEVEL_AT_BINS = State().orig_depth - 0.9 # Depth for beginning of task and corrections during forward movement
-    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.6 # Depth for going above bin before forward move
+    DEPTH_LEVEL_AT_BINS = State().orig_depth - 1.7 # Depth for beginning of task and corrections during forward movement
+    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 1.3 # Depth for going above bin before forward move
     LATENCY_THRESHOLD = 2 # Latency for seeing the bottom bin
     CONTOUR_SCORE_THRESHOLD = 1000 # Required bottom bin area for valid detection
 
-    SCORE_THRESHOLD = 30000 # Area of bin before beginning surface logic for front camera
-    POST_FRONT_THRESHOLD_FORWARD_DISTANCE = 0.25 # in meters
+    SCORE_THRESHOLD = 7000 # Area of bin before beginning surface logic for front camera
+    POST_FRONT_THRESHOLD_FORWARD_DISTANCE = 0.15 # in meters
 
     # Forward navigation case constants
-    LOW_SCORE = 700
-    LOW_STEP_SIZE = 2
-    MED_SCORE = 3000
+    # LOW_SCORE = 3500
+    # LOW_STEP_SIZE = 2
+    # MED_SCORE = 7000
+    # MED_STEP_SIZE = 1.25
+    # HIGH_SCORE = 15000
+    # HIGH_STEP_SIZE = 0.75
+    # VERY_HIGH_STEP_SIZE = 0.5
+
+    LOW_SCORE = 1000
+    LOW_STEP_SIZE = 1.75
+    MED_SCORE = 2000
     MED_STEP_SIZE = 1.25
-    HIGH_SCORE = 7000
+    HIGH_SCORE = 4000
     HIGH_STEP_SIZE = 0.75
-    VERY_HIGH_STEP_SIZE = 0.5
+    VERY_HIGH_STEP_SIZE = 0.25
 
     async def correct_depth(desired_depth):
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
@@ -1288,7 +1305,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             if not moved_above:
                 logger.info("Yawing to pink bin front")
                 await yaw_to_cv_object(CVObjectType.BIN_PINK_FRONT, direction=direction, yaw_threshold=math.radians(15),
-                                       depth_level=DEPTH_LEVEL_AT_BINS, parent=Task.MAIN_ID)
+                                       depth_level=0.7, parent=Task.MAIN_ID)
 
             logger.info(f'Bin pink front score: {CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score}')
 
@@ -1360,8 +1377,8 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
             goal_step = 0.5
         return min(dist - dist_threshold + 0.1, goal_step)
 
-    async def move_to_torpedo(torpedo_dist_threshold=2.25):
-        await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=direction, yaw_threshold=math.radians(10),
+    async def move_to_torpedo(torpedo_dist_threshold=2):
+        await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=direction, yaw_threshold=math.radians(15),
         depth_level=depth_level, parent=self)
         torpedo_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
         await correct_y()
@@ -1372,7 +1389,7 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
             logger.info(f"Torpedo dist y: {CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.y}")
             await move_x(step=get_step_size(torpedo_dist, torpedo_dist_threshold))
 
-            await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=-1, yaw_threshold=math.radians(10),
+            await yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=-1, yaw_threshold=math.radians(15),
             depth_level=depth_level, parent=self)
             logger.info(f"Yaw corrected")
             await correct_y()
@@ -1405,18 +1422,24 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
     animal = CVObjectType.TORPEDO_REEF_SHARK_TARGET
     target_y = CV().bounding_boxes[animal].coords.y
     target_z = CV().bounding_boxes[animal].coords.z
-    if CV().is_receiving_recent_cv_data(animal, 5.0):
-        logger.info(f"Aligning to {animal}")
-        await move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
-            keep_orientation=False,
-            parent=self,
-        )
-    # End
-
+    logger.info(f"Aligning to {animal} at y={target_y} and z={target_z}")
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(0, target_y, target_z-0.1, 0, 0, 0),
+        keep_orientation=False,
+        parent=self,
+    )
     logger.info(f"Firing torpedoes")
     await Servos().fire_torpedo(TorpedoStates.LEFT)
+
     await util_tasks.sleep(Duration(seconds=5), parent=self)
+    animal = CVObjectType.TORPEDO_SAWFISH_TARGET
+    target_y = CV().bounding_boxes[animal].coords.y
+    target_z = CV().bounding_boxes[animal].coords.z
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(0, target_y, target_z-0.1, 0, 0, 0),
+        keep_orientation=False,
+        parent=self,
+    )
     await Servos().fire_torpedo(TorpedoStates.RIGHT)
     logger.info(f"Torpedo task completed")
 
@@ -1539,3 +1562,39 @@ async def oogway_ivc_start(self: Task[None, None, None], msg: IVCMessageType, ti
         count -= 1
 
     await ivc_tasks.ivc_send(msg, parent = self) # Oogway says ok and starting
+
+@task
+async def orient_to_wall(self: Task[None, None, None],
+                         start_angle: float = -15.0,
+                         end_angle: float = 15.0,
+                         distance: float = 20.0) -> Task[None, None, None]:
+    """
+    Orient the robot to a wall using sonar sweep.
+    """
+    async def get_yaw_angle() -> float:
+        """
+        Returns the yaw angle of the wall in radians.
+        """
+        # Call sonar sweep request
+        sonar_future = Sonar().sweep(start_angle, end_angle, distance)
+        if sonar_future is not None:
+            logger.info("Sonar sweep request sent, waiting for response...")
+            # Wait for the sonar sweep to complete
+            sonar_response = await sonar_future
+            logger.info(f"Sonar sweep response received: {sonar_response}")
+            return sonar_response.normal_angle
+        else:
+            logger.warning("Sonar sweep request failed - bypass mode or service unavailable")
+            return math.nan
+
+    yaw_delta = await get_yaw_angle()
+
+    if yaw_delta != math.nan:
+        logger.info(f"Yaw delta from sonar sweep: {yaw_delta} degrees")
+        # Move to the desired yaw angle
+        await move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_delta),
+            parent=self,
+        )
+    else:
+        logger.warning("No yaw delta received from sonar sweep, skipping orientation.")

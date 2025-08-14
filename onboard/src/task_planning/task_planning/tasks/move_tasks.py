@@ -111,6 +111,29 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = Fa
         move_to_pose_global(global_pose, pose_tolerances=pose_tolerances, timeout=time_limit, parent=self),
             send_transformer=send_transformer)
 
+@task
+async def yaw_from_local_pose(self: Task, yaw: int, timeout: int = 30) -> None:
+    """
+    Yaw from current local position to some offset yaw
+
+    Args:
+        self (Task): The task instance on which the method is called.
+        yaw (int): The amount to yaw, in radian.
+        time_limit (int, optional): The time limit (in seconds) for reaching the pose. Defaults to 30.
+
+    Returns:
+        None
+    """
+
+    logger.info(f'Yawing {yaw} from current position')
+    await move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw),
+            keep_orientation=True,
+            time_limit = timeout,
+            parent=self,
+        )
+    logger.info(f'Finished yaw')
+
 
 @task
 async def move_with_velocity(_self: Task, twist: Twist) -> Task[None, Twist | None, None]:
@@ -191,7 +214,7 @@ async def depth_correction(self: Task, desired_depth: float) -> Task[None, None,
     logger.info(f'Started depth correction {depth_delta}')
     await move_to_pose_local(
         geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0),
-        pose_tolerances = create_twist_tolerance(linear_z = 0.15),
+        pose_tolerances = create_twist_tolerance(linear_z = 0.17),
         parent=self)
     logger.info(f'Finished depth correction {depth_delta}')
 

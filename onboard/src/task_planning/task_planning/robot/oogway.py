@@ -22,6 +22,14 @@ async def main(self: Task) -> Task[None, None, None]:
     tasks = [
         # comp_tasks.initial_submerge(-1.2, parent=self),
         # test(parent=self),
+        # comp_tasks.initial_submerge(-0.4, parent=self),
+        # comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self),
+        # move_tasks.move_to_pose_local(
+        #     geometry_utils.create_pose(0, 0, 0, 0, 0, 1.6),
+        #     parent=self,
+        # ),
+
+        # comp_tasks.yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=1, yaw_threshold=math.radians(10), parent=self)
 
         ##### COMP
         comp_tasks.initial_submerge(-DEPTH, parent=self),
