@@ -15,7 +15,8 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
             camera='front',
             mask_ranges=[
                 [cv_constants.YellowBins.YELLOW_2_BOT, cv_constants.YellowBins.YELLOW_2_TOP],
-                # [cv_constants.YellowBins.YELLOW_3_BOT, cv_constants.YellowBins.YELLOW_3_TOP],
+                [cv_constants.YellowBins.YELLOW_1_BOT, cv_constants.YellowBins.YELLOW_1_TOP],
+                [cv_constants.YellowBins.YELLOW_3_BOT, cv_constants.YellowBins.YELLOW_3_TOP],
             ],
             width=cv_constants.Bins.WIDTH,
         )
@@ -68,11 +69,11 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
 
         return merged_contours
 
-    def filter(self, contours: list) -> list:
-        """Pick the largest and lowest contour only."""
-        MIN_AREA = 100 # Minimum area of contour to be valid
-        THRESHOLD_RATIO = 0.75 # Contour within scaled of max contour area
-        DIST_THRESH = 25 # Group all contours within this threshold
+    def filter(self, contours: list) -> list | None:
+        """Filter the contours via various criteria."""
+        MIN_AREA = 85 # Minimum area of contour to be valid
+        THRESHOLD_RATIO = 0.50 # Contour within scaled of max contour area
+        DIST_THRESH = 5 # Group all contours within this threshold
 
         final_contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
@@ -89,6 +90,11 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
 
         #self.get_logger().info(f'grouped count {len(grouped_contours)}')
         for contour in grouped_contours:
+            # Check ratio and sanity check size
+            cluster_point_count = cv2.contourArea(contour)
+            if cluster_point_count < THRESHOLD_RATIO * max_coutour_area or cluster_point_count < MIN_AREA:
+                continue
+
             # Get center (mean of all contour points)
             M = cv2.moments(contour)
             if M["m00"] != 0:
@@ -97,12 +103,12 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
             else:
                 continue
 
-            cluster_point_count = cv2.contourArea(contour)
-            if cluster_point_count < THRESHOLD_RATIO * max_coutour_area or cluster_point_count < MIN_AREA:
+            # Filter out potential upper reflection by exluding top 1/4
+            if center_y <= cv_constants.MonoCam.IMG_SHAPE[1]/4 and len(grouped_contours) > 1:
                 continue
 
-            # Pick the contour with the lowest center_y
-            if center_y > final_y:
+            # Pick the contour that is right most, in case of yellow cups giving multiple readings
+            if center_x > final_x:
                 final_x, final_y = center_x, center_y
                 chosen_contour_score = cluster_point_count
                 chosen_contour = contour
@@ -116,8 +122,10 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
 
     def morphology(self, mask: np.ndarray) -> np.ndarray:
         """Apply a kernel morphology."""
-        kernel = np.ones((3, 3), np.uint8)
-        return cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        kernel = np.ones((2, 2), np.uint8)
+        mask_closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        mask_clean = cv2.morphologyEx(mask_closed, cv2.MORPH_OPEN, kernel)
+        return mask_clean
 
 def main(args: list[str] | None = None) -> None:
     """Run the node."""

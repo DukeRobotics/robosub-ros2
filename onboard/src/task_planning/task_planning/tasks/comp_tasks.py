@@ -685,107 +685,6 @@ async def yaw_to_cv_object_vel(self: Task, cv_object: CVObjectType, direction=1,
     await correct_depth()
 
 @task
-async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
-                           yaw_threshold=math.radians(40), latency_threshold=10,
-                           depth_level=0.5) -> Task[None, None, None]:
-    """
-    Corrects the yaw relative to the CV object
-    """
-    DEPTH_LEVEL = State().orig_depth - depth_level
-    MAXIMUM_YAW = math.radians(35)
-    SCALE_FACTOR = 0.4 # How much the correction should be scaled down from yaw calculation
-
-    logger.info('Starting yaw_to_cv_object')
-
-    async def correct_depth():
-        # await move_tasks.depth_correction(DEPTH_LEVEL, parent=self)
-        await move_tasks.depth_correction(desired_depth=DEPTH_LEVEL, parent=self)
-
-    def get_step_size(desired_yaw):
-        # desired yaw in radians
-        return min(abs(desired_yaw), MAXIMUM_YAW)
-
-    def get_yaw_threshold(desired_yaw, cv_x):
-        if cv_x > 10:
-            yaw_threshold = desired_yaw * 2
-        if cv_x > 6:
-            yaw_threshold = desired_yaw * 1.75
-        else:
-            yaw_threshold = desired_yaw * 1.25
-
-        return yaw_threshold
-
-    async def yaw_until_object_detection():
-        while not CV().is_receiving_recent_cv_data(cv_object, latency_threshold):
-            logger.info(f'No {cv_object} detection, setting yaw setpoint {MAXIMUM_YAW}')
-            await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, MAXIMUM_YAW * direction),
-                                                depth_level=DEPTH_LEVEL,
-                                                pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
-                                                parent=self)
-            # await correct_depth()
-            await Yield()
-
-    def robust_yaw_average(yaws):
-        yaws_sorted = sorted(yaws)
-        trimmed = yaws_sorted[1:-1]  # remove min and max
-        return sum(trimmed) / len(trimmed)
-
-    # Yaw until object detection
-    # await correct_depth()
-    status = await yaw_until_object_detection()
-    logger.info(f'{cv_object} detected. Now centering {cv_object} in frame...')
-
-    # Center detected object in camera frame
-
-    # Take average of 5 numbers and
-    cv_yaws = []
-    for i in range(0,5):
-        cv_yaws.append(CV().bounding_boxes[cv_object].yaw)
-        await util_tasks.sleep(0.5, parent = self)
-
-    cv_object_yaw = robust_yaw_average(cv_yaws)
-
-    await correct_depth()
-    logger.info(f'abs(cv_object_yaw): {abs(cv_object_yaw)}')
-    logger.info(f'yaw_threshold: {yaw_threshold}')
-
-    step = 1
-    while abs(cv_object_yaw) > get_yaw_threshold(yaw_threshold, CV().bounding_boxes[cv_object].coords.x) and step <= 3:
-        sign_cv_object_yaw = np.sign(cv_object_yaw)
-        correction = get_step_size(SCALE_FACTOR*cv_object_yaw) # Scale down CV yaw value
-
-        if get_robot_name() == RobotName.OOGWAY:
-            desired_yaw = sign_cv_object_yaw * correction
-        else:
-            desired_yaw = -1 * sign_cv_object_yaw * correction
-
-        logger.info(f'Detected yaw {cv_object_yaw} is greater than threshold {yaw_threshold}. Actually yawing: {desired_yaw}')
-        await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, desired_yaw),
-                                            pose_tolerances = move_tasks.create_twist_tolerance(angular_yaw = 0.15),
-                                            parent=self)
-        await correct_depth()
-        await Yield()
-
-        if (not CV().is_receiving_recent_cv_data(cv_object, latency_threshold)):
-            logger.info(f'{cv_object} detection lost, running yaw_until_object_detection()')
-            await yaw_until_object_detection()
-        
-        cv_yaws = []
-        for i in range(0,5):
-            cv_yaws.append(CV().bounding_boxes[cv_object].yaw)
-            await util_tasks.sleep(0.5, parent = self)
-
-        cv_object_yaw = robust_yaw_average(cv_yaws)
-        step -= 1
-
-    logger.info(f'{cv_object} centered, or limit has been reached.')
-
-    await correct_depth()
-
-    return False
-
-
-@task
 async def align_path_marker(self: Task, direction=1) -> Task[None, None, None]:
     """
     Corrects the yaw relative to the CV object
@@ -1244,6 +1143,126 @@ async def bin_task(self: Task) -> Task[None, None, None]:
 
     logger.info('Completed bin task')
 
+@task
+async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
+                           yaw_threshold=math.radians(40), latency_threshold=10,
+                           depth_level=0.5) -> Task[None, None, None] | bool:
+    """
+    Corrects the yaw relative to the CV object
+    """
+    DEPTH_LEVEL = State().orig_depth - depth_level
+    MAXIMUM_YAW = math.radians(35)
+    SCALE_FACTOR = 0.4 # How much the correction should be scaled down from yaw calculation
+
+    logger.info('Starting yaw_to_cv_object')
+
+    async def correct_depth():
+        # await move_tasks.depth_correction(DEPTH_LEVEL, parent=self)
+        await move_tasks.depth_correction(desired_depth=DEPTH_LEVEL, parent=self)
+
+    def get_step_size(desired_yaw):
+        # desired yaw in radians
+        return min(abs(desired_yaw), MAXIMUM_YAW)
+
+    def get_yaw_threshold(desired_yaw, cv_x):
+        if cv_x < 128 or cv_x > 512:
+            yaw_threshold = desired_yaw * 2
+        if cv_x < 256 or cv_x > 384:
+            yaw_threshold = desired_yaw * 1.75
+        else:
+            yaw_threshold = desired_yaw * 1.35
+
+        return yaw_threshold
+
+    async def yaw_until_object_detection():
+        step = 1
+        while not CV().is_receiving_recent_cv_data(cv_object, latency_threshold):
+            if step >= 5:
+                logger.info(f'Yawed to find object more than 5 times, breaking loop.')
+                return False
+            logger.info(f'No {cv_object} detection, setting yaw setpoint {MAXIMUM_YAW}')
+            await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, MAXIMUM_YAW * direction),
+                                                depth_level=DEPTH_LEVEL,
+                                                pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
+                                                parent=self)
+            # await correct_depth()
+            step += 1
+            await Yield()
+        return True
+
+    def robust_yaw_average(yaws):
+        yaws_sorted = sorted(yaws)
+        trimmed = yaws_sorted[1:-1]  # remove min and max
+        return sum(trimmed) / len(trimmed)
+
+    # Yaw until object detection
+    # await correct_depth()
+    found = await yaw_until_object_detection()
+
+    # Could not find, so just surface and pray...
+    if not found:
+        return False
+
+    logger.info(f'{cv_object} detected. Now centering {cv_object} in frame...')
+
+    # Center detected object in camera frame
+
+    # Take average of 5 numbers and use that for yaw to try and offset outliers
+    logger.info('Taking in 5 frames to calculate yaw offset')
+    cv_yaws = []
+    for i in range(0,5):
+        cv_yaws.append(CV().bounding_boxes[cv_object].yaw)
+        await util_tasks.sleep(0.25, parent = self)
+
+    cv_object_yaw = robust_yaw_average(cv_yaws)
+
+    await correct_depth()
+    logger.info(f'abs(cv_object_yaw): {abs(cv_object_yaw)}')
+    logger.info(f'yaw_threshold: {yaw_threshold}')
+
+    step = 1
+    while abs(cv_object_yaw) > get_yaw_threshold(yaw_threshold, CV().bounding_boxes[cv_object].coords.x):
+        # If we have made 3 corrections already, trust that yaw is reasonable and continue forward
+        if step > 3:
+            logger.info(f'Yaw has been correcting more than 3 times, breaking loop.')
+            break
+
+        sign_cv_object_yaw = np.sign(cv_object_yaw)
+        correction = get_step_size(SCALE_FACTOR*cv_object_yaw) # Scale down CV yaw value
+
+        # Robot agnostic code base fails once again
+        if get_robot_name() == RobotName.OOGWAY:
+            desired_yaw = sign_cv_object_yaw * correction
+        else:
+            desired_yaw = -1 * sign_cv_object_yaw * correction
+
+        # actually do the yaw itself, and then correct depth
+        logger.info(f'Detected yaw {cv_object_yaw} is greater than threshold {yaw_threshold}. Actually yawing: {desired_yaw}')
+        await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, desired_yaw),
+                                            pose_tolerances = move_tasks.create_twist_tolerance(angular_yaw = 0.15),
+                                            parent=self)
+        await correct_depth()
+        await Yield()
+
+        # over correction
+        if (not CV().is_receiving_recent_cv_data(cv_object, latency_threshold)):
+            logger.info(f'{cv_object} detection lost, running yaw_until_object_detection()')
+            await yaw_until_object_detection()
+
+        # recalculate the yaw
+        logger.info('Taking in 5 frames to calculate yaw offset')
+        cv_yaws = []
+        for i in range(0,5):
+            cv_yaws.append(CV().bounding_boxes[cv_object].yaw)
+            await util_tasks.sleep(0.25, parent = self)
+
+        cv_object_yaw = robust_yaw_average(cv_yaws)
+        step += 1
+
+    logger.info(f'{cv_object} centered, or limit has been reached.')
+
+    await correct_depth()
+    return True
 
 @task
 async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]:
@@ -1266,8 +1285,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     MED_SCORE = 3500
     MED_STEP_SIZE = 1.0
     HIGH_SCORE = 5000
-    HIGH_STEP_SIZE = 0.75
-    
+    HIGH_STEP_SIZE = 0.5
     VERY_HIGH_STEP_SIZE = 0.25
 
     # LOW_SCORE = 1000
@@ -1346,8 +1364,9 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
                 logger.info("Yawing to pink bin front")
                 status = await yaw_to_cv_object(CVObjectType.BIN_PINK_FRONT, direction=direction, yaw_threshold=math.radians(15),
                                        depth_level=1.3, parent=Task.MAIN_ID)
-                if status:
-                    logger.info("Yaw limit reached, ending.")
+                # At this point, we cannot find the object anymore. we hope to surface in the octagon atp
+                if not status:
+                    logger.info("Yaw failed, ending.")
                     break
 
             logger.info(f'Bin pink front score: {CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score}')
@@ -1374,7 +1393,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         if moved_above:
             await move_tasks.move_with_directions([(POST_FRONT_THRESHOLD_FORWARD_DISTANCE, 0, 0)], parent=self)
         else:
-            logger.info('Detected bin_pink_bottom')
+            logger.info('Detected bin_pink_bottom, or yaw has failed (and copium ensues)')
 
         logger.info('Reached pink bins, stabilizing...')
         stabilize()
