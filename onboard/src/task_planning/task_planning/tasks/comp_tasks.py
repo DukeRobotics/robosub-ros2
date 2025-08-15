@@ -1193,17 +1193,30 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
         return yaw_threshold
 
     async def yaw_until_object_detection():
+        logger.info("Beginning yaw_util_object_detection task")
+        MAXIMUM_YAW = math.radians(35)
         step = 1
         while not CV().is_receiving_recent_cv_data(cv_object, latency_threshold):
-            if step >= 2:
-                logger.info(f'Yawed to find object more than 5 times, breaking loop.')
-                return False
-            logger.info(f'No {cv_object} detection, setting yaw setpoint {MAXIMUM_YAW}')
-            await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, MAXIMUM_YAW * direction),
-                                                depth_level=DEPTH_LEVEL,
+            if step <= 3:
+                angle = MAXIMUM_YAW
+            elif step == 4:
+                angle = -2 * MAXIMUM_YAW
+            elif step <= 8:
+                angle = -1 * MAXIMUM_YAW
+            else:
+                angle = 3 * MAXIMUM_YAW
+                logger.info(f'Yawed to find object more than  times, breaking loop.')
+
+            logger.info(f'No {cv_object} detection, setting yaw setpoint {angle}')
+            await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, angle * direction),
+                                                depth_level=depth_level,
                                                 pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
                                                 time_limit=10,
                                                 parent=self)
+                                                
+            if step > 8:
+                return False
+
             # await correct_depth()
             step += 1
             await Yield()
@@ -1369,9 +1382,38 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         moved_above = False
 
         if not is_receiving_pink_bin_data(latest_detection_time):
-            step = 1
             latency_threshold = 10
-            await yaw_until_object_detection(CVObjectType.BIN_PINK_BOTTOM, latency_threshold, depth_level = DEPTH_LEVEL_AT_BINS, parent = self)
+            MAXIMUM_YAW = math.radians(35)
+            step = 1
+            while not CV().is_receiving_recent_cv_data(CVObjectType.bin_pink_front, latency_threshold):
+                if step <= 3:
+                    angle = MAXIMUM_YAW
+                elif step == 4:
+                    angle = -2 * MAXIMUM_YAW
+                elif step <= 8:
+                    angle = -1 * MAXIMUM_YAW
+                else:
+                    angle = 3 * MAXIMUM_YAW
+                    logger.info(f'Yawed to find object more than  times, breaking loop.')
+
+                logger.info(f'No {CVObjectType.bin_pink_front} detection, setting yaw setpoint {angle}')
+                await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, angle * direction),
+                                                    depth_level=depth_level,
+                                                    pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
+                                                    time_limit=10,
+                                                    parent=self)
+
+                if step > 8:
+                    await move_tasks.move_to_pose_local(geometry_utils.create_pose(1.5, 0, 0, 0, 0, 0),
+                                                    depth_level=depth_level,
+                                                    pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
+                                                    time_limit=10,
+                                                    parent=self)
+                    break
+
+                # await correct_depth()
+                step += 1
+                await Yield()
 
         last_step_size = float('inf')
         while not is_receiving_pink_bin_data(latest_detection_time) and not moved_above:
