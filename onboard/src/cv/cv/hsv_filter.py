@@ -31,10 +31,10 @@ class HSVFilter(Node):
         self.image_sub = self.create_subscription(CompressedImage, f'/camera/usb/{camera}/compressed',
                                                   self.image_callback, 10)
         self.bounding_box_pub = self.create_publisher(CVObject,
-                                                            f'/cv/{camera}_usb/{name}/bounding_box1', 10)
-        self.hsv_filtered_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/hsv_filtered1', 10)
-        self.contour_image_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/contour_image1', 10)
-        self.distance_pub = self.create_publisher(Point, f'/cv/{camera}_usb/{name}/distance1', 10)
+                                                            f'/cv/{camera}_usb/{name}/bounding_box', 10)
+        self.hsv_filtered_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/hsv_filtered', 10)
+        self.contour_image_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/contour_image', 10)
+        self.distance_pub = self.create_publisher(Point, f'/cv/{camera}_usb/{name}/distance', 10)
 
     def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:
         """

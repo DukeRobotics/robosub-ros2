@@ -1177,13 +1177,14 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
     async def yaw_until_object_detection():
         step = 1
         while not CV().is_receiving_recent_cv_data(cv_object, latency_threshold):
-            if step >= 5:
+            if step >= 2:
                 logger.info(f'Yawed to find object more than 5 times, breaking loop.')
                 return False
             logger.info(f'No {cv_object} detection, setting yaw setpoint {MAXIMUM_YAW}')
             await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, MAXIMUM_YAW * direction),
                                                 depth_level=DEPTH_LEVEL,
                                                 pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
+                                                time_limit=10,
                                                 parent=self)
             # await correct_depth()
             step += 1
@@ -1271,8 +1272,8 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     """
     logger.info('Starting octagon task')
 
-    DEPTH_LEVEL_AT_BINS = State().orig_depth - 1.3 # Depth for beginning of task and corrections during forward movement
-    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.8 # Depth for going above bin before forward move
+    DEPTH_LEVEL_AT_BINS = State().orig_depth - 1.4 # Depth for beginning of task and corrections during forward movement
+    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.9 # Depth for going above bin before forward move
     LATENCY_THRESHOLD = 2 # Latency for seeing the bottom bin
     CONTOUR_SCORE_THRESHOLD = 2000 # Required bottom bin area for valid detection
 
@@ -1363,7 +1364,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             if not moved_above:
                 logger.info("Yawing to pink bin front")
                 status = await yaw_to_cv_object(CVObjectType.BIN_PINK_FRONT, direction=direction, yaw_threshold=math.radians(15),
-                                       depth_level=1.3, parent=Task.MAIN_ID)
+                                       depth_level=1.4, parent=Task.MAIN_ID)
                 # At this point, we cannot find the object anymore. we hope to surface in the octagon atp
                 if not status:
                     logger.info("Yaw failed, ending.")
@@ -1399,13 +1400,14 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         stabilize()
         await util_tasks.sleep(5, parent=self)
 
-    async def face_fish(yaw_left: bool = True):
+    async def face_fish(yaw_left: bool = True, closer_banner: bool = True):
         direction = 1 if yaw_left else -1
-        await orient_to_wall()
-        await yaw_from_local_pose(direction*np.pi/4)
+        yaw_distance = np.pi/4 if closer_banner else 3*np.pi/4
+        await orient_to_wall(parent=self)
+        await move_tasks.yaw_from_local_pose(direction*yaw_distance, parent=self)
 
     await move_to_pink_bins()
-    # await face_fish(yaw_left=True)
+    await face_fish(yaw_left=True, closer_banner=True)
 
     logger.info('Surfacing...')
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
