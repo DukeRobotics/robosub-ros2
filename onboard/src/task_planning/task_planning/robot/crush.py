@@ -25,9 +25,24 @@ async def main(self: Task) -> Task[None, None, None]:
         #     msg_to_send = IVCMessageType.CRUSH_ACKNOWLEDGE, timeout=90, parent=self),
         # comp_tasks.return_task_dead_reckoning(depth_level=1.1, parent=self),
 
+        # 2025 COMP HOME POOL TEST
+        comp_tasks.delineate_ivc_log(parent = self),
+        comp_tasks.initial_submerge(-0.7, z_tolerance=0.15, enable_controls_flag=True, parent=self),
+        # comp_tasks.coin_flip(enable_same_direction=False, parent=self),
+        # move_tasks.move_with_directions([(1, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self),
+        comp_tasks.gate_style_task(depth_level=1.1, parent=self),
+        comp_tasks.crush_ivc_send(msg_to_send = IVCMessageType.CRUSH_GATE,
+            msg_to_receive = IVCMessageType.OOGWAY_ACKNOWLEDGE, timeout=10, parent=self),
+        move_tasks.move_with_directions([(1, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self),
+
+        # comp_tasks.slalom_task_dead_reckoning(depth_level=1.1, parent=self),
+        # comp_tasks.crush_ivc_receive(msg_to_receive = IVCMessageType.OOGWAY_GATE,
+        #     msg_to_send = IVCMessageType.CRUSH_ACKNOWLEDGE, timeout=90, parent=self),
+        # comp_tasks.return_task_dead_reckoning(depth_level=1.1, parent=self),
+
         # || START 2025 COMP FLOW OCTAGON
         # comp_tasks.delineate_ivc_log(parent = self),
-        comp_tasks.initial_submerge(-1.3, z_tolerance=0.15, enable_controls_flag=True, time_limit=10, parent=self),
+        # comp_tasks.initial_submerge(-1.3, z_tolerance=0.15, enable_controls_flag=True, time_limit=10, parent=self),
         # comp_tasks.coin_flip(enable_same_direction=False, parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-0.7, parent=self),
         # comp_tasks.gate_style_task(depth_level=1.1, parent=self),
@@ -35,7 +50,7 @@ async def main(self: Task) -> Task[None, None, None]:
         # comp_tasks.crush_ivc_send(msg_to_send = IVCMessageType.CRUSH_GATE,
         #      msg_to_receive = IVCMessageType.OOGWAY_ACKNOWLEDGE, timeout=90, parent=self),
         # comp_tasks.gate_to_octagon(timeout = 15, parent = self),
-        comp_tasks.octagon_task(direction=1, parent = self),
+        # comp_tasks.octagon_task(direction=1, parent = self),
 
         # SONAR
         # comp_tasks.initial_submerge(-0.3, z_tolerance=0.15, enable_controls_flag=True, time_limit=10, parent=self),

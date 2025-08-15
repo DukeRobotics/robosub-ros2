@@ -378,10 +378,10 @@ class Sonar(Node):
             normal_angle_deg = np.degrees(normal_angle_rad)
             self.get_logger().info(f"Sonar: Got normal angle at {normal_angle_deg:.2f} degrees")
             # Normalize the normal angle to be within a specific range (e.g., -180 to 180)
-            if normal_angle_deg > 90:
-                normal_angle_deg -= 180
-            elif normal_angle_deg < -90:
-                normal_angle_deg += 180
+            # if normal_angle_deg > 90:
+            #     normal_angle_deg -= 180
+            # elif normal_angle_deg < -90:
+            #     normal_angle_deg += 180
 
             # print(f"Estimated normal angle (from PCA): {normal_angle_deg:.2f} degrees")
 

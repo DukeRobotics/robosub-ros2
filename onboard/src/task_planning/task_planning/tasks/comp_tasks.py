@@ -769,7 +769,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
         if (not CV().is_receiving_recent_cv_data(cv_object, latency_threshold)):
             logger.info(f'{cv_object} detection lost, running yaw_until_object_detection()')
             await yaw_until_object_detection()
-        
+
         cv_yaws = []
         for i in range(0,5):
             cv_yaws.append(CV().bounding_boxes[cv_object].yaw)
@@ -1267,7 +1267,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     MED_STEP_SIZE = 1.0
     HIGH_SCORE = 5000
     HIGH_STEP_SIZE = 0.75
-    
+
     VERY_HIGH_STEP_SIZE = 0.25
 
     # LOW_SCORE = 1000
@@ -1380,10 +1380,10 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         stabilize()
         await util_tasks.sleep(5, parent=self)
 
-    # async def face_fish(yaw_left: bool = True):
-    #     direction = 1 if yaw_left else -1
-    #     await orient_to_wall()
-    #     await yaw_from_local_pose(direction*np.pi/4)
+    async def face_fish(yaw_left: bool = True):
+        direction = 1 if yaw_left else -1
+        await orient_to_wall()
+        await yaw_from_local_pose(direction*np.pi/4)
 
     await move_to_pink_bins()
     # await face_fish(yaw_left=True)
@@ -1643,7 +1643,7 @@ async def orient_to_wall(self: Task[None, None, None],
         """
         Returns how much robot needs to yaw to be normal to surface it scans. Input degrees, output radians.
         """
-        yaw_in_degrees = sonar_normal
+        yaw_in_degrees = 180 - sonar_normal
         return yaw_in_degrees * np.pi / 180
 
     sonar_output = await get_sonar_normal_angle()
