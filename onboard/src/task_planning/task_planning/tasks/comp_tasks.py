@@ -24,6 +24,8 @@ from task_planning.task import Task, Yield, task
 from task_planning.tasks import cv_tasks, move_tasks, util_tasks, ivc_tasks
 from task_planning.utils import geometry_utils
 
+from rclpy.clock import Clock
+
 if TYPE_CHECKING:
     from custom_msgs.srv import SendModemMessage
 
@@ -1531,8 +1533,11 @@ async def ivc_receive_then_send(self: Task[None, None, None], msg: IVCMessageTyp
 @task
 async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:
     """Append a header to the IVC log file."""
+    seconds, nanoseconds = Clock().now().seconds_nanoseconds()
+    timestamp = ivc_tasks.ros_timestamp_to_pacific_time(seconds, nanoseconds)
+
     with open("ivc_log.txt", "a") as f:
-        f.write("----- NEW RUN STARTED -----\n")
+        f.write(f"----- NEW RUN STARTED AT {timestamp} -----\n")
 
 @task
 async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[None, None, None]:
