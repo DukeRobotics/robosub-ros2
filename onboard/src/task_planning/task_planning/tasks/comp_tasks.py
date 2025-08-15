@@ -547,14 +547,32 @@ async def gate_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None, N
     logger.info('Moved through gate')
 
 @task
-async def slalom_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None, None, None]:
+async def slalom_task_dead_reckoning(self: Task, depth_level=-1.1) -> Task[None, None, None]:
     logger.info('Started slalom task')
     if get_robot_name() == RobotName.OOGWAY:
         pass
     elif get_robot_name() == RobotName.CRUSH:
         directions = [
-            (3, 0, 0),
-            (2, 0, 0),
+            (0, 1.5, 0), # Shift left to first slalom
+            (2.3, 0, 0), # First gate
+            (0, 0.5, 0), # Left to second slalom
+            (1.8, 0, 0), # Second gate
+            (0, -0.25, 0), # Right to final slalom
+            (2.5, 0, 0), # Clear final slalom
+        ]
+        await move_tasks.move_with_directions(directions, depth_level=depth_level, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=20, parent=self)
+    logger.info('Moved through slalom')
+
+@task
+async def slalom_to_octagon_dead_reckoning(self: Task, depth_level=-1.1) -> Task[None, None, None]:
+    logger.info('Started slalom task')
+    if get_robot_name() == RobotName.OOGWAY:
+        pass
+    elif get_robot_name() == RobotName.CRUSH:
+        directions = [
+            (2,0,0), # Clear slalom
+            (2,0,0),
+            (0,-2.0,0), # Get yellow bin more into view
         ]
         await move_tasks.move_with_directions(directions, depth_level=depth_level, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
     logger.info('Moved through slalom')
@@ -1278,7 +1296,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     CONTOUR_SCORE_THRESHOLD = 2000 # Required bottom bin area for valid detection
 
     SCORE_THRESHOLD = 7500 # Area of bin before beginning surface logic for front camera
-    POST_FRONT_THRESHOLD_FORWARD_DISTANCE = 0.3 # in meters
+    POST_FRONT_THRESHOLD_FORWARD_DISTANCE = 0.4 # in meters
 
     # Forward navigation case constants
     LOW_SCORE = 1500
@@ -1350,6 +1368,11 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         latest_detection_time = None
         moved_above = False
 
+        if not is_receiving_pink_bin_data(latest_detection_time):
+            step = 1
+            latency_threshold = 10
+            await yaw_until_object_detection(CVObjectType.BIN_PINK_BOTTOM, latency_threshold, depth_level = DEPTH_LEVEL_AT_BINS, parent = self)
+
         last_step_size = float('inf')
         while not is_receiving_pink_bin_data(latest_detection_time) and not moved_above:
             if CVObjectType.BIN_PINK_BOTTOM in CV().bounding_boxes:
@@ -1407,7 +1430,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         await move_tasks.yaw_from_local_pose(direction*yaw_distance, parent=self)
 
     await move_to_pink_bins()
-    await face_fish(yaw_left=True, closer_banner=True)
+    await face_fish(yaw_left=False, closer_banner=False)
 
     logger.info('Surfacing...')
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
