@@ -22,7 +22,7 @@ class TorpedoTargetDetector(Node):
         super().__init__('torpedo_target_detector')
 
         self.MIN_AREA_OF_CONTOUR = 75
-        self.MATCH_TOLERANCE = 2.0
+        self.MATCH_TOLERANCE = 1.0
 
         self.mask_ranges=[
                 [Torpedo.LOW_BOT, Torpedo.LOW_TOP],
@@ -134,10 +134,10 @@ class TorpedoTargetDetector(Node):
         contours = group_contours_by_distance(self, contours, 20)
 
         # Sort contours by radius of min. enclosing circle
-        contours = sorted(contours, key=lambda cnt: cv2.minEnclosingCircle(cnt)[1], reverse=True)
+        contours = sorted(contours, key=lambda cnt: cv2.boundingRect(cnt)[3], reverse=True)
         contours = contours[:2]
 
-        contours = sorted(contours, key=lambda cnt: cv2.matchShapes(self.reference_image, cnt, cv2.CONTOURS_MATCH_I1, 0.0), reverse=True)
+        contours = sorted(contours, key=lambda cnt: cv2.matchShapes(self.reference_image, cnt, cv2.CONTOURS_MATCH_I1, 0.0), reverse=False)
 
         # Get the top 2 contours with the closest match to the shape of the reference image
         contours = contours[:2]
@@ -149,18 +149,20 @@ class TorpedoTargetDetector(Node):
         self.contour_image_pub.publish(contour_image_msg)
 
         # only processes contours w/ area > MIN_AREA_OF_CONTOUR
-        contours = [contour for contour in contours if cv2.contourArea(contour) > self.MIN_AREA_OF_CONTOUR]
+        # contours = [contour for contour in contours if cv2.contourArea(contour) > self.MIN_AREA_OF_CONTOUR]
 
         shark_cnt = None
         fish_cnt = None
         largest_cnt = None
-        similar_size_contours = []
+        similar_size_contours = contours # this works
 
         # Match contours with the reference image contours
-        for cnt in contours:
-            match = cv2.matchShapes(self.ref_contours[0], cnt, cv2.CONTOURS_MATCH_I1, 0.0)
-            if match < self.MATCH_TOLERANCE:
-                similar_size_contours.append(cnt)
+        # tbh idk why it thinks some of the circles are 2.x but shrug just gonna ignore this for now
+        # for cnt in contours:
+        #     match = cv2.matchShapes(self.ref_contours[0], cnt, cv2.CONTOURS_MATCH_I1, 0.0)
+        #     logger.info(f'{match}')
+        #     if match < self.MATCH_TOLERANCE:
+        #         similar_size_contours.append(cnt)
 
         similar_size_contours = sorted(similar_size_contours, key=cv2.contourArea, reverse=True)
 
@@ -286,7 +288,7 @@ class TorpedoTargetDetector(Node):
         # Point coords represents the 3D position of the object represented by the bounding box relative to the robot
         coords_list = calculate_relative_pose(bbox_bounds,
                                               MonoCam.IMG_SHAPE,
-                                              (Torpedo.WIDTH, 0),
+                                              (Torpedo.WIDTH, Torpedo.WIDTH),
                                               MonoCam.FOCAL_LENGTH,
                                               MonoCam.SENSOR_SIZE, 1)
         bounding_box.coords.x, bounding_box.coords.y, bounding_box.coords.z = coords_list
