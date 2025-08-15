@@ -1205,7 +1205,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
                 angle = -1 * MAXIMUM_YAW
             else:
                 angle = 3 * MAXIMUM_YAW
-                logger.info(f'Yawed to find object more than  times, breaking loop.')
+                logger.info(f'Yawed to find object more than 9 times, breaking loop.')
 
             logger.info(f'No {cv_object} detection, setting yaw setpoint {angle}')
             await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, angle * direction),
@@ -1303,7 +1303,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     """
     logger.info('Starting octagon task')
 
-    DEPTH_LEVEL_AT_BINS = State().orig_depth - 1.4 # Depth for beginning of task and corrections during forward movement
+    DEPTH_LEVEL_AT_BINS = State().orig_depth - 1.2 # Depth for beginning of task and corrections during forward movement
     DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.9 # Depth for going above bin before forward move
     LATENCY_THRESHOLD = 2 # Latency for seeing the bottom bin
     CONTOUR_SCORE_THRESHOLD = 2000 # Required bottom bin area for valid detection
@@ -1385,7 +1385,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             latency_threshold = 10
             MAXIMUM_YAW = math.radians(35)
             step = 1
-            while not CV().is_receiving_recent_cv_data(CVObjectType.bin_pink_front, latency_threshold):
+            while not CV().is_receiving_recent_cv_data(CVObjectType.BIN_PINK_FRONT, latency_threshold):
                 if step <= 3:
                     angle = MAXIMUM_YAW
                 elif step == 4:
@@ -1396,16 +1396,16 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
                     angle = 3 * MAXIMUM_YAW
                     logger.info(f'Yawed to find object more than  times, breaking loop.')
 
-                logger.info(f'No {CVObjectType.bin_pink_front} detection, setting yaw setpoint {angle}')
+                logger.info(f'No {CVObjectType.BIN_PINK_FRONT} detection, setting yaw setpoint {angle}')
                 await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, angle * direction),
-                                                    depth_level=depth_level,
+                                                    depth_level=DEPTH_LEVEL_AT_BINS,
                                                     pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
                                                     time_limit=10,
                                                     parent=self)
 
                 if step > 8:
-                    await move_tasks.move_to_pose_local(geometry_utils.create_pose(1.5, 0, 0, 0, 0, 0),
-                                                    depth_level=depth_level,
+                    await move_tasks.move_to_pose_local(geometry_utils.create_pose(0.5, 0, 0, 0, 0, 0),
+                                                    depth_level=DEPTH_LEVEL_AT_BINS,
                                                     pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
                                                     time_limit=10,
                                                     parent=self)
@@ -1429,7 +1429,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             if not moved_above:
                 logger.info("Yawing to pink bin front")
                 status = await yaw_to_cv_object(CVObjectType.BIN_PINK_FRONT, direction=direction, yaw_threshold=math.radians(15),
-                                       depth_level=1.4, parent=Task.MAIN_ID)
+                                       depth_level=1.2, parent=Task.MAIN_ID)
                 # At this point, we cannot find the object anymore. we hope to surface in the octagon atp
                 if not status:
                     logger.info("Yaw failed, ending.")
