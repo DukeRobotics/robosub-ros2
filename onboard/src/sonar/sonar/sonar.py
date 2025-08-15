@@ -4,6 +4,7 @@ from pathlib import Path
 import time
 from sklearn.decomposition import PCA
 
+import cv2
 import numpy as np
 import rclpy
 import resource_retriever as rr
@@ -18,6 +19,7 @@ from sensor_msgs.msg import CompressedImage
 from serial.tools import list_ports
 from std_msgs.msg import String
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 from sonar import sonar_image_processing, sonar_utils
 
@@ -376,10 +378,10 @@ class Sonar(Node):
             normal_angle_deg = np.degrees(normal_angle_rad)
             self.get_logger().info(f"Sonar: Got normal angle at {normal_angle_deg:.2f} degrees")
             # Normalize the normal angle to be within a specific range (e.g., -180 to 180)
-            if normal_angle_deg > 180:
-                normal_angle_deg -= 360
-            elif normal_angle_deg < -180:
-                normal_angle_deg += 360
+            if normal_angle_deg > 90:
+                normal_angle_deg -= 180
+            elif normal_angle_deg < -90:
+                normal_angle_deg += 180
 
             # print(f"Estimated normal angle (from PCA): {normal_angle_deg:.2f} degrees")
 
@@ -413,6 +415,14 @@ class Sonar(Node):
             plt.plot([start_point[1], end_point[1]], [start_point[0], end_point[0]], 'r-', label='Principal Axis (PCA)') # Note: plot takes [x_coords], [y_coords]
             plt.legend()
 
+        fig = plt.gcf()
+        canvas = FigureCanvas(fig)
+        canvas.draw()
+
+        image = np.frombuffer(canvas.tostring_argb(), dtype='uint8')
+        image = image.reshape((*fig.canvas.get_width_height()[::-1], 4))
+        plot_img = cv2.cvtColor(image[:, :, 1:], cv2.COLOR_RGB2BGR)
+
         # Converting stuff to fit return format:
         # Convert plt to array, and convert center_x and center_y to distances.
         converted_image_array = self.convert_plt_to_array(plot)
@@ -434,7 +444,7 @@ class Sonar(Node):
         plot.savefig("sonar_plot.png")
         self.get_logger().info(f"Sonar: Got pose at ({x_pos:.2f}, {y_pos:.2f}, 0.0)")
 
-        return (pose, converted_image_array, normal_angle_deg)
+        return (pose, plot_img, normal_angle_deg)
 
     def convert_plt_to_array(self, plt_fig:plt.Figure) -> np.ndarray:
         """

@@ -79,8 +79,11 @@ class YellowBins:
     YELLOW_1_BOT = np.array([30, 30, 40])
     YELLOW_1_TOP = np.array([60, 70, 95])
 
-    YELLOW_2_BOT = np.array([20, 30, 40])
-    YELLOW_2_TOP = np.array([60, 80, 100])
+    YELLOW_2_BOT = np.array([20, 45, 40])
+    YELLOW_2_TOP = np.array([60, 80, 90])
+
+    YELLOW_3_BOT = np.array([50, 45, 30])
+    YELLOW_3_TOP = np.array([75, 65, 55])
 
 class USBCamera(Enum):
     """Enum for different USB cameras."""

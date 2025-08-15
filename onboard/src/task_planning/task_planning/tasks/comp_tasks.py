@@ -693,7 +693,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
     """
     DEPTH_LEVEL = State().orig_depth - depth_level
     MAXIMUM_YAW = math.radians(35)
-    SCALE_FACTOR = 0.5 # How much the correction should be scaled down from yaw calculation
+    SCALE_FACTOR = 0.4 # How much the correction should be scaled down from yaw calculation
 
     logger.info('Starting yaw_to_cv_object')
 
@@ -709,9 +709,9 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
         if cv_x > 10:
             yaw_threshold = desired_yaw * 2
         if cv_x > 6:
-            yaw_threshold = desired_yaw * 1.5
+            yaw_threshold = desired_yaw * 1.75
         else:
-            yaw_threshold = desired_yaw * 1
+            yaw_threshold = desired_yaw * 1.25
 
         return yaw_threshold
 
@@ -725,19 +725,32 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
             # await correct_depth()
             await Yield()
 
+    def robust_yaw_average(yaws):
+        yaws_sorted = sorted(yaws)
+        trimmed = yaws_sorted[1:-1]  # remove min and max
+        return sum(trimmed) / len(trimmed)
+
     # Yaw until object detection
     # await correct_depth()
-    await yaw_until_object_detection()
-
+    status = await yaw_until_object_detection()
     logger.info(f'{cv_object} detected. Now centering {cv_object} in frame...')
 
     # Center detected object in camera frame
-    cv_object_yaw = CV().bounding_boxes[cv_object].yaw
+
+    # Take average of 5 numbers and
+    cv_yaws = []
+    for i in range(0,5):
+        cv_yaws.append(CV().bounding_boxes[cv_object].yaw)
+        await util_tasks.sleep(0.5, parent = self)
+
+    cv_object_yaw = robust_yaw_average(cv_yaws)
+
     await correct_depth()
     logger.info(f'abs(cv_object_yaw): {abs(cv_object_yaw)}')
     logger.info(f'yaw_threshold: {yaw_threshold}')
 
-    while abs(cv_object_yaw) > get_yaw_threshold(yaw_threshold, CV().bounding_boxes[cv_object].coords.x):
+    step = 1
+    while abs(cv_object_yaw) > get_yaw_threshold(yaw_threshold, CV().bounding_boxes[cv_object].coords.x) and step <= 3:
         sign_cv_object_yaw = np.sign(cv_object_yaw)
         correction = get_step_size(SCALE_FACTOR*cv_object_yaw) # Scale down CV yaw value
 
@@ -756,12 +769,20 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
         if (not CV().is_receiving_recent_cv_data(cv_object, latency_threshold)):
             logger.info(f'{cv_object} detection lost, running yaw_until_object_detection()')
             await yaw_until_object_detection()
+        
+        cv_yaws = []
+        for i in range(0,5):
+            cv_yaws.append(CV().bounding_boxes[cv_object].yaw)
+            await util_tasks.sleep(0.5, parent = self)
 
-        cv_object_yaw = CV().bounding_boxes[cv_object].yaw
+        cv_object_yaw = robust_yaw_average(cv_yaws)
+        step -= 1
 
-    logger.info(f'{cv_object} centered.')
+    logger.info(f'{cv_object} centered, or limit has been reached.')
 
     await correct_depth()
+
+    return False
 
 
 @task
@@ -1231,21 +1252,22 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     """
     logger.info('Starting octagon task')
 
-    DEPTH_LEVEL_AT_BINS = State().orig_depth - 1.4 # Depth for beginning of task and corrections during forward movement
-    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 1.0 # Depth for going above bin before forward move
+    DEPTH_LEVEL_AT_BINS = State().orig_depth - 1.3 # Depth for beginning of task and corrections during forward movement
+    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.8 # Depth for going above bin before forward move
     LATENCY_THRESHOLD = 2 # Latency for seeing the bottom bin
-    CONTOUR_SCORE_THRESHOLD = 500 # Required bottom bin area for valid detection
+    CONTOUR_SCORE_THRESHOLD = 2000 # Required bottom bin area for valid detection
 
-    SCORE_THRESHOLD = 15000 # Area of bin before beginning surface logic for front camera
-    POST_FRONT_THRESHOLD_FORWARD_DISTANCE = 0.15 # in meters
+    SCORE_THRESHOLD = 7500 # Area of bin before beginning surface logic for front camera
+    POST_FRONT_THRESHOLD_FORWARD_DISTANCE = 0.3 # in meters
 
     # Forward navigation case constants
     LOW_SCORE = 1500
-    LOW_STEP_SIZE = 2
+    LOW_STEP_SIZE = 1.5
     MED_SCORE = 3500
-    MED_STEP_SIZE = 1.25
-    HIGH_SCORE = 7000
+    MED_STEP_SIZE = 1.0
+    HIGH_SCORE = 5000
     HIGH_STEP_SIZE = 0.75
+    
     VERY_HIGH_STEP_SIZE = 0.25
 
     # LOW_SCORE = 1000
@@ -1257,6 +1279,9 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     # VERY_HIGH_STEP_SIZE = 0.25
 
     async def correct_depth(desired_depth):
+        if abs(State().depth - desired_depth) < 0.15:
+            logger.info(f'Depth delta is below threshold, skipping.')
+            return
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
 
     async def correct_yaw():
@@ -1319,8 +1344,11 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
             await correct_depth(DEPTH_LEVEL_AT_BINS if not moved_above else DEPTH_LEVEL_ABOVE_BINS)
             if not moved_above:
                 logger.info("Yawing to pink bin front")
-                await yaw_to_cv_object(CVObjectType.BIN_PINK_FRONT, direction=direction, yaw_threshold=math.radians(15),
-                                       depth_level=1.4, parent=Task.MAIN_ID)
+                status = await yaw_to_cv_object(CVObjectType.BIN_PINK_FRONT, direction=direction, yaw_threshold=math.radians(15),
+                                       depth_level=1.3, parent=Task.MAIN_ID)
+                if status:
+                    logger.info("Yaw limit reached, ending.")
+                    break
 
             logger.info(f'Bin pink front score: {CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score}')
 
@@ -1352,7 +1380,13 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         stabilize()
         await util_tasks.sleep(5, parent=self)
 
+    # async def face_fish(yaw_left: bool = True):
+    #     direction = 1 if yaw_left else -1
+    #     await orient_to_wall()
+    #     await yaw_from_local_pose(direction*np.pi/4)
+
     await move_to_pink_bins()
+    # await face_fish(yaw_left=True)
 
     logger.info('Surfacing...')
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
@@ -1609,14 +1643,14 @@ async def orient_to_wall(self: Task[None, None, None],
         """
         Returns how much robot needs to yaw to be normal to surface it scans. Input degrees, output radians.
         """
-        yaw_in_degrees = sonar_normal - 90
+        yaw_in_degrees = sonar_normal
         return yaw_in_degrees * np.pi / 180
 
     sonar_output = await get_sonar_normal_angle()
 
-    if sonar_output != math.nan:
+    if not math.isnan(sonar_output):
         yaw_delta = convert_sonar_output_to_yaw(sonar_output)
-        logger.info(f"Yaw delta from sonar sweep: {yaw_delta} degrees")
+        logger.info(f"Yaw delta from sonar sweep: {yaw_delta} radians")
         # Move to the desired yaw angle
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_delta),

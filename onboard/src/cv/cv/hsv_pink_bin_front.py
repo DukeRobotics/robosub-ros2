@@ -15,6 +15,7 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
             camera='front',
             mask_ranges=[
                 [cv_constants.YellowBins.YELLOW_2_BOT, cv_constants.YellowBins.YELLOW_2_TOP],
+                # [cv_constants.YellowBins.YELLOW_3_BOT, cv_constants.YellowBins.YELLOW_3_TOP],
             ],
             width=cv_constants.Bins.WIDTH,
         )
@@ -70,8 +71,8 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
     def filter(self, contours: list) -> list:
         """Pick the largest and lowest contour only."""
         MIN_AREA = 100 # Minimum area of contour to be valid
-        THRESHOLD_RATIO = 0.5 # Contour within scaled of max contour area
-        DIST_THRESH = 35 # Group all contours within this threshold
+        THRESHOLD_RATIO = 0.75 # Contour within scaled of max contour area
+        DIST_THRESH = 25 # Group all contours within this threshold
 
         final_contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
@@ -115,7 +116,7 @@ class HSVPinkBinFront(hsv_filter.HSVFilter):
 
     def morphology(self, mask: np.ndarray) -> np.ndarray:
         """Apply a kernel morphology."""
-        kernel = np.ones((5, 5), np.uint8)
+        kernel = np.ones((3, 3), np.uint8)
         return cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
 def main(args: list[str] | None = None) -> None:
