@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 
+import pytz
 from custom_msgs.msg import ModemStatus, StringWithHeader
 from custom_msgs.srv import SendModemMessage
 from rclpy.logging import get_logger
@@ -48,6 +50,29 @@ class IVCMessage:
     """
     timestamp: Time
     msg: IVCMessageType
+
+def ros_timestamp_to_pacific_time(sec: int, nanosec: int) -> str:
+    """
+    Convert ROS timestamp (seconds and nanoseconds) to human-readable Pacific time.
+
+    # TODO: move to utils
+
+    Args:
+        sec (int): Seconds since epoch
+        nanosec (int): Nanoseconds
+
+    Returns:
+        str: Human-readable timestamp in Pacific timezone
+    """
+    # Convert to datetime object
+    timestamp = datetime.fromtimestamp(sec + nanosec / 1e9)
+
+    # Convert to Pacific timezone
+    pacific_tz = pytz.timezone('US/Pacific')
+    pacific_time = timestamp.astimezone(pacific_tz)
+
+    # Format as human-readable string
+    return pacific_time.strftime('%Y-%m-%d %H:%M:%S %Z')
 
 @singleton
 class IVC:
@@ -149,7 +174,20 @@ class IVC:
         Args:
             msg (StringWithHeader): The message received from the other robot.
         """
-        self._messages.append(self._convert_stringwithheader_to_ivcmessage(msg))
+        ivc_message = self._convert_stringwithheader_to_ivcmessage(msg)
+        self._messages.append(ivc_message)
+
+        seconds, nanoseconds = ivc_message.timestamp.seconds_nanoseconds()
+        timestamp = ros_timestamp_to_pacific_time(
+            seconds,
+            nanoseconds,
+        )
+        msg = f'Received IVC message: {ivc_message.msg.name} at {timestamp}\n'
+
+        # Log to text file
+        logger.info(msg)
+        with open('ivc_log.txt', 'a') as f:
+            f.write(msg)
 
     def send_message(self, msg: IVCMessageType) -> Future | None:
         """
