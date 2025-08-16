@@ -55,7 +55,7 @@ def ros_timestamp_to_pacific_time(sec: int, nanosec: int) -> str:
     """
     Convert ROS timestamp (seconds and nanoseconds) to human-readable Pacific time.
 
-    # TODO: move to utils
+    # TODO: move to utils + merge with same function in ivc_tasks.py
 
     Args:
         sec (int): Seconds since epoch
