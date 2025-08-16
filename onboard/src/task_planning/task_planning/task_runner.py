@@ -102,11 +102,11 @@ class TaskPlanning(Node):
 
         if self.autonomous:
             self.countdown_value = self.COUNTDOWN_SECS
-            input(f'Press enter to start {self.countdown_value} second countdown...')
+            input(f'(Remember to set seconds) Press enter to start {self.countdown_value} second countdown...')
             self.get_logger().info('Countdown started...')
             self.countdown_timer = self.create_timer(1.0, self.countdown)
         else:
-            input('Press enter to run tasks...')
+            input('(Remember to set seconds) Press enter to run tasks...')
 
         self.task_timer = self.create_timer(self.TASK_RATE_SECS, self.run_task, autostart=not self.autonomous)
 
