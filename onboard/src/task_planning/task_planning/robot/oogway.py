@@ -16,7 +16,7 @@ from task_planning.tasks import util_tasks
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
 
-    DIRECTION_OF_TORPEDO_BANNER = -1
+    DIRECTION_OF_TORPEDO_BANNER = 1
     DEPTH = 1
     # DEPTH = 1.2 # don't commit
 
