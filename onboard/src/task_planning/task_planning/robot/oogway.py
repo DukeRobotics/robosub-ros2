@@ -20,9 +20,10 @@ async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
 
     ### START OF CONSTANTS ###
-    DIRECTION_OF_TORPEDO_BANNER = 1
+    DIRECTION_OF_TORPEDO_BANNER = -1
     DEPTH = 1
-    START_TIME = 1755360430 # Run secs alias
+    START_TIME = 1755374899 # Run secs alias
+    FIRST_TARGET = CVObjectType.TORPEDO_SAWFISH_TARGET # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
     ### END OF CONSTANTS ###
 
     # Don't modify
@@ -56,17 +57,13 @@ async def main(self: Task) -> Task[None, None, None]:
         # Crush returns to gate
 
 
-        # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
         ##### COMP
         comp_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(-DEPTH, parent=self),
-        comp_tasks.ivc_receive_then_send(
-            IVCMessageType.OOGWAY_ACKNOWLEDGE,
-            timeout=IVC_TIMEOUT,
-            parent=self,
-        ),
         comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
-        comp_tasks.torpedo_task(first_target=CVObjectType.TORPEDO_REEF_SHARK_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        comp_tasks.send_torpedo_ivc(parent=self),
+        comp_tasks.octagon_task(direction=1, parent=self),
         ##### END COMP
 
         # comp_tasks.initial_submerge(-1.2, parent=self),
