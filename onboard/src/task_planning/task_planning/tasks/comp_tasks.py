@@ -537,7 +537,6 @@ async def gate_task_dead_reckoning(self: Task, depth_level=-0.7) -> Task[None, N
         # Dead reckon a bit to torpedo
         await move_tasks.move_with_directions([(0, 3, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
         await move_tasks.move_with_directions([(0, 3, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
-        await move_tasks.move_with_directions([(0, 3, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
     elif get_robot_name() == RobotName.CRUSH:
         await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
         await move_tasks.move_with_directions([(2, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
