@@ -1194,24 +1194,35 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     """
     logger.info('Starting octagon task')
 
-    DEPTH_LEVEL_AT_BINS = State().orig_depth - 0.9 # Depth for beginning of task and corrections during forward movement
-    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.6 # Depth for going above bin before forward move
+    DEPTH_LEVEL_AT_BINS = State().orig_depth - 1.2 # Depth for beginning of task and corrections during forward movement
+    DEPTH_LEVEL_ABOVE_BINS = State().orig_depth - 0.9 # Depth for going above bin before forward move
     LATENCY_THRESHOLD = 2 # Latency for seeing the bottom bin
-    CONTOUR_SCORE_THRESHOLD = 1000 # Required bottom bin area for valid detection
+    CONTOUR_SCORE_THRESHOLD = 2000 # Required bottom bin area for valid detection
 
-    SCORE_THRESHOLD = 30000 # Area of bin before beginning surface logic for front camera
-    POST_FRONT_THRESHOLD_FORWARD_DISTANCE = 0.25 # in meters
+    SCORE_THRESHOLD = 7500 # Area of bin before beginning surface logic for front camera
+    POST_FRONT_THRESHOLD_FORWARD_DISTANCE = 0.4 # in meters
 
     # Forward navigation case constants
-    LOW_SCORE = 700
-    LOW_STEP_SIZE = 2
-    MED_SCORE = 3000
-    MED_STEP_SIZE = 1.25
-    HIGH_SCORE = 7000
-    HIGH_STEP_SIZE = 0.75
-    VERY_HIGH_STEP_SIZE = 0.5
+    LOW_SCORE = 1500
+    LOW_STEP_SIZE = 0.75
+    MED_SCORE = 3500
+    MED_STEP_SIZE = 0.5
+    HIGH_SCORE = 5000
+    HIGH_STEP_SIZE = 0.35
+    VERY_HIGH_STEP_SIZE = 0.2
+
+    # LOW_SCORE = 1000
+    # LOW_STEP_SIZE = 1.75
+    # MED_SCORE = 2000
+    # MED_STEP_SIZE = 1.25
+    # HIGH_SCORE = 4000
+    # HIGH_STEP_SIZE = 0.75
+    # VERY_HIGH_STEP_SIZE = 0.25
 
     async def correct_depth(desired_depth):
+        if abs(State().depth - desired_depth) < 0.15:
+            logger.info(f'Depth delta is below threshold, skipping.')
+            return
         await move_tasks.correct_depth(desired_depth=desired_depth, parent=self)
 
     async def correct_yaw():
@@ -1255,22 +1266,65 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
         return min(step, last_step_size)
 
     async def move_to_pink_bins() -> None:
-        logger.info("Beginning move to pink bins")
+        logger.info("Beginning move to bins")
 
         count = 1
         latest_detection_time = None
         moved_above = False
 
+        if not is_receiving_pink_bin_data(latest_detection_time):
+            latency_threshold = 10
+            MAXIMUM_YAW = math.radians(30)
+            step = 1
+            while not CV().is_receiving_recent_cv_data(CVObjectType.BIN_PINK_FRONT, latency_threshold):
+                if step <= 3:
+                    angle = MAXIMUM_YAW
+                elif step == 4:
+                    angle = -2 * MAXIMUM_YAW
+                elif step <= 8:
+                    angle = -1 * MAXIMUM_YAW
+                else:
+                    angle = 3 * MAXIMUM_YAW
+                    logger.info(f'Yawed to find object more than  times, breaking loop.')
+
+                logger.info(f'No {CVObjectType.BIN_PINK_FRONT} detection, setting yaw setpoint {angle}')
+                await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, angle * direction),
+                                                    depth_level=DEPTH_LEVEL_AT_BINS,
+                                                    pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
+                                                    time_limit=10,
+                                                    parent=self)
+
+                if step > 8:
+                    await move_tasks.move_to_pose_local(geometry_utils.create_pose(0.5, 0, 0, 0, 0, 0),
+                                                    depth_level=DEPTH_LEVEL_AT_BINS,
+                                                    pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
+                                                    time_limit=10,
+                                                    parent=self)
+                    break
+
+                # await correct_depth()
+                step += 1
+                await Yield()
+
         last_step_size = float('inf')
         while not is_receiving_pink_bin_data(latest_detection_time) and not moved_above:
             if CVObjectType.BIN_PINK_BOTTOM in CV().bounding_boxes:
                 latest_detection_time = CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.sec
+                check = is_receiving_pink_bin_data(latest_detection_time)
+                if check:
+                    logger.info(f'Bottom camera detects bin, ending loop.')
+                    break
 
+            logger.info("Have not moved above, depth correcting and beginning sequence.")
             await correct_depth(DEPTH_LEVEL_AT_BINS if not moved_above else DEPTH_LEVEL_ABOVE_BINS)
             if not moved_above:
                 logger.info("Yawing to pink bin front")
-                await yaw_to_cv_object(CVObjectType.BIN_PINK_FRONT, direction=direction, yaw_threshold=math.radians(15),
-                                       depth_level=DEPTH_LEVEL_AT_BINS, parent=Task.MAIN_ID)
+                status = await yaw_to_cv_object(CVObjectType.BIN_PINK_FRONT, direction=direction, yaw_threshold=math.radians(15),
+                                       depth_level=1.2, parent=Task.MAIN_ID)
+                # At this point, we cannot find the object anymore. we hope to surface in the octagon atp
+                if not status:
+                    logger.info("Yaw failed, ending.")
+                    break
 
             logger.info(f'Bin pink front score: {CV().bounding_boxes[CVObjectType.BIN_PINK_FRONT].score}')
 
@@ -1278,35 +1332,42 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
                 logger.info(f'Beginning to move above bin')
                 await correct_depth(DEPTH_LEVEL_ABOVE_BINS)
                 moved_above = True
-
-                logger.info('Moved above pink bins')
+                logger.info('Moved above pink bins, based on front camera.')
 
             if not moved_above:
                 step = get_step_size(last_step_size)
                 logger.info(f'Moving step size {step}')
                 await move_x(step=step)
+                logger.info(f'Finished forwards move')
                 last_step_size = step
 
             await Yield()
 
             count += 1
 
-            logger.info(f'Receiving pink bin data: {is_receiving_pink_bin_data(latest_detection_time)}')
+            logger.info(f'Receiving bottom bin data: {is_receiving_pink_bin_data(latest_detection_time)}')
 
         if moved_above:
             await move_tasks.move_with_directions([(POST_FRONT_THRESHOLD_FORWARD_DISTANCE, 0, 0)], parent=self)
         else:
-            logger.info('Detected bin_pink_bottom')
+            logger.info('Detected bin_pink_bottom, or yaw has failed (and copium ensues)')
 
         logger.info('Reached pink bins, stabilizing...')
         stabilize()
         await util_tasks.sleep(5, parent=self)
 
+    async def face_fish(yaw_left: bool = True, closer_banner: bool = True):
+        direction = 1 if yaw_left else -1
+        yaw_distance = np.pi/4 if closer_banner else 3*np.pi/4
+        await orient_to_wall(parent=self)
+        await move_tasks.yaw_from_local_pose(direction*yaw_distance, parent=self)
+
     await move_to_pink_bins()
+    await face_fish(yaw_left=True, closer_banner=True)
 
     logger.info('Surfacing...')
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
-                                        timeout=10, parent=self)
+                                        time_limit=10, parent=self)
     logger.info('Finished surfacing')
 
 @task
@@ -1551,3 +1612,57 @@ async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[Non
     """Add a message to the IVC log file."""
     with open("ivc_log.txt", "a") as f:
         f.write(f'{message}\n')
+
+@task
+async def send_torpedo_ivc(self: Task[None, None, None]) -> Task[None, None, None]:
+    """Fu"""
+    await ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TORPEDOES, parent = self)
+    await util_tasks.sleep(5, parent=self)
+    await ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TORPEDOES, parent = self)
+    await util_tasks.sleep(5, parent=self)
+    await ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TORPEDOES, parent = self)
+
+@task
+async def orient_to_wall(self: Task[None, None, None],
+                         start_angle: float = -15.0,
+                         end_angle: float = 15.0,
+                         distance: float = 20.0) -> Task[None, None, None]:
+    """
+    Orient the robot to a wall using sonar sweep.
+    """
+    async def get_sonar_normal_angle() -> float:
+        """
+        Returns the yaw angle of the wall in degrees.
+        """
+        # Call sonar sweep request
+        sonar_future = Sonar().sweep(start_angle, end_angle, distance)
+        if sonar_future is not None:
+            logger.info("Sonar sweep request sent, waiting for response...")
+            # Wait for the sonar sweep to complete
+            sonar_response = await sonar_future
+            logger.info(f"Sonar sweep response received: {sonar_response}")
+            return sonar_response.normal_angle
+        else:
+            logger.warning("Sonar sweep request failed - bypass mode or service unavailable")
+            return math.nan
+
+    def convert_sonar_output_to_yaw(sonar_normal: float) -> float:
+        """
+        Returns how much robot needs to yaw to be normal to surface it scans. Input degrees, output radians.
+        """
+        yaw_in_degrees = 180 - sonar_normal
+        return yaw_in_degrees * np.pi / 180
+
+    sonar_output = await get_sonar_normal_angle()
+
+    if not math.isnan(sonar_output):
+        yaw_delta = convert_sonar_output_to_yaw(sonar_output)
+        logger.info(f"Yaw delta from sonar sweep: {yaw_delta} radians")
+        # Move to the desired yaw angle
+        await move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_delta),
+            time_limit=10,
+            parent=self,
+        )
+    else:
+        logger.warning("No yaw delta received from sonar sweep, skipping orientation.")

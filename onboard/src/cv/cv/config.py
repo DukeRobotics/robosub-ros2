@@ -89,11 +89,17 @@ class PinkBins:
 
 class YellowBins:
     """Pink bins color bounds."""
-    YELLOW_1_BOT = np.array([30, 30, 40])
-    YELLOW_1_TOP = np.array([60, 70, 95])
+    YELLOW_1_BOT = np.array([20, 60, 60])
+    YELLOW_1_TOP = np.array([30, 100, 100])
 
-    YELLOW_2_BOT = np.array([20, 30, 40])
-    YELLOW_2_TOP = np.array([60, 80, 100])
+    YELLOW_2_BOT = np.array([35, 43, 40])
+    YELLOW_2_TOP = np.array([60, 95, 90])
+
+    YELLOW_3_BOT = np.array([30, 70, 70])
+    YELLOW_3_TOP = np.array([35, 95, 95])
+
+    YELLOW_4_BOT = np.array([60, 45, 35])
+    YELLOW_4_TOP = np.array([70, 80, 75])
 
 class USBCamera(Enum):
     """Enum for different USB cameras."""

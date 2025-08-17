@@ -33,9 +33,11 @@ class IVCMessageType(Enum):
     OOGWAY_TEST = 'to'
     OOGWAY_GATE = 'og'
     OOGWAY_ACKNOWLEDGE = 'oa'
+    OOGWAY_TORPEDOES = 'fu'
     CRUSH_TEST = 'tc'
     CRUSH_GATE = 'cg'
     CRUSH_ACKNOWLEDGE = 'ca'
+    CRUSH_OCTAGON = 'ky'
 
 
 
