@@ -20,10 +20,10 @@ async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
 
     ### START OF CONSTANTS ###
-    DIRECTION_OF_TORPEDO_BANNER = -1
+    DIRECTION_OF_TORPEDO_BANNER = 1
     DEPTH = 1
     START_TIME = 1755374899 # Run secs alias
-    FIRST_TARGET = CVObjectType.TORPEDO_SAWFISH_TARGET # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
+    FIRST_TARGET = CVObjectType.TORPEDO_REEF_SHARK_TARGET # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
     ### END OF CONSTANTS ###
 
     # Don't modify
