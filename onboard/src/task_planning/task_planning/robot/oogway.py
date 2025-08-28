@@ -10,14 +10,26 @@ from task_planning.utils import geometry_utils
 from task_planning.interface.ivc import IVCMessageType
 from task_planning.interface.servos import Servos, MarkerDropperStates, TorpedoStates
 from task_planning.tasks import util_tasks
+from rclpy.clock import Clock
+from rclpy.logging import get_logger
 
+logger = get_logger('oogway')
 
 @task
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
 
-    DIRECTION_OF_TORPEDO_BANNER = -1
+    ### START OF CONSTANTS ###
+    DIRECTION_OF_TORPEDO_BANNER = 1
     DEPTH = 1
+    START_TIME = 1755374899 # Run secs alias
+    FIRST_TARGET = CVObjectType.TORPEDO_REEF_SHARK_TARGET # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
+    ### END OF CONSTANTS ###
+
+    # Don't modify
+    END_OF_IVC = START_TIME + (10 * 60)  # Add 10 minutes to START_TIME
+    IVC_TIMEOUT = END_OF_IVC - Clock().now().seconds_nanoseconds()[0]
+    logger.info(f'IVC timeout: {IVC_TIMEOUT} seconds')
 
     tasks = [
         # comp_tasks.initial_submerge(-1.2, parent=self),
@@ -31,11 +43,27 @@ async def main(self: Task) -> Task[None, None, None]:
 
         # comp_tasks.yaw_to_cv_object(CVObjectType.TORPEDO_BANNER, direction=1, yaw_threshold=math.radians(10), parent=self)
 
+        # Home pool test 8/13
+        # comp_tasks.initial_submerge(-DEPTH, parent=self),
+        # comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self),
+        # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
+        # comp_tasks.torpedo_task(depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+
+        # IVC 8/13
+        # comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self), # Crush thru gate, Oogway acknowledges
+        # comp_tasks.initial_submerge(-0.8, parent=self), # Oogway gate
+        # Oogway does stuff
+        # Oogway sends Crush done
+        # Crush returns to gate
+
+
         ##### COMP
+        comp_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(-DEPTH, parent=self),
-        comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self),
         comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
-        comp_tasks.torpedo_task(depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        comp_tasks.send_torpedo_ivc(parent=self),
+        comp_tasks.octagon_task(direction=1, parent=self),
         ##### END COMP
 
         # comp_tasks.initial_submerge(-1.2, parent=self),

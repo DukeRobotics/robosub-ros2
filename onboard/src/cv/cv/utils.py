@@ -86,7 +86,7 @@ def calculate_relative_pose(bbox_bounds: list[int | float], input_size: tuple[fl
     Args:
         bbox_bounds (object): The detection object.
         input_size (list[float]): Array with input size, where [0] is width and [1] is height.
-        label_shape (list[float]): The label shape, where [0] is width (only this is accessed) and [1] is height.
+        label_shape (list[float]): The label shape, where [0] is width and [1] is height (now used for distance calculation).
         focal_length (float): The distance between the lens and the image sensor when the lens is focused on a subject.
         sensor_size (tuple[float, float]): The physical size of the camera's image sensor.
         adjustment_factor (int): 1 if mono, 2 if depthai.
@@ -96,18 +96,18 @@ def calculate_relative_pose(bbox_bounds: list[int | float], input_size: tuple[fl
     """
     xmin, ymin, xmax, ymax = bbox_bounds
 
-    bbox_width = (xmax - xmin) * input_size[0]
+    bbox_height = (ymax - ymin) * input_size[1]
     bbox_center_x = (xmin + xmax) / 2 * input_size[0]
     bbox_center_y = (ymin + ymax) / 2 * input_size[1]
-    meters_per_pixel = label_shape[0] / bbox_width
+    meters_per_pixel = label_shape[1] / bbox_height
     dist_x = bbox_center_x - input_size[0] // 2
     dist_y = bbox_center_y - input_size[1] // 2
 
     y_meters = dist_x * meters_per_pixel * -1
     z_meters = dist_y * meters_per_pixel * -1
 
-    x_meters = cam_dist_with_obj_width(bbox_width, label_shape[0], focal_length, input_size, sensor_size,
-                                       adjustment_factor)
+    x_meters = cam_dist_with_obj_height(bbox_height, label_shape[1], focal_length, input_size, sensor_size,
+                                        adjustment_factor)
 
     return [x_meters, y_meters, z_meters]
 

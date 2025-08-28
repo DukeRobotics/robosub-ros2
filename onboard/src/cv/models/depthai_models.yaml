@@ -36,7 +36,7 @@ yolov8n_2023_main:
 
 yolov7_tiny_2023_main:
   classes: ['buoy_abydos_serpenscaput','buoy_abydos_taurus','buoy_earth_auriga','buoy_earth_cetus','gate_abydos','gate_earth']
-  sizes: {"buoy_abydos_serpenscaput": [-1, -1], "buoy_abydos_taurus": [-1, -1], "buoy_earth_auriga": [-1, -1], "buoy_earth_cetus": [-1, -1], "gate_abydos": [-1, -1], "gate_earth": [-1, -1]} # for testing
+  sizes: {"buoy_abydos_serpenscaput": [1, 1], "buoy_abydos_taurus": [1, 1], "buoy_earth_auriga": [1, 1], "buoy_earth_cetus": [1, 1], "gate_abydos": [1, 1], "gate_earth": [1, 1]} # for testing
   topic: cv
   weights: yolov7-tiny-2023-main_openvino_2022.1_6shave.blob
   input_size: [416, 416]
@@ -62,7 +62,7 @@ yolov7_tiny_2023_main:
 
 2025_torpedo:
   classes: ["shark_front", "swordfish_front", "torpedo_banner"]
-  sizes: {"shark_front": [-1, -1], "swordfish_front": [-1, -1], "torpedo_banner": [-1, -1]} # not present on config file
+  sizes: {"shark_front": [1, 1], "swordfish_front": [1, 1], "torpedo_banner": [1, 1]} # TODO: add real measured values
   topic: cv
   weights: 2025_torpedo.blob
   input_size: [416, 416]
@@ -75,7 +75,7 @@ yolov7_tiny_2023_main:
 
 2025_gate:
   classes: ["gate_sawfish", "gate_shark", "gate_tick", "gate_whole"]
-  sizes: {"gate_sawfish": [-1, -1], "gate_shark": [-1, -1], "gate_tick": [-1, -1], "gate_whole": [-1, 1]} # not present on config file
+  sizes: {"gate_sawfish": [1, 1], "gate_shark": [1, 1], "gate_tick": [1, 1], "gate_whole": [1, 1]} # TODO: add real measured values
   topic: cv
   weights: 2025_gate.blob
   input_size: [416, 416]

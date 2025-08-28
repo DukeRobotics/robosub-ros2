@@ -25,6 +25,8 @@ from task_planning.task import Task, Yield, task
 from task_planning.tasks import cv_tasks, move_tasks, util_tasks, ivc_tasks
 from task_planning.utils import geometry_utils
 
+from rclpy.clock import Clock
+
 if TYPE_CHECKING:
     from custom_msgs.srv import SendModemMessage
 
@@ -537,8 +539,13 @@ async def gate_task_dead_reckoning(self: Task, depth_level=0.7) -> Task[None, No
     DEPTH_LEVEL = State().orig_depth - depth_level
     logger.info('Started gate task')
     if get_robot_name() == RobotName.OOGWAY:
-        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, parent=self)
-        await move_tasks.move_with_directions([(2, 0, 0)], depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, parent=self)
+        # Go through gate
+        await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(3, 0, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+
+        # Dead reckon a bit to torpedo
+        await move_tasks.move_with_directions([(0, 3, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
+        await move_tasks.move_with_directions([(0, 3, 0)], depth_level=depth_level, correct_depth=True, correct_yaw=True, parent=self)
     elif get_robot_name() == RobotName.CRUSH:
         directions = [
             (2, 0, 0),
@@ -1529,7 +1536,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     logger.info('Finished surfacing')
 
 @task
-async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, None, None]:
+async def torpedo_task(self: Task, first_target: CVObjectType, depth_level=0.5, direction=1) -> Task[None, None, None]:
     # await scan_for_torpedo()
     logger.info('Starting torpedo task')
     DEPTH_LEVEL = State().orig_depth - depth_level
@@ -1554,8 +1561,6 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
         elif dist > 6:
             goal_step = 3
         elif dist > 4:
-            goal_step = 2
-        elif dist > 3:
             goal_step = 1
         elif dist > 1.5:
             goal_step = 0.5
@@ -1596,35 +1601,55 @@ async def torpedo_task(self: Task, depth_level=0.5, direction=1) -> Task[None, N
 
     # Small offset to counteract camera positioning
     await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, -0.8, 0.2, 0, 0, 0),
-        keep_orientation=False,
-        # pose_tolerances = move_tasks.create_twist_tolerance(linear_z = 0.1),
+        geometry_utils.create_pose(0, -0.5, 0.2, 0, 0, 0),
         parent=self,
     )
 
-    # Center to some animal
-    animal = CVObjectType.TORPEDO_REEF_SHARK_TARGET
+    # Determine which animal to target first and which to target second
+    if first_target == CVObjectType.TORPEDO_REEF_SHARK_TARGET:
+        second_target = CVObjectType.TORPEDO_SAWFISH_TARGET
+    elif first_target == CVObjectType.TORPEDO_SAWFISH_TARGET:
+        second_target = CVObjectType.TORPEDO_REEF_SHARK_TARGET
+    else:
+        raise ValueError(f"Invalid first_animal: {first_target}. Must be CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET")
+
+    # Center to first animal
+    animal = first_target
     target_y = CV().bounding_boxes[animal].coords.y
-    target_z = CV().bounding_boxes[animal].coords.z
-    logger.info(f"Aligning to {animal} at y={target_y} and z={target_z}")
+    target_z = CV().bounding_boxes[animal].coords.z+0.1
+    logger.info(f"Aligning to first target {animal} at y={target_y} and z={target_z}")
     await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, target_y, target_z-0.1, 0, 0, 0),
-        keep_orientation=False,
+        geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
         parent=self,
     )
-    logger.info(f"Firing torpedoes")
+
+    # Fire first torpedo
+    logger.info(f"Firing torpedo RIGHT")
+    await Servos().fire_torpedo(TorpedoStates.RIGHT)
+
+    # Wait for torpedo servo is available
+    await util_tasks.sleep(Duration(seconds=3), parent=self)
+
+    # Move back to see full banner
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(0, -target_y, -target_z, 0, 0, 0),
+        parent=self,
+    )
+
+    # Center to second animal
+    animal = second_target
+    target_y = CV().bounding_boxes[animal].coords.y - 0.1
+    target_z = CV().bounding_boxes[animal].coords.z + 0.1
+    logger.info(f"Aligning to second target {animal} at y={target_y} and z={target_z}")
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0),
+        parent=self,
+    )
+
+    # Fire second torpedo
+    logger.info(f"Firing torpedo LEFT")
     await Servos().fire_torpedo(TorpedoStates.LEFT)
 
-    await util_tasks.sleep(Duration(seconds=5), parent=self)
-    animal = CVObjectType.TORPEDO_SAWFISH_TARGET
-    target_y = CV().bounding_boxes[animal].coords.y
-    target_z = CV().bounding_boxes[animal].coords.z
-    await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, target_y, target_z-0.1, 0, 0, 0),
-        keep_orientation=False,
-        parent=self,
-    )
-    await Servos().fire_torpedo(TorpedoStates.RIGHT)
     logger.info(f"Torpedo task completed")
 
 @task
@@ -1724,6 +1749,16 @@ async def crush_ivc_spam(self: Task[None, None, None], msg_to_send: IVCMessageTy
         await util_tasks.sleep(20, parent = self)
 
 @task
+async def ivc_send_then_receive(self: Task[None, None, None], msg_to_send: IVCMessageType, msg_to_receive: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
+    await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
+
+    count = 2
+    # Wait for Oogway to say starting/acknowledge command
+    while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != msg_to_receive:
+        logger.info(f'Unexpected message received. Remaining attempts: {count}')
+        count -= 1
+
+@task
 async def crush_ivc_send(self: Task[None, None, None], msg_to_send: IVCMessageType, msg_to_receive: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
     await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
 
@@ -1738,6 +1773,16 @@ async def crush_ivc_send(self: Task[None, None, None], msg_to_send: IVCMessageTy
         logger.info(f'No acknowledgement, sending one last time')
         await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
 
+
+@task
+async def crush_ivc_receive(self: Task[None, None, None], msg_to_receive: IVCMessageType,
+    msg_to_send: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
+    count = 2
+    # Wait for Oogway to say starting/acknowledge command
+    while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != msg_to_receive:
+        logger.info(f'Unexpected message or no message received. Remaining attempts: {count - 1}')
+        count -= 1
+
 @task
 async def crush_ivc_receive(self: Task[None, None, None], msg_to_receive: IVCMessageType,
     msg_to_send: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
@@ -1748,6 +1793,17 @@ async def crush_ivc_receive(self: Task[None, None, None], msg_to_receive: IVCMes
         count -= 1
 
     await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
+
+@task
+async def ivc_receive_then_send(self: Task[None, None, None], msg: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
+    if timeout <= 0:
+        return
+
+    # Wait until Crush is done with gate
+    while await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != IVCMessageType.CRUSH_GATE:
+        logger.info(f'Unexpected message received.')
+
+    await ivc_tasks.ivc_send(msg, parent = self) # Oogway says ok and starting
 
 @task
 async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:
@@ -1763,8 +1819,8 @@ async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[Non
 
 @task
 async def orient_to_wall(self: Task[None, None, None],
-                         start_angle: float = -15.0,
                          end_angle: float = 15.0,
+                         start_angle: float = -15.0,
                          distance: float = 10.0) -> Task[None, None, None]:
     """
     Orient the robot to a wall using sonar sweep.
@@ -1799,7 +1855,6 @@ async def orient_to_wall(self: Task[None, None, None],
     got_valid_sweep = False
 
     while not got_valid_sweep and count > 0:
-        sonar_output = await get_sonar_normal_angle()
         count -= 1
 
         if sonar_output is None:
