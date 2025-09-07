@@ -1,6 +1,6 @@
 import copy
 
-from geometry_msgs.msg import Pose, Twist, Vector3
+from geometry_msgs.msg import Pose, Twist
 from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.logging import get_logger
@@ -57,7 +57,7 @@ async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | 
 
 @task
 async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = False, depth_level: float | None = None,
-                             pose_tolerances: Twist | None = None, time_limit: int = 30) -> \
+                             pose_tolerances: Twist | None = None, timeout: int = 30) -> \
                                 Task[None, Pose | None, None]:
     """
     Move to a local pose in the "base_link" frame.
@@ -75,11 +75,12 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = Fa
             is not None, the Z value of the provided pose will be overridden. Defaults to None.
         pose_tolerances (Twist, optional): If this is not None, this task will end when the robot's pose has reached the
             desired pose within these tolerances.
-        time_limit (int, optional): The time limit (in seconds) for reaching the pose. Defaults to 30.
+        timeout (int, optional): The maximum number of seconds to attempt reaching the pose
+            before timing out. Defaults to 30.
 
     Returns:
-        Task[None, Pose | None, None]: A coroutine that completes when the robot reaches the target pose or the time
-            limit expires.
+        Task[None, Pose | None, None]: A coroutine that completes when the robot reaches the target pose or the timeout
+            expires.
 
     Send:
         Pose: A new local pose to move to.
@@ -108,9 +109,10 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = Fa
     global_pose = send_transformer(pose)
 
     return await coroutine_utils.transform(
-        move_to_pose_global(global_pose, pose_tolerances=pose_tolerances, timeout=time_limit, parent=self),
+        move_to_pose_global(global_pose, pose_tolerances=pose_tolerances, timeout=timeout, parent=self),
             send_transformer=send_transformer)
 
+# TODO: deprecate this, use correct_yaw from base_comp_task instead
 @task
 async def yaw_from_local_pose(self: Task, yaw: int, timeout: int = 30) -> None:
     """
@@ -214,26 +216,10 @@ async def depth_correction(self: Task, desired_depth: float) -> Task[None, None,
     logger.info(f'Started depth correction {depth_delta}')
     await move_to_pose_local(
         geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0),
-        pose_tolerances = create_twist_tolerance(linear_z = 0.17),
-        time_limit=15,
+        pose_tolerances=create_twist_tolerance(linear_z=0.17),
+        timeout=15,
         parent=self)
     logger.info(f'Finished depth correction {depth_delta}')
-
-@task
-async def correct_depth(self: Task, desired_depth: float) -> None:
-    """
-    Correct the system's depth to match the desired depth.
-
-    This asynchronous task calls the depth correction utility to adjust the system's depth.
-
-    Args:
-        self: Task instance.
-        desired_depth (float): The target depth to which the system should adjust.
-
-    Returns:
-        None
-    """
-    await depth_correction(desired_depth, parent=self)
 
 @task
 async def move_x(self: Task, step: float = 1.0) -> None:
@@ -250,9 +236,9 @@ async def move_x(self: Task, step: float = 1.0) -> None:
         None
     """
     await move_to_pose_local(geometry_utils.create_pose(step, 0, 0, 0, 0, 0),
-        keep_orientation = True,
-        time_limit = 10,
-        pose_tolerances = create_twist_tolerance(linear_x = 0.15),
+        keep_orientation=True,
+        timeout=10,
+        pose_tolerances=create_twist_tolerance(linear_x=0.15),
         parent=self)
     logger.info(f'Moved x {step}')
 
@@ -286,7 +272,7 @@ async def move_with_directions(self: Task,
                                correct_yaw: bool = False,
                                correct_depth: bool = False,
                                keep_orientation: bool = False,
-                               time_limit: int = 30,
+                               timeout: int = 30,
                                ) -> None:
     """
     Move the robot to multiple poses defined by the provided directions.
@@ -303,7 +289,8 @@ async def move_with_directions(self: Task,
         correct_yaw (bool, optional): If True, corrects the yaw after moving to a pose. Defaults to False.
         correct_depth (bool, optional): If True, corrects the depth after moving to a pose. Defaults to False.
         keep_orientation (bool, optional): If True, corrects orientation after moving to a pose. Defaults to False.
-        time_limit (int, optional): The time limit (in seconds) for reaching the pose. Defaults to 30.
+        timeout (int, optional): The maximum number of seconds to attempt reaching the pose
+            before timing out. Defaults to 30.
 
     Raises:
         ValueError: If a direction tuple in the list is not of length 3 or 6.
@@ -320,18 +307,19 @@ async def move_with_directions(self: Task,
             geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
             keep_orientation=keep_orientation,
             depth_level=depth_level,
-            pose_tolerances = create_twist_tolerance(linear_x = 0.1, linear_y = 0.07, linear_z = 0.07),
-            time_limit=time_limit,
+            pose_tolerances=create_twist_tolerance(linear_x=0.1, linear_y=0.07, linear_z=0.07),
+            timeout=timeout,
             parent=self)
         logger.info(f'Moved to {direction}')
 
         if correct_yaw:
             logger.info(f'Correcting yaw {orig_gyro - State().gyro_euler_angles.z}')
             await move_to_pose_local(geometry_utils.create_pose(0,0,0,0,0,orig_gyro - State().gyro_euler_angles.z),
-                                     time_limit=time_limit,
+                                     timeout=timeout,
                                      parent=self)
         if correct_depth:
             await depth_correction(depth_level, parent=self)
+
 
 def create_twist_tolerance(
     linear_x: float = 0.05,
@@ -355,7 +343,6 @@ def create_twist_tolerance(
     Returns:
         Twist: A Twist message with specified tolerances.
     """
-    tolerance = Twist()
-    tolerance.linear = Vector3(x=linear_x, y=linear_y, z=linear_z)
-    tolerance.angular = Vector3(x=angular_roll, y=angular_pitch, z=angular_yaw)
-    return tolerance
+    return geometry_utils.create_twist(x=linear_x, y=linear_y, z=linear_z,
+                                       roll=angular_roll, pitch=angular_pitch, yaw=angular_yaw)
+

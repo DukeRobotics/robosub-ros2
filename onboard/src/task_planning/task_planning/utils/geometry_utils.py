@@ -305,6 +305,27 @@ def create_pose(x: float, y: float, z: float, roll: float, pitch: float, yaw: fl
     return pose
 
 
+def create_twist(x: float, y: float, z: float, roll: float, pitch: float, yaw: float) -> Twist:
+    """
+    Create a Twist message from linear and angular velocity values.
+
+    Args:
+        x: The linear x velocity.
+        y: The linear y velocity.
+        z: The linear z velocity.
+        roll: The angular roll velocity.
+        pitch: The angular pitch velocity.
+        yaw: The angular yaw velocity.
+
+    Returns:
+        The Twist message.
+    """
+    return Twist(
+        linear=Vector3(x=x, y=y, z=z),
+        angular=Vector3(x=roll, y=pitch, z=yaw)
+    )
+
+
 def local_pose_to_global(tf_buffer: tf2_ros.Buffer, pose: Pose) -> Pose:
     """
     Convert a pose from local coordinates to global coordinates.
