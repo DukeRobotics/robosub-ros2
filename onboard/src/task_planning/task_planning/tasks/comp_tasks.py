@@ -52,6 +52,9 @@ from task_planning.utils.other_utils import get_robot_name, RobotName
 #     - can improve on cv_tasks.move_to_cv_obj implementation (or replace it completely)
 
 # TODO: rewrite tasks using base comp tasks
+# TODO: implement higher-level routines
+# TODO: refactor sonar_tasks
+# TODO: refactor ivc_tasks
 
 logger = get_logger('comp_tasks')
 
@@ -763,7 +766,7 @@ async def yaw_to_cv_object_vel(self: Task, cv_object: CVObjectType, direction=1,
 @task
 async def align_path_marker(self: Task, direction=1) -> Task[None, None, None]:
     """
-    Corrects the yaw relative to the CV object
+    Corrects the yaw relative to the CV object. Follows the yaw and center loop.
     """
     DEPTH_LEVEL = State().orig_depth - 0.5
     MAXIMUM_YAW = math.radians(30)
