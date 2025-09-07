@@ -57,4 +57,5 @@ nvm use lts/jod > /dev/null  # Suppress stdout, only show stderr
 # Source python virtual environment
 source /home/ubuntu/robosub-ros2/venv.sh activate
 
+# Get seconds since epoch
 alias secs="date +%s"

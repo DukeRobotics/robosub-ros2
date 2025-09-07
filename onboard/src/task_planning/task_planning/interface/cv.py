@@ -65,8 +65,8 @@ class CV:
     # TODO: add other CV models here as defined in depthai_models.yaml. Modify the Enum strings correspondingly.
     CV_MODELS: ClassVar[list[str]] = ['2025_torpedo']
 
-    # Threshold for TORPEDO_BANNER filtering
-    NUM_RECENT_MESSAGES = 5 # woollett morning cloudy
+    # Need to see more than TORPEDO_BANNER_RATE_THRESHOLD messages per second
+    TORPEDO_BANNER_RATE_THRESHOLD = 5
 
     BOUNDING_BOX_TOPICS: ClassVar[dict[CVObjectType, str]] = {
         CVObjectType.BUOY: '/cv/front_usb/buoy/bounding_box',
@@ -209,7 +209,7 @@ class CV:
             ]
 
             # Only set bounding box if we have enough recent messages
-            if len(self._torpedo_banner_recent_messages) >= self.NUM_RECENT_MESSAGES:
+            if len(self._torpedo_banner_recent_messages) >= self.TORPEDO_BANNER_RATE_THRESHOLD:
                 self._bounding_boxes[object_type] = cv_data
 
         else:
