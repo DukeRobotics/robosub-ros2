@@ -1,7 +1,7 @@
-from typing import TYPE_CHECKING, cast
 from datetime import datetime
-import pytz
+from typing import TYPE_CHECKING, cast
 
+import pytz
 from rclpy.duration import Duration
 from rclpy.logging import get_logger
 from task_planning.interface.ivc import IVC, IVCMessageType
@@ -10,6 +10,9 @@ from task_planning.tasks import util_tasks
 
 if TYPE_CHECKING:
     from custom_msgs.srv import SendModemMessage
+
+# TODO: rewrite/reorganize/clean up the comp ivc_tasks
+# TODO: add docstrings for all tasks
 
 logger = get_logger('ivc_tasks')
 
@@ -128,13 +131,12 @@ async def ivc_send(self: Task[None, None, None], msg: IVCMessageType) -> None:
             logger.info(f'Sent IVC message: {msg.name}')
 
             # Log to text file
-            with open("ivc_log.txt", "a") as f:
+            with open('ivc_log.txt', 'a') as f:
                 timestamp = ros_timestamp_to_pacific_time(
                     IVC().modem_status.header.stamp.sec,
                     IVC().modem_status.header.stamp.nanosec
                 )
                 f.write(f'Sent IVC message: {msg.name} at {timestamp}\n')
-                # f.write(f'Sent IVC message: {msg.name} at {IVC().modem_status.header.stamp.sec}.{IVC().modem_status.header.stamp.nanosec}\n')
         else:
             logger.error(f'Modem failed to send message. Response: {service_response.message}')
 
@@ -164,3 +166,72 @@ async def ivc_receive(self: Task[None, None, None], timeout: float = 10) -> IVCM
 
     logger.warning(f'Received message {IVC().messages[-1].msg.name} is unknown.')
     return IVCMessageType.UNKNOWN
+
+@task
+async def crush_ivc_spam(self: Task[None, None, None], msg_to_send: IVCMessageType,
+                         timeout: float = 60) -> Task[None, None, None]:
+    while True:
+        await ivc_send(msg_to_send, parent=self) # Send crush is done with gate
+        await util_tasks.sleep(20, parent=self)
+
+@task
+async def ivc_send_then_receive(self: Task[None, None, None], msg_to_send: IVCMessageType,
+                                msg_to_receive: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
+    await ivc_send(msg_to_send, parent=self) # Send crush is done with gate
+
+    count = 2
+    # Wait for Oogway to say starting/acknowledge command
+    while count != 0 and await ivc_receive(timeout=timeout, parent=self) != msg_to_receive:
+        logger.info(f'Unexpected message received. Remaining attempts: {count}')
+        count -= 1
+
+@task
+async def crush_ivc_send(self: Task[None, None, None], msg_to_send: IVCMessageType,
+                         msg_to_receive: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
+    await ivc_send(msg_to_send, parent=self) # Send crush is done with gate
+
+    count = 2
+    # Wait for Oogway to say starting/acknowledge command
+    while count != 0 and await ivc_receive(timeout=timeout, parent=self) != msg_to_receive:
+        logger.info(f'Unexpected message or no message received. Sending again. Remaining attempts: {count - 1}')
+        await ivc_send(msg_to_send, parent=self) # Send crush is done with gate
+        count -= 1
+
+    if count == 0:
+        logger.info('No acknowledgement, sending one last time')
+        await ivc_send(msg_to_send, parent=self) # Send crush is done with gate
+
+@task
+async def crush_ivc_receive(self: Task[None, None, None], msg_to_receive: IVCMessageType,
+                            msg_to_send: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
+    count = 2
+    # Wait for Oogway to say starting/acknowledge command
+    while count != 0 and await ivc_receive(timeout=timeout, parent=self) != msg_to_receive:
+        logger.info(f'Unexpected message or no message received. Remaining attempts: {count - 1}')
+        count -= 1
+
+    await ivc_send(msg_to_send, parent=self) # Send crush is done with gate
+
+@task
+async def ivc_receive_then_send(self: Task[None, None, None], msg: IVCMessageType,
+                                timeout: float = 60) -> Task[None, None, None]:
+    if timeout <= 0:
+        return
+
+    # Wait until Crush is done with gate
+    while await ivc_receive(timeout=timeout, parent=self) != IVCMessageType.CRUSH_GATE:
+        logger.info('Unexpected message received.')
+
+    await ivc_send(msg, parent=self) # Oogway says ok and starting
+
+@task
+async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:
+    """Append a header to the IVC log file."""
+    with open('ivc_log.txt', 'a') as f:
+        f.write('----- NEW RUN STARTED -----\n')
+
+@task
+async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[None, None, None]:
+    """Add a message to the IVC log file."""
+    with open('ivc_log.txt', 'a') as f:
+        f.write(f'{message}\n')
