@@ -211,7 +211,7 @@ class CV:
             # Only set bounding box if we have enough recent messages
             if len(self._torpedo_banner_recent_messages) >= self.NUM_RECENT_MESSAGES:
                 self._bounding_boxes[object_type] = cv_data
-                # logger.info("Detected torpedo banner after filter")
+
         else:
             # For all other object types, set bounding box normally
             self._bounding_boxes[object_type] = cv_data
@@ -229,7 +229,7 @@ class CV:
     def _on_receive_distance_data(self, distance_data: Point, object_type: CVObjectType, filter_len: int = 10) -> None:
         """
         Parse the received distance data and store it.
-,
+
         Args:
             distance_data (Point): The received distance data.
             object_type (CVObjectType): The name/type of the object.
@@ -384,3 +384,4 @@ class CV:
 
         data = self._bounding_boxes[name]
         return (data.sonar_start_angle, data.sonar_end_angle, data.sonar_scan_distance)
+

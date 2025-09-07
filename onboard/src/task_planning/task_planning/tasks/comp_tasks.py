@@ -13,7 +13,6 @@ from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.logging import get_logger
 from transforms3d.euler import quat2euler
-from typing import TYPE_CHECKING, cast
 
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV, CVObjectType
@@ -26,12 +25,7 @@ from task_planning.tasks import cv_tasks, move_tasks, util_tasks, ivc_tasks
 from task_planning.utils import geometry_utils
 
 from rclpy.clock import Clock
-
-if TYPE_CHECKING:
-    from custom_msgs.srv import SendModemMessage
-
 from task_planning.utils.other_utils import get_robot_name, RobotName
-# from sonar.sonar.sonar import Sonar
 
 # TODO: move stablize() to move_tasks.py
 #
@@ -57,9 +51,9 @@ from task_planning.utils.other_utils import get_robot_name, RobotName
 #     - takes in the termination condition function as a parameter
 #     - can improve on cv_tasks.move_to_cv_obj implementation (or replace it completely)
 
-logger = get_logger('comp_tasks')
+# TODO: rewrite tasks using base comp tasks
 
-RECT_HEIGHT_METERS = 0.3048
+logger = get_logger('comp_tasks')
 
 @task
 async def gate_style_task(self: Task, depth_level=0.9) -> Task[None, None, None]:
@@ -327,7 +321,8 @@ async def gate_to_octagon(self: Task, direction: int = 1, move_forward: int = 0,
     logger.info('Started gate to octagon')
 
     async def move_with_directions(directions, depth_level=-1.0):
-        await move_tasks.move_with_directions(directions, depth_level, correct_yaw=True, correct_depth=True, keep_orientation=True, time_limit=timeout, parent=self)
+        await move_tasks.move_with_directions(directions, depth_level, correct_yaw=True, correct_depth=True,
+                                              keep_orientation=True, timeout=timeout, parent=self)
 
     directions = [
         (3, 0, 0),
@@ -380,7 +375,8 @@ async def buoy_circumnavigation_power(self: Task, depth: float = 0.7) -> Task[No
 
 
 @task
-async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float = 0.1, enable_controls_flag: bool = False, time_limit: int = 30) -> Task[None, None, None]:
+async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float = 0.1,
+                           enable_controls_flag: bool = False, timeout: int = 30) -> Task[None, None, None]:
     """
     Submerge the robot a given amount.
 
@@ -396,8 +392,8 @@ async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float 
     await move_tasks.move_to_pose_local(
         geometry_utils.create_pose(0, 0, submerge_dist, 0, 0, 0),
         keep_orientation=True,
-        pose_tolerances = move_tasks.create_twist_tolerance(linear_z = z_tolerance),
-        time_limit=time_limit,
+        pose_tolerances=move_tasks.create_twist_tolerance(linear_z=z_tolerance),
+        timeout=timeout,
         parent=self,
     )
     logger.info(f'Submerged {submerge_dist} meters')
@@ -416,7 +412,8 @@ async def initial_submerge(self: Task, submerge_dist: float, z_tolerance: float 
 
 
 @task
-async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True, time_limit: int=15) -> Task[None, None, None]:
+async def coin_flip(self: Task, depth_level: float = 0.7,
+                    enable_same_direction: bool = True, timeout: int = 15) -> Task[None, None, None]:
     """
     Perform the coin flip task, adjusting the robot's yaw and depth.
 
@@ -495,8 +492,8 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True, tim
                 yaw_correction -= np.pi
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, 0, 0, 0, 0, np.pi),
-                    pose_tolerances = move_tasks.create_twist_tolerance(angular_yaw = 0.05),
-                    time_limit=time_limit,
+                    pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+                    timeout=timeout,
                     parent=self,
                     # TODO: maybe set yaw tolerance?
                 )
@@ -516,7 +513,7 @@ async def coin_flip(self: Task, depth_level=0.7, enable_same_direction=True, tim
 
             await move_tasks.move_to_pose_local(
                 geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_correction),
-                time_limit=time_limit,
+                timeout=timeout,
                 parent=self,
                 # TODO: maybe set yaw tolerance?
             )
@@ -551,7 +548,8 @@ async def gate_task_dead_reckoning(self: Task, depth_level=0.7) -> Task[None, No
             (2, 0, 0),
             (3, 0, 0),
         ]
-        await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
+        await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True,
+                                              keep_orientation=True, timeout=15, parent=self)
     logger.info('Moved through gate, and strafed.')
 
 @task
@@ -566,11 +564,12 @@ async def slalom_task_dead_reckoning(self: Task, depth_level=1.1) -> Task[None, 
             (2, 0, 0),
             (2, 0, 0),
         ]
-        await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=20, parent=self)
+        await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True,
+                                              keep_orientation=True, timeout=20, parent=self)
     logger.info('Moved through slalom')
 
 @task
-async def slalom_to_octagon_dead_reckoning(self: Task, depth_level=1.1) -> Task[None, None, None]:
+async def slalom_to_octagon_dead_reckoning(self: Task, depth_level: float = 1.1) -> Task[None, None, None]:
     DEPTH_LEVEL = State().orig_depth - depth_level
     latency_threshold = 10
 
@@ -589,7 +588,8 @@ async def slalom_to_octagon_dead_reckoning(self: Task, depth_level=1.1) -> Task[
             (2,0,0),
             (2,0,0),
         ]
-        await move_tasks.move_with_directions(before_cv_directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
+        await move_tasks.move_with_directions(before_cv_directions, depth_level=DEPTH_LEVEL, correct_depth=True,
+                                              correct_yaw=True, keep_orientation=True, timeout=15, parent=self)
 
         logger.info("Checking yellow bin detection")
         MAXIMUM_YAW = math.radians(30)
@@ -609,26 +609,27 @@ async def slalom_to_octagon_dead_reckoning(self: Task, depth_level=1.1) -> Task[
             logger.info(f'No {cv_object} detection, setting yaw setpoint {angle}')
             await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, angle * direction),
                                                 depth_level=depth_level,
-                                                pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
-                                                time_limit=10,
+                                                pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.3),
+                                                timeout=10,
                                                 parent=self)
-                                                
+
             if step > 8:
                 break
 
             step += 1
             await Yield()
-        
+
         after_cv_directions = [
             (2,0,0),
         ]
-        await move_tasks.move_with_directions(after_cv_directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
+        await move_tasks.move_with_directions(after_cv_directions, depth_level=DEPTH_LEVEL, correct_depth=True,
+                                              correct_yaw=True, keep_orientation=True, timeout=15, parent=self)
 
         await face_fish(yaw_left=False, closer_banner=False)
 
         logger.info('Surfacing...')
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
-                                            time_limit=10, parent=self)
+                                            timeout=10, parent=self)
         logger.info('Finished surfacing')
 
 
@@ -645,7 +646,8 @@ async def return_task_dead_reckoning(self: Task, depth_level=0.7) -> Task[None, 
             (-3, 0, 0),
             (-3, 0, 0),
         ]
-        await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True, keep_orientation=True, time_limit=15, parent=self)
+        await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_depth=True, correct_yaw=True,
+                                              keep_orientation=True, timeout=15, parent=self)
         logger.info('Moved through gate return')
 
 @task
@@ -726,7 +728,7 @@ async def yaw_to_cv_object_vel(self: Task, cv_object: CVObjectType, direction=1,
         while not CV().is_receiving_recent_cv_data(cv_object, latency_threshold):
             logger.info(f'No {cv_object} detection, setting yaw setpoint {MAXIMUM_YAW}')
             await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, MAXIMUM_YAW * direction),
-                                                pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.2)),
+                                                pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.2),
                                                 parent=self)
             await correct_depth()
             await Yield()
@@ -1266,10 +1268,10 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
             logger.info(f'No {cv_object} detection, setting yaw setpoint {angle}')
             await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, angle * direction),
                                                 depth_level=depth_level,
-                                                pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
-                                                time_limit=10,
+                                                pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.3),
+                                                timeout=10,
                                                 parent=self)
-                                                
+
             if step > 8:
                 return False
 
@@ -1316,7 +1318,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
             break
 
         sign_cv_object_yaw = np.sign(cv_object_yaw)
-        correction = get_step_size(SCALE_FACTOR*cv_object_yaw) # Scale down CV yaw value
+        correction = get_step_size(SCALE_FACTOR * cv_object_yaw) # Scale down CV yaw value
 
         # Robot agnostic code base fails once again
         if get_robot_name() == RobotName.OOGWAY:
@@ -1327,7 +1329,7 @@ async def yaw_to_cv_object(self: Task, cv_object: CVObjectType, direction=1,
         # actually do the yaw itself, and then correct depth
         logger.info(f'Detected yaw {cv_object_yaw} is greater than threshold {yaw_threshold}. Actually yawing: {desired_yaw}')
         await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, desired_yaw),
-                                            pose_tolerances = move_tasks.create_twist_tolerance(angular_yaw = 0.15),
+                                            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.15),
                                             parent=self)
         await correct_depth()
         await Yield()
@@ -1455,15 +1457,15 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
                 logger.info(f'No {CVObjectType.BIN_PINK_FRONT} detection, setting yaw setpoint {angle}')
                 await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, angle * direction),
                                                     depth_level=DEPTH_LEVEL_AT_BINS,
-                                                    pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
-                                                    time_limit=10,
+                                                    pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.3),
+                                                    timeout=10,
                                                     parent=self)
 
                 if step > 8:
                     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0.5, 0, 0, 0, 0, 0),
                                                     depth_level=DEPTH_LEVEL_AT_BINS,
-                                                    pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
-                                                    time_limit=10,
+                                                    pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.3),
+                                                    timeout=10,
                                                     parent=self)
                     break
 
@@ -1532,7 +1534,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
 
     logger.info('Surfacing...')
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
-                                        time_limit=10, parent=self)
+                                        timeout=10, parent=self)
     logger.info('Finished surfacing')
 
 @task
@@ -1743,81 +1745,6 @@ async def torpedo_task_old(self: Task,
     await center_with_torpedo_target()
 
 @task
-async def crush_ivc_spam(self: Task[None, None, None], msg_to_send: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
-    while True:
-        await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
-        await util_tasks.sleep(20, parent = self)
-
-@task
-async def ivc_send_then_receive(self: Task[None, None, None], msg_to_send: IVCMessageType, msg_to_receive: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
-    await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
-
-    count = 2
-    # Wait for Oogway to say starting/acknowledge command
-    while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != msg_to_receive:
-        logger.info(f'Unexpected message received. Remaining attempts: {count}')
-        count -= 1
-
-@task
-async def crush_ivc_send(self: Task[None, None, None], msg_to_send: IVCMessageType, msg_to_receive: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
-    await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
-
-    count = 2
-    # Wait for Oogway to say starting/acknowledge command
-    while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != msg_to_receive:
-        logger.info(f'Unexpected message or no message received. Sending again. Remaining attempts: {count - 1}')
-        await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
-        count -= 1
-    
-    if count == 0:
-        logger.info(f'No acknowledgement, sending one last time')
-        await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
-
-
-@task
-async def crush_ivc_receive(self: Task[None, None, None], msg_to_receive: IVCMessageType,
-    msg_to_send: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
-    count = 2
-    # Wait for Oogway to say starting/acknowledge command
-    while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != msg_to_receive:
-        logger.info(f'Unexpected message or no message received. Remaining attempts: {count - 1}')
-        count -= 1
-
-@task
-async def crush_ivc_receive(self: Task[None, None, None], msg_to_receive: IVCMessageType,
-    msg_to_send: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
-    count = 2
-    # Wait for Oogway to say starting/acknowledge command
-    while count != 0 and await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != msg_to_receive:
-        logger.info(f'Unexpected message or no message received. Remaining attempts: {count - 1}')
-        count -= 1
-
-    await ivc_tasks.ivc_send(msg_to_send, parent = self) # Send crush is done with gate
-
-@task
-async def ivc_receive_then_send(self: Task[None, None, None], msg: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
-    if timeout <= 0:
-        return
-
-    # Wait until Crush is done with gate
-    while await ivc_tasks.ivc_receive(timeout = timeout, parent = self) != IVCMessageType.CRUSH_GATE:
-        logger.info(f'Unexpected message received.')
-
-    await ivc_tasks.ivc_send(msg, parent = self) # Oogway says ok and starting
-
-@task
-async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:
-    """Append a header to the IVC log file."""
-    with open("ivc_log.txt", "a") as f:
-        f.write("----- NEW RUN STARTED -----\n")
-
-@task
-async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[None, None, None]:
-    """Add a message to the IVC log file."""
-    with open("ivc_log.txt", "a") as f:
-        f.write(f'{message}\n')
-
-@task
 async def orient_to_wall(self: Task[None, None, None],
                          end_angle: float = 15.0,
                          start_angle: float = -15.0,
@@ -1869,7 +1796,7 @@ async def orient_to_wall(self: Task[None, None, None],
             # Move to the desired yaw angle
             await move_tasks.move_to_pose_local(
                 geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_delta),
-                time_limit=10,
+                timeout=10,
                 parent=self,
             )
         else:

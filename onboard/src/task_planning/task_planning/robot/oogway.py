@@ -110,12 +110,3 @@ async def main(self: Task) -> Task[None, None, None]:
 
     for task_to_run in tasks:
         await task_to_run
-
-@task
-async def test(self: Task) -> Task[None, None, None]:
-    """
-    Put test stuff here.
-    """
-    await Servos().fire_torpedo(TorpedoStates.LEFT)
-    await util_tasks.sleep(Duration(seconds=5), parent=self)
-    await Servos().fire_torpedo(TorpedoStates.RIGHT)
