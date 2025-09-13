@@ -15,7 +15,7 @@ from cv.utils import calculate_relative_pose, compute_center_distance, compute_y
 
 class HSVFilter(Node):
     """Parent class for all HSV filtering scripts."""
-    def __init__(self, name: str, camera: str, mask_ranges: np.ndarray, width: int, pubs: list[str] | None = None,
+    def __init__(self, name: str, camera: str, mask_ranges: np.ndarray, width: float, height: float | None = None, pubs: list[str] | None = None,
                  retrieval: int = cv2.RETR_TREE, approx: int = cv2.CHAIN_APPROX_SIMPLE) -> None:
         super().__init__(f'{name}_hsv_filter')
 
@@ -26,6 +26,7 @@ class HSVFilter(Node):
         self.retrieval = retrieval
         self.approx = approx
         self.width = width
+        self.height = width if height is None else height
 
         self.image_sub = self.create_subscription(CompressedImage, f'/camera/usb/{camera}/compressed',
                                                   self.image_callback, 10)
@@ -51,7 +52,11 @@ class HSVFilter(Node):
                                                                     f'/cv/{camera}_usb/{name}/{pub}/contour_image', 10))
                 self.distance_pub.append(self.create_publisher(Point, f'/cv/{camera}_usb/{name}/{pub}/distance', 10))
 
+        create_additional_pubs_subs_vars()
 
+    def create_additional_pubs_subs_vars(self) -> None:
+        """Additional publishers and subscribers to be used later."""
+        pass
 
     def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:
         """
@@ -80,6 +85,7 @@ class HSVFilter(Node):
             hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         except (TypeError, AttributeError) as t:
             self.get_logger().error(f'Failed to convert image: {t}')
+            return
 
         # Apply HSV filtering on the image
         masks = [cv2.inRange(hsv_image, self.actual_to_opencv_hsv(r[0]), self.actual_to_opencv_hsv(r[1])) for r in self.mask_ranges]
@@ -104,6 +110,8 @@ class HSVFilter(Node):
         # Allow filter function to determine that a contour set is invalid, even if detections exist
         if final_contours == []:
             return
+
+        bbox_img = image.copy()
 
         for i in range(0, min(len(final_contours), len(self.contour_image_pub))):
             if (final_contours[i] is None):
@@ -166,7 +174,7 @@ class HSVFilter(Node):
             # Point coords represents the 3D position of the object represented by the bounding box relative to the robot
             coords_list = calculate_relative_pose(bbox_bounds,
                                                 MonoCam.IMG_SHAPE,
-                                                (self.width, 0),
+                                                (self.width, self.height),
                                                 MonoCam.FOCAL_LENGTH,
                                                 MonoCam.SENSOR_SIZE, 1)
             bounding_box.coords.x, bounding_box.coords.y, bounding_box.coords.z = coords_list
@@ -174,6 +182,12 @@ class HSVFilter(Node):
             self.bounding_box_pub[i].publish(bounding_box)
 
             self.distance_pub[i].publish(dist_point)
+
+            # Draw bounding box on the image
+            cv2.rectangle(bbox_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+        image_msg = self.bridge.cv2_to_imgmsg(bbox_img, 'bgr8')
+        self.all_contours_pub.publish(image_msg)
 
     def filter(self, contours: list) -> list:
         """Filter out list of contours."""
