@@ -7,8 +7,7 @@ from rclpy.client import Client
 from rclpy.logging import get_logger
 from rclpy.node import Node
 from rclpy.task import Future
-from task_planning.utils.other_utils import singleton
-from task_planning.utils.other_utils import get_robot_name
+from task_planning.utils.other_utils import get_robot_name, singleton
 
 logger = get_logger('servos_interface')
 
