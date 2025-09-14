@@ -112,30 +112,6 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = Fa
         move_to_pose_global(global_pose, pose_tolerances=pose_tolerances, timeout=timeout, parent=self),
             send_transformer=send_transformer)
 
-# TODO: deprecate this, use correct_yaw from base_comp_task instead
-@task
-async def yaw_from_local_pose(self: Task, yaw: int, timeout: int = 30) -> None:
-    """
-    Yaw from current local position to some offset yaw
-
-    Args:
-        self (Task): The task instance on which the method is called.
-        yaw (int): The amount to yaw, in radian.
-        time_limit (int, optional): The time limit (in seconds) for reaching the pose. Defaults to 30.
-
-    Returns:
-        None
-    """
-
-    logger.info(f'Yawing {yaw} from current position')
-    await move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, yaw),
-            keep_orientation=True,
-            time_limit = timeout,
-            parent=self,
-        )
-    logger.info(f'Finished yaw')
-
 
 @task
 async def move_with_velocity(_self: Task, twist: Twist) -> Task[None, Twist | None, None]:
@@ -216,10 +192,11 @@ async def depth_correction(self: Task, desired_depth: float) -> Task[None, None,
     logger.info(f'Started depth correction {depth_delta}')
     await move_to_pose_local(
         geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0),
-        pose_tolerances=create_twist_tolerance(linear_z=0.17),
+        pose_tolerances=create_twist_tolerance(linear_z=0.1),
         timeout=15,
         parent=self)
     logger.info(f'Finished depth correction {depth_delta}')
+
 
 @task
 async def move_x(self: Task, step: float = 1.0) -> None:
@@ -241,6 +218,7 @@ async def move_x(self: Task, step: float = 1.0) -> None:
         pose_tolerances=create_twist_tolerance(linear_x=0.15),
         parent=self)
     logger.info(f'Moved x {step}')
+
 
 @task
 async def move_y(self: Task, step: float = 1.0) -> None:
@@ -268,7 +246,6 @@ Directions = list[Direction]
 async def move_with_directions(self: Task,
                                directions: Directions,
                                depth_level: float | None = None,
-                               yaw_heading: float | None = None,
                                correct_yaw: bool = False,
                                correct_depth: bool = False,
                                keep_orientation: bool = False,
@@ -286,6 +263,8 @@ async def move_with_directions(self: Task,
         directions (Directions): A list of tuples, where each tuple specifies the target pose.
             - Tuples of length 3 represent (x, y, z).
             - Tuples of length 6 represent (x, y, z, roll, pitch, yaw).
+        depth_level (float, optional): The depth, as provided by the pressure sensor, the robot should move to. If this
+            is not None, the Z value of the provided pose will be overridden. Defaults to None.
         correct_yaw (bool, optional): If True, corrects the yaw after moving to a pose. Defaults to False.
         correct_depth (bool, optional): If True, corrects the depth after moving to a pose. Defaults to False.
         keep_orientation (bool, optional): If True, corrects orientation after moving to a pose. Defaults to False.
@@ -314,7 +293,7 @@ async def move_with_directions(self: Task,
 
         if correct_yaw:
             logger.info(f'Correcting yaw {orig_gyro - State().gyro_euler_angles.z}')
-            await move_to_pose_local(geometry_utils.create_pose(0,0,0,0,0,orig_gyro - State().gyro_euler_angles.z),
+            await move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, orig_gyro - State().gyro_euler_angles.z),
                                      timeout=timeout,
                                      parent=self)
         if correct_depth:
