@@ -81,7 +81,13 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   useLayoutEffect(() => {
     context.onRender = (renderState: Immutable<RenderState>, done: unknown) => {
       setRenderDone(() => done);
-      console.log(renderState.variables.toJS());
+      if (renderState.variables instanceof Map) {
+        console.log(Object.fromEntries(renderState.variables));
+      } else {
+        console.log(renderState.variables);
+      }
+
+
       // Reset state when the user seeks the video
       if (renderState.didSeek ?? false) {
         setState(initState());
