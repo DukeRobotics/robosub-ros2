@@ -81,7 +81,7 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   useLayoutEffect(() => {
     context.onRender = (renderState: Immutable<RenderState>, done: unknown) => {
       setRenderDone(() => done);
-
+      console.log(renderState.variables.toJS());
       // Reset state when the user seeks the video
       if (renderState.didSeek ?? false) {
         setState(initState());
@@ -133,6 +133,7 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
     context.watch("currentTime");
     context.watch("currentFrame");
     context.watch("didSeek");
+    context.watch("variables");
   }, [context]);
 
   // Call our done function at the end of each render.
