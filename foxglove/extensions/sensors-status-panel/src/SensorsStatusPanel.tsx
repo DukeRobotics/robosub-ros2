@@ -1,5 +1,6 @@
 import useTheme from "@duke-robotics/theme";
 import { Immutable, PanelExtensionContext, RenderState, MessageEvent, Subscription } from "@foxglove/extension";
+import { Password } from "@mui/icons-material";
 import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableRow, Typography, Tooltip } from "@mui/material";
 import Alert from "@mui/material/Alert";
 import { ThemeProvider } from "@mui/material/styles";
@@ -17,7 +18,8 @@ const TOPICS_MAP = {
   Sonar: "/sonar/status",
   "IVC Modem": "/sensors/modem/status",
 };
-const varDict;
+let varDict: Record<string, string> = {}; // Foxglove environment vars
+const robotNames = new Set<String>(["oogway", "crush"]); // Set of acceptable robot var names
 type topicsMapKeys = keyof typeof TOPICS_MAP;
 // Seconds until sensor is considered disconnected
 const SENSOR_DOWN_THRESHOLD = 1;
@@ -69,15 +71,15 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
       setRenderDone(() => done);
       if (renderState.variables instanceof Map) {
         varDict = Object.fromEntries(renderState.variables); // @ts-ignore
-        console.log(varDict["ROBOT_NAME"]);
-      } else {
-        console.log(renderState.variables);
       }
-      if (varDict.has("ROBOT_NAME")) {
-        // Check if it's in a set of acceptable names
-        // if not, we want to display an warning
-        // if yes,
-      }
+      let robotName 
+      const isValidRobot = robotNames.has(robotName);
+      const filteredTopicsMap = isValidRobot
+        ? Object.fromEntries(
+            ROBOT_SENSOR_KEYS[robotName].map((key) => [key, TOPICS_MAP[key]])
+          ) as typeof TOPICS_MAP
+        : TOPICS_MAP;
+
       // Reset state when the user seeks the video
       if (renderState.didSeek ?? false) {
         setState(initState());
@@ -134,6 +136,21 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   const theme = useTheme();
   return (
     <ThemeProvider theme={theme}>
+      {!("ROBOT_NAME" in varDict) && (
+        <Box mb={1}>
+          <Alert variant="filled" severity="warning">
+            ROBOT_NAME not defined in Env vars.
+          </Alert>
+        </Box>
+      )}
+      {("ROBOT_NAME" in varDict && !robotNames.has(varDict["ROBOT_NAME"])) && (
+        <Box mb={1}>
+          <Alert variant="filled" severity="warning">
+            {`Robot name, "${varDict["ROBOT_NAME"]}" is not an acceptable name: {${Array.from(robotNames).map(name => `"${name}"`).join(", ")}}.`}
+          </Alert>
+        </Box>
+      )}
+
       <Box m={1}>
         <TableContainer component={Paper}>
           <Table size="small">
@@ -159,14 +176,7 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
             </TableBody>
           </Table>
         </TableContainer>
-        {!(varDict.has("ROBOT_NAME")) && (
-          <Box mb={1}>
-            <Alert variant="filled" severity="error">
-              No robot under ROBOT_NAME
-            </Alert>
-          </Box>
-        )}
-        </Box>
+      </Box>
     </ThemeProvider>
   );
 }
