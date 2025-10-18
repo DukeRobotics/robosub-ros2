@@ -81,13 +81,22 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   useLayoutEffect(() => {
     context.onRender = (renderState: Immutable<RenderState>, done: unknown) => {
       setRenderDone(() => done);
+      const varDict;
       if (renderState.variables instanceof Map) {
-        console.log(Object.fromEntries(renderState.variables));
+            const varDict = Object.fromEntries(renderState.variables); // @ts-ignore
+            console.log(varDict["ROBOT_NAME"]);
       } else {
         console.log(renderState.variables);
       }
 
-
+      if (!(varDict.has("ROBOT_NAME"))){
+        // Check if it's in a set of acceptable names
+        // if not, we want to display an warning
+        // if yes,
+      }
+      else{
+        // Display a warning to the sensors status panel      }
+      }
       // Reset state when the user seeks the video
       if (renderState.didSeek ?? false) {
         setState(initState());
@@ -176,6 +185,9 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
             </TableBody>
           </Table>
         </TableContainer>
+        {not(varDict.has(name) &&
+
+      )}
       </Box>
     </ThemeProvider>
   );
