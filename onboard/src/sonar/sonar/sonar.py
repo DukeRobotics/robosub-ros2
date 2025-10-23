@@ -15,6 +15,7 @@ from custom_msgs.srv import SonarSweepRequest
 from cv_bridge import CvBridge
 from geometry_msgs.msg import PoseStamped
 from rclpy.node import Node
+from rclpy.time import Time
 from sensor_msgs.msg import CompressedImage
 from serial.tools import list_ports
 from std_msgs.msg import String
@@ -214,7 +215,7 @@ class Sonar(Node):
         """
         # 0.5 for the average distance of sample
         return (sample_index + 0.5) * self.meters_per_sample()
-    
+
     def get_distance_of_sample(self, pixel_distance: float) -> float:
         """
         Get the distance in meters of a sample given its index in the data array returned from the device.
@@ -353,6 +354,7 @@ class Sonar(Node):
         """
 
         sonar_sweep_array, cart_grid = self.get_sweep(start_angle, end_angle)
+        np.save(f"/home/ubuntu/robosub-ros2/onboard/src/sonar/sweep_data/sonar_sweep_{self.get_clock().now().nanoseconds}", sonar_sweep_array)
 
         intensity_threshold = 0.6*np.max(sonar_sweep_array) # Example threshold
         line_points_mask = cart_grid > intensity_threshold
