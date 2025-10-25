@@ -6,8 +6,13 @@ import Alert from "@mui/material/Alert";
 import { ThemeProvider } from "@mui/material/styles";
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import { createRoot } from "react-dom/client";
-// Map of sensor name to topic name
-const TOPICS_MAP = {
+
+const robotSensorMap = new Map<string,Array<string>>([
+  ["oogway", ["DVL", "IMU", "Pressure", "Gyro"]],
+  ["crush", ["Front Mono", "Bottom Mono", "Sonar", "IVC Modem", "IMU"]],
+]);
+
+const ALL_TOPICS_MAP = {
   DVL: "/sensors/dvl/raw",
   IMU: "/vectornav/imu",
   Pressure: "/sensors/depth",
@@ -18,20 +23,23 @@ const TOPICS_MAP = {
   Sonar: "/sonar/status",
   "IVC Modem": "/sensors/modem/status",
 };
+let robotSpecificTopics : Record<string, string> = {} // Robot-specific topics map
 let varDict: Record<string, string> = {}; // Foxglove environment vars
-const robotNames = new Set<String>(["oogway", "crush"]); // Set of acceptable robot var names
-type topicsMapKeys = keyof typeof TOPICS_MAP;
+const robotNames = new Set<string>([...robotSensorMap.keys()]); // Set of acceptable robot var names
+type topicsMapKeys = keyof typeof ALL_TOPICS_MAP;
 // Seconds until sensor is considered disconnected
 const SENSOR_DOWN_THRESHOLD = 1;
 const TOPICS_MAP_REVERSED: Record<string, topicsMapKeys> = {};
-for (const [key, value] of Object.entries(TOPICS_MAP)) {
+for (const [key, value] of Object.entries(ALL_TOPICS_MAP)) {
   TOPICS_MAP_REVERSED[value] = key as topicsMapKeys;
 }
+let visibleSensors : string[] | undefined = [];
+let visibleSubscriptions:string[] | undefined = [];
 // Array of all topics: [{topic: topic1}, {topic: topic2}, ... ]
-const TOPICS_LIST: Subscription[] = [];
-for (const value of Object.values(TOPICS_MAP)) {
-  TOPICS_LIST.push({ topic: value });
-}
+// const TOPICS_LIST: Subscription[] = [];
+// for (const value of Object.values(TOPICS_MAP)) {
+//   TOPICS_LIST.push({ topic: value });
+// }
 // Time of last message received from sensor
 type SensorsTime = Record<topicsMapKeys, number>;
 // True if SensorsTime is within SENSOR_DOWN_THRESHOLD seconds
@@ -45,13 +53,13 @@ const initState = () => {
   const state: Partial<SensorsStatusPanelState> = {};
   // Initialize sensorsTime with 0's
   const sensorsTime: Partial<SensorsTime> = {};
-  for (const key in TOPICS_MAP) {
+  for (const key in ALL_TOPICS_MAP) {
     sensorsTime[key as keyof SensorsTime] = 0;
   }
   state.sensorsTime = sensorsTime as SensorsTime;
   // Initialize connectStatus with false's
   const connectStatus: Partial<ConnectStatus> = {};
-  for (const key in TOPICS_MAP) {
+  for (const key in ALL_TOPICS_MAP) {
     connectStatus[key as keyof ConnectStatus] = false;
   }
   state.connectStatus = connectStatus as ConnectStatus;
@@ -63,16 +71,36 @@ const initState = () => {
 function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
   const [state, setState] = useState<SensorsStatusPanelState>(initState());
-  // Subscribe to all topics
-  context.subscribe(TOPICS_LIST);
+  const [envVars, setEnvVars] = useState<Record<string, string>>({});
+  const robotName = envVars["ROBOT_NAME"]?.toString() ?? "";
+
+  if (robotNames.has(robotName) && robotSensorMap.get(robotName)){
+    for (const sensorName of robotSensorMap.get(robotName)) {
+  // Check if the sensor name is a valid key in ALL_TOPICS_MAP
+  if (sensorName in ALL_TOPICS_MAP) {
+    const topicKey = sensorName as topicsMapKeys;
+
+    // Add the [sensorName, topicValue] pair to the dictionary
+    robotSpecificTopics[topicKey] = ALL_TOPICS_MAP[topicKey];
+  }
+}
+  }
+  else{
+    robotSpecificTopics = ALL_TOPICS_MAP
+  }
+
   // Watch currentFrame for messages from each sensor
   useLayoutEffect(() => {
     context.onRender = (renderState: Immutable<RenderState>, done: unknown) => {
-      setRenderDone(() => done);
+
+      // parse variables into plain object and update envVars state
       if (renderState.variables instanceof Map) {
-            varDict = Object.fromEntries(renderState.variables); // @ts-ignore
-            console.log(varDict["ROBOT_NAME"]);
-      } else {
+        const parsed = Object.fromEntries(renderState.variables as Map<string, string>);
+        varDict = parsed; // optional: maintain global for legacy uses
+        setEnvVars(parsed);
+      } else if (renderState.variables && typeof renderState.variables === "object") {
+        varDict = renderState.variables as Record<string, string>;
+        setEnvVars(varDict);
         console.log(renderState.variables);
       }
       console.log(varDict);
@@ -106,7 +134,7 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
         }));
       }
       // Compare current time to each sensorsTime and set connectStatus to false if the sensor is down
-      for (const key in TOPICS_MAP) {
+      for (const key in ALL_TOPICS_MAP) {
         setState((prevState) => {
           if (prevState.currentTime - prevState.sensorsTime[key as topicsMapKeys] > SENSOR_DOWN_THRESHOLD) {
             return {
@@ -121,16 +149,17 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
         });
       }
     };
+
     context.watch("currentTime");
     context.watch("currentFrame");
     context.watch("didSeek");
     context.watch("variables");
   }, [context]);
   // Call our done function at the end of each render.
-  useEffect(() => {
-    context.subscribe(TOPICS_LIST);
-    renderDone?.();
-  }, [renderDone]);
+  // useEffect(() => {
+  //   context.subscribe(TOPICS_LIST);
+  //   renderDone?.();
+  // }, [renderDone]);
   // Create a table of all the sensors and their status
   const theme = useTheme();
   return (
@@ -153,26 +182,26 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
       <Box m={1}>
         <TableContainer component={Paper}>
           <Table size="small">
-            <TableBody>
-              {Object.entries(TOPICS_MAP).map(([sensor, topic]) => (
-                <TableRow
-                  key={sensor}
-                  style={{
-                    backgroundColor: state.connectStatus[sensor as topicsMapKeys]
-                      ? theme.palette.success.dark
-                      : theme.palette.error.dark,
-                  }}
-                >
-                  <TableCell>
-                    <Tooltip title={topic} arrow placement="left">
-                      <Typography variant="subtitle2" color={theme.palette.common.white}>
-                        {sensor}
-                      </Typography>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
+          <TableBody>
+          {Object.entries(robotSpecificTopics).map(([sensor, topic]) => (
+            <TableRow
+              key={sensor}
+              style={{
+                backgroundColor: state.connectStatus[sensor as topicsMapKeys]
+                  ? theme.palette.success.dark
+                  : theme.palette.error.dark,
+              }}
+            >
+              <TableCell>
+                <Tooltip title={topic} arrow placement="left">
+                  <Typography variant="subtitle2" color={theme.palette.common.white}>
+                    {sensor}
+                  </Typography>
+                </Tooltip>
+              </TableCell>
+            </TableRow>
+          ))}
+          </TableBody>
           </Table>
         </TableContainer>
       </Box>
