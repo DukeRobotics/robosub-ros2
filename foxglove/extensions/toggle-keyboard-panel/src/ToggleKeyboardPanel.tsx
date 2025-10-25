@@ -25,7 +25,7 @@ const AXIS_MAP = {
   pitchIndex: 9, // Thumb Joystick Forward/Backward
   rollIndex: 9, // Thumb Joystick Right/Left
 };
-
+const [pressedKeys, setPressedKeys] = useState<Set<String>>(new Set<String>);
 // Joystick button indices
 const BUTTON_MAP = {
   torpedoActivateIndex: 1, // Red/black striped button on Joystick
@@ -35,12 +35,10 @@ const BUTTON_MAP = {
 
 /**
  * Calculate power for pitch from thumb joystick input
- * @param value Value from thumb joystick
- * @returns Desired power
+ * 
  */
 const pitchMapping = (value: number): number => {
-  // Thumb joystick input initialized at 0 but returns to this stationary value after being touched and released
-  const stationary = 3.2857141494750977;
+  
 
   if (value !== stationary && value !== 0) {
     if (value > 0.7142857313156128 || value < -0.4285714030265808) {
@@ -136,6 +134,32 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
     };
   }, [context]);
   context.watch("colorScheme");
+  useEffect(() => {
+    const handleKeyDown = (e : KeyboardEvent) => {
+      e.preventDefault();
+      
+      const key = e.key.toLowerCase();
+      if (/*TODO validKeys.includes(key) && add when defining keys later*/ !e.repeat) {
+        setPressedKeys(prev => new Set(prev).add(key));
+
+      } 
+
+    }
+    const handleKeyUp = (e : KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+
+      if (!e.repeat) {
+        const next = new Set(pressedKeys)
+
+      setPressedKeys(prev => {
+      const next = new Set(prev);  // ✅ Uses current state
+      next.delete(key);
+      return next;
+    });
+      }
+    }
+
+  }, [])
 
   // Call our done function at the end of each render
   useEffect(() => {
