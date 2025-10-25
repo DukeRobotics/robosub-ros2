@@ -1,8 +1,9 @@
-# ruff: noqa: ERA001, F401, N806
+# ruff: noqa: ERA001, F401, N806, E501, F841
 from math import radians
 
 from task_planning.interface.cv import CVObjectType
 from task_planning.interface.ivc import IVCMessageType
+from task_planning.interface.servos import TorpedoStates
 from task_planning.task import Task, task
 from task_planning.tasks import buoyancy_tasks, comp_tasks, ivc_tasks, move_tasks, prequal_tasks, sonar_tasks
 from task_planning.utils import geometry_utils
@@ -20,11 +21,11 @@ async def main(self: Task) -> Task[None, None, None]:
         ######## Main competition tasks ########
         ivc_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(-DEPTH, parent=self),
-        comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
-        comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
-        # TODO: task not found???
-        comp_tasks.send_torpedo_ivc(parent=self),
-        comp_tasks.octagon_task(direction=1, parent=self),
+        # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
+        #comp_tasks.torpedo_task(first_target=FIRST_TARGET, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        # # TODO: task not found???
+        # comp_tasks.send_torpedo_ivc(parent=self),
+        # comp_tasks.octagon_task(direction=1, parent=self),
 
         ######## Unused competition tasks ########
         ## Coin flip
@@ -41,6 +42,10 @@ async def main(self: Task) -> Task[None, None, None]:
         ## Bins/Marker dropper
         # comp_tasks.spiral_bin_search(parent=self),
         # comp_tasks.bin_task(parent=self),
+
+        ## Test
+        comp_tasks.fire_torpedoes(TorpedoStates.LEFT, parent=self),
+        comp_tasks.fire_torpedoes(TorpedoStates.RIGHT, parent=self),
 
         ## Octagon
         # comp_tasks.octagon_task(direction=1, parent=self),

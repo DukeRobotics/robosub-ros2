@@ -1,10 +1,10 @@
 import io
 import os
-from pathlib import Path
 import time
-from sklearn.decomposition import PCA
+from pathlib import Path
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 import rclpy
 import resource_retriever as rr
@@ -14,15 +14,16 @@ from brping import Ping360
 from custom_msgs.srv import SonarSweepRequest
 from cv_bridge import CvBridge
 from geometry_msgs.msg import PoseStamped
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 from serial.tools import list_ports
-from std_msgs.msg import String
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from sklearn.cluster import DBSCAN
+from sklearn.decomposition import PCA
+from std_msgs.msg import String
 
 from sonar import sonar_image_processing, sonar_utils
+
 
 class Sonar(Node):
     """Class to interface with the Sonar device."""
@@ -214,7 +215,7 @@ class Sonar(Node):
         """
         # 0.5 for the average distance of sample
         return (sample_index + 0.5) * self.meters_per_sample()
-    
+
     def get_distance_of_sample(self, pixel_distance: float) -> float:
         """
         Get the distance in meters of a sample given its index in the data array returned from the device.
@@ -353,7 +354,8 @@ class Sonar(Node):
         """
 
         sonar_sweep_array, cart_grid = self.get_sweep(start_angle, end_angle)
-
+        #logger.info("array found")
+        np.save(f"onboard/src/sonar/sonar/sweep_data/sweep_{self.get_clock().now().nanoseconds}",sonar_sweep_array)
         intensity_threshold = 0.6*np.max(sonar_sweep_array) # Example threshold
         line_points_mask = cart_grid > intensity_threshold
 
@@ -426,13 +428,13 @@ class Sonar(Node):
 
 
         else:
-            self.get_logger().info("Not enough line points found to apply PCA.")
+            self.get_logger().info('Not enough line points found to apply PCA.')
             color_image = sonar_image_processing.build_color_sonar_image_from_int_array(cart_grid)
             return (None, color_image, normal_angle_deg)
 
 
         # Step 3: Visualize the center point and the principal axis (representing the line)
-        # Overlay the identified center point and the principal axis onto the Cartesian grid visualization to verify the result.
+        # Overlay identified center point and principal axis onto the Cartesian grid visualization to verify the result.
         h, w = cart_grid.shape
         dpi = 100  # you can adjust depending on desired output scaling
         plot = plt.figure(figsize=(w/dpi, h/dpi), dpi=dpi)
@@ -440,15 +442,13 @@ class Sonar(Node):
         plt.imshow(cart_grid, cmap='viridis', interpolation='none')  # no resampling
         plt.axis('off')  # no ticks/axes
         plt.tight_layout(pad=0)  # remove padding
-        # plt.colorbar(label='Intensity')
-        # plt.xlabel('X')
-        # plt.ylabel('Y')
         plt.axis('off')  # Turn off axis for a clean image
 
         # Plot the identified center point if found
         if center_x is not None and center_y is not None:
             plt.plot(center_x, center_y, 'ro') # 'ro' for red circle marker
-            plt.text(center_x, center_y, f' Center ({center_x:.0f}, {center_y:.0f})', color='red', fontsize=10, ha='left')
+            plt.text(center_x, center_y, f' Center ({center_x:.0f}, {center_y:.0f})',
+                     color='red', fontsize=10, ha='left')
 
         # Plot the principal axis if PCA was applied
         if len(line_points_coords) > 1:
@@ -457,7 +457,8 @@ class Sonar(Node):
             scale_factor = 1000 # Adjust this to make the line visible
             start_point = pca.mean_ - direction_vector * scale_factor
             end_point = pca.mean_ + direction_vector * scale_factor
-            plt.plot([start_point[1], end_point[1]], [start_point[0], end_point[0]], 'r-', label='Principal Axis (PCA)') # Note: plot takes [x_coords], [y_coords]
+            # Note: plot takes [x_coords], [y_coords]
+            plt.plot([start_point[1], end_point[1]], [start_point[0], end_point[0]], 'r-', label='Principal Axis (PCA)')
             plt.legend()
 
         fig = plt.gcf()
@@ -470,24 +471,23 @@ class Sonar(Node):
 
         # Converting stuff to fit return format:
         # Convert plt to array, and convert center_x and center_y to distances.
-        converted_image_array = self.convert_plt_to_array(plot)
         center = self.DEFAULT_NUMER_OF_SAMPLES
         dx = center_x - center
         dy = center_y - center
         distance = np.sqrt(dx**2 + dy**2)
         angle_rad = np.arctan2(dy, dx)
-        sample_index = int(round(distance))
+        sample_index = round(distance)
         meters = self.get_distance_of_sample(sample_index)
         x_pos = meters * np.cos(angle_rad)
         y_pos = meters * np.sin(angle_rad)
         pose = PoseStamped()
         pose.header.stamp = self.get_clock().now().to_msg()
-        pose.header.frame_id = "map"
+        pose.header.frame_id = 'map'
         pose.pose.position.x = x_pos
         pose.pose.position.y = y_pos
         pose.pose.position.z = 0.0
-        plot.savefig("sonar_plot.png")
-        self.get_logger().info(f"Sonar: Got pose at ({x_pos:.2f}, {y_pos:.2f}, 0.0)")
+        plot.savefig('sonar_plot.png')
+        self.get_logger().info(f'Sonar: Got pose at ({x_pos:.2f}, {y_pos:.2f}, 0.0)')
 
         return (pose, plot_img, normal_angle_deg)
 
@@ -504,8 +504,7 @@ class Sonar(Node):
         buf = io.BytesIO()
         plt_fig.savefig(buf, format='png')
         buf.seek(0)
-        img = plt.imread(buf)
-        return img
+        return plt.imread(buf)
 
     def convert_to_ros_compressed_img(self, sonar_sweep: np.ndarray, compressed_format: str = 'jpg',
                                       is_color: bool = False) -> CompressedImage:
@@ -627,21 +626,6 @@ class Sonar(Node):
             self.create_timer(1.0 / self.LOOP_RATE, self.constant_sweep)
         else:
             self.create_service(SonarSweepRequest, 'sonar/request', self.perform_sonar_request)
-
-    # def position_at_distance(self, deg: int, low_deg: int, high_deg: int, sonar_sweep: np.ndarray):
-    #     """
-    #     Given robot is perpendicular to the wall, this task will position the robot at given distance to the wall using SONAR.
-    #     """
-    #     if (deg < low_deg or deg > high_deg):
-    #         self.get_logger().error(f'Degrees {deg} out of range {low_deg} to {high_deg}.')
-    #         return None
-
-    #     sonar_sweep, cart = self.get_sweep(low_deg, high_deg)
-    #     index = sonar_sweep.shape[0] - (high_deg - deg)
-    #     sonar_sweep[index]
-
-    #     np.ndarray
-    #     CURRENT_DISTANCE = self.get_distance_of_sample(sample_index=int(self.number_of_samples/2))
 
 def main(args: list[str] | None = None) -> None:
     """Initialize and run the Sonar node."""

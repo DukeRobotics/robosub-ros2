@@ -669,7 +669,7 @@ async def gate_task(self: Task, offset: int = 0, direction: int = 1) -> Task[Non
         await cv_tasks.correct_z(prop=CVObjectType.GATE_SAWFISH, parent=self)
 
     async def correct_depth() -> None:
-        await move_tasks.correct_depth(desired_depth=depth_level, parent=self)
+        await move_tasks.depth_correction(desired_depth=depth_level, parent=self)
 
     async def move_x(step=1) -> None:
         await move_tasks.move_x(step=step, parent=self)
@@ -1541,6 +1541,13 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     logger.info('Finished surfacing')
 
 @task
+async def fire_torpedoes(self: Task, torpedo_side: TorpedoStates) -> Task[None, None, None]:
+    logger.info(f'Firing torpedo: {torpedo_side}')
+    await Servos().fire_torpedo(torpedo_side)
+    await util_tasks.sleep(Duration(seconds=3), parent=self)
+    logger.info(f'Fired torpedo: {torpedo_side}')
+
+@task
 async def torpedo_task(self: Task, first_target: CVObjectType, depth_level=0.5, direction=1) -> Task[None, None, None]:
     # await scan_for_torpedo()
     logger.info('Starting torpedo task')
@@ -1553,7 +1560,7 @@ async def torpedo_task(self: Task, first_target: CVObjectType, depth_level=0.5, 
         await cv_tasks.correct_z(prop=CVObjectType.TORPEDO_BANNER, parent=self)
 
     async def correct_depth() -> Coroutine[None, None, None]:
-        await move_tasks.correct_depth(desired_depth=DEPTH_LEVEL, parent=self)
+        await move_tasks.depth_correction(desired_depth=DEPTH_LEVEL, parent=self)
 
     async def move_x(step: float = 1) -> Coroutine[None, None, None]:
         logger.info(f"Moving forward {step}")
