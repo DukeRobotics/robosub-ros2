@@ -43,7 +43,7 @@ Please provide a detailed checklist to reproduce the bug (multiple checklists sh
 Please add any screenshots you may have that show the bug.
 
 ### Other documents
-Please add any other doucments you may have that help (e.g., logs, etc.)
+Please add any other documents you may have that help (e.g., logs, etc.)
 
 ## Additional notes
 Please enter any additional notes here.
