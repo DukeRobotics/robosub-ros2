@@ -103,6 +103,10 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
           if (sensorName) {
             seenSensors.add(sensorName);
           }
+
+          if (seenSensors.size === Object.keys(TOPICS_MAP).length) {
+            break; // All sensors have been seen, no need to continue
+          }
         }
 
         if (seenSensors.size > 0) {
