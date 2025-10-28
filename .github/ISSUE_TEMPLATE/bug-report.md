@@ -1,8 +1,8 @@
 ---
-name: Bug report
-about: :'(
+name: Bug
+about: Report a bug.
 title: ''
-labels: 'bug'
+labels: bug
 assignees: ''
 
 ---
@@ -19,31 +19,31 @@ Please list the CS package(s) that are affected by this bug.
 Please provide a high-level overview of what the bug is.
 
 ### Affected robot(s)
-Please put down which (or both) robot is affected.
+Please put down which robot(s) is/are affected.
 
 ## Behavior
-### Description of bugged behavior
-Please provide a detailed description of the behavior.
+### Description of observed behavior
+Please provide a detailed description of observed behavior due to the bug.
 
 ### Description of expected behavior
 Please describe what the expected behavior should be.
 
 ## Reproduction
-### Environment(s) confirmed affected
-Please list if this is specific to any package version(s), branch(es), OS, etc.
+### Confirmed environment(s)
+List the exact environments where this bug has been verified to occur. Include relevant technical details such as package version(s), branch(es), commit(s), OS, etc.  
 
-### Potential environment(s) affected
+### Suspected environment(s)
 Please list any unconfirmed environments that may also be affected.
 
 ### Steps to reproduce
-Please provide a detailed checklist to reproduce the bug (multiple checklists should be created for different environments, if necessary).
+Please provide a detailed, precise sequence of actions to reproduce the bug (one for each affected environment, if necessary).  
 
 ## Supporting documents
 ### Screenshots
-Please add any screenshots you may have that show the bug.
+Please add any screenshots you may have that clearly demonstrate the issue.  
 
 ### Other documents
-Please add any other documents you may have that help (e.g., logs, etc.)
+Please add any other relevant documents (e.g., logs, etc.)  
 
 ## Additional notes
 Please enter any additional notes here.

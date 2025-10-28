@@ -2,7 +2,7 @@
 name: New Feature
 about: Create a new feature.
 title: ''
-labels: 'feature'
+labels: feature
 assignees: ''
 
 ---
@@ -16,8 +16,8 @@ Why do we need this new feature?
 
 ## Completion criteria
 
-### MVP
-What criteria, when fulfilled, can we count this feature as complete?
+### Minimuum Viable Product (MVP)
+What criteria must be fulfilled for us to consider this feature complete?  
 
 ### Stretch
 What additional criteria would be nice to have, but are not vital to the completion of this feature?
