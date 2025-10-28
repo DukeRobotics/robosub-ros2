@@ -15,7 +15,7 @@ NOTE: If priority is high or critical, ping the CS leads on Slack upon creation.
 ## Affected package(s)
 Please list the CS package(s) that are affected by this bug.
 
-### Overview
+### Bug Description
 Please provide a high-level overview of what the bug is.
 
 ### Affected robot(s)
