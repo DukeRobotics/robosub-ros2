@@ -30,7 +30,7 @@ Please describe what the expected behavior should be.
 
 ## Reproduction
 ### Environment(s) confirmed affected
-Please list if this is specific to any package version(s), branche(s), OS, etc.
+Please list if this is specific to any package version(s), branch(es), OS, etc.
 
 ### Potential environment(s) affected
 Please list any unconfirmed environments that may also be affected.
