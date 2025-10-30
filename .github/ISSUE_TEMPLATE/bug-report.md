@@ -12,6 +12,12 @@ assignees: ''
 Very low, low, medium, high, or critical.
 NOTE: If priority is high or critical, ping the CS leads on Slack upon creation.
 
+Critical: requires immediate action within the next 24 hours
+High: can be handled within the next week
+Medium: important but not urgent
+Low: not required to be done soon
+Very low: done when there is extra free time
+
 ## Affected package(s)
 Please list the CS package(s) that are affected by this bug.
 

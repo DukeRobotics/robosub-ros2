@@ -16,7 +16,7 @@ Why do we need this new feature?
 
 ## Completion criteria
 
-### Minimuum Viable Product (MVP)
+### Minimum Viable Product (MVP)
 What criteria must be fulfilled for us to consider this feature complete?  
 
 ### Stretch
