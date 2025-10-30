@@ -231,10 +231,10 @@ class Sonar(Node):
                 break
             self.get_logger().error(f'Error in getting data at angle {angle_in_gradians}')
 
-        response_to_int_array = [int(item) for item in response.data]  # converts bytestring to int array
+        response_to_int_array = [int(item) for item in response.data]
         return [0] * self.FILTER_INDEX + response_to_int_array[self.FILTER_INDEX:]
 
-    def get_sweep(self, range_start: int = 100, range_end: int = 300) -> np.ndarray:
+    def get_sweep(self, range_start: int = 100, range_end: int = 300, fourier_denoise: False) -> np.ndarray:
         """
         Get data along a range of angles.
 
@@ -251,7 +251,13 @@ class Sonar(Node):
         for i in range(range_start, range_end + 1):  # inclusive ends
             sonar_scan = self.request_data_at_angle(i)
             sonar_sweep_data.append(sonar_scan)
-        return np.vstack(sonar_sweep_data)
+
+        sweep = np.vstack(sonar_sweep_data)
+
+        if fourier_denoise:
+            sweep = sonar_image_processing.fourier_signal_processing(sweep, 0, 1)
+
+        return sweep
 
     def to_robot_position(self, angle: float, index: int, target_frame_id: str) -> Pose:
         """

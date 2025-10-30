@@ -192,3 +192,17 @@ def build_sonar_image(data_list: list, display_results: bool = False, npy_save_p
         cv2.waitKey(0)
 
     return sonar_img
+
+def fourier_signal_processing(data: np.ndarray, inner_radius: float, outer_radius: float) -> np.ndarray:
+    """
+    Denoise a sonar scan using the Fast Fourier Transform.
+
+    Args:
+        data (ndarray): an ndarray representing the sonar data
+        inner_radius (float): the radius of a circle in the frequency domain, all signal within will be removed
+        outer_Radius (float): the radius of a circle in the frequency domain, all signal without will be removed
+
+    Returns:
+        ndarray: a denoised sonar image.
+    """
+    pass
