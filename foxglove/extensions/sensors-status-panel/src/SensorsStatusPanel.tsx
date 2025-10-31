@@ -7,7 +7,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import { createRoot } from "react-dom/client";
 
-const robotSensorMap = new Map<string,Array<string>>([
+const robotSensorMap = new Map<string, Array<string>>([
   ["oogway", ["DVL", "IMU", "Pressure", "Gyro"]],
   ["crush", ["Front Mono", "Bottom Mono", "Sonar", "IVC Modem", "IMU"]],
 ]);
@@ -23,7 +23,7 @@ const ALL_TOPICS_MAP = {
   Sonar: "/sonar/status",
   "IVC Modem": "/sensors/modem/status",
 };
-let robotSpecificTopics : Record<string, string> = {} // Robot-specific topics map
+let robotSpecificTopics: Record<string, string> = {}; // Robot-specific topics map
 let varDict: Record<string, string> = {}; // Foxglove environment vars
 const robotNames = new Set<string>([...robotSensorMap.keys()]); // Set of acceptable robot var names
 type topicsMapKeys = keyof typeof ALL_TOPICS_MAP;
@@ -33,8 +33,8 @@ const TOPICS_MAP_REVERSED: Record<string, topicsMapKeys> = {};
 for (const [key, value] of Object.entries(ALL_TOPICS_MAP)) {
   TOPICS_MAP_REVERSED[value] = key as topicsMapKeys;
 }
-let visibleSensors : string[] | undefined = [];
-let visibleSubscriptions:string[] | undefined = [];
+let visibleSensors: string[] | undefined = [];
+let visibleSubscriptions: string[] | undefined = [];
 // Array of all topics: [{topic: topic1}, {topic: topic2}, ... ]
 // const TOPICS_LIST: Subscription[] = [];
 // for (const value of Object.values(TOPICS_MAP)) {
@@ -72,39 +72,52 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
   const [state, setState] = useState<SensorsStatusPanelState>(initState());
   const [envVars, setEnvVars] = useState<Record<string, string>>({});
-  const robotName = envVars["ROBOT_NAME"]?.toString() ?? "";
+  // Add new state for robotSpecificTopics
 
-  if (robotNames.has(robotName) && robotSensorMap.get(robotName)){
-    for (const sensorName of robotSensorMap.get(robotName)) {
-  // Check if the sensor name is a valid key in ALL_TOPICS_MAP
-  if (sensorName in ALL_TOPICS_MAP) {
-    const topicKey = sensorName as topicsMapKeys;
+  // Update robotSpecificTopics when envVars changes
+  useEffect(() => {
+    const robotName = envVars["ROBOT_NAME"]?.toString() ?? "";
+    const newTopics: Record<string, string> = {};
 
-    // Add the [sensorName, topicValue] pair to the dictionary
-    robotSpecificTopics[topicKey] = ALL_TOPICS_MAP[topicKey];
-  }
-}
-  }
-  else{
-    robotSpecificTopics = ALL_TOPICS_MAP
-  }
+    if (robotNames.has(robotName) && robotSensorMap.get(robotName)) {
+      for (const sensorName of robotSensorMap.get(robotName) ?? []) {
+        if (sensorName in ALL_TOPICS_MAP) {
+          console.log(sensorName);
+          newTopics[sensorName] = ALL_TOPICS_MAP[sensorName as topicsMapKeys];
+        }
+      }
+      robotSpecificTopics = newTopics;
+    } else {
+      robotSpecificTopics = {};
+    }
+  console.log(robotSpecificTopics);
+  }, [envVars]);
 
+  // ... rest of the component remains the same
   // Watch currentFrame for messages from each sensor
   useLayoutEffect(() => {
     context.onRender = (renderState: Immutable<RenderState>, done: unknown) => {
-
       // parse variables into plain object and update envVars state
       if (renderState.variables instanceof Map) {
-        const parsed = Object.fromEntries(renderState.variables as Map<string, string>);
+        // Cast to unknown first, then to Map with known types
+        const variablesMap = renderState.variables as unknown as Map<string, unknown>;
+
+        // Filter and ensure all values are strings
+        const parsed = Object.fromEntries(
+          Array.from(variablesMap.entries()).map(([key, value]) => [
+            key,
+            typeof value === "string" ? value : String(value),
+          ]),
+        );
         varDict = parsed; // optional: maintain global for legacy uses
         setEnvVars(parsed);
       } else if (renderState.variables && typeof renderState.variables === "object") {
-        varDict = renderState.variables as Record<string, string>;
-        setEnvVars(varDict);
-        console.log(renderState.variables);
+        // Cast through unknown first for type safety
+        const variables = renderState.variables as unknown as Record<string, string>;
+        varDict = variables;
+        setEnvVars(variables);
+        console.log("Variables updated:", variables);
       }
-      console.log(varDict);
-
 
       // Reset state when the user seeks the video
       if (renderState.didSeek ?? false) {
@@ -171,10 +184,12 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
           </Alert>
         </Box>
       )}
-      {("ROBOT_NAME" in varDict && !robotNames.has(varDict["ROBOT_NAME"])) && (
+      {"ROBOT_NAME" in varDict && !robotNames.has(varDict["ROBOT_NAME"]) && (
         <Box mb={1}>
           <Alert variant="filled" severity="warning">
-            {`Robot name, "${varDict["ROBOT_NAME"]}" is not an acceptable name: {${Array.from(robotNames).map(name => `"${name}"`).join(", ")}}.`}
+            {`Robot name, "${varDict["ROBOT_NAME"]}" is not an acceptable name: {${Array.from(robotNames)
+              .map((name) => `"${name}"`)
+              .join(", ")}}.`}
           </Alert>
         </Box>
       )}
@@ -182,26 +197,26 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
       <Box m={1}>
         <TableContainer component={Paper}>
           <Table size="small">
-          <TableBody>
-          {Object.entries(robotSpecificTopics).map(([sensor, topic]) => (
-            <TableRow
-              key={sensor}
-              style={{
-                backgroundColor: state.connectStatus[sensor as topicsMapKeys]
-                  ? theme.palette.success.dark
-                  : theme.palette.error.dark,
-              }}
-            >
-              <TableCell>
-                <Tooltip title={topic} arrow placement="left">
-                  <Typography variant="subtitle2" color={theme.palette.common.white}>
-                    {sensor}
-                  </Typography>
-                </Tooltip>
-              </TableCell>
-            </TableRow>
-          ))}
-          </TableBody>
+            <TableBody>
+              {Object.entries(robotSpecificTopics).map(([sensor, topic]) => (
+                <TableRow
+                  key={sensor}
+                  style={{
+                    backgroundColor: state.connectStatus[sensor as topicsMapKeys]
+                      ? theme.palette.success.dark
+                      : theme.palette.error.dark,
+                  }}
+                >
+                  <TableCell>
+                    <Tooltip title={topic} arrow placement="left">
+                      <Typography variant="subtitle2" color={theme.palette.common.white}>
+                        {sensor}
+                      </Typography>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
           </Table>
         </TableContainer>
       </Box>
