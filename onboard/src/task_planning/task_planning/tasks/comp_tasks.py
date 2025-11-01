@@ -326,7 +326,7 @@ async def yaw_to_cv_object(self: CompTask, cv_object: CVObjectType, direction=1,
     # Yaw until object detection
     # await self.correct_depth(DEPTH_LEVEL)
     found = await yaw_until_object_detection(cv_object, depth_level=DEPTH_LEVEL,
-                                             latency_threshold=latency_threshold, direction=direction)
+                                             latency_threshold=latency_threshold, direction=direction, parent=self)
 
     # Could not find, so just surface and pray...
     if not found:
@@ -375,7 +375,7 @@ async def yaw_to_cv_object(self: CompTask, cv_object: CVObjectType, direction=1,
         if (not CV().is_receiving_recent_cv_data(cv_object, latency_threshold)):
             logger.info(f'[yaw_to_cv_object] {cv_object} detection lost, running yaw_until_object_detection()')
             await yaw_until_object_detection(cv_object, depth_level=DEPTH_LEVEL,
-                                             latency_threshold=latency_threshold, direction=direction)
+                                             latency_threshold=latency_threshold, direction=direction, parent=self)
 
         # Recalculate the yaw
         cv_object_yaw = await get_robust_cv_object_yaw()
@@ -637,7 +637,7 @@ async def slalom_to_octagon_dead_reckoning(self: CompTask, depth_level: float = 
 
         logger.info("[slalom_to_octagon_dead_reckoning] Checking pink bin detection")
         await yaw_until_object_detection(CVObjectType.BIN_PINK_FRONT,
-                                         depth_level=DEPTH_LEVEL, latency=LATENCY_THRESHOLD)
+                                         depth_level=DEPTH_LEVEL, latency=LATENCY_THRESHOLD, parent=self)
 
         after_cv_directions = [
             (2, 0, 0),
@@ -968,8 +968,8 @@ async def marker_dropper_task(self: CompTask) -> Task[None, None, None]:
     logger.info('[marker_dropper_task] Completed marker dropper task')
 
 
-@task
-async def fire_torpedoes(self: Task, torpedo_side: TorpedoStates) -> Task[None, None, None]:
+@comp_task
+async def fire_torpedoes(self: CompTask, torpedo_side: TorpedoStates) -> Task[None, None, None]:
     logger.info(f'[fire_torpedoes] Firing torpedo: {torpedo_side}')
     await Servos().fire_torpedo(torpedo_side)
     await util_tasks.sleep(Duration(seconds=3), parent=self)
@@ -980,8 +980,8 @@ async def fire_torpedoes(self: Task, torpedo_side: TorpedoStates) -> Task[None, 
 async def torpedo_task(self: CompTask, first_target: CVObjectType,
                        depth_level=0.5, direction=1) -> Task[None, None, None]:
     assert first_target in [CVObjectType.TORPEDO_REEF_SHARK_TARGET, CVObjectType.TORPEDO_SAWFISH_TARGET], \
-        f'Invalid first_animal: {first_target}. '
-        'Must be CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET'
+        f'Invalid first_animal: {first_target}. Must be \
+            CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET'
 
     logger.info('[torpedo_task] Starting torpedo task')
 
@@ -1075,7 +1075,6 @@ async def torpedo_task(self: CompTask, first_target: CVObjectType,
 
     logger.info(f'[torpedo_task] Torpedo task completed')
 
-
 @comp_task
 async def octagon_task(self: CompTask, direction: int = 1) -> Task[None, None, None]:
     """
@@ -1123,7 +1122,7 @@ async def octagon_task(self: CompTask, direction: int = 1) -> Task[None, None, N
         logger.info('[octagon_task] Beginning move to pink bins')
 
         pink_bin_found = await yaw_until_object_detection(CVObjectType.BIN_PINK_FRONT,
-                                                          depth_level=DEPTH_LEVEL_AT_BINS, direction=direction)
+                                                          depth_level=DEPTH_LEVEL_AT_BINS, direction=direction, parent=self)
 
         if not pink_bin_found:
             await move_tasks.move_to_pose_local(
