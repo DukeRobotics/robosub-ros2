@@ -6,7 +6,6 @@ import cv2
 import numpy as np
 from custom_msgs.msg import CVObject
 from geometry_msgs.msg import Point, Polygon
-
 from scipy.spatial.distance import cdist
 
 
@@ -86,7 +85,7 @@ def calculate_relative_pose(bbox_bounds: list[int | float], input_size: tuple[fl
     Args:
         bbox_bounds (object): The detection object.
         input_size (list[float]): Array with input size, where [0] is width and [1] is height.
-        label_shape (list[float]): The label shape, where [0] is width and [1] is height (now used for distance calculation).
+        label_shape (list[float]): The label shape, where [0] is width and [1] is height (now used for distance calc).
         focal_length (float): The distance between the lens and the image sensor when the lens is focused on a subject.
         sensor_size (tuple[float, float]): The physical size of the camera's image sensor.
         adjustment_factor (int): 1 if mono, 2 if depthai.
@@ -183,14 +182,24 @@ def compute_center_distance(bbox_center_x: float, bbox_center_y: float, frame_wi
 
     return distance_x, distance_y
 
-def group_contours_by_distance(self, contours, dist_thresh):
+def group_contours_by_distance(contours: list[np.ndarray], dist_thresh: float) -> list[np.ndarray]:
+        """
+        Group contours that are within a certain distance threshold.
+
+        Args:
+            contours (list[np.ndarray]): List of contours to group.
+            dist_thresh (float): Distance threshold to group contours.
+
+        Returns:
+            list[np.ndarray]: List of grouped contours.
+        """
         centers = []
         valid_contours = []
         for contour in contours:
-            M = cv2.moments(contour)
-            if M["m00"] != 0:
-                cx = int(M["m10"] / M["m00"])
-                cy = int(M["m01"] / M["m00"])
+            m = cv2.moments(contour)
+            if m['m00'] != 0:
+                cx = int(m['m10'] / m['m00'])
+                cy = int(m['m01'] / m['m00'])
                 centers.append([cx, cy])
                 valid_contours.append(contour)
 

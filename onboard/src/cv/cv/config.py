@@ -36,29 +36,11 @@ class Torpedo:
     """Torpedo dimension and color constants."""
     WIDTH = 0.1016
 
-    # Nighttime values
-    # LOW_BOT = np.array([0, 10, 40])
-    # LOW_TOP = np.array([15, 65, 100])
-    # HIGH_BOT = np.array([345, 10, 40])
-    # HIGH_TOP = np.array([360, 65, 100])
-
-    # pre-Aug 14
-    # LOW_BOT = np.array([0, 55, 35])
-    # LOW_TOP = np.array([5, 95, 85])
-    # HIGH_BOT = np.array([330, 55, 35])
-    # HIGH_TOP = np.array([360, 95, 85])
-
     # No sun flickering values
     LOW_BOT = np.array([0, 50, 45])
     LOW_TOP = np.array([5, 95, 95])
     HIGH_BOT = np.array([330, 50, 45])
     HIGH_TOP = np.array([360, 95, 95])
-
-    # No coral false positives
-    # LOW_BOT = np.array([0, 35, 45])
-    # LOW_TOP = np.array([10, 95, 100])
-    # HIGH_BOT = np.array([330, 35, 45])
-    # HIGH_TOP = np.array([360, 95, 100])
 
 class BlueRect:
     """BlueRect color constants."""

@@ -1,14 +1,15 @@
+from functools import reduce
+
 import cv2
 import numpy as np
 import rclpy
 import resource_retriever as rr
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
-from rclpy.node import Node, Publisher
-from sensor_msgs.msg import CompressedImage, Image
-from functools import reduce
 from rclpy.clock import Clock
 from rclpy.logging import get_logger
+from rclpy.node import Node, Publisher
+from sensor_msgs.msg import CompressedImage, Image
 
 from cv.config import MonoCam, Torpedo
 from cv.utils import calculate_relative_pose, compute_yaw, group_contours_by_distance
@@ -26,7 +27,7 @@ class TorpedoTargetDetector(Node):
 
         self.mask_ranges=[
                 [Torpedo.LOW_BOT, Torpedo.LOW_TOP],
-                [Torpedo.HIGH_BOT, Torpedo.HIGH_TOP]
+                [Torpedo.HIGH_BOT, Torpedo.HIGH_TOP],
             ]
 
         # Load the reference image in grayscale (assumes the image is already binary: white and black)
@@ -40,7 +41,8 @@ class TorpedoTargetDetector(Node):
         self.bridge = CvBridge()
         self.image_sub = self.create_subscription(CompressedImage, '/camera/usb/front/compressed', self.image_callback,
                                                   10)
-        self.fish_bbox_pub = self.create_publisher(CVObject,'/cv/front_usb/torpedo_sawfish_target/bounding_box', 1) # named differently so as to accomodate CV object
+        # named differently so as to accomodate CV object
+        self.fish_bbox_pub = self.create_publisher(CVObject,'/cv/front_usb/torpedo_sawfish_target/bounding_box', 1)
         self.shark_bbox_pub = self.create_publisher(CVObject,'/cv/front_usb/torpedo_reef_shark_target/bounding_box', 1)
         self.largest_bbox_pub = self.create_publisher(CVObject, '/cv/front_usb/torpedo_largest_target/bounding_box', 1)
         self.hsv_filtered_pub = self.create_publisher(Image, '/cv/front_usb/torpedo/hsv_filtered', 1)
@@ -50,8 +52,10 @@ class TorpedoTargetDetector(Node):
         self.fish_target = self.create_publisher(Image, '/cv/front_usb/torpedo/fish_target', 1)
         self.largest_target = self.create_publisher(Image, '/cv/front_usb/torpedo/largest_target', 1)
 
-        self.torpedo_shark_sub = self.create_subscription(CVObject, '/cv/front/shark_front', self.update_shark_bounding_boxes, 1)
-        self.torpedo_sawfish_sub = self.create_subscription(CVObject, '/cv/front/swordfish_front', self.update_sawfish_bounding_boxes, 1)
+        self.torpedo_shark_sub = self.create_subscription(CVObject, '/cv/front/shark_front',
+                                                          self.update_shark_bounding_boxes, 1)
+        self.torpedo_sawfish_sub = self.create_subscription(CVObject, '/cv/front/swordfish_front',
+                                                            self.update_sawfish_bounding_boxes, 1)
         self.shark_coords = None
         self.sawfish_coords = None
         self.last_update_shark = 0
@@ -61,11 +65,29 @@ class TorpedoTargetDetector(Node):
         self.n = 10  # Set the number of last bounding boxes to store
 
     def update_shark_bounding_boxes(self, data: CVObject) -> None:
+        """
+        Update shark bounding box coordinates.
+
+        Args:
+            data (CVObject): The shark bounding box data.
+
+        Returns:
+            None.
+        """
         self.last_update_shark = Clock().now().seconds_nanoseconds()[0]
         self.shark_coords = data.coords
         # x, y
 
     def update_sawfish_bounding_boxes(self, data: CVObject) -> None:
+        """
+        Update sawfish bounding box coordinates.
+
+        Args:
+            data (CVObject): The sawfish bounding box data.
+
+        Returns:
+            None.
+        """
         self.last_update_sawfish = Clock().now().seconds_nanoseconds()[0]
         self.sawfish_coords = data.coords
 
@@ -99,7 +121,7 @@ class TorpedoTargetDetector(Node):
         """
         return cv2.matchShapes(self.reference_image, contour, cv2.CONTOURS_MATCH_I1, 0.0)
 
-    def image_callback(self, data: CompressedImage) -> None:
+    def image_callback(self, data: CompressedImage) -> None:  # noqa: PLR0915
         """Attempt to convert image and apply contours."""
         try:
             # Convert the image from the compressed format to OpenCV format
@@ -111,7 +133,8 @@ class TorpedoTargetDetector(Node):
             return
 
         # Apply HSV filtering on the image
-        masks = [cv2.inRange(hsv_image, self.actual_to_opencv_hsv(r[0]), self.actual_to_opencv_hsv(r[1])) for r in self.mask_ranges]
+        masks = [cv2.inRange(hsv_image, self.actual_to_opencv_hsv(r[0]),
+                             self.actual_to_opencv_hsv(r[1])) for r in self.mask_ranges]
         mask = reduce(cv2.bitwise_or, masks)
 
         # Apply morphological operations to clean up the binary image
@@ -127,7 +150,8 @@ class TorpedoTargetDetector(Node):
         contours, _ = cv2.findContours(red_hsv, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         # Sort contours by area and shape similarity to the reference image
-        contours = sorted(contours, key=lambda cnt: (cv2.contourArea(cnt) / cv2.minEnclosingCircle(cnt)[1]), reverse=True)
+        contours = sorted(contours, key=lambda cnt: (cv2.contourArea(cnt) / cv2.minEnclosingCircle(cnt)[1]),
+                          reverse=True)
         contours = contours[:3]
 
         # Group contours by distance
@@ -137,7 +161,8 @@ class TorpedoTargetDetector(Node):
         contours = sorted(contours, key=lambda cnt: cv2.boundingRect(cnt)[3], reverse=True)
         contours = contours[:2]
 
-        contours = sorted(contours, key=lambda cnt: cv2.matchShapes(self.reference_image, cnt, cv2.CONTOURS_MATCH_I1, 0.0), reverse=False)
+        contours = sorted(contours, key=lambda cnt: cv2.matchShapes(self.reference_image, cnt,
+                                                                    cv2.CONTOURS_MATCH_I1, 0.0), reverse=False)
 
         # Get the top 2 contours with the closest match to the shape of the reference image
         contours = contours[:2]
@@ -149,7 +174,6 @@ class TorpedoTargetDetector(Node):
         self.contour_image_pub.publish(contour_image_msg)
 
         # only processes contours w/ area > MIN_AREA_OF_CONTOUR
-        # contours = [contour for contour in contours if cv2.contourArea(contour) > self.MIN_AREA_OF_CONTOUR]
 
         shark_cnt = None
         fish_cnt = None
@@ -157,19 +181,16 @@ class TorpedoTargetDetector(Node):
         similar_size_contours = contours # this works
 
         # Match contours with the reference image contours
-        # tbh idk why it thinks some of the circles are 2.x but shrug just gonna ignore this for now
-        # for cnt in contours:
-        #     match = cv2.matchShapes(self.ref_contours[0], cnt, cv2.CONTOURS_MATCH_I1, 0.0)
-        #     logger.info(f'{match}')
-        #     if match < self.MATCH_TOLERANCE:
-        #         similar_size_contours.append(cnt)
 
         similar_size_contours = sorted(similar_size_contours, key=cv2.contourArea, reverse=True)
 
-        LATENCY_SEC = 2
+        latency_sec = 2
+        num_of_contours = 2
 
         # Find highest and lower contour, assuming that those two will represent the upper and lower holes
-        if abs(self.last_update_shark - Clock().now().seconds_nanoseconds()[0]) < LATENCY_SEC and len(similar_size_contours) == 2 and self.shark_coords is not None:
+        if abs(self.last_update_shark - Clock().now().seconds_nanoseconds()[0]) < latency_sec \
+            and len(similar_size_contours) == num_of_contours and self.shark_coords is not None:
+
             largest_cnt = similar_size_contours[0]
 
             x0, y0, _, _ = cv2.boundingRect(similar_size_contours[0])
@@ -185,7 +206,11 @@ class TorpedoTargetDetector(Node):
                 fish_cnt = similar_size_contours[0]
                 shark_cnt = similar_size_contours[1]
 
-        elif abs(self.last_update_shark - Clock().now().seconds_nanoseconds()[0]) < LATENCY_SEC and abs(self.last_update_sawfish - Clock().now().seconds_nanoseconds()[0]) < LATENCY_SEC and len(similar_size_contours) == 1 and self.shark_coords is not None and self.sawfish_coords is not None:
+        elif abs(self.last_update_shark - Clock().now().seconds_nanoseconds()[0]) < latency_sec \
+            and abs(self.last_update_sawfish - Clock().now().seconds_nanoseconds()[0]) < latency_sec \
+            and len(similar_size_contours) == 1 and self.shark_coords is not None \
+            and self.sawfish_coords is not None:
+
             largest_cnt = similar_size_contours[0]
 
             x, y, _, _ = cv2.boundingRect(similar_size_contours[0])

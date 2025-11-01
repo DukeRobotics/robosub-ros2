@@ -15,8 +15,9 @@ from cv.utils import calculate_relative_pose, compute_center_distance, compute_y
 
 class HSVFilter(Node):
     """Parent class for all HSV filtering scripts."""
-    def __init__(self, name: str, camera: str, mask_ranges: np.ndarray, width: float, height: float | None = None, pubs: list[str] | None = None,
-                 retrieval: int = cv2.RETR_TREE, approx: int = cv2.CHAIN_APPROX_SIMPLE) -> None:
+    def __init__(self, name: str, camera: str, mask_ranges: np.ndarray, width: float, height: float | None = None,
+                 pubs: list[str] | None = None, retrieval: int = cv2.RETR_TREE,
+                 approx: int = cv2.CHAIN_APPROX_SIMPLE) -> None:
         super().__init__(f'{name}_hsv_filter')
 
         self.bridge = CvBridge()
@@ -52,11 +53,10 @@ class HSVFilter(Node):
                                                                     f'/cv/{camera}_usb/{name}/{pub}/contour_image', 10))
                 self.distance_pub.append(self.create_publisher(Point, f'/cv/{camera}_usb/{name}/{pub}/distance', 10))
 
-        create_additional_pubs_subs_vars()
+        self.create_additional_pubs_subs_vars()
 
     def create_additional_pubs_subs_vars(self) -> None:
         """Additional publishers and subscribers to be used later."""
-        pass
 
     def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:
         """
@@ -88,7 +88,8 @@ class HSVFilter(Node):
             return
 
         # Apply HSV filtering on the image
-        masks = [cv2.inRange(hsv_image, self.actual_to_opencv_hsv(r[0]), self.actual_to_opencv_hsv(r[1])) for r in self.mask_ranges]
+        masks = [cv2.inRange(hsv_image, self.actual_to_opencv_hsv(r[0]),
+                             self.actual_to_opencv_hsv(r[1])) for r in self.mask_ranges]
         mask = reduce(cv2.bitwise_or, masks)
 
         # Apply morphological filters as necessary to clean up binary image
@@ -113,7 +114,7 @@ class HSVFilter(Node):
 
         bbox_img = image.copy()
 
-        for i in range(0, min(len(final_contours), len(self.contour_image_pub))):
+        for i in range(min(len(final_contours), len(self.contour_image_pub))):
             if (final_contours[i] is None):
                 return
 
@@ -122,8 +123,7 @@ class HSVFilter(Node):
 
             # Draw contours onto image and publish
             image_with_contours = image.copy()
-            box = cv2.boxPoints(rect)
-            box = np.int0(box)
+            box = np.int0(cv2.boxPoints(rect))
             cv2.drawContours(image_with_contours, [box], 0, (0, 0, 255), 3)
             contour_image_msg = self.bridge.cv2_to_imgmsg(image_with_contours, 'bgr8')
             self.contour_image_pub[i].publish(contour_image_msg)
@@ -142,7 +142,8 @@ class HSVFilter(Node):
             # Create CVObject message, and populate relavent attributes
             bounding_box = CVObject()
 
-            bounding_box.header.stamp.sec, bounding_box.header.stamp.nanosec = self.get_clock().now().seconds_nanoseconds()
+            bounding_box.header.stamp.sec, bounding_box.header.stamp.nanosec = \
+                self.get_clock().now().seconds_nanoseconds()
 
             # Get dimensions that CVObject wants for our rectangle
             bounding_box.xmin = (x) * meters_per_pixel
@@ -152,11 +153,10 @@ class HSVFilter(Node):
             bounding_box.score = cv2.contourArea(final_contours[i])
 
             final_x_normalized = x / MonoCam.IMG_SHAPE[0]
-            bounding_box.yaw = compute_yaw(final_x_normalized, final_x_normalized, MonoCam.IMG_SHAPE[0])  # width of camera in in mm
-            #self.get_logger().info(f'yaw thoughts {bounding_box.yaw}')
+            # width of camera in in mm
+            bounding_box.yaw = compute_yaw(final_x_normalized, final_x_normalized, MonoCam.IMG_SHAPE[0])
 
-            bounding_box.width = int(w)
-            bounding_box.height = int(h)
+            bounding_box.width, bounding_box.height = int(w), int(h)
 
             # Compute distance between center of bounding box and center of image
             # Here, image x is robot's y, and image y is robot's z
@@ -171,7 +171,7 @@ class HSVFilter(Node):
             bbox_bounds = (x / MonoCam.IMG_SHAPE[0], y / MonoCam.IMG_SHAPE[1], (x+w) /
                         MonoCam.IMG_SHAPE[0], (y+h) / MonoCam.IMG_SHAPE[1])
 
-            # Point coords represents the 3D position of the object represented by the bounding box relative to the robot
+            # Point coords represents the 3D position of the object represented by the bounding box relative to robot
             coords_list = calculate_relative_pose(bbox_bounds,
                                                 MonoCam.IMG_SHAPE,
                                                 (self.width, self.height),
