@@ -1,7 +1,7 @@
+import time
 from enum import Enum
 from pathlib import Path
 from typing import ClassVar
-import time
 
 import numpy as np
 import resource_retriever as rr
@@ -22,6 +22,8 @@ class CVObjectType(Enum):
     BIN_BLUE = 'bin_blue'
     BIN_RED = 'bin_red'
     BIN_WHOLE = 'bin_whole'
+    BIN_PINK_FRONT = 'bin_pink_front'
+    BIN_PINK_BOTTOM = 'bin_pink_bottom'
     BUOY = 'buoy'
     GATE_REEF_SHARK = 'b'
     GATE_SAWFISH = 'c'
@@ -36,8 +38,6 @@ class CVObjectType(Enum):
     TORPEDO_LARGEST_TARGET = 'torpedo_largest_target'
     TORPEDO_LOWER_TARGET = 'h'
     TORPEDO_UPPER_TARGET = 'g'
-    BIN_PINK_FRONT = 'bin_pink_front'
-    BIN_PINK_BOTTOM = 'bin_pink_bottom'
 
 
 @singleton
@@ -62,7 +62,6 @@ class CV:
 
     MODELS_PATH = 'package://cv/models/depthai_models.yaml'
     CV_CAMERA = 'front'
-    # TODO: add other CV models here as defined in depthai_models.yaml. Modify the Enum strings correspondingly.
     CV_MODELS: ClassVar[list[str]] = ['2025_torpedo']
 
     # Need to see more than TORPEDO_BANNER_RATE_THRESHOLD messages per second
@@ -72,6 +71,8 @@ class CV:
         CVObjectType.BUOY: '/cv/front_usb/buoy/bounding_box',
         CVObjectType.BIN_BLUE: '/cv/bottom/bin_blue/bounding_box',
         CVObjectType.BIN_RED: '/cv/bottom/bin_red/bounding_box',
+        CVObjectType.BIN_PINK_FRONT: 'cv/front_usb/bin_pink_front/bounding_box',
+        CVObjectType.BIN_PINK_BOTTOM: 'cv/front_usb/bin_pink_bottom/bounding_box',
         CVObjectType.LANE_MARKER: '/cv/bottom/lane_marker/bounding_box',
         CVObjectType.PATH_MARKER: '/cv/bottom/path_marker/bounding_box',
         CVObjectType.TORPEDO_BANNER: '/cv/front/torpedo_banner',
@@ -80,8 +81,6 @@ class CV:
         CVObjectType.TORPEDO_REEF_SHARK_TARGET: '/cv/front_usb/torpedo_reef_shark_target/bounding_box',
         CVObjectType.TORPEDO_SAWFISH_TARGET: '/cv/front_usb/torpedo_sawfish_target/bounding_box',
         CVObjectType.TORPEDO_LARGEST_TARGET: '/cv/front_usb/torpedo_largest_target/bounding_box',
-        CVObjectType.BIN_PINK_FRONT: 'cv/front_usb/bin_pink_front/bounding_box',
-        CVObjectType.BIN_PINK_BOTTOM: 'cv/front_usb/bin_pink_bottom/bounding_box',
     }
 
     DISTANCE_TOPICS: ClassVar[dict[CVObjectType, str]] = {

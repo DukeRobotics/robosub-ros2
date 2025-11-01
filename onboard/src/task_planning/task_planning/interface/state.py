@@ -1,4 +1,9 @@
-from geometry_msgs.msg import PoseWithCovarianceStamped, Vector3, Twist
+import copy
+import math
+from collections.abc import Callable
+
+import numpy as np
+from geometry_msgs.msg import PoseWithCovarianceStamped, Vector3
 from nav_msgs.msg import Odometry
 from rclpy.logging import get_logger
 from rclpy.node import Node
@@ -7,6 +12,7 @@ from sensor_msgs.msg import Imu
 from task_planning.utils import geometry_utils
 from task_planning.utils.other_utils import singleton
 from tf2_ros.buffer import Buffer
+from transforms3d.euler import quat2euler
 
 logger = get_logger('state_interface')
 
@@ -167,3 +173,64 @@ class State:
 
         if not self.bypass:
             self._reset_pose.call_async(request)
+
+    def get_yaw_correction(self, maximum_yaw: float = math.radians(30),
+                           get_step_size_func: Callable[[float], float] | None = None) -> float:
+        """
+        Calculate the yaw correction needed to return the robot to its original IMU orientation.
+
+        Args:
+            maximum_yaw (float, optional): The maximum allowed yaw correction in radians for a single step.
+                Defaults to 30 degrees.
+            get_step_size_func (Callable, optional): A function that takes the desired yaw correction and returns
+                the absolute step size to use. If None, defaults to a function limiting the correction to maximum_yaw.
+
+        Returns:
+            float: The computed yaw correction in radians, limited by the step size function.
+        """
+        if not get_step_size_func:
+            get_step_size_func = lambda desired_yaw: min(abs(desired_yaw), maximum_yaw)  # noqa: E731
+
+        orig_imu_orientation = copy.deepcopy(self._orig_imu.orientation)
+        orig_imu_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(orig_imu_orientation))
+
+        cur_imu_orientation = copy.deepcopy(self._imu.orientation)
+        cur_imu_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(cur_imu_orientation))
+
+        correction = orig_imu_euler_angles[2] - cur_imu_euler_angles[2]
+        sign_correction = np.sign(correction)
+        return sign_correction * get_step_size_func(correction)
+
+    def get_gyro_yaw_correction(self, return_raw: bool = True, maximum_yaw: float = math.radians(30),
+                                get_step_size_func: Callable[[float], float] | None = None) -> float:
+        """
+        Calculate the yaw correction needed to return the robot to its original gyro orientation.
+
+        Args:
+            return_raw (bool, optional): If True, returns the raw yaw correction (difference in yaw angles).
+                If False, returns the processed correction normalized to [0, 2π), limited by the step size function.
+                Defaults to True.
+            maximum_yaw (float, optional): The maximum allowed yaw correction in radians for a single step.
+                Defaults to 30 degrees.
+            get_step_size_func (Callable, optional): A function that takes the desired yaw correction and returns
+                the absolute step size to use. If None, defaults to a function limiting the correction to maximum_yaw.
+
+        Returns:
+            float: The computed yaw correction in radians, either raw or processed, limited by the step size function.
+        """
+        orig_gyro_orientation = copy.deepcopy(self._orig_gyro.pose.pose.orientation)
+        orig_gyro_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(orig_gyro_orientation))
+
+        cur_gyro_orientation = copy.deepcopy(self._gyro.pose.pose.orientation)
+        cur_gyro_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(cur_gyro_orientation))
+
+        raw_correction = orig_gyro_euler_angles[2] - cur_gyro_euler_angles[2]
+
+        if return_raw:
+            return raw_correction
+
+        if not get_step_size_func:
+            get_step_size_func = lambda desired_yaw: min(abs(desired_yaw), maximum_yaw)  # noqa: E731
+        correction = raw_correction % (2 * np.pi)
+        sign_correction = np.sign(correction)
+        return sign_correction * get_step_size_func(correction)

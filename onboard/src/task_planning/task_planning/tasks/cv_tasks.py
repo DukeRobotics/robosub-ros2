@@ -78,14 +78,17 @@ async def correct_y(self: Task, prop: CVObjectType,
 
 
 @task
-async def correct_z(self: Task, prop: CVObjectType) -> Task[None, None, None]:
+async def correct_z(self: Task, prop: CVObjectType,
+                    add_factor: float = 0, mult_factor: float = 1) -> Task[None, None, None]:
     """
     Correct z-coordinate based on CV data.
 
     Args:
         self: Task instance.
         prop: The CV object to use for correction.
+        add_factor: Additive offset. Defaults to 0.
+        mult_factor: Multiplicative offset. Defaults to 1.
     """
-    z = CV().bounding_boxes[prop].coords.z
+    z = (CV().bounding_boxes[prop].coords.z + add_factor) * mult_factor
     await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, z, 0, 0, 0), parent=self)
     logger.info(f'Corrected z {z}')

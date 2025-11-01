@@ -9,9 +9,7 @@ from rclpy.logging import get_logger
 from rclpy.node import Node
 from std_msgs.msg import Bool
 from std_srvs.srv import SetBool, Trigger
-from task_planning.utils.other_utils import singleton
-
-from task_planning.utils.other_utils import get_robot_name
+from task_planning.utils.other_utils import get_robot_name, singleton
 
 logger = get_logger('controls_interface')
 
@@ -131,7 +129,7 @@ class Controls:
 
     def _on_receive_enable_controls(self, status: Bool) -> None:
         """
-        Sets controls status object.
+        Set controls status object.
 
         Args:
             status: Status of ENABLE_CONTROLS flag.

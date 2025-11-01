@@ -322,7 +322,7 @@ def create_twist(x: float, y: float, z: float, roll: float, pitch: float, yaw: f
     """
     return Twist(
         linear=Vector3(x=x, y=y, z=z),
-        angular=Vector3(x=roll, y=pitch, z=yaw)
+        angular=Vector3(x=roll, y=pitch, z=yaw),
     )
 
 

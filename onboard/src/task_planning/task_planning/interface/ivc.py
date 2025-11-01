@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 
 import pytz
 from custom_msgs.msg import ModemStatus, StringWithHeader
@@ -9,7 +10,6 @@ from rclpy.logging import get_logger
 from rclpy.node import Node
 from rclpy.task import Future
 from rclpy.time import Time
-
 from task_planning.utils.other_utils import singleton
 
 logger = get_logger('ivc_interface')
@@ -67,10 +67,10 @@ def ros_timestamp_to_pacific_time(sec: int, nanosec: int) -> str:
         str: Human-readable timestamp in Pacific timezone
     """
     # Convert to datetime object
-    timestamp = datetime.fromtimestamp(sec + nanosec / 1e9)
+    pacific_tz = pytz.timezone('US/Pacific')
+    timestamp = datetime.fromtimestamp(sec + nanosec / 1e9, tz=pacific_tz)
 
     # Convert to Pacific timezone
-    pacific_tz = pytz.timezone('US/Pacific')
     pacific_time = timestamp.astimezone(pacific_tz)
 
     # Format as human-readable string
@@ -188,7 +188,7 @@ class IVC:
 
         # Log to text file
         logger.info(msg)
-        with open('ivc_log.txt', 'a') as f:
+        with Path('ivc_log.txt').open('a') as f:
             f.write(msg)
 
     def send_message(self, msg: IVCMessageType) -> Future | None:

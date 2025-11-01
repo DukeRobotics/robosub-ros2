@@ -1,3 +1,5 @@
+import builtins
+import contextlib
 import os
 import struct
 from dataclasses import dataclass
@@ -156,12 +158,10 @@ class ModemPublisher(SerialNode):
                 # Must have enough bytes in buffer for a complete message
                 if len(self.buffer) - index < self.MESSAGE_SIZE:
                     break
-                
+
                 packet = self.buffer[index:index + self.MESSAGE_SIZE]
-                try:    
+                with contextlib.suppress(builtins.BaseException):
                     self.publish_message(bytes(packet).decode('ascii'))
-                except:
-                    pass
                 index += 2
 
         self.buffer = self.buffer[index:]
