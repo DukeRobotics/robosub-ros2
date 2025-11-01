@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, cast
 
+from custom_msgs.srv import SonarSweepRequest
 from rclpy.logging import get_logger
 from task_planning.interface.sonar import Sonar
 from task_planning.task import Task, task
