@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 import pytz
@@ -30,10 +31,10 @@ def ros_timestamp_to_pacific_time(sec: int, nanosec: int) -> str:
         str: Human-readable timestamp in Pacific timezone
     """
     # Convert to datetime object
-    timestamp = datetime.fromtimestamp(sec + nanosec / 1e9)
+    pacific_tz = pytz.timezone('US/Pacific')
+    timestamp = datetime.fromtimestamp(sec + nanosec / 1e9, tz=pacific_tz)
 
     # Convert to Pacific timezone
-    pacific_tz = pytz.timezone('US/Pacific')
     pacific_time = timestamp.astimezone(pacific_tz)
 
     # Format as human-readable string
@@ -101,6 +102,7 @@ async def test_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
     """Test inter-vehicle communication."""
     # Send a IVC message, then wait for a response for 5 seconds, then send another message, and repeat
     messages_received = len(IVC().messages)
+    logger.info(f'Messages received: {messages_received}')
     while True:
         await wait_for_modem_ready(parent=self)
 
@@ -120,6 +122,7 @@ async def test_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
 
 @task
 async def ivc_send(self: Task[None, None, None], msg: IVCMessageType) -> None:
+    """Send IVC message."""
     await wait_for_modem_ready(parent=self)
 
     future = IVC().send_message(msg)
@@ -131,10 +134,10 @@ async def ivc_send(self: Task[None, None, None], msg: IVCMessageType) -> None:
             logger.info(f'Sent IVC message: {msg.name}')
 
             # Log to text file
-            with open('ivc_log.txt', 'a') as f:
+            with Path('ivc_log.txt').open('a') as f:  # noqa: ASYNC230 TODO switch to async IO
                 timestamp = ros_timestamp_to_pacific_time(
                     IVC().modem_status.header.stamp.sec,
-                    IVC().modem_status.header.stamp.nanosec
+                    IVC().modem_status.header.stamp.nanosec,
                 )
                 f.write(f'Sent IVC message: {msg.name} at {timestamp}\n')
         else:
@@ -142,6 +145,7 @@ async def ivc_send(self: Task[None, None, None], msg: IVCMessageType) -> None:
 
 @task
 async def ivc_receive(self: Task[None, None, None], timeout: float = 10) -> IVCMessageType:
+    """Receive IVC message."""
     await wait_for_modem_ready(parent=self)
 
     messages_received = len(IVC().messages)
@@ -168,8 +172,8 @@ async def ivc_receive(self: Task[None, None, None], timeout: float = 10) -> IVCM
     return IVCMessageType.UNKNOWN
 
 @task
-async def crush_ivc_spam(self: Task[None, None, None], msg_to_send: IVCMessageType,
-                         timeout: float = 60) -> Task[None, None, None]:
+async def crush_ivc_spam(self: Task[None, None, None], msg_to_send: IVCMessageType) -> Task[None, None, None]:
+    """Spam IVC message for Crush."""
     while True:
         await ivc_send(msg_to_send, parent=self) # Send crush is done with gate
         await util_tasks.sleep(20, parent=self)
@@ -177,6 +181,7 @@ async def crush_ivc_spam(self: Task[None, None, None], msg_to_send: IVCMessageTy
 @task
 async def ivc_send_then_receive(self: Task[None, None, None], msg_to_send: IVCMessageType,
                                 msg_to_receive: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
+    """Send then receive IVC message."""
     await ivc_send(msg_to_send, parent=self) # Send crush is done with gate
 
     count = 2
@@ -188,6 +193,7 @@ async def ivc_send_then_receive(self: Task[None, None, None], msg_to_send: IVCMe
 @task
 async def crush_ivc_send(self: Task[None, None, None], msg_to_send: IVCMessageType,
                          msg_to_receive: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
+    """Send IVC message crush."""
     await ivc_send(msg_to_send, parent=self) # Send crush is done with gate
 
     count = 2
@@ -204,6 +210,7 @@ async def crush_ivc_send(self: Task[None, None, None], msg_to_send: IVCMessageTy
 @task
 async def crush_ivc_receive(self: Task[None, None, None], msg_to_receive: IVCMessageType,
                             msg_to_send: IVCMessageType, timeout: float = 60) -> Task[None, None, None]:
+    """Receive IVC message crush."""
     count = 2
     # Wait for Oogway to say starting/acknowledge command
     while count != 0 and await ivc_receive(timeout=timeout, parent=self) != msg_to_receive:
@@ -215,6 +222,7 @@ async def crush_ivc_receive(self: Task[None, None, None], msg_to_receive: IVCMes
 @task
 async def ivc_receive_then_send(self: Task[None, None, None], msg: IVCMessageType,
                                 timeout: float = 60) -> Task[None, None, None]:
+    """Receive then after receipt send IVC message."""
     if timeout <= 0:
         return
 
@@ -225,13 +233,13 @@ async def ivc_receive_then_send(self: Task[None, None, None], msg: IVCMessageTyp
     await ivc_send(msg, parent=self) # Oogway says ok and starting
 
 @task
-async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:
+async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:  # noqa: ARG001
     """Append a header to the IVC log file."""
-    with open('ivc_log.txt', 'a') as f:
+    with Path('ivc_log.txt').open('a') as f:  # noqa: ASYNC230 TODO eventually use async io
         f.write('----- NEW RUN STARTED -----\n')
 
 @task
-async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[None, None, None]:
+async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[None, None, None]:  # noqa: ARG001
     """Add a message to the IVC log file."""
-    with open('ivc_log.txt', 'a') as f:
+    with Path('ivc_log.txt').open('a') as f: # noqa: ASYNC230 TODO eventually use async io
         f.write(f'{message}\n')

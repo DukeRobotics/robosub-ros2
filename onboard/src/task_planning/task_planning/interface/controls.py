@@ -129,7 +129,7 @@ class Controls:
 
     def _on_receive_enable_controls(self, status: Bool) -> None:
         """
-        Sets controls status object.
+        Set controls status object.
 
         Args:
             status: Status of ENABLE_CONTROLS flag.

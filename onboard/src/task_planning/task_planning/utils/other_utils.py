@@ -21,8 +21,9 @@ def get_robot_name() -> RobotName:
     robot_name = os.getenv('ROBOT_NAME', '')
     try:
         return RobotName(robot_name)
-    except ValueError:
-        raise ValueError(f'Invalid robot name: {robot_name}. Must be one of: oogway, oogway_shell, crush')
+    except ValueError as e:
+        msg = f'Invalid robot name: {robot_name}. Must be one of: oogway, oogway_shell, crush'
+        raise ValueError(msg) from e
 
 
 def singleton(cls: type) -> Callable[[Any, Any], type]:
