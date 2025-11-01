@@ -5,9 +5,9 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from rclpy.logging import get_logger
 from sklearn.cluster import DBSCAN
 from sklearn.linear_model import LinearRegression
-from rclpy.logging import get_logger
 
 from sonar import decode_ping_python_360
 

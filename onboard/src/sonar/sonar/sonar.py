@@ -1,6 +1,5 @@
 import io
 import os
-import time
 from pathlib import Path
 
 import cv2
@@ -226,6 +225,7 @@ class Sonar(Node):
         Args:
             sample_index (int): Index of the sample in the data array, from 0 to N-1,
             where N = number of samples.
+            pixel_distance (float): Pixel distance of the sample.
 
         Returns:
             float: Distance in meters of the sample from the sonar device.
@@ -277,7 +277,6 @@ class Sonar(Node):
         for i in range(range_end, range_start + 1, -1 if self.increase_ccw else 1):
             sonar_scan = self.request_data_at_angle(i)
             sonar_sweep_data.append(sonar_scan)
-        # np.save("sonar_data.npy", sonar_sweep_data)
         sweep = np.vstack(sonar_sweep_data)
         cart_grid = sonar_utils.polar2cart(sweep, range_start, range_end)
         return sweep, cart_grid
@@ -324,9 +323,9 @@ class Sonar(Node):
             (PoseStamped, np.ndarray, float): Pose of the object in robot reference frame, sonar sweep array, and normal
                 angle.
         """
-        sonar_sweep_array, cart_grid = self.get_sweep(start_angle, end_angle)
+        _, cart_grid = self.get_sweep(start_angle, end_angle)
 
-        sonar_index, normal_angle, plot = sonar_image_processing.find_center_point_and_angle(
+        sonar_index, normal_angle, _ = sonar_image_processing.find_center_point_and_angle(
             cart_grid, self.VALUE_THRESHOLD, self.DBSCAN_EPS,
             self.DBSCAN_MIN_SAMPLES, True)
 
@@ -340,7 +339,7 @@ class Sonar(Node):
         return (self.to_robot_position(sonar_angle, sonar_index), color_image, normal_angle)
 
     def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int) -> \
-                tuple[PoseStamped | None, np.ndarray, float | None]:
+                tuple[PoseStamped | None, np.ndarray, float | None]:  # noqa: PLR0915
         """
         Get the depth of the sweep of a detected object. For now uses mean value.
 
@@ -352,10 +351,8 @@ class Sonar(Node):
             (PoseStamped, np.ndarray, float): Pose of the object in robot reference frame, sonar sweep array, and normal
                 angle.
         """
-
         sonar_sweep_array, cart_grid = self.get_sweep(start_angle, end_angle)
-        #logger.info("array found")
-        np.save(f"onboard/src/sonar/sonar/sweep_data/sweep_{self.get_clock().now().nanoseconds}",sonar_sweep_array)
+        np.save(f'onboard/src/sonar/sonar/sweep_data/sweep_{self.get_clock().now().nanoseconds}',sonar_sweep_array)
         intensity_threshold = 0.6*np.max(sonar_sweep_array) # Example threshold
         line_points_mask = cart_grid > intensity_threshold
 
@@ -376,27 +373,21 @@ class Sonar(Node):
             unique_labels, counts = np.unique(labels[labels >= 0], return_counts=True)
 
             if len(unique_labels) == 0:
-                self.get_logger().info("DBSCAN found no clusters.")
+                self.get_logger().info('DBSCAN found no clusters.')
                 color_image = sonar_image_processing.build_color_sonar_image_from_int_array(cart_grid)
                 return (None, color_image, normal_angle_deg)
 
             # Select largest cluster
             largest_cluster_label = unique_labels[np.argmax(counts)]
             largest_cluster_points = line_points_coords[labels == largest_cluster_label]
-            #self.get_logger().info(size(largest_cluster_points))
 
             # --- PCA on largest DBSCAN cluster ---
             pca = PCA(n_components=2)
             pca.fit(largest_cluster_points)
 
-            # # PCA works best with features as columns, so transpose the coordinates
-            # pca = PCA(n_components=2)
-            # pca.fit(line_points_coords)
-
             # The center of the points is the mean
             center_y, center_x = pca.mean_ # Note: pca.mean_ gives [mean_y, mean_x]
-            self.get_logger().info(f"Sonar: Got center of object at ({center_x:.2f}, {center_y:.2f})")
-            # print(f"Estimated center point (x, y): ({center_x:.2f}, {center_y:.2f})")
+            self.get_logger().info(f'Sonar: Got center of object at ({center_x:.2f}, {center_y:.2f})')
 
             # The first principal component gives the direction of the line
             # The components are the eigenvectors, pca.components_[0] is the first eigenvector [dy, dx]
@@ -406,25 +397,13 @@ class Sonar(Node):
             line_angle_deg = np.degrees(line_angle_rad)
 
             # Normalize the angle to be within a specific range (e.g., -180 to 180)
-            if line_angle_deg > 180:
-                line_angle_deg -= 360
-            elif line_angle_deg < -180:
-                line_angle_deg += 360
-
-
-            # print(f"Estimated line angle (from PCA): {line_angle_deg:.2f} degrees")
+            line_angle_deg = np.clip(line_angle_deg, -180, 180)
 
             # Calculate the normal angle (perpendicular to the line)
             normal_angle_rad = line_angle_rad + np.pi/2
             normal_angle_deg = np.degrees(normal_angle_rad)
-            self.get_logger().info(f"Sonar: Got normal angle at {normal_angle_deg:.2f} degrees")
+            self.get_logger().info(f'Sonar: Got normal angle at {normal_angle_deg:.2f} degrees')
             # Normalize the normal angle to be within a specific range (e.g., -180 to 180)
-            # if normal_angle_deg > 90:
-            #     normal_angle_deg -= 180
-            # elif normal_angle_deg < -90:
-            #     normal_angle_deg += 180
-
-            # print(f"Estimated normal angle (from PCA): {normal_angle_deg:.2f} degrees")
 
 
         else:

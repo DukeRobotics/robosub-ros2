@@ -21,6 +21,7 @@ class TorpedoStates(Enum):
     """Enum for the states of the torpedo servo."""
     LEFT = 'left'
     RIGHT = 'right'
+    CENTER = 'center'
 
 @dataclass
 class ServoInfo:

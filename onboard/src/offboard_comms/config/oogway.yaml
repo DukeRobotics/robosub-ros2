@@ -34,7 +34,7 @@ arduino:
         type: discrete
         states:
           left: 1650
-          right: 1350
+          right: 1400
         min_delay: 3.0
   thruster:
     ftdi: B0004VDI

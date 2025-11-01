@@ -67,6 +67,17 @@ def degrees_to_centered_gradians(angle_degrees: float, center_gradians: float, i
     return int(angle_gradians_centered)
 
 def polar2cart(sonar_sweep: np.ndarray, deg_low: int, deg_high: int) -> np.ndarray:
+    """
+    Convert a polar sonar sweep to a Cartesian grid.
+
+    Args:
+        sonar_sweep (np.ndarray): Polar sonar sweep data.
+        deg_low (int): Lower bound of the angle in degrees.
+        deg_high (int): Upper bound of the angle in degrees.
+
+    Returns:
+        np.ndarray: Cartesian grid representation of the sonar sweep.
+    """
     num_angles, num_samples = sonar_sweep.shape
     print(num_angles, num_samples)
     grid_size = 2 * (num_samples - 1) + 1
@@ -79,11 +90,11 @@ def polar2cart(sonar_sweep: np.ndarray, deg_low: int, deg_high: int) -> np.ndarr
         angle_rad = angle_deg * np.pi / 200.0
         for j in range(num_samples):
             distance = j
-            x = int(round(center + distance * np.cos(angle_rad))) # negative bcs idk why lol
-            y = int(round(center + distance * np.sin(angle_rad)))
+            x = round(center + distance * np.cos(angle_rad)) # negative bcs idk why lol
+            y = round(center + distance * np.sin(angle_rad))
             val = sonar_sweep[i, j]
             intensity = val
             if 0 <= x < grid_size and 0 <= y < grid_size:
                 cartesian_grid[y, x] = max(cartesian_grid[y, x], intensity)
-                
+
     return cartesian_grid

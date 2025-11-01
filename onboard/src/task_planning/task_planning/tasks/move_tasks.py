@@ -116,17 +116,16 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = Fa
 @task
 async def yaw_from_local_pose(self: Task, yaw: int, timeout: int = 30) -> None:
     """
-    Yaw from current local position to some offset yaw
+    Yaw from current local position to some offset yaw.
 
     Args:
         self (Task): The task instance on which the method is called.
         yaw (int): The amount to yaw, in radian.
-        time_limit (int, optional): The time limit (in seconds) for reaching the pose. Defaults to 30.
+        timeout (int, optional): The time limit (in seconds) for reaching the pose. Defaults to 30.
 
     Returns:
-        None
+        None.
     """
-
     logger.info(f'Yawing {yaw} from current position')
     await move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, yaw),
@@ -134,7 +133,7 @@ async def yaw_from_local_pose(self: Task, yaw: int, timeout: int = 30) -> None:
             time_limit = timeout,
             parent=self,
         )
-    logger.info(f'Finished yaw')
+    logger.info('Finished yaw')
 
 
 @task
@@ -268,7 +267,6 @@ Directions = list[Direction]
 async def move_with_directions(self: Task,
                                directions: Directions,
                                depth_level: float | None = None,
-                               yaw_heading: float | None = None,
                                correct_yaw: bool = False,
                                correct_depth: bool = False,
                                keep_orientation: bool = False,
@@ -286,6 +284,8 @@ async def move_with_directions(self: Task,
         directions (Directions): A list of tuples, where each tuple specifies the target pose.
             - Tuples of length 3 represent (x, y, z).
             - Tuples of length 6 represent (x, y, z, roll, pitch, yaw).
+        depth_level (float, optional): The depth, as provided by the pressure sensor, the robot should move to. If this
+            is not None, the Z value of each direction will be overridden. Defaults to None.
         correct_yaw (bool, optional): If True, corrects the yaw after moving to a pose. Defaults to False.
         correct_depth (bool, optional): If True, corrects the depth after moving to a pose. Defaults to False.
         keep_orientation (bool, optional): If True, corrects orientation after moving to a pose. Defaults to False.
@@ -296,7 +296,7 @@ async def move_with_directions(self: Task,
         ValueError: If a direction tuple in the list is not of length 3 or 6.
 
     Returns:
-        None
+        None.
     """
     for direction in directions:
         assert len(direction) in [3, 6], 'Each tuple in the directions list must be of length 3 or 6. Tuple '

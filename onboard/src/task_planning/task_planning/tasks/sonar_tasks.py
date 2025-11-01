@@ -1,9 +1,9 @@
 from typing import cast
 
+from custom_msgs.srv import SonarSweepRequest
 from rclpy.logging import get_logger
 from task_planning.interface.sonar import Sonar
 from task_planning.task import Task, task
-from custom_msgs.srv import SonarSweepRequest
 
 logger = get_logger('sonar_tasks')
 
@@ -20,5 +20,5 @@ async def test_sonar(_self: Task, start_angle: float, end_angle: float, scan_dis
         if future is None:
             logger.error('Could not call sonar request service.')
         else:
-            service_response = cast(SonarSweepRequest.Response, await future)
+            service_response = cast('SonarSweepRequest.Response', await future)
             logger.info(f'Sonar scan response: {service_response}')

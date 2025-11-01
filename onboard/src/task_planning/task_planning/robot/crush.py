@@ -17,10 +17,11 @@ async def main(self: Task) -> Task[None, None, None]:
         ivc_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(-0.5, z_tolerance=0.15, enable_controls_flag=True, timeout=10, parent=self),
         comp_tasks.coin_flip(enable_same_direction=False, parent=self),
-        comp_tasks.gate_task_dead_reckoning(depth_level=0.7, parent=self),  # Move through gate via 2,2; right strafe via 1.5
+        comp_tasks.gate_task_dead_reckoning(depth_level=0.7, parent=self),  # Move through gate via 2,2; right strafe via 1.5  # noqa: E501
         comp_tasks.gate_style_task(depth_level=0.975, parent=self),  # Spin
         comp_tasks.slalom_task_dead_reckoning(depth_level=0.975, parent=self),  # Move through slalom via 2,2,2
-        comp_tasks.slalom_to_octagon_dead_reckoning(depth_level=0.975, parent=self),  # Move to octagon front via 2,2; left strafe via 0.75
+        # Move to octagon front via 2,2; left strafe via 0.75
+        comp_tasks.slalom_to_octagon_dead_reckoning(depth_level=0.975, parent=self),
         ivc_tasks.crush_ivc_spam(msg_to_send=IVCMessageType.CRUSH_OCTAGON, parent=self),
 
         ######## Unused competition tasks ########
@@ -51,7 +52,8 @@ async def main(self: Task) -> Task[None, None, None]:
 
         ## Movement/CV tasks
         # move_tasks.yaw_from_local_pose(np.pi / 2, parent=self),
-        # move_tasks.move_with_directions([(1, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True, parent=self),
+        # move_tasks.move_with_directions([(1, 0, 0)], depth_level=-0.7, correct_depth=True, correct_yaw=True,
+        #                                   parent=self),
 
         # comp_tasks.yaw_to_cv_object(CVObjectType.GATE_SAWFISH, direction=1, yaw_threshold=radians(10),
         #                             latency_threshold=1, depth_level=0.7, parent=self),
