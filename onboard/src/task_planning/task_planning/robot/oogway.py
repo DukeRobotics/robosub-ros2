@@ -14,18 +14,18 @@ async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     # Constants
     DIRECTION_OF_TORPEDO_BANNER = 1
-    DEPTH = 1
+    DEPTH = 0.7
     FIRST_TARGET = CVObjectType.TORPEDO_REEF_SHARK_TARGET  # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
 
     tasks = [
         ######## Main competition tasks ########
-        ivc_tasks.delineate_ivc_log(parent=self),
+        # ivc_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(DEPTH, parent=self),
-        comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
-        comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
+        # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
         # TODO: task not found???
-        comp_tasks.send_torpedo_ivc(parent=self),
-        comp_tasks.octagon_task(direction=1, parent=self),
+        # comp_tasks.send_torpedo_ivc(parent=self),
+        # comp_tasks.octagon_task(direction=1, parent=self),
 
         ######## Unused competition tasks ########
         ## Coin flip
@@ -44,8 +44,8 @@ async def main(self: Task) -> Task[None, None, None]:
         # comp_tasks.bin_task(parent=self),
 
         ## Test
-        comp_tasks.fire_torpedoes(TorpedoStates.LEFT, parent=self),
-        comp_tasks.fire_torpedoes(TorpedoStates.RIGHT, parent=self),
+        # comp_tasks.fire_torpedoes(TorpedoStates.LEFT, parent=self),
+        # comp_tasks.fire_torpedoes(TorpedoStates.RIGHT, parent=self),
 
         ## Octagon
         # comp_tasks.octagon_task(direction=1, parent=self),
