@@ -39,6 +39,7 @@ class Sonar(Node):
     SONAR_STATUS_TOPIC = 'sonar/status'
     SONAR_REQUEST_TOPIC = 'sonar/request'
     SONAR_IMAGE_TOPIC = 'sonar/image/compressed'
+    SONAR_CLUSTERED_IMAGE_TOPIC = 'sonar/image/clustered'
 
     NODE_NAME = 'sonar'
 
@@ -74,6 +75,7 @@ class Sonar(Node):
         self.cv_bridge = CvBridge()
         if self.stream:
             self.sonar_image_publisher = self.create_publisher(CompressedImage, self.SONAR_IMAGE_TOPIC, 10)
+            self.clustered_image_publisher = self.create_publisher(CompressedImage, self.SONAR_CLUSTERED_IMAGE_TOPIC, 10)
 
         self.current_scan = (-1, -1, -1)  # (start_angle, end_angle, distance_of_scan)
 
@@ -293,7 +295,7 @@ class Sonar(Node):
             target_frame_id (str): The target frame to transform the object pose to.
 
         Returns:
-            (Pose, List): Pose of the object in robot reference frame and sonar sweep array.
+            (Pose, List, float): Pose of the object in robot reference frame, sonar sweep array, and normal angle.
         """
         sonar_sweep_array = self.get_sweep(start_angle, end_angle)
         sonar_index, normal_angle, plot = sonar_image_processing.find_center_point_and_angle(
@@ -408,6 +410,7 @@ class Sonar(Node):
         if self.stream:
             sonar_image = self.convert_to_ros_compressed_img(plot, is_color=True)
             self.sonar_image_publisher.publish(sonar_image)
+            self.clustered_image_publisher.publish()
 
         return response
 

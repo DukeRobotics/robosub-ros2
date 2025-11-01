@@ -7,6 +7,7 @@ import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from sklearn.cluster import DBSCAN
 from sklearn.linear_model import LinearRegression
+from sklearn.mixture import GaussianMixture
 
 from sonar import decode_ping_python_360
 
@@ -200,7 +201,7 @@ def fourier_signal_processing(
         threshold: float
         ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Denoise a sonar scan using the Fast Fourier Transform.
+    Denoise a sonar scan using the Fast Fourier Transform. Adapted from Pranav Bijith's Fourier analysis.
 
     Args:
         data (ndarray): an ndarray representing the sonar data
@@ -257,4 +258,32 @@ def fourier_signal_processing(
 
     #Return Cartesian grid and frequency domain
     return (filtered, cartesian_grid, np.abs(fftimg))
+
+def sonar_gaussian_mixture_model_cluster(sonar_data: np.ndarray) -> np.ndarray:
+    """
+    Cluster a sonar scan into background, walls, and buoys using GMM clustering. Adapted from Pranav Bijith's GMM code.
+
+    Args:
+        sonar_data (ndarray): a sonar scan in cartesian coordinates which may contain nothing, walls, and buoys
+
+    Returns:
+        ndarray: ndarray of sonar_data segmented into three categories: nothing, walls, and buoys
+    """
+    finalcopygrid = sonar_data
+    finalcopygrid[finalcopygrid != 0] = 255
+    h, w = finalcopygrid.shape
+    x = np.column_stack((finalcopygrid.reshape(-1), np.repeat(np.arange(h), w), np.tile(np.arange(w), h)))
+    mask = finalcopygrid.reshape(-1) != 0
+    x_masked = x[mask]
+
+    if x_masked.shape[0] >= 2:
+        gmm = GaussianMixture(n_components=2, random_state=42)
+        gmm.fit(x_masked)
+        cluster_labels = np.full(mask.shape, -1)
+        cluster_labels[mask] = gmm.predict(x_masked)
+    else:
+        print('No nonzero pixels found — skipping GMM')
+        cluster_labels = np.full(mask.shape, -1)
+
+    return cluster_labels.reshape(finalcopygrid.shape)
 
