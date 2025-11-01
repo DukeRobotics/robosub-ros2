@@ -63,7 +63,7 @@ async def main(self: Task) -> Task[None, None, None]:
         #                               parent=self),
 
         ######## Setup/Testing tasks ########
-        # sonar_tasks.test_sonar(-60, 60, 5, parent=self),
+        # sonar_tasks.sonar_test(-60, 60, 5, parent=self),
         # ivc_tasks.test_ivc(IVCMessageType.CRUSH_TEST, parent=self),
         # buoyancy_tasks.tune_static_power(parent=self),
 

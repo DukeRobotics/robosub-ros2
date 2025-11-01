@@ -64,7 +64,7 @@ async def main(self: Task) -> Task[None, None, None]:
         #                             latency_threshold=1, depth_level=0.7, parent=self),
 
         ######## Setup/Testing tasks ########
-        # sonar_tasks.test_sonar(-45, 45, 5, parent=self),
+        # sonar_tasks.sonar_test(-45, 45, 5, parent=self),
         # ivc_tasks.test_ivc(IVCMessageType.OOGWAY_TEST, parent=self),
         # buoyancy_tasks.buoyancy_task(-0.5, parent=self),  # Submerge and stabilize buoyancy
 
