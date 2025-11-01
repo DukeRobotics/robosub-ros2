@@ -155,7 +155,7 @@ class TorpedoTargetDetector(Node):
         contours = contours[:3]
 
         # Group contours by distance
-        contours = group_contours_by_distance(self, contours, 20)
+        contours = group_contours_by_distance(contours, 20)
 
         # Sort contours by radius of min. enclosing circle
         contours = sorted(contours, key=lambda cnt: cv2.boundingRect(cnt)[3], reverse=True)
