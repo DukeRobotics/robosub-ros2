@@ -193,7 +193,12 @@ def build_sonar_image(data_list: list, display_results: bool = False, npy_save_p
 
     return sonar_img
 
-def fourier_signal_processing(data: np.ndarray, inner_radius: float, outer_radius: float, threshold: float) -> tuple[np.ndarray, np.ndarray]:
+def fourier_signal_processing(
+        data: np.ndarray,
+        inner_radius: float,
+        outer_radius: float,
+        threshold: float
+        ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Denoise a sonar scan using the Fast Fourier Transform.
 
@@ -204,8 +209,8 @@ def fourier_signal_processing(data: np.ndarray, inner_radius: float, outer_radiu
         threshold (float): the threshhold
 
     Returns:
-        Tuple[ndarray, ndarray]: tuple containing the filtered cartesian image and the angle domain of the cartesian
-                                 image, respectively
+        Tuple[ndarray, ndarray, ndarray]: tuple containing the filtered gradian image, cartesian image and the angle
+        domain of the cartesian image, respectively
     """
     xv, yv = np.meshgrid(np.fft.fftfreq(data.shape[1]), np.fft.fftfreq(data.shape[0]))
     xv = np.fft.fftshift(xv)
@@ -251,4 +256,5 @@ def fourier_signal_processing(data: np.ndarray, inner_radius: float, outer_radiu
     )
 
     #Return Cartesian grid and frequency domain
-    return (cartesian_grid, np.abs(fftimg))
+    return (filtered, cartesian_grid, np.abs(fftimg))
+
