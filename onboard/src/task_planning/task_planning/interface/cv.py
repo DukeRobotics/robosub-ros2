@@ -331,7 +331,7 @@ class CV:
     def is_receiving_recent_cv_data(
         self,
         name: CVObjectType,
-        latency: float,
+        latency: int,
         last_detection_time: int | None = None,
     ) -> bool:
         """
@@ -341,7 +341,7 @@ class CV:
 
         Args:
             name (CVObjectType): The name/type of the object.
-            latency (float): Maximum allowed time (in seconds) since the last detection.
+            latency (int): Maximum allowed time (in seconds) since the last detection.
             last_detection_time (int | None): Optional timestamp (in seconds) of the previous detection for this object.
                 If provided, also check whether both the current and previous detections are within the
                 latency threshold of each other.
