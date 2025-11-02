@@ -12,6 +12,7 @@ from transforms3d.euler import euler2quat, quat2euler
 
 logger = get_logger('move_tasks')
 
+
 @task
 async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | None = None, timeout: int = 20) -> \
         Task[None, Pose | None, None]:

@@ -7,6 +7,7 @@ from task_planning.utils import geometry_utils
 
 logger = get_logger('cv_tasks')
 
+
 # TODO: this task will likely be depleted once we complete the refactoring tasks in comp_tasks.py
 @task
 async def move_to_cv_obj(self: Task, name: CVObjectType) -> Task[None, str | None, None]:

@@ -1,11 +1,19 @@
-# ruff: noqa: ERA001, F401, N806, E501, F841
+# ruff: noqa: ERA001, F401, N806
 from math import radians
 
 from task_planning.interface.cv import CVObjectType
 from task_planning.interface.ivc import IVCMessageType
 from task_planning.interface.servos import TorpedoStates
 from task_planning.task import Task, task
-from task_planning.tasks import buoyancy_tasks, comp_tasks, ivc_tasks, move_tasks, prequal_tasks, sonar_tasks
+from task_planning.tasks import (
+    buoyancy_tasks,
+    comp_tasks,
+    ivc_tasks,
+    move_tasks,
+    prequal_tasks,
+    servos_tasks,
+    sonar_tasks,
+)
 from task_planning.utils import geometry_utils
 
 
@@ -15,14 +23,15 @@ async def main(self: Task) -> Task[None, None, None]:
     # Constants
     DIRECTION_OF_TORPEDO_BANNER = 1
     DEPTH = 0.7
-    FIRST_TARGET = CVObjectType.TORPEDO_REEF_SHARK_TARGET  # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
-
+    # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
+    FIRST_TARGET = CVObjectType.TORPEDO_REEF_SHARK_TARGET
     tasks = [
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(DEPTH, parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
-        # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
+                                direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
         # TODO: task not found???
         # comp_tasks.send_torpedo_ivc(parent=self),
         # comp_tasks.octagon_task(direction=1, parent=self),
@@ -44,8 +53,8 @@ async def main(self: Task) -> Task[None, None, None]:
         # comp_tasks.bin_task(parent=self),
 
         ## Test
-        # comp_tasks.fire_torpedoes(TorpedoStates.LEFT, parent=self),
-        # comp_tasks.fire_torpedoes(TorpedoStates.RIGHT, parent=self),
+        # servos_tasks.fire_torpedo(TorpedoStates.LEFT, parent=self),
+        # servos_tasks.fire_torpedo(TorpedoStates.RIGHT, parent=self),
 
         ## Octagon
         # comp_tasks.octagon_task(direction=1, parent=self),

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 logger = get_logger('sonar_tasks')
 
+
 @task
 async def sonar_test(_self: Task, start_angle: float, end_angle: float, scan_distance: float) -> Task[None, None, None]:
     """Repeatedly perform sonar scans."""
