@@ -15,7 +15,7 @@ from sensor_msgs.msg import CompressedImage
 from serial.tools import list_ports
 from std_msgs.msg import String
 
-from sonar import sonar_image_processing, sonar_utils
+from sonar import sonar_image_processing, sonar_object_detection, sonar_utils
 
 
 class Sonar(Node):
@@ -39,7 +39,7 @@ class Sonar(Node):
     SONAR_STATUS_TOPIC = 'sonar/status'
     SONAR_REQUEST_TOPIC = 'sonar/request'
     SONAR_IMAGE_TOPIC = 'sonar/image/compressed'
-    SONAR_CLUSTERED_IMAGE_TOPIC = 'sonar/image/clustered'
+    SONAR_DENOISED_IMAGE_TOPIC = 'sonar/image/denoised'
 
     NODE_NAME = 'sonar'
 
@@ -75,7 +75,7 @@ class Sonar(Node):
         self.cv_bridge = CvBridge()
         if self.stream:
             self.sonar_image_publisher = self.create_publisher(CompressedImage, self.SONAR_IMAGE_TOPIC, 10)
-            self.clustered_image_publisher = self.create_publisher(CompressedImage, self.SONAR_CLUSTERED_IMAGE_TOPIC, 10)
+            self.denoised_image_publisher = self.create_publisher(CompressedImage, self.SONAR_DENOISED_IMAGE_TOPIC, 10)
 
         self.current_scan = (-1, -1, -1)  # (start_angle, end_angle, distance_of_scan)
 
@@ -254,7 +254,13 @@ class Sonar(Node):
             sonar_scan = self.request_data_at_angle(i)
             sonar_sweep_data.append(sonar_scan)
 
-        return np.vstack(sonar_sweep_data)
+        sweep_data = np.vstack(sonar_sweep_data)
+
+        denoised_sonar_image = sonar_object_detection.SonarDenoiser(sweep_data)
+        denoised_sonar_image.wall_block().percentile_filter().fourier_signal_processing().init_cartesian().normalize().blur()
+        self.denoised_image_publisher.publish(self.convert_to_ros_compressed_img(denoised_sonar_image.cartesian))
+
+        return sweep_data
 
     def to_robot_position(self, angle: float, index: int, target_frame_id: str) -> Pose:
         """
