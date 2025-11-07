@@ -75,7 +75,6 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   // Add new state for robotSpecificTopics
 
   // Update robotSpecificTopics when envVars changes
-  useEffect(() => {
     const robotName = envVars["ROBOT_NAME"]?.toString() ?? "";
     const newTopics: Record<string, string> = {};
 
@@ -90,13 +89,14 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
     } else {
       robotSpecificTopics = {};
     }
-  console.log(robotSpecificTopics);
-  }, [envVars]);
+  console.log("name changed:" + robotSpecificTopics.toString());
 
   // ... rest of the component remains the same
   // Watch currentFrame for messages from each sensor
   useLayoutEffect(() => {
     context.onRender = (renderState: Immutable<RenderState>, done: unknown) => {
+      setRenderDone(() => done);
+      console.log(renderState.variables);
       // parse variables into plain object and update envVars state
       if (renderState.variables instanceof Map) {
         // Cast to unknown first, then to Map with known types
@@ -169,25 +169,25 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
     context.watch("variables");
   }, [context]);
   // Call our done function at the end of each render.
-  // useEffect(() => {
-  //   context.subscribe(TOPICS_LIST);
-  //   renderDone?.();
-  // }, [renderDone]);
+  useEffect(() => {
+    //context.subscribe(TOPICS_LIST);
+    renderDone?.();
+  }, [renderDone]);
   // Create a table of all the sensors and their status
   const theme = useTheme();
   return (
     <ThemeProvider theme={theme}>
-      {!("ROBOT_NAME" in varDict) && (
+      {!("ROBOT_NAME" in envVars) && (
         <Box mb={1}>
           <Alert variant="filled" severity="warning">
             ROBOT_NAME not defined in Env vars.
           </Alert>
         </Box>
       )}
-      {"ROBOT_NAME" in varDict && !robotNames.has(varDict["ROBOT_NAME"]) && (
+      {"ROBOT_NAME" in envVars && !robotNames.has(envVars["ROBOT_NAME"]) && (
         <Box mb={1}>
           <Alert variant="filled" severity="warning">
-            {`Robot name, "${varDict["ROBOT_NAME"]}" is not an acceptable name: {${Array.from(robotNames)
+            {`Robot name, "${envVars["ROBOT_NAME"] ?? ""}" is not an acceptable name: {${Array.from(robotNames)
               .map((name) => `"${name}"`)
               .join(", ")}}.`}
           </Alert>
