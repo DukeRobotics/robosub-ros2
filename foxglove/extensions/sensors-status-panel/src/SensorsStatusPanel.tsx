@@ -1,5 +1,5 @@
 import useTheme from "@duke-robotics/theme";
-import { Immutable, PanelExtensionContext, RenderState, MessageEvent, Subscription } from "@foxglove/extension";
+import { Immutable, PanelExtensionContext, RenderState, MessageEvent, Subscription, VariableValue } from "@foxglove/extension";
 import { Password } from "@mui/icons-material";
 import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableRow, Typography, Tooltip } from "@mui/material";
 import Alert from "@mui/material/Alert";
@@ -33,8 +33,6 @@ const TOPICS_MAP_REVERSED: Record<string, topicsMapKeys> = {};
 for (const [key, value] of Object.entries(ALL_TOPICS_MAP)) {
   TOPICS_MAP_REVERSED[value] = key as topicsMapKeys;
 }
-let visibleSensors: string[] | undefined = [];
-let visibleSubscriptions: string[] | undefined = [];
 // Array of all topics: [{topic: topic1}, {topic: topic2}, ... ]
 // const TOPICS_LIST: Subscription[] = [];
 // for (const value of Object.values(TOPICS_MAP)) {
@@ -71,25 +69,23 @@ const initState = () => {
 function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
   const [state, setState] = useState<SensorsStatusPanelState>(initState());
-  const [envVars, setEnvVars] = useState<Record<string, string>>({});
+  const [envVars, setEnvVars] = useState<Immutable<RenderState>["variables"] | undefined>();
   // Add new state for robotSpecificTopics
 
   // Update robotSpecificTopics when envVars changes
-    const robotName = envVars["ROBOT_NAME"]?.toString() ?? "";
-    const newTopics: Record<string, string> = {};
+  const robotName = envVars?.get("ROBOT_NAME")?.toString() ?? "";
+  const newTopics: Record<string, string> = {};
 
-    if (robotNames.has(robotName) && robotSensorMap.get(robotName)) {
-      for (const sensorName of robotSensorMap.get(robotName) ?? []) {
-        if (sensorName in ALL_TOPICS_MAP) {
-          console.log(sensorName);
-          newTopics[sensorName] = ALL_TOPICS_MAP[sensorName as topicsMapKeys];
-        }
+  if (robotNames.has(robotName) && robotSensorMap.get(robotName)) {
+    for (const sensorName of robotSensorMap.get(robotName) ?? []) {
+      if (sensorName in ALL_TOPICS_MAP) {
+        newTopics[sensorName] = ALL_TOPICS_MAP[sensorName as topicsMapKeys];
       }
-      robotSpecificTopics = newTopics;
-    } else {
-      robotSpecificTopics = {};
     }
-  console.log("name changed:" + robotSpecificTopics.toString());
+    robotSpecificTopics = newTopics;
+  } else {
+    robotSpecificTopics = {};
+  }
 
   // ... rest of the component remains the same
   // Watch currentFrame for messages from each sensor
@@ -97,27 +93,7 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
     context.onRender = (renderState: Immutable<RenderState>, done: unknown) => {
       setRenderDone(() => done);
       console.log(renderState.variables);
-      // parse variables into plain object and update envVars state
-      if (renderState.variables instanceof Map) {
-        // Cast to unknown first, then to Map with known types
-        const variablesMap = renderState.variables as unknown as Map<string, unknown>;
-
-        // Filter and ensure all values are strings
-        const parsed = Object.fromEntries(
-          Array.from(variablesMap.entries()).map(([key, value]) => [
-            key,
-            typeof value === "string" ? value : String(value),
-          ]),
-        );
-        varDict = parsed; // optional: maintain global for legacy uses
-        setEnvVars(parsed);
-      } else if (renderState.variables && typeof renderState.variables === "object") {
-        // Cast through unknown first for type safety
-        const variables = renderState.variables as unknown as Record<string, string>;
-        varDict = variables;
-        setEnvVars(variables);
-        console.log("Variables updated:", variables);
-      }
+      setEnvVars(renderState.variables);
 
       // Reset state when the user seeks the video
       if (renderState.didSeek ?? false) {
@@ -177,17 +153,17 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   const theme = useTheme();
   return (
     <ThemeProvider theme={theme}>
-      {!("ROBOT_NAME" in envVars) && (
+      {!(envVars && "ROBOT_NAME" in envVars) && (
         <Box mb={1}>
           <Alert variant="filled" severity="warning">
             ROBOT_NAME not defined in Env vars.
           </Alert>
         </Box>
       )}
-      {"ROBOT_NAME" in envVars && !robotNames.has(envVars["ROBOT_NAME"]) && (
+      {envVars && "ROBOT_NAME" in envVars && !robotNames.has(envVars["ROBOT_NAME"]) && (
         <Box mb={1}>
           <Alert variant="filled" severity="warning">
-            {`Robot name, "${envVars["ROBOT_NAME"] ?? ""}" is not an acceptable name: {${Array.from(robotNames)
+            {`Robot name, "${envVars && envVars["ROBOT_NAME"] ?? ""}" is not an acceptable name: {${Array.from(robotNames)
               .map((name) => `"${name}"`)
               .join(", ")}}.`}
           </Alert>
