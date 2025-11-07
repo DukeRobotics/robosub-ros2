@@ -256,6 +256,7 @@ class Sonar(Node):
 
         sweep_data = np.vstack(sonar_sweep_data)
 
+        # Testing purposes for 11/8 pool test
         denoised_sonar_image = sonar_object_detection.SonarDenoiser(sweep_data)
         denoised_sonar_image.wall_block().percentile_filter().fourier_signal_processing().init_cartesian().normalize().blur()
         self.denoised_image_publisher.publish(self.convert_to_ros_compressed_img(denoised_sonar_image.cartesian))
