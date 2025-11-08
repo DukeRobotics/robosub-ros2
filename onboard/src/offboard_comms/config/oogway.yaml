@@ -33,8 +33,8 @@ arduino:
         service_name: /servos/torpedo
         type: discrete
         states:
-          left: 1650
-          right: 1400
+          left: 1600
+          right: 1425
         min_delay: 3.0
   thruster:
     ftdi: B0004VDI
