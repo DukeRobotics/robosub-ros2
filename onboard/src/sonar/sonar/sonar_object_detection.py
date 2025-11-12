@@ -1,5 +1,12 @@
+from enum import Enum
+
+import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import gridspec
 from scipy.signal import convolve2d
+from skimage.filters import sobel
+from skimage.measure import label
+from skimage.segmentation import watershed
 
 
 class SonarDenoiser:
@@ -149,3 +156,259 @@ class SonarDenoiser:
         self.cartesian = np.where(self.cartesian > 1/5, self.cartesian, 0)
 
         return self
+
+class OrthogonalRegression:
+    """A class representing the Orthogonal Regression of a group of points."""
+    def __init__(self, points: np.ndarray) -> None:
+        """
+        Construct a OrthogonalRegression object given a group of points.
+
+        Args:
+            points (ndarray): the points within this orthogonal regression. Points should be (y, x)
+        """
+        self.points = points
+
+        e_val, e_vect = np.linalg.eig(np.cov(self.points, rowvar=False))
+
+        self.unit_tangent = e_vect[:, np.argmin(e_val)]
+        self.unit_tangent[1] *= -1
+        self.unit_normal = np.array([-self.unit_tangent[1], self.unit_tangent[0]])
+
+        if self.unit_tangent[0] == 0:
+            self.slope = 999
+        else:
+            self.slope = self.unit_tangent[1] / self.unit_tangent[0]
+
+        self.intercept = self.points[:,0].mean() - self.slope * self.points[:,1].mean()
+
+        self.orthogonal_projections = np.matmul(
+            np.dot(self.points - np.array([self.intercept, 0]), self.unit_tangent[::-1])[:, np.newaxis],
+            self.unit_tangent[np.newaxis, ::-1],
+        )
+        self.residual_vectors = self.points - np.array([self.intercept, 0]) - self.orthogonal_projections
+
+        residuals = np.linalg.norm(self.residual_vectors, axis=1)
+
+        self.mse = np.sum(np.square(residuals)) / residuals.shape[0]
+        self.r2 = 1 - np.sum(np.square(residuals)) / (np.sum(np.square(self.points[:,0] - np.mean(self.points[:,0]))))
+
+    def y_given_x(self, x: float) -> float:
+        """
+        Get a value of y for some input of x.
+
+        Args:
+            x (float): The input for x.
+
+        Returns:
+            float: The value of y in this regression given a value of x.
+        """
+        return self.slope * x + self.intercept
+
+    def x_given_y(self, y: float) -> float:
+        """
+        Get a value of x for some input of y.
+
+        Args:
+            y (float): The input for y.
+
+        Returns:
+            float: The value of x in this regression given a value of y.
+        """
+        return (y - self.intercept) / self.slope
+
+    def set_slope(self, value: float) -> None:
+        """
+        Set the slope of this orthogonal regression.
+
+        Args:
+            value (float): the new slope for the regression.
+        """
+        if value == 0:
+            self._slope = np.finfo(type(value)).tiny
+        else:
+            self._slope = value
+
+class SonarSegmentType(Enum):
+    """Enum for Sonar Segment types."""
+    NONE = 0
+    WALL = 1
+    OBJECT = 2
+
+class SonarSegment:
+    """Class to define a sonar segment segment."""
+    def __init__(self, points: np.ndarray) -> None:
+        """
+        Construct a SonarSegment object.
+
+        Args:
+            points (ndarray): the points which make up this segment.
+        """
+        self.number = -1
+        self.points = points
+        self.ortho_regression: OrthogonalRegression
+        self.wall_distance = -1
+        self.nearest_object = None
+        self.nearest_object_distance = max(points.shape[0], points.shape[1]) * 2
+        self.type = SonarSegmentType.NONE
+
+class SonarSegmentation:
+    """A class which segments an sonar image, and applies regressions to each segment."""
+    def __init__(
+            self,
+            image: np.ndarray,
+            wall_object_threshold: float = 0.,
+            segment_size_threshold: float = 0.,
+            segment_brightness_threshold: float = 0.,
+            merge_threshold: float = 1.1,
+            merge_angle_limit: float = 5.,
+        ) -> None:
+        self.segment_size_threshold = segment_size_threshold
+        self.segment_brightness_threshold = segment_brightness_threshold
+        self.merge_threshold = merge_threshold
+        self.merge_angle_limit = merge_angle_limit
+
+        markers = np.zeros_like(image)
+        low_threshold = np.percentile(np.percentile(image[image > 0], 30), 30)
+        high_threshold = np.percentile(np.percentile(image[image > 0], 50), 50)
+        markers[image < low_threshold] = 1
+        markers[image > high_threshold] = 2
+
+        segmented = watershed(sobel(image), markers.astype(int))
+
+        self.labeled_points, self.num_segments = label(segmented, background=0, return_num=True, connectivity=2)
+
+        self.filter_segments()
+        self.separate_walls_objects(wall_object_threshold)
+        self.calculate_nearest_object()
+
+    def filter_segments(self) -> None:
+        """
+        Regress each segment and filter out invalid segments.
+
+        Through each segment, apply an Orthogonal regression to it. Also, filter out segments which have some kind
+        of issue, either being too small or too dim.
+        """
+        self.side_length = self.labeled_points.shape[0]
+
+        segments = []
+        for num in range(self.num_segments + 1):
+            if num in {0, 1}:
+                segments.append(None)
+                continue
+
+            # linear regression on each object
+            segment_points = np.argwhere(self.labeled_points == num)
+            if segment_points.shape[0] != 0:
+                segment = SonarSegment(segment_points)
+                segment.number = num
+                segment.ortho_regression = OrthogonalRegression(segment.points)
+                segments.append(segment)
+            else:
+                segments.append(None)
+
+        for num, segment in enumerate(segments):
+            if segment is None:
+                continue
+            segments = self.merge_segments(segments, num, segment)
+            if segment.points.shape[0] < self.segment_size_threshold:
+                segments[num] = None
+            elif np.mean(self.raw_image[segment.points[:,0], segment.points[:,1]]) < self.segment_brightness_threshold:
+                segments[num] = None
+                continue
+
+        self.raw_segments = segments
+        self.segments = [segment for segment in segments if segment is not None]
+
+    def merge_segments(self, segments: list, current_segment_num: int, current_segment: SonarSegment) -> list:
+        """Combine the SonarSegments in a list of segments if they are not significantly different."""
+        changed = False
+
+        for num, segment in enumerate(segments):
+            if (num == current_segment_num or segment is None):
+                continue
+            concatenated = SonarSegment(np.concatenate((current_segment.points, segment.points)))
+            concatenated.number = current_segment.number
+            concatenated.ortho_regression = OrthogonalRegression(concatenated.points)
+            if ((concatenated.ortho_regression.mse < current_segment.ortho_regression.mse * self.merge_threshold
+                or concatenated.ortho_regression.mse < segment.ortho_regression.mse * self.merge_threshold)
+                and
+                (np.abs(np.dot(concatenated.ortho_regression.unit_normal, current_segment.ortho_regression.unit_normal))
+                 > np.cos(np.radians(self.merge_angle_limit))
+                 or
+                 np.abs(np.dot(concatenated.ortho_regression.unit_normal, segment.ortho_regression.unit_normal))
+                 > np.cos(np.radians(self.merge_angle_limit)))):
+
+                current_segment = concatenated
+                segments[current_segment_num] = concatenated
+                segments[num] = None
+                changed = True
+
+        if changed:
+            segments = self.merge_segments(segments, current_segment_num, current_segment)
+
+        return segments
+
+    def separate_walls_objects(self, threshold: float) -> None:
+        """Iterate through the segments and select whether they are a Wall or an Objects."""
+        self.walls = []
+        self.objects = []
+
+        for segment in self.segments:
+            if segment.ortho_regression.mse <= threshold:
+                segment.type = SonarSegmentType.WALL
+                self.walls.append(segment)
+            else:
+                segment.type = SonarSegmentType.OBJECT
+                self.objects.append(segment)
+
+    def calculate_nearest_object(self) -> None:
+        """For this object's list of segments, find the nearest segment."""
+        for segment in self.segments:
+            for point in segment.points:
+                distance = np.linalg.norm(point)
+                if distance < segment.nearest_object_distance:
+                    segment.nearest_object = point
+                    segment.nearest_object_distance = distance
+
+    def plot_segments_separately(self, walls=True, objects=True):
+        figure = plt.figure(constrained_layout=True, figsize=(75, 75))
+        grid = gridspec.GridSpec(ncols=1, nrows=len(self.segments), figure=figure)
+
+        for num, segment in enumerate(self.segments):
+            if (walls and segment.type == SonarSegmentType.WALL) or (objects and segment.type == SonarSegmentType.OBJECT):
+                subplot = figure.add_subplot(grid[num], aspect="equal")
+                subplot.imshow(np.zeros((self.side_length, self.side_length)), origin="lower", cmap="plasma") # enforce square aspect ratio & prevent lines from going off the graph
+                self.plot_segment(subplot, segment)
+
+    def plot_segments_together(self, plot, walls, objects):
+        for wall in walls:
+            self.plot_segment(plot, wall, SegmentType.WALL)
+        for object in objects:
+            self.plot_segment(plot, object, SegmentType.OBJECT)
+
+    def plot_segment(self, plot, segment, segment_type=SegmentType.NONE):
+        plot.scatter(segment.points[:,1], segment.points[:,0], s=1, label=f"{segment.number}: {segment.ortho_regression.r2}")
+        plot.legend()
+
+        if segment_type != SegmentType.WALL:
+            plot.scatter(segment.nearest_object[1], segment.nearest_object[0], s=5, c="red")
+
+        if segment_type != SegmentType.OBJECT:
+            X_fit = np.linspace(0, self.side_length)
+            y_fit = segment.ortho_regression.y_given_x(X_fit)
+
+            # plot line wrt X. only keep parts where y is in frame
+            X_fit_1 = X_fit[y_fit<=self.side_length]
+            y_fit_1 = y_fit[y_fit<=self.side_length]
+            X_fit_1 = X_fit_1[y_fit_1>=0]
+            y_fit_1 = y_fit_1[y_fit_1>=0]
+            plot.plot(X_fit_1, y_fit_1)
+
+            # plot wrt y in case line is too vertical => no y values is in frame due to sampling gaps
+            y_fit = np.linspace(0, self.side_length)
+            X_fit = segment.ortho_regression.x_given_y(y_fit)
+            y_fit_2 = y_fit[X_fit<=self.side_length]
+            X_fit_2 = X_fit[X_fit<=self.side_length]
+            y_fit_2 = y_fit_2[X_fit_2>=0]
+            X_fit_2 = X_fit_2[X_fit_2>=0]
+            plot.plot(X_fit_2, y_fit_2)
