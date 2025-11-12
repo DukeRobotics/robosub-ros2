@@ -417,7 +417,7 @@ class Sonar(Node):
         if self.stream:
             sonar_image = self.convert_to_ros_compressed_img(plot, is_color=True)
             self.sonar_image_publisher.publish(sonar_image)
-            self.clustered_image_publisher.publish()
+            self.denoised_image_publisher.publish()
 
         return response
 
