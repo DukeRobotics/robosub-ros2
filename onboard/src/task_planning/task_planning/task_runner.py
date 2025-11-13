@@ -1,4 +1,3 @@
-import os
 from typing import Any, ClassVar
 
 import rclpy
@@ -10,10 +9,13 @@ from rclpy.time import Time
 
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
+from task_planning.interface.ivc import IVC
 from task_planning.interface.servos import Servos
+from task_planning.interface.sonar import Sonar
 from task_planning.interface.state import State
 from task_planning.robot import crush, oogway, oogway_shell
 from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
+from task_planning.utils.other_utils import get_robot_name
 
 
 class TaskPlanning(Node):
@@ -33,8 +35,8 @@ class TaskPlanning(Node):
         super().__init__(self.NODE_NAME)
         self.get_logger().info('Task planning node initialized')
 
-        self.bypass = self.declare_parameter('bypass', False).value
-        self.autonomous = self.declare_parameter('autonomous', False).value
+        self.bypass = self.declare_parameter('bypass', False).get_parameter_value().bool_value
+        self.autonomous = self.declare_parameter('autonomous', False).get_parameter_value().bool_value
 
         # Initialize transform buffer and listener
         tf_buffer = tf2_ros.Buffer()
@@ -42,9 +44,11 @@ class TaskPlanning(Node):
 
         # Initialize interfaces
         Controls(self, bypass=self.bypass)
-        State(self, tf_buffer=tf_buffer, bypass=self.bypass)
         CV(self, bypass=self.bypass)
+        IVC(node=self, bypass=self.bypass)
         Servos(self, bypass=self.bypass)
+        Sonar(self, bypass=self.bypass)
+        State(self, tf_buffer=tf_buffer, bypass=self.bypass)
 
         # Initialize the task update publisher
         TaskUpdatePublisher(self)
@@ -85,13 +89,13 @@ class TaskPlanning(Node):
                 rclpy.spin_once(self, timeout_sec=0.1)
 
         # Determine the robot name
-        robot_name = os.getenv('ROBOT_NAME')
+        robot_name = get_robot_name()
 
         # Get the task for the robot
-        if robot_name in self.ROBOT_NAME_TO_MODULE:
-            self.task: Task[Any, Any, Any] = self.ROBOT_NAME_TO_MODULE[robot_name].main(parent=Task.MAIN_ID)
+        if robot_name.value in self.ROBOT_NAME_TO_MODULE:
+            self.task: Task[Any, Any, Any] = self.ROBOT_NAME_TO_MODULE[robot_name.value].main(parent=Task.MAIN_ID)
         else:
-            msg = f'Unknown robot name: {robot_name}'
+            msg = f'Unknown robot name: {robot_name.value}'
             raise ValueError(msg)
 
         self.started_running_task = False

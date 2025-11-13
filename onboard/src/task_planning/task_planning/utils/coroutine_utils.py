@@ -1,8 +1,6 @@
 from collections.abc import Callable, Coroutine
 from typing import TypeVar
 
-from rclpy.clock import Clock
-from rclpy.duration import Duration
 from task_planning.task import Task, Yield
 
 SendType = TypeVar('SendType')
@@ -66,11 +64,3 @@ async def transform(task: Task[YieldType, TransformedSendType, ReturnType],
         task_output = return_transformer(task_output)
 
     return task_output
-
-
-async def sleep(secs: float) -> None:
-    """Sleep for a given number of seconds. Yields frequently, then returns when the time has elapsed."""
-    duration = Duration(seconds=secs)
-    start_time = Clock().now()
-    while start_time + duration > Clock().now():
-        await Yield()

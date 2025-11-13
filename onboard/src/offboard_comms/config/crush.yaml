@@ -30,13 +30,29 @@ arduino:
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketches/thruster
-dvl:
-  ftdi: DN04A9W9
-  negate_x_vel: false
-  negate_y_vel: false
-  negate_z_vel: false
 gyro:
   ftdi: FT81SUWZ
-  zero_bias: 0.0025549003
+  zero_bias: 0.0023800993
   scale_factor: 15497811.0
   negate: true
+modem:
+  ftdi: CP2102
+thrusters:
+  - name: middle_right
+    cw: false
+    standard_esc: false
+  - name: front_right
+    cw: false
+    standard_esc: false
+  - name: back_right
+    cw: false
+    standard_esc: true
+  - name: back_left
+    cw: true
+    standard_esc: false
+  - name: middle_left
+    cw: true
+    standard_esc: true
+  - name: front_left
+    cw: true
+    standard_esc: false

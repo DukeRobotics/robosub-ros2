@@ -205,6 +205,8 @@ It performs all computations symbolically using the [SymPy](https://www.sympy.or
 ### Robot Config File
 The robot config file is a YAML file that contains configuration information for this system that is unique for each robot. One config file is required for each robot. They are located in the `config` directory. They should be named `<robot_name>.yaml`, where `<robot_name>` is the value of the `$ROBOT_NAME` environment variable associated with the robot.
 
+For all future measurements on Crush, if they are behind the wing, subtract 10.415270 mm from the value measured (i.e., the value that mechanical gives us) in the `x` direction. This is since the previous zero point on Crush no longer exists and mechanical has had to modify it, but all our values in the code are tuned very well to the previous zero point. So, we must convert from Mechanical's new zero point to the original zero point that the robot is tuned to.
+
 The robot config file contains the following fields:
 ```yaml
 pid:
