@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import resource_retriever as rr
@@ -8,8 +7,9 @@ from custom_msgs.srv import SetControlTypes
 from geometry_msgs.msg import Pose, Twist
 from rclpy.logging import get_logger
 from rclpy.node import Node
+from std_msgs.msg import Bool
 from std_srvs.srv import SetBool, Trigger
-from task_planning.utils.other_utils import singleton
+from task_planning.utils.other_utils import get_robot_name, singleton
 
 logger = get_logger('controls_interface')
 
@@ -42,6 +42,9 @@ class Controls:
     THRUSTER_ALLOCS_TOPIC = 'controls/thruster_allocs'
     CONTROL_TYPES_TOPIC = 'controls/control_types'
 
+    # ROS topic for getting control states
+    ENABLE_CONTROLS_TOPIC = '/controls/status'
+
     def __init__(self, node: Node, bypass: bool = False) -> None:
         self.node = node
 
@@ -72,6 +75,9 @@ class Controls:
         self._desired_velocity_pub = node.create_publisher(Twist, self.DESIRED_VELOCITY_TOPIC, 1)
         self._desired_power_pub = node.create_publisher(Twist, self.DESIRED_POWER_TOPIC, 1)
 
+        node.create_subscription(Bool, self.ENABLE_CONTROLS_TOPIC, self._on_receive_enable_controls, 10)
+        self._enable_controls_status = Bool()
+
         self._read_config = None
 
         self.num_thrusters = None
@@ -80,6 +86,11 @@ class Controls:
         self.get_thruster_dict()
         self._thruster_pub = node.create_publisher(ThrusterAllocs, self.THRUSTER_ALLOCS_TOPIC, 1)
         self.bypass = bypass
+
+    @property
+    def enable_controls_status(self) -> Bool:
+        """Status of the ENABLE_CONTROLS."""
+        return self._enable_controls_status
 
     def _update_control_types(self, control_types: ControlTypes) -> None:
         self.control_types = control_types
@@ -91,7 +102,7 @@ class Controls:
         Returns:
             The thruster dictionary
         """
-        config_file_path = f'package://controls/config/{os.getenv('ROBOT_NAME')}.yaml'
+        config_file_path = f'package://controls/config/{get_robot_name().value}.yaml'
         filename = Path(rr.get_filename(config_file_path, use_protocol=False))
         with filename.open() as f:
             full_thruster_dict = yaml.safe_load(f)
@@ -115,6 +126,15 @@ class Controls:
         request = SetBool.Request()
         request.data = enable
         self._enable_controls.call_async(request)
+
+    def _on_receive_enable_controls(self, status: Bool) -> None:
+        """
+        Set controls status object.
+
+        Args:
+            status: Status of ENABLE_CONTROLS flag.
+        """
+        self._enable_controls_status = status
 
     def _set_all_axes_control_type(self, control_type: ControlTypes) -> None:
         """

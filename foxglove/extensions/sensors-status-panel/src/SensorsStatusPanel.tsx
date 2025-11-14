@@ -7,14 +7,15 @@ import { createRoot } from "react-dom/client";
 
 // Map of sensor name to topic name
 const TOPICS_MAP = {
-  DVL: "/sensors/dvl/odom",
+  DVL: "/sensors/dvl/raw",
   IMU: "/vectornav/imu",
   Pressure: "/sensors/depth",
-  Gyro: "/sensors/gyro/angular_velocity/twist",
+  Gyro: "/sensors/gyro/status",
   "Front DAI": "/camera/front/rgb/preview/compressed",
   "Front Mono": "/camera/usb/front/compressed",
   "Bottom Mono": "/camera/usb/bottom/compressed",
   Sonar: "/sonar/status",
+  "IVC Modem": "/sensors/modem/status",
 };
 
 type topicsMapKeys = keyof typeof TOPICS_MAP;

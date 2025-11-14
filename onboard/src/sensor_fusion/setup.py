@@ -12,7 +12,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        (str(Path('share') / package_name / 'launch'), list(map(str, Path('./launch').glob('*.launch.py')))),
+        (str(Path('share') / package_name / 'launch'), list(map(str, Path('./launch').glob('*')))),
         (str(Path('share') / package_name / 'config'), list(map(str, Path('./config').glob('*.yaml')))),
     ],
     install_requires=['setuptools'],
@@ -24,6 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'dummy_state_publisher = sensor_fusion.dummy_state_publisher:main',
+            'dvl_to_odom = sensor_fusion.dvl_to_odom:main',
         ],
     },
 )
