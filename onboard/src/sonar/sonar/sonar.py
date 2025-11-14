@@ -206,7 +206,7 @@ class Sonar(Node):
         Returns:
             (Pose, List, float): Pose of the object in robot reference frame, sonar sweep array, and normal angle.
         """
-        _, cart_grid = self.get_sweep(start_angle, end_angle)
+        cart_grid = self.get_sweep(start_angle, end_angle)
 
         sonar_index, normal_angle, _ = sonar_image_processing.find_center_point_and_angle(
             cart_grid, self.VALUE_THRESHOLD, self.DBSCAN_EPS,
@@ -311,7 +311,8 @@ class Sonar(Node):
             self.set_new_range(new_range)
 
         try:
-            object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep(left_gradians, right_gradians)
+            object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep_old(left_gradians, right_gradians)
+            self.get_logger().debug("Finished xy_of_object")
         except RuntimeError as e:
             response.success = False
             response.message = str(e)
@@ -331,7 +332,6 @@ class Sonar(Node):
         if self.stream:
             sonar_image = self.convert_to_ros_compressed_img(plot, is_color=True)
             self.sonar_image_publisher.publish(sonar_image)
-            self.denoised_image_publisher.publish()
 
         return response
 
