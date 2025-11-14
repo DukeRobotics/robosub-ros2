@@ -116,7 +116,7 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
             const connectStatus = { ...prevState.connectStatus };
             for (const sensor of seenSensors) {
               if (renderState.currentTime?.sec != undefined) {
-                sensorsTime[sensor] = renderState.currentTime?.sec;
+                sensorsTime[sensor] = renderState.currentTime.sec;
                 connectStatus[sensor] = true;
               }
             }
