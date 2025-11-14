@@ -128,42 +128,86 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
     },
   });
 
-  // Update color scheme
-  useEffect(() => {
-    context.onRender = (renderState: Immutable<RenderState>, done) => {
-      setState((prevState) => ({ ...prevState, colorScheme: renderState.colorScheme }));
-      setRenderDone(() => done);
-    };
-  }, [context]);
-  context.watch("colorScheme");
+const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set());
+const VALID_KEYS = new Set<string>([
+  "w", "a", "s", "d",
+  "arrowup", "arrowdown", "arrowleft", "arrowright",
+  " ", "space", "enter", "escape",
+]);
 
-  // Step 1: Fix this further, and add valid keys.
-  useEffect(() => {
-    const handleKeyDown = (e : KeyboardEvent) => {
-      e.preventDefault();
+// Update color scheme and register render callback (cleaned up on unmount)
+useEffect(() => {
+  // preserve any existing handler so we can restore it on cleanup
+  const prevOnRender = context.onRender;
 
-      const key = e.key.toLowerCase();
-      if (/*TODO validKeys.includes(key) && add when defining keys later*/ !e.repeat) {
-        setPressedKeys(prev => new Set(prev).add(key));
+  context.onRender = (renderState: Immutable<RenderState>, done) => {
+    setState((prevState) => ({ ...prevState, colorScheme: renderState.colorScheme }));
+    // store the done callback so the panel lifecycle can call it later
+    setRenderDone(() => done);
+  };
 
+  // Ask context to watch colorScheme so we get updates
+  try {
+    context.watch?.("colorScheme");
+  } catch {
+    // context.watch may throw in some environments; ignore safely
+  }
+
+  return () => {
+    // restore previous handler if any
+    context.onRender = prevOnRender;
+  };
+}, [context]);
+
+// Keyboard handlers: add/remove listeners and log keys
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    // normalize key and ignore repeats
+    if (e.repeat) return;
+    const key = e.key.toLowerCase();
+
+    // only handle keys we consider valid
+    if (!VALID_KEYS.has(key)) return;
+
+    // prevent default browser behavior only for our handled keys
+    e.preventDefault();
+
+    setPressedKeys((prev) => {
+      const next = new Set(prev);
+      if (!next.has(key)) {
+        next.add(key);
+        console.log("Key down:", key);
       }
-
-    }
-    const handleKeyUp = (e : KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-
-      if (!e.repeat) {
-        const next = new Set(pressedKeys)
-
-      setPressedKeys(prev => {
-      const next = new Set(prev);  // ✅ Uses current state
-      next.delete(key);
       return next;
     });
-      }
-    }
+  };
 
-  }, [])
+  const handleKeyUp = (e: KeyboardEvent) => {
+    if (e.repeat) return;
+    const key = e.key.toLowerCase();
+
+    if (!VALID_KEYS.has(key)) return;
+
+    e.preventDefault();
+
+    setPressedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+        console.log("Key up:", key);
+      }
+      return next;
+    });
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+  window.addEventListener("keyup", handleKeyUp);
+
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+    window.removeEventListener("keyup", handleKeyUp);
+  };
+}, []); // no deps so we install once
 
   // Call our done function at the end of each render
   useEffect(() => {
