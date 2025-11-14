@@ -312,9 +312,6 @@ class SonarSegmentation:
             segments = self.merge_segments(segments, num, segment)
             if segment.points.shape[0] < self.segment_size_threshold:
                 segments[num] = None
-            elif np.mean(self.raw_image[segment.points[:,0], segment.points[:,1]]) < self.segment_brightness_threshold:
-                segments[num] = None
-                continue
 
         self.raw_segments = segments
         self.segments = [segment for segment in segments if segment is not None]
@@ -349,7 +346,12 @@ class SonarSegmentation:
         return segments
 
     def separate_walls_objects(self, threshold: float) -> None:
-        """Iterate through the segments and select whether they are a Wall or an Objects."""
+        """
+        Iterate through the segments and select whether they are a Wall or an Objects.
+
+        Args:
+            threshold (float): The MSE threshold which will determine whether a segment is a wall or object.
+        """
         self.walls = []
         self.objects = []
 
@@ -370,30 +372,23 @@ class SonarSegmentation:
                     segment.nearest_object = point
                     segment.nearest_object_distance = distance
 
-    def plot_segments_separately(self, walls=True, objects=True):
-        figure = plt.figure(constrained_layout=True, figsize=(75, 75))
-        grid = gridspec.GridSpec(ncols=1, nrows=len(self.segments), figure=figure)
+    def plot_segments_together(self, plot, walls, objects) -> None:
+        """
 
-        for num, segment in enumerate(self.segments):
-            if (walls and segment.type == SonarSegmentType.WALL) or (objects and segment.type == SonarSegmentType.OBJECT):
-                subplot = figure.add_subplot(grid[num], aspect="equal")
-                subplot.imshow(np.zeros((self.side_length, self.side_length)), origin="lower", cmap="plasma") # enforce square aspect ratio & prevent lines from going off the graph
-                self.plot_segment(subplot, segment)
-
-    def plot_segments_together(self, plot, walls, objects):
+        """
         for wall in walls:
-            self.plot_segment(plot, wall, SegmentType.WALL)
+            self.plot_segment(plot, wall, SonarSegmentType.WALL)
         for object in objects:
-            self.plot_segment(plot, object, SegmentType.OBJECT)
+            self.plot_segment(plot, object, SonarSegmentType.OBJECT)
 
-    def plot_segment(self, plot, segment, segment_type=SegmentType.NONE):
+    def plot_segment(self, plot, segment, segment_type=SonarSegmentType.NONE):
         plot.scatter(segment.points[:,1], segment.points[:,0], s=1, label=f"{segment.number}: {segment.ortho_regression.r2}")
         plot.legend()
 
-        if segment_type != SegmentType.WALL:
+        if segment_type != SonarSegmentType.WALL:
             plot.scatter(segment.nearest_object[1], segment.nearest_object[0], s=5, c="red")
 
-        if segment_type != SegmentType.OBJECT:
+        if segment_type != SonarSegmentType.OBJECT:
             X_fit = np.linspace(0, self.side_length)
             y_fit = segment.ortho_regression.y_given_x(X_fit)
 
