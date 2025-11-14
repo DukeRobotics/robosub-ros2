@@ -7,10 +7,10 @@ import { ThemeProvider } from "@mui/material/styles";
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import { createRoot } from "react-dom/client";
 
-const robotSensorMap = new Map<string, Array<string>>([
-  ["oogway", ["DVL", "IMU", "Pressure", "Gyro"]],
-  ["crush", ["Front Mono", "Bottom Mono", "Sonar", "IVC Modem", "IMU"]],
-]);
+const robotSensorMap: Record<string, Array<string>> = {
+  "oogway": ["DVL", "IMU", "Pressure", "Gyro"],
+  "crush": ["Front Mono", "Bottom Mono", "Sonar", "IVC Modem", "IMU"],
+};
 
 const ALL_TOPICS_MAP = {
   DVL: "/sensors/dvl/raw",
@@ -24,7 +24,6 @@ const ALL_TOPICS_MAP = {
   "IVC Modem": "/sensors/modem/status",
 };
 let robotSpecificTopics: Record<string, string> = {}; // Robot-specific topics map
-let varDict: Record<string, string> = {}; // Foxglove environment vars
 const robotNames = new Set<string>([...robotSensorMap.keys()]); // Set of acceptable robot var names
 type topicsMapKeys = keyof typeof ALL_TOPICS_MAP;
 // Seconds until sensor is considered disconnected
@@ -71,9 +70,9 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   const [state, setState] = useState<SensorsStatusPanelState>(initState());
   const [envVars, setEnvVars] = useState<Immutable<RenderState>["variables"] | undefined>();
   // Add new state for robotSpecificTopics
-
   // Update robotSpecificTopics when envVars changes
   const robotName = envVars?.get("ROBOT_NAME")?.toString() ?? "";
+  const validRobotName = robotNames.has(robotName);
   const newTopics: Record<string, string> = {};
 
   if (robotNames.has(robotName) && robotSensorMap.get(robotName)) {
@@ -153,17 +152,17 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   const theme = useTheme();
   return (
     <ThemeProvider theme={theme}>
-      {!(envVars && "ROBOT_NAME" in envVars) && (
+      {!robotName && (
         <Box mb={1}>
           <Alert variant="filled" severity="warning">
             ROBOT_NAME not defined in Env vars.
           </Alert>
         </Box>
       )}
-      {envVars && "ROBOT_NAME" in envVars && !robotNames.has(envVars["ROBOT_NAME"]) && (
+      {robotName && !validRobotName && (
         <Box mb={1}>
           <Alert variant="filled" severity="warning">
-            {`Robot name, "${envVars && envVars["ROBOT_NAME"] ?? ""}" is not an acceptable name: {${Array.from(robotNames)
+            {`Robot name, "${robotName}" is not an acceptable name: {${Array.from(robotNames)
               .map((name) => `"${name}"`)
               .join(", ")}}.`}
           </Alert>
