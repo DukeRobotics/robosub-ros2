@@ -1,3 +1,4 @@
+import RobotName from "@duke-robotics/robot-name"
 import useTheme from "@duke-robotics/theme";
 import { Immutable, PanelExtensionContext, RenderState, MessageEvent, Subscription, VariableValue } from "@foxglove/extension";
 import { Password } from "@mui/icons-material";
@@ -7,10 +8,10 @@ import { ThemeProvider } from "@mui/material/styles";
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import { createRoot } from "react-dom/client";
 
-const robotSensorMap = new Map<string, Array<string>>([
-  ["oogway", ["DVL", "IMU", "Pressure", "Gyro"]],
-  ["crush", ["Front Mono", "Bottom Mono", "Sonar", "IVC Modem", "IMU"]],
-]);
+const robotSensorMap: Record<RobotName, Array<string>> = {
+ // ["oogway", ["DVL", "IMU", "Pressure", "Gyro"]],
+  [RobotName.Crush]: ["Front Mono", "Bottom Mono", "Sonar", "IVC Modem", "IMU"],
+};
 
 const ALL_TOPICS_MAP = {
   DVL: "/sensors/dvl/raw",
