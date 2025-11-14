@@ -1,5 +1,5 @@
 import useTheme from "@duke-robotics/theme";
-import { Immutable, PanelExtensionContext, RenderState, MessageEvent, Subscription } from "@foxglove/extension";
+import { Immutable, PanelExtensionContext, RenderState, Subscription } from "@foxglove/extension";
 import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableRow, Typography, Tooltip } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import React, { useEffect, useState, useLayoutEffect } from "react";
@@ -96,21 +96,34 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
       }
 
       if (renderState.currentFrame && renderState.currentFrame.length !== 0) {
-        const lastFrame = renderState.currentFrame.at(-1) as MessageEvent;
-        const sensorName = TOPICS_MAP_REVERSED[lastFrame.topic] as string;
+        const seenSensors = new Set<topicsMapKeys>();
 
-        // Update sensorsTime to the current time and set connectStatus to true
-        setState((prevState) => ({
-          ...prevState,
-          sensorsTime: {
-            ...prevState.sensorsTime,
-            [sensorName]: prevState.currentTime,
-          },
-          connectStatus: {
-            ...prevState.connectStatus,
-            [sensorName]: true,
-          },
-        }));
+        const numSensors = Object.keys(TOPICS_MAP).length;
+        for (const event of renderState.currentFrame) {
+          const sensorName = TOPICS_MAP_REVERSED[event.topic];
+          if (sensorName) {
+            seenSensors.add(sensorName);
+          }
+
+          if (seenSensors.size === numSensors) {
+            break; // All sensors have been seen, no need to continue
+          }
+        }
+
+        if (seenSensors.size > 0) {
+          setState((prevState) => {
+            const sensorsTime = { ...prevState.sensorsTime };
+            const connectStatus = { ...prevState.connectStatus };
+            for (const sensor of seenSensors) {
+              if (renderState.currentTime?.sec != undefined) {
+                sensorsTime[sensor] = renderState.currentTime.sec;
+                connectStatus[sensor] = true;
+              }
+            }
+
+            return { ...prevState, sensorsTime, connectStatus };
+          });
+        }
       }
 
       // Compare current time to each sensorsTime and set connectStatus to false if the sensor is down
