@@ -1,6 +1,13 @@
-import RobotName from "@duke-robotics/robot-name"
+import RobotName from "@duke-robotics/robot-name";
 import useTheme from "@duke-robotics/theme";
-import { Immutable, PanelExtensionContext, RenderState, MessageEvent, Subscription, VariableValue } from "@foxglove/extension";
+import {
+  Immutable,
+  PanelExtensionContext,
+  RenderState,
+  MessageEvent,
+  Subscription,
+  VariableValue,
+} from "@foxglove/extension";
 import { Password } from "@mui/icons-material";
 import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableRow, Typography, Tooltip } from "@mui/material";
 import Alert from "@mui/material/Alert";
@@ -9,10 +16,14 @@ import React, { useEffect, useState, useLayoutEffect } from "react";
 import { createRoot } from "react-dom/client";
 
 const robotSensorMap: Record<RobotName, Array<string>> = {
- // ["oogway", ["DVL", "IMU", "Pressure", "Gyro"]],
+  [RobotName.Oogway]: ["DVL", "IMU", "Pressure", "Gyro"],
   [RobotName.Crush]: ["Front Mono", "Bottom Mono", "Sonar", "IVC Modem", "IMU"],
 };
 
+const reversedRobotEnumNameMap: Record<string, RobotName> = {};
+for (const [key, value] of Object.entries(RobotName)) {
+  reversedRobotEnumNameMap[value] = key as RobotName;
+}
 const ALL_TOPICS_MAP = {
   DVL: "/sensors/dvl/raw",
   IMU: "/vectornav/imu",
@@ -25,7 +36,7 @@ const ALL_TOPICS_MAP = {
   "IVC Modem": "/sensors/modem/status",
 };
 let robotSpecificTopics: Record<string, string> = {}; // Robot-specific topics map
-const robotNames = new Set<string>([...robotSensorMap.keys()]); // Set of acceptable robot var names
+const robotNames = new Set<string>(Object.values(RobotName)); // Set of acceptable robot var names
 type topicsMapKeys = keyof typeof ALL_TOPICS_MAP;
 // Seconds until sensor is considered disconnected
 const SENSOR_DOWN_THRESHOLD = 1;
@@ -70,22 +81,6 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
   const [state, setState] = useState<SensorsStatusPanelState>(initState());
   const [envVars, setEnvVars] = useState<Immutable<RenderState>["variables"] | undefined>();
-  // Add new state for robotSpecificTopics
-  // Update robotSpecificTopics when envVars changes
-  const robotName = envVars?.get("ROBOT_NAME")?.toString() ?? "";
-  const validRobotName = robotNames.has(robotName);
-  const newTopics: Record<string, string> = {};
-
-  if (robotNames.has(robotName) && robotSensorMap.get(robotName)) {
-    for (const sensorName of robotSensorMap.get(robotName) ?? []) {
-      if (sensorName in ALL_TOPICS_MAP) {
-        newTopics[sensorName] = ALL_TOPICS_MAP[sensorName as topicsMapKeys];
-      }
-    }
-    robotSpecificTopics = newTopics;
-  } else {
-    robotSpecificTopics = {};
-  }
 
   // ... rest of the component remains the same
   // Watch currentFrame for messages from each sensor
@@ -149,6 +144,24 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
     //context.subscribe(TOPICS_LIST);
     renderDone?.();
   }, [renderDone]);
+
+  // Add new state for robotSpecificTopics
+  // Update robotSpecificTopics when envVars changes
+  const robotName = envVars?.get("ROBOT_NAME")?.toString() ?? "";
+  const validRobotName = robotNames.has(robotName);
+  const newTopics: Record<string, string> = {};
+
+  if (robotNames.has(robotName)) {
+    for (const sensorName of robotSensorMap[reversedRobotEnumNameMap[robotName]] ?? []) {
+      if (sensorName in ALL_TOPICS_MAP) {
+        newTopics[sensorName] = ALL_TOPICS_MAP[sensorName as topicsMapKeys];
+      }
+    }
+    robotSpecificTopics = newTopics;
+  } else {
+    robotSpecificTopics = {};
+  }
+
   // Create a table of all the sensors and their status
   const theme = useTheme();
   return (
