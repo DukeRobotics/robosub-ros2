@@ -1,6 +1,6 @@
 import { CustomMsgs, StdMsgs } from "@duke-robotics/defs/types";
 import useTheme from "@duke-robotics/theme";
-import { PanelExtensionContext, RenderState, MessageEvent, Immutable } from "@foxglove/extension";
+import { PanelExtensionContext, RenderState, MessageEvent, Immutable} from "@foxglove/extension";
 import {
   Box,
   Typography,

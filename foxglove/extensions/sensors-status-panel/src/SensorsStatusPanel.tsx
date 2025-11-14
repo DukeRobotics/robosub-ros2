@@ -1,12 +1,30 @@
+import RobotName from "@duke-robotics/robot-name";
 import useTheme from "@duke-robotics/theme";
-import { Immutable, PanelExtensionContext, RenderState, MessageEvent, Subscription } from "@foxglove/extension";
+import {
+  Immutable,
+  PanelExtensionContext,
+  RenderState,
+  MessageEvent,
+  Subscription,
+  VariableValue,
+} from "@foxglove/extension";
+import { Password } from "@mui/icons-material";
 import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableRow, Typography, Tooltip } from "@mui/material";
+import Alert from "@mui/material/Alert";
 import { ThemeProvider } from "@mui/material/styles";
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import { createRoot } from "react-dom/client";
 
-// Map of sensor name to topic name
-const TOPICS_MAP = {
+const robotSensorMap: Record<RobotName, Array<string>> = {
+  [RobotName.Oogway]: ["DVL", "IMU", "Pressure", "Gyro"],
+  [RobotName.Crush]: ["Front Mono", "Bottom Mono", "Sonar", "IVC Modem", "IMU"],
+};
+
+const reversedRobotEnumNameMap: Record<string, RobotName> = {};
+for (const [key, value] of Object.entries(RobotName)) {
+  reversedRobotEnumNameMap[value] = key as RobotName;
+}
+const ALL_TOPICS_MAP = {
   DVL: "/sensors/dvl/raw",
   IMU: "/vectornav/imu",
   Pressure: "/sensors/depth",
@@ -17,76 +35,65 @@ const TOPICS_MAP = {
   Sonar: "/sonar/status",
   "IVC Modem": "/sensors/modem/status",
 };
-
-type topicsMapKeys = keyof typeof TOPICS_MAP;
-
+let robotSpecificTopics: Record<string, string> = {}; // Robot-specific topics map
+const robotNames = new Set<string>(Object.values(RobotName)); // Set of acceptable robot var names
+type topicsMapKeys = keyof typeof ALL_TOPICS_MAP;
 // Seconds until sensor is considered disconnected
 const SENSOR_DOWN_THRESHOLD = 1;
-
 const TOPICS_MAP_REVERSED: Record<string, topicsMapKeys> = {};
-for (const [key, value] of Object.entries(TOPICS_MAP)) {
+for (const [key, value] of Object.entries(ALL_TOPICS_MAP)) {
   TOPICS_MAP_REVERSED[value] = key as topicsMapKeys;
 }
-
 // Array of all topics: [{topic: topic1}, {topic: topic2}, ... ]
-
-const TOPICS_LIST: Subscription[] = [];
-for (const value of Object.values(TOPICS_MAP)) {
-  TOPICS_LIST.push({ topic: value });
-}
-
+// const TOPICS_LIST: Subscription[] = [];
+// for (const value of Object.values(TOPICS_MAP)) {
+//   TOPICS_LIST.push({ topic: value });
+// }
 // Time of last message received from sensor
 type SensorsTime = Record<topicsMapKeys, number>;
 // True if SensorsTime is within SENSOR_DOWN_THRESHOLD seconds
 type ConnectStatus = Record<topicsMapKeys, boolean>;
-
 type SensorsStatusPanelState = {
   sensorsTime: SensorsTime;
   connectStatus: ConnectStatus;
   currentTime: number;
 };
-
 const initState = () => {
   const state: Partial<SensorsStatusPanelState> = {};
-
   // Initialize sensorsTime with 0's
   const sensorsTime: Partial<SensorsTime> = {};
-  for (const key in TOPICS_MAP) {
+  for (const key in ALL_TOPICS_MAP) {
     sensorsTime[key as keyof SensorsTime] = 0;
   }
   state.sensorsTime = sensorsTime as SensorsTime;
-
   // Initialize connectStatus with false's
   const connectStatus: Partial<ConnectStatus> = {};
-  for (const key in TOPICS_MAP) {
+  for (const key in ALL_TOPICS_MAP) {
     connectStatus[key as keyof ConnectStatus] = false;
   }
   state.connectStatus = connectStatus as ConnectStatus;
-
   // Initialize currentTime with Infinity
   // This ensures that (currentTime - sensorsTime > SENSOR_DOWN_THRESHOLD) so that the sensor is initially considered disconnected
   state.currentTime = Infinity;
-
   return state as SensorsStatusPanelState;
 };
-
 function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
   const [state, setState] = useState<SensorsStatusPanelState>(initState());
+  const [envVars, setEnvVars] = useState<Immutable<RenderState>["variables"] | undefined>();
 
-  // Subscribe to all topics
-  context.subscribe(TOPICS_LIST);
-
+  // ... rest of the component remains the same
   // Watch currentFrame for messages from each sensor
   useLayoutEffect(() => {
     context.onRender = (renderState: Immutable<RenderState>, done: unknown) => {
       setRenderDone(() => done);
+      console.log(renderState.variables);
+      setEnvVars(renderState.variables);
 
       // Reset state when the user seeks the video
       if (renderState.didSeek ?? false) {
         setState(initState());
       }
-
       // Updates currentTime
       if (renderState.currentTime != undefined) {
         setState((prevState) => ({
@@ -94,11 +101,9 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
           currentTime: renderState.currentTime!.sec,
         }));
       }
-
       if (renderState.currentFrame && renderState.currentFrame.length !== 0) {
         const lastFrame = renderState.currentFrame.at(-1) as MessageEvent;
         const sensorName = TOPICS_MAP_REVERSED[lastFrame.topic] as string;
-
         // Update sensorsTime to the current time and set connectStatus to true
         setState((prevState) => ({
           ...prevState,
@@ -112,9 +117,8 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
           },
         }));
       }
-
       // Compare current time to each sensorsTime and set connectStatus to false if the sensor is down
-      for (const key in TOPICS_MAP) {
+      for (const key in ALL_TOPICS_MAP) {
         setState((prevState) => {
           if (prevState.currentTime - prevState.sensorsTime[key as topicsMapKeys] > SENSOR_DOWN_THRESHOLD) {
             return {
@@ -133,22 +137,57 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
     context.watch("currentTime");
     context.watch("currentFrame");
     context.watch("didSeek");
+    context.watch("variables");
   }, [context]);
-
   // Call our done function at the end of each render.
   useEffect(() => {
+    //context.subscribe(TOPICS_LIST);
     renderDone?.();
   }, [renderDone]);
+
+  // Add new state for robotSpecificTopics
+  // Update robotSpecificTopics when envVars changes
+  const robotName = envVars?.get("ROBOT_NAME")?.toString() ?? "";
+  const validRobotName = robotNames.has(robotName);
+  const newTopics: Record<string, string> = {};
+
+  if (robotNames.has(robotName)) {
+    for (const sensorName of robotSensorMap[reversedRobotEnumNameMap[robotName]] ?? []) {
+      if (sensorName in ALL_TOPICS_MAP) {
+        newTopics[sensorName] = ALL_TOPICS_MAP[sensorName as topicsMapKeys];
+      }
+    }
+    robotSpecificTopics = newTopics;
+  } else {
+    robotSpecificTopics = {};
+  }
 
   // Create a table of all the sensors and their status
   const theme = useTheme();
   return (
     <ThemeProvider theme={theme}>
+      {!robotName && (
+        <Box mb={1}>
+          <Alert variant="filled" severity="warning">
+            ROBOT_NAME not defined in Env vars.
+          </Alert>
+        </Box>
+      )}
+      {robotName && !validRobotName && (
+        <Box mb={1}>
+          <Alert variant="filled" severity="warning">
+            {`Robot name, "${robotName}" is not an acceptable name: {${Array.from(robotNames)
+              .map((name) => `"${name}"`)
+              .join(", ")}}.`}
+          </Alert>
+        </Box>
+      )}
+
       <Box m={1}>
         <TableContainer component={Paper}>
           <Table size="small">
             <TableBody>
-              {Object.entries(TOPICS_MAP).map(([sensor, topic]) => (
+              {Object.entries(robotSpecificTopics).map(([sensor, topic]) => (
                 <TableRow
                   key={sensor}
                   style={{
@@ -173,13 +212,10 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
     </ThemeProvider>
   );
 }
-
 export function initSensorsStatusPanel(context: PanelExtensionContext): () => void {
   context.panelElement.style.overflow = "auto"; // Enable scrolling
-
   const root = createRoot(context.panelElement as HTMLElement);
   root.render(<SensorsStatusPanel context={context} />);
-
   // Return a function to run when the panel is removed
   return () => {
     root.unmount();
