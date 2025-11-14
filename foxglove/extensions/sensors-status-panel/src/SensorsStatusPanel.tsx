@@ -98,13 +98,14 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
       if (renderState.currentFrame && renderState.currentFrame.length !== 0) {
         const seenSensors = new Set<topicsMapKeys>();
 
+        const numSensors = Object.keys(TOPICS_MAP).length;
         for (const event of renderState.currentFrame) {
           const sensorName = TOPICS_MAP_REVERSED[event.topic];
           if (sensorName) {
             seenSensors.add(sensorName);
           }
 
-          if (seenSensors.size === Object.keys(TOPICS_MAP).length) {
+          if (seenSensors.size === numSensors) {
             break; // All sensors have been seen, no need to continue
           }
         }
@@ -114,7 +115,9 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
             const sensorsTime = { ...prevState.sensorsTime };
             const connectStatus = { ...prevState.connectStatus };
             for (const sensor of seenSensors) {
-              sensorsTime[sensor] = renderState.currentTime?.sec ?? prevState.currentTime;
+              if (renderState.currentTime?.sec != undefined) {
+                sensorsTime[sensor] = renderState.currentTime?.sec;
+              }
               connectStatus[sensor] = true;
             }
 
