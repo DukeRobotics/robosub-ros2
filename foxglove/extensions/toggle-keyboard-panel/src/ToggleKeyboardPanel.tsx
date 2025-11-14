@@ -17,6 +17,7 @@ const DESIRED_POWER_TOPIC = "/controls/desired_power";
 const DESIRED_POWER_SCHEMA = "geometry_msgs/Twist";
 
 // Joystick axes indices
+// TODO: Change this for keyboard mapping later
 const AXIS_MAP = {
   xIndex: 1, // Joystick Forward/Backward
   yIndex: 0, // Joystick Left/Right
@@ -25,8 +26,9 @@ const AXIS_MAP = {
   pitchIndex: 9, // Thumb Joystick Forward/Backward
   rollIndex: 9, // Thumb Joystick Right/Left
 };
-const [pressedKeys, setPressedKeys] = useState<Set<String>>(new Set<String>);
+const [pressedKeys, setPressedKeys] = useState<Set<String>>(new Set<String>); // Is set the right data structure here?
 // Joystick button indices
+// TODO: Update these to key bindings
 const BUTTON_MAP = {
   torpedoActivateIndex: 1, // Red/black striped button on Joystick
   torpedoOneLaunchIndex: 4, // Button (5)
@@ -35,10 +37,10 @@ const BUTTON_MAP = {
 
 /**
  * Calculate power for pitch from thumb joystick input
- * 
+ *
  */
 const pitchMapping = (value: number): number => {
-  
+
 
   if (value !== stationary && value !== 0) {
     if (value > 0.7142857313156128 || value < -0.4285714030265808) {
@@ -134,15 +136,17 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
     };
   }, [context]);
   context.watch("colorScheme");
+
+  // Step 1: Fix this further, and add valid keys.
   useEffect(() => {
     const handleKeyDown = (e : KeyboardEvent) => {
       e.preventDefault();
-      
+
       const key = e.key.toLowerCase();
       if (/*TODO validKeys.includes(key) && add when defining keys later*/ !e.repeat) {
         setPressedKeys(prev => new Set(prev).add(key));
 
-      } 
+      }
 
     }
     const handleKeyUp = (e : KeyboardEvent) => {
