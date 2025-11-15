@@ -45,12 +45,12 @@ async def yaw_until_object_detection(self: Task, cv_object: CVObjectType , searc
                 angle = -1 * YAW_PID_STEPS
             else:
                 angle = 3 * YAW_PID_STEPS
-                logger.info(f'Yawed to find object more than 7 times, breaking loop.')
+                logger.info('Yawed to find object more than 7 times, breaking loop.')
             await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, angle * search_direction),
                                     depth_level=depth_level,
                                     pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
                                     time_limit=10,
-                                    parent=self) 
+                                    parent=self)
             # TODO confirm that this actually steps and doesn't go through the whole thing when we call step out outer function
             step += 1
         return False
@@ -64,9 +64,10 @@ async def yaw_until_object_detection(self: Task, cv_object: CVObjectType , searc
 
     return True
 
-@task 
+
+@task
 async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction=1,
-                           yaw_threshold=math.radians(10), depth_level=0.5) -> Task[None, str | None, None]:
+                           yaw_threshold=math.radians(10), depth_level=0.5) -> Task[None, str | None, None] | bool:
     """
     Yaw to an object detected by CV.
 
@@ -92,17 +93,19 @@ async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction=1
     logger.info('Starting yaw_to_cv_object')
 
     if not CV().is_receiving_recent_cv_data(cv_object, 10):
-        foundObject = await yaw_until_object_detection()
-        if not foundObject:
-            return 
-            
+        found_object = await yaw_until_object_detection()
+        if not found_object:
+            return False
 
     cv_object_yaw = CV().angles[cv_object]
     # also make a timer here
 
     while (abs(cv_object_yaw) < yaw_threshold):
         # keep PIDing to object
+        # NOTE: you can refer to how move_to_cv_obj updates its pose below
+        pass
 
+    return True
 
 
 # TODO: this task will likely be depleted once we complete the refactoring tasks in comp_tasks.py
