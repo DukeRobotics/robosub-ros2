@@ -206,30 +206,39 @@ static_power_global:
   y: 0
   z: -0.206
 power_scale_factor: 1
+# all x positions assume the corner link is 10.41527MM +x than it actually is
 thrusters:
-  - name: middle_right
+  - name: middle_right_first
     type: T200
-    pos: [-0.2404152701, -0.42425, -0.003175]
+    pos: [-0.15501, -0.34805, -0.003175]
+    rpy: [0, 90, 0]
+  - name: middle_right_second
+    type: T200
+    pos: [-0.32582, -0.34805, -0.003175]
     rpy: [0, 90, 0]
   - name: front_right
     type: T200
-    pos: [3.360246e-05, -0.3867988726, -0.003175]
+    pos: [0.001895, -0.38866, -0.003175]
     rpy: [0, 0, -135]
   - name: back_right
     type: T200
-    pos: [-0.4808641427, -0.3867988726, -0.003175]
+    pos: [-0.48273, -0.38866, -0.003175]
     rpy: [0, 0, 135]
   - name: back_left
     type: T200
-    pos: [-0.4808641427, 0.09409887258, -0.003175]
+    pos: [-0.48273, 0.09596, -0.003175]
     rpy: [0, 0, -135]
-  - name: middle_left
+  - name: middle_left_first
     type: T200
-    pos: [-0.2404152701, 0.13155, -0.003175]
+    pos: [-0.15501, 0.05535, -0.003175]
+    rpy: [0, 90, 0]
+  - name: middle_left_second
+    type: T200
+    pos: [-0.32582, 0.05535, -0.003175]
     rpy: [0, 90, 0]
   - name: front_left
     type: T200
-    pos: [3.360246e-05, 0.09409887258, -0.003175]
+    pos: [0.001895, 0.09596, -0.003175]
     rpy: [0, 0, 135]
 wrench_matrix_file_path: data/crush_wrench.csv
 wrench_matrix_pinv_file_path: data/crush_wrench_pinv.csv
