@@ -26,7 +26,6 @@ const AXIS_MAP = {
   pitchIndex: 9, // Thumb Joystick Forward/Backward
   rollIndex: 9, // Thumb Joystick Right/Left
 };
-const [pressedKeys, setPressedKeys] = useState<Set<String>>(new Set<String>); // Is set the right data structure here?
 // Joystick button indices
 // TODO: Update these to key bindings
 const BUTTON_MAP = {
@@ -34,14 +33,35 @@ const BUTTON_MAP = {
   torpedoOneLaunchIndex: 4, // Button (5)
   torpedoTwoLaunchIndex: 5, // Button (6)
 };
+const KEYBOARD_KEY_MAP = {
+  linear: {
+    forward: "w",
+    backward: ["s"],
+    left: ["a"],
+    right: ["d"],
+    up: ["arrowup"],
+    down: ["arrowdown"],
+  },
+  orientation: {
+    rollClockwise: ["l"],
+    rollAnticlockwise: ["j"],
+    pitchUp: ["k"],
+    pitchDown: ["i"],
+    yawClockwise: ["arrowright"],
+    yawAnticlockwise: ["arrowleft"],
+  },
+} as const;
+//helper function for determining if a key is pressed
+function isKeyPressed(pressedKeys:Set<string>, keys:string[]) : boolean {
+  return keys.some(key=>pressedKeys.has(key));
+}
 
 /**
  * Calculate power for pitch from thumb joystick input
  *
  */
 const pitchMapping = (value: number): number => {
-
-
+  const stationary = 3.2857141494750977;
   if (value !== stationary && value !== 0) {
     if (value > 0.7142857313156128 || value < -0.4285714030265808) {
       return 0.5; // Up
@@ -82,6 +102,7 @@ const rollMapping = (value: number): number => {
  * @param input Value from linear axis
  * @param gain The value to multiply the input by
  */
+
 const linearMapping = (input: number, gain: number): number => {
   const threshold = 0.01;
   if (Math.abs(input) < threshold) {
@@ -89,8 +110,28 @@ const linearMapping = (input: number, gain: number): number => {
   }
   return gain * input;
 };
+function transformKeyboardInputs(pressedKeys: Set<String>): TransformedControlInputs {
+ if (joystick[0]) {
+        const axes = joystick[0].axes;
+        const buttons = joystick[0].buttons;
 
-type TransformedJoystickInputs = {
+        const transformedJoystickInputs = {
+          xAxis:
+          yAxis: linearMapping(axes[AXIS_MAP.yIndex] ?? 0, -1),
+          zAxis: linearMapping(axes[AXIS_MAP.zIndex] ?? 0, 1),
+          yawAxis: linearMapping(axes[AXIS_MAP.yawIndex] ?? 0, -0.5),
+          pitchAxis: pitchMapping(axes[AXIS_MAP.pitchIndex] ?? 0),
+          rollAxis: rollMapping(axes[AXIS_MAP.rollIndex] ?? 0),
+          torpedoActivate: buttons[BUTTON_MAP.torpedoActivateIndex]?.value === 1,
+          torpedoOneLaunch: buttons[BUTTON_MAP.torpedoOneLaunchIndex]?.value === 1,
+          torpedoTwoLaunch: buttons[BUTTON_MAP.torpedoTwoLaunchIndex]?.value === 1,
+        };
+
+        // Update state
+        setState((prevState) => ({ ...prevState, transformedJoystickInputs }));
+}
+
+type TransformedControlInputs = {
   xAxis: number;
   yAxis: number;
   zAxis: number;
@@ -128,86 +169,96 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
     },
   });
 
-const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set());
-const VALID_KEYS = new Set<string>([
-  "w", "a", "s", "d",
-  "arrowup", "arrowdown", "arrowleft", "arrowright",
-  " ", "space", "enter", "escape",
-]);
+  const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set());
+  const VALID_KEYS = new Set<string>([
+    "w",
+    "a",
+    "s",
+    "d",
+    "arrowup",
+    "arrowdown",
+    "arrowleft",
+    "arrowright",
+    "l",
+    "j",
+    "i",
+    "k",
+  ]);
 
-// Update color scheme and register render callback (cleaned up on unmount)
-useEffect(() => {
-  // preserve any existing handler so we can restore it on cleanup
-  const prevOnRender = context.onRender;
+  // Update color scheme and register render callback (cleaned up on unmount)
+  useEffect(() => {
+    // preserve any existing handler so we can restore it on cleanup
+    const prevOnRender = context.onRender;
 
-  context.onRender = (renderState: Immutable<RenderState>, done) => {
-    setState((prevState) => ({ ...prevState, colorScheme: renderState.colorScheme }));
-    // store the done callback so the panel lifecycle can call it later
-    setRenderDone(() => done);
-  };
+    context.onRender = (renderState: Immutable<RenderState>, done) => {
+      setState((prevState) => ({ ...prevState, colorScheme: renderState.colorScheme }));
+      // store the done callback so the panel lifecycle can call it later
+      setRenderDone(() => done);
+    };
 
-  // Ask context to watch colorScheme so we get updates
-  try {
-    context.watch?.("colorScheme");
-  } catch {
-    // context.watch may throw in some environments; ignore safely
-  }
+    // Ask context to watch colorScheme so we get updates
+    try {
+      context.watch?.("colorScheme");
+    } catch {
+      // context.watch may throw in some environments; ignore safely
+    }
 
-  return () => {
-    // restore previous handler if any
-    context.onRender = prevOnRender;
-  };
-}, [context]);
+    return () => {
+      // restore previous handler if any
+      context.onRender = prevOnRender;
+    };
+  }, [context]);
 
-// Keyboard handlers: add/remove listeners and log keys
-useEffect(() => {
-  const handleKeyDown = (e: KeyboardEvent) => {
-    // normalize key and ignore repeats
-    if (e.repeat) return;
-    const key = e.key.toLowerCase();
+  // Keyboard handlers: add/remove listeners and log keys
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // normalize key and ignore repeats
+      if (e.repeat) return;
+      const key = e.key.toLowerCase();
 
-    // only handle keys we consider valid
-    if (!VALID_KEYS.has(key)) return;
+      // only handle keys we consider valid
+      if (!VALID_KEYS.has(key)) return;
 
-    // prevent default browser behavior only for our handled keys
-    e.preventDefault();
+      // prevent default browser behavior only for our handled keys
+      e.preventDefault();
 
-    setPressedKeys((prev) => {
-      const next = new Set(prev);
-      if (!next.has(key)) {
-        next.add(key);
-        console.log("Key down:", key);
-      }
-      return next;
-    });
-  };
+      setPressedKeys((prev) => {
+        const next = new Set(prev);
+        if (!next.has(key)) {
+          next.add(key);
+          console.log("Key down:", key);
+          console.log(pressedKeys);
+        }
+        return next;
+      });
+    };
 
-  const handleKeyUp = (e: KeyboardEvent) => {
-    if (e.repeat) return;
-    const key = e.key.toLowerCase();
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.repeat) return;
+      const key = e.key.toLowerCase();
 
-    if (!VALID_KEYS.has(key)) return;
+      if (!VALID_KEYS.has(key)) return;
 
-    e.preventDefault();
+      e.preventDefault();
 
-    setPressedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-        console.log("Key up:", key);
-      }
-      return next;
-    });
-  };
+      setPressedKeys((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) {
+          next.delete(key);
+          console.log("Key up:", key);
+        }
+        return next;
+      });
+    };
 
-  window.addEventListener("keydown", handleKeyDown);
-  window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
 
-  return () => {
-    window.removeEventListener("keydown", handleKeyDown);
-    window.removeEventListener("keyup", handleKeyUp);
-  };
-}, []); // no deps so we install once
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []); // no deps so we install once
 
   // Call our done function at the end of each render
   useEffect(() => {
@@ -379,7 +430,7 @@ useEffect(() => {
             )}
           </Box>
         )}
-
+        <p>{pressedKeys}</p>
         {/* Toggle button */}
         <Box my={1}>
           <Button
@@ -398,7 +449,7 @@ useEffect(() => {
         {DEBUG && (
           <JsonViewer
             rootName={false}
-            value={state.transformedJoystickInputs}
+            value={state.transformedKeyboardInputs}
             indentWidth={2}
             theme={state.colorScheme}
             enableClipboard={false}
@@ -410,7 +461,7 @@ useEffect(() => {
   );
 }
 
-export function initToggleJoystickPanel(context: PanelExtensionContext): () => void {
+export function initToggleKeyboardPanel(context: PanelExtensionContext): () => void {
   context.panelElement.style.overflow = "auto"; // Enable scrolling
 
   const root = createRoot(context.panelElement as HTMLElement);
