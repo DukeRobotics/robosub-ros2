@@ -250,7 +250,12 @@ def extension_package(name: str) -> pathlib.Path:
 
 def clean() -> None:
     """Clean up the foxglove monorepo."""
-    run_at_path('git clean -ix foxglove', ROOT_PATH)
+    run_at_path('git clean -Xdn foxglove', ROOT_PATH)
+
+    print()
+
+    if input('Are you sure you want to delete these files? [y/n]: ') == 'y':
+        run_at_path('git clean -Xdf foxglove', ROOT_PATH)
 
 
 def main() -> None:
