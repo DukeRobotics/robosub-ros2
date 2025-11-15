@@ -94,9 +94,10 @@ def build(skip_ci: bool = False, extension_paths: Sequence[pathlib.Path] = EXTEN
         run('npx patch-package --patch-dir patches')
 
     # Compile local shared dependencies
-    dependencies = ['defs', 'theme', 'robot-name']  # Specify build order
-    for dep in dependencies:
-        run_at_path('npm run build --if-present', FOXGLOVE_PATH / 'shared' / dep)
+    shared_path = FOXGLOVE_PATH / 'shared'
+    for item in shared_path.iterdir():
+        if item.is_dir():
+            run_at_path('npm run build --if-present', item)
 
     # Compile local nonshared dependencies
     for extension in extension_paths:
