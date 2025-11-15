@@ -1,1 +1,2 @@
-export { default } from "./RobotName";
+export * from "./robot-name";
+export * from "./NoRobotNameAlert";
