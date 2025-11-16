@@ -160,6 +160,7 @@ Local dependencies are located in the `shared/` directory.
 - [`defs`](shared/defs/README.md) - Exports Foxglove datatype maps and TypeScript interfaces/enums for both ROS 2 and Duke Robotics message definitions
 - [`theme`](shared/theme/README.md) - Exports the Duke Robotics MUI Theme
 - [`robot-name`](shared/robot-name/README.md) - Exports the `Robot` enum and related utilities used for implementing robot-specific behavior
+- [`utils`](shared/utils/README.md) - Exports shared utility functions used across Foxglove extensions
 
 ### Patches
 Patches to external node modules are located in the `patches/` directory.
