@@ -13,7 +13,7 @@ export function isRobotName(name: unknown): name is Robot {
   if (typeof name !== "string") {
     return false;
   }
-  return ROBOTS.includes(name.toLowerCase() as Robot);
+  return ROBOTS.includes(name as Robot);
 }
 
 const ROBOT_NAME_VAR = "ROBOT_NAME";
