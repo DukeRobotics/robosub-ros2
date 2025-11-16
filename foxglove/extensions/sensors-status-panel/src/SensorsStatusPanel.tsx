@@ -1,216 +1,129 @@
-import RobotName from "@duke-robotics/robot-name";
+import { Robot, getRobotName, NoRobotNameAlert } from "@duke-robotics/robot-name";
 import useTheme from "@duke-robotics/theme";
-import { Immutable, PanelExtensionContext, RenderState, Subscription } from "@foxglove/extension";
+import { timeToNsec } from "@duke-robotics/utils";
+import { Immutable, PanelExtensionContext, RenderState } from "@foxglove/extension";
 import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableRow, Typography, Tooltip } from "@mui/material";
-import Alert from "@mui/material/Alert";
 import { ThemeProvider } from "@mui/material/styles";
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import { createRoot } from "react-dom/client";
 
-const robotSensorMap: Record<RobotName, Array<string>> = {
-  [RobotName.Oogway]: ["DVL", "IMU", "Pressure", "Gyro"],
-  [RobotName.Crush]: ["Front Mono", "Bottom Mono", "Sonar", "IVC Modem", "IMU"],
-};
+import {
+  SensorConfig,
+  Sensor,
+  SENSORS,
+  ROBOT_CONFIG,
+  SENSOR_CONFIG,
+  TOPIC_TO_SENSOR,
+  SENSOR_DOWN_THRESHOLD_NSEC,
+} from "./config";
 
-const reversedRobotEnumNameMap: Record<string, RobotName> = {};
-for (const [key, value] of Object.entries(RobotName)) {
-  reversedRobotEnumNameMap[value] = key as RobotName;
-}
-const ALL_TOPICS_MAP = {
-  DVL: "/sensors/dvl/raw",
-  IMU: "/vectornav/imu",
-  Pressure: "/sensors/depth",
-  Gyro: "/sensors/gyro/status",
-  "Front DAI": "/camera/front/rgb/preview/compressed",
-  "Front Mono": "/camera/usb/front/compressed",
-  "Bottom Mono": "/camera/usb/bottom/compressed",
-  Sonar: "/sonar/status",
-  "IVC Modem": "/sensors/modem/status",
-};
-let robotSpecificTopics: Record<string, string> = {}; // Robot-specific topics map
-const robotNames = new Set<string>(Object.values(RobotName)); // Set of acceptable robot var names
-type topicsMapKeys = keyof typeof ALL_TOPICS_MAP;
-// Seconds until sensor is considered disconnected
-const SENSOR_DOWN_THRESHOLD = 1;
-const TOPICS_MAP_REVERSED: Record<string, topicsMapKeys> = {};
-for (const [key, value] of Object.entries(ALL_TOPICS_MAP)) {
-  TOPICS_MAP_REVERSED[value] = key as topicsMapKeys;
-}
-// Array of all topics: [{topic: topic1}, {topic: topic2}, ... ]
-// const TOPICS_LIST: Subscription[] = [];
-// for (const value of Object.values(TOPICS_MAP)) {
-//   TOPICS_LIST.push({ topic: value });
-// }
-// Time of last message received from sensor
-type SensorsTime = Record<topicsMapKeys, number>;
-// True if SensorsTime is within SENSOR_DOWN_THRESHOLD seconds
-type ConnectStatus = Record<topicsMapKeys, boolean>;
-type SensorsStatusPanelState = {
-  sensorsTime: SensorsTime;
-  connectStatus: ConnectStatus;
-  currentTime: number;
-};
-const initState = () => {
-  const state: Partial<SensorsStatusPanelState> = {};
-  // Initialize sensorsTime with 0's
-  const sensorsTime: Partial<SensorsTime> = {};
-  for (const key in ALL_TOPICS_MAP) {
-    sensorsTime[key as keyof SensorsTime] = 0;
-  }
-  state.sensorsTime = sensorsTime as SensorsTime;
-  // Initialize connectStatus with false's
-  const connectStatus: Partial<ConnectStatus> = {};
-  for (const key in ALL_TOPICS_MAP) {
-    connectStatus[key as keyof ConnectStatus] = false;
-  }
-  state.connectStatus = connectStatus as ConnectStatus;
-  // Initialize currentTime with Infinity
-  // This ensures that (currentTime - sensorsTime > SENSOR_DOWN_THRESHOLD) so that the sensor is initially considered disconnected
-  state.currentTime = Infinity;
-  return state as SensorsStatusPanelState;
-};
+type SensorNsecs = Record<Sensor, number | undefined>; // Time of last message received from sensor
+const initSensorNsecs = (): SensorNsecs => Object.fromEntries(SENSORS.map((s) => [s, undefined])) as SensorNsecs;
+
 function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
-  const [state, setState] = useState<SensorsStatusPanelState>(initState());
-  const [envVars, setEnvVars] = useState<Immutable<RenderState>["variables"] | undefined>();
 
-  // ... rest of the component remains the same
-  // Watch currentFrame for messages from each sensor
+  const [robotName, setRobotName] = useState<Robot | undefined>(undefined);
+  const [sensorNsecs, setSensorNsecs] = useState<SensorNsecs>(initSensorNsecs);
+  const [currentNsecState, setCurrentNsecState] = useState<number | undefined>(undefined);
+
+  const sensorsToMonitor = React.useMemo(() => {
+    const map: Partial<Record<Sensor, SensorConfig>> = {};
+    if (robotName != undefined) {
+      for (const sensor of ROBOT_CONFIG[robotName]) {
+        map[sensor] = SENSOR_CONFIG[sensor];
+      }
+    }
+    return map;
+  }, [robotName]);
+
   useLayoutEffect(() => {
-    context.onRender = (renderState: Immutable<RenderState>, done: unknown) => {
+    context.onRender = (renderState: Immutable<RenderState>, done: () => void) => {
       setRenderDone(() => done);
-      console.log(renderState.variables);
-      setEnvVars(renderState.variables);
+
+      setRobotName(getRobotName(renderState));
 
       // Reset state when the user seeks the video
       if (renderState.didSeek ?? false) {
-        setState(initState());
+        setSensorNsecs(initSensorNsecs());
+        setCurrentNsecState(undefined);
+        return;
       }
-      // Updates currentTime
+
       if (renderState.currentTime != undefined) {
-        setState((prevState) => ({
-          ...prevState,
-          currentTime: renderState.currentTime!.sec,
-        }));
-      }
-      if (renderState.currentFrame && renderState.currentFrame.length !== 0) {
-        const seenSensors = new Set<topicsMapKeys>();
+        const currentNsec = timeToNsec(renderState.currentTime);
+        setCurrentNsecState(currentNsec);
 
-        const numSensors = Object.keys(TOPICS_MAP).length;
-        for (const event of renderState.currentFrame) {
-          const sensorName = TOPICS_MAP_REVERSED[event.topic];
-          if (sensorName) {
-            seenSensors.add(sensorName);
-          }
-
-          if (seenSensors.size === numSensors) {
-            break; // All sensors have been seen, no need to continue
-          }
-        }
-
-        if (seenSensors.size > 0) {
-          setState((prevState) => {
-            const sensorsTime = { ...prevState.sensorsTime };
-            const connectStatus = { ...prevState.connectStatus };
-            for (const sensor of seenSensors) {
-              if (renderState.currentTime?.sec != undefined) {
-                sensorsTime[sensor] = renderState.currentTime.sec;
-                connectStatus[sensor] = true;
-              }
+        if (renderState.currentFrame != undefined) {
+          // Find all sensors that have published in the current frame
+          const seenSensors = new Set<Sensor>();
+          for (const event of renderState.currentFrame) {
+            const sensor = TOPIC_TO_SENSOR[event.topic];
+            if (sensor != undefined) {
+              seenSensors.add(sensor);
             }
-
-            return { ...prevState, sensorsTime, connectStatus };
-          });
-        }
-      }
-      // Compare current time to each sensorsTime and set connectStatus to false if the sensor is down
-      for (const key in ALL_TOPICS_MAP) {
-        setState((prevState) => {
-          if (prevState.currentTime - prevState.sensorsTime[key as topicsMapKeys] > SENSOR_DOWN_THRESHOLD) {
-            return {
-              ...prevState,
-              connectStatus: {
-                ...prevState.connectStatus,
-                [key as topicsMapKeys]: false,
-              },
-            };
           }
-          return prevState;
-        });
+
+          // Update the last seen time for all sensors that have published in this frame
+          setSensorNsecs((prev) => ({
+            ...prev,
+            ...Object.fromEntries([...seenSensors].map((sensor) => [sensor, currentNsec])),
+          }));
+        }
       }
     };
 
+    context.subscribe(Object.values(sensorsToMonitor).map((config) => ({ topic: config.topic })));
     context.watch("currentTime");
     context.watch("currentFrame");
     context.watch("didSeek");
     context.watch("variables");
-  }, [context]);
-  // Call our done function at the end of each render.
+  }, [context, sensorsToMonitor]);
+
   useEffect(() => {
-    //context.subscribe(TOPICS_LIST);
     renderDone?.();
   }, [renderDone]);
 
-  // Add new state for robotSpecificTopics
-  // Update robotSpecificTopics when envVars changes
-  const robotName = envVars?.get("ROBOT_NAME")?.toString() ?? "";
-  const validRobotName = robotNames.has(robotName);
-  const newTopics: Record<string, string> = {};
-
-  if (robotNames.has(robotName)) {
-    for (const sensorName of robotSensorMap[reversedRobotEnumNameMap[robotName]] ?? []) {
-      if (sensorName in ALL_TOPICS_MAP) {
-        newTopics[sensorName] = ALL_TOPICS_MAP[sensorName as topicsMapKeys];
-      }
-    }
-    robotSpecificTopics = newTopics;
-  } else {
-    robotSpecificTopics = {};
-  }
-
-  // Create a table of all the sensors and their status
   const theme = useTheme();
   return (
     <ThemeProvider theme={theme}>
-      {!robotName && (
-        <Box mb={1}>
-          <Alert variant="filled" severity="warning">
-            ROBOT_NAME not defined in Env vars.
-          </Alert>
-        </Box>
-      )}
-      {robotName && !validRobotName && (
-        <Box mb={1}>
-          <Alert variant="filled" severity="warning">
-            {`Robot name, "${robotName}" is not an acceptable name: {${Array.from(robotNames)
-              .map((name) => `"${name}"`)
-              .join(", ")}}.`}
-          </Alert>
-        </Box>
-      )}
-
       <Box m={1}>
+        <NoRobotNameAlert robotName={robotName} />
         <TableContainer component={Paper}>
           <Table size="small">
             <TableBody>
-              {Object.entries(robotSpecificTopics).map(([sensor, topic]) => (
-                <TableRow
-                  key={sensor}
-                  style={{
-                    backgroundColor: state.connectStatus[sensor as topicsMapKeys]
-                      ? theme.palette.success.dark
-                      : theme.palette.error.dark,
-                  }}
-                >
-                  <TableCell>
-                    <Tooltip title={topic} arrow placement="left">
-                      <Typography variant="subtitle2" color={theme.palette.common.white}>
-                        {sensor}
-                      </Typography>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {Object.entries(sensorsToMonitor).map(([sensor, config]) => {
+                const sensorNsec = sensorNsecs[sensor as Sensor];
+                const sensorPublishing =
+                  currentNsecState != undefined &&
+                  sensorNsec != undefined &&
+                  currentNsecState - sensorNsec <= SENSOR_DOWN_THRESHOLD_NSEC;
+                return (
+                  <TableRow
+                    key={sensor}
+                    style={{
+                      backgroundColor: sensorPublishing ? theme.palette.success.dark : theme.palette.error.dark,
+                    }}
+                  >
+                    <TableCell>
+                      <Tooltip title={config.topic} arrow placement="left">
+                        <Typography
+                          variant="subtitle2"
+                          color={theme.palette.common.white}
+                          role="button"
+                          tabIndex={0}
+                          style={{ cursor: "pointer" }}
+                          onClick={() => {
+                            void navigator.clipboard.writeText(config.topic);
+                          }}
+                        >
+                          {config.displayName}
+                        </Typography>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>

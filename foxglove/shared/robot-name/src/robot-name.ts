@@ -7,13 +7,13 @@ export enum Robot {
   Oogway = "oogway",
   Crush = "crush",
 }
-export const allRobots: Robot[] = Object.values(Robot);
+export const ROBOTS: Robot[] = Object.values(Robot);
 
 export function isRobotName(name: unknown): name is Robot {
   if (typeof name !== "string") {
     return false;
   }
-  return allRobots.includes(name.toLowerCase() as Robot);
+  return ROBOTS.includes(name.toLowerCase() as Robot);
 }
 
 const ROBOT_NAME_VAR = "ROBOT_NAME";
