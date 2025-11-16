@@ -38,8 +38,27 @@ export const SENSOR_CONFIG: Record<Sensor, SensorConfig> = {
  * Mapping of each robot to the sensors we want to monitor.
  */
 export const ROBOT_CONFIG: Record<Robot, Array<Sensor>> = {
-  [Robot.Oogway]: [Sensor.DVL, Sensor.IMU, Sensor.Pressure, Sensor.Gyro, Sensor.FrontDAI, Sensor.Sonar],
-  [Robot.Crush]: [Sensor.FrontMono, Sensor.BottomMono, Sensor.Sonar, Sensor.IVCModem, Sensor.IMU],
+  [Robot.Oogway]: [
+    Sensor.DVL,
+    Sensor.IMU,
+    Sensor.Pressure,
+    Sensor.Gyro,
+    Sensor.FrontDAI,
+    Sensor.FrontMono,
+    Sensor.BottomMono,
+    Sensor.Sonar,
+    Sensor.IVCModem,
+  ],
+  [Robot.Crush]: [
+    Sensor.DVL,
+    Sensor.IMU,
+    Sensor.Pressure,
+    Sensor.Gyro,
+    Sensor.FrontMono,
+    Sensor.BottomMono,
+    Sensor.Sonar,
+    Sensor.IVCModem,
+  ],
 };
 
 export const TOPIC_TO_SENSOR: Record<string, Sensor> = Object.fromEntries(

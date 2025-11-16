@@ -97,6 +97,7 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
                 const sensorPublishing =
                   currentNsecState != undefined &&
                   sensorNsec != undefined &&
+                  0 <= currentNsecState - sensorNsec &&
                   currentNsecState - sensorNsec <= SENSOR_DOWN_THRESHOLD_NSEC;
                 return (
                   <TableRow
@@ -110,9 +111,6 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
                         <Typography
                           variant="subtitle2"
                           color={theme.palette.common.white}
-                          role="button"
-                          tabIndex={0}
-                          style={{ cursor: "pointer" }}
                           onClick={() => {
                             void navigator.clipboard.writeText(config.topic);
                           }}
@@ -131,10 +129,13 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
     </ThemeProvider>
   );
 }
+
 export function initSensorsStatusPanel(context: PanelExtensionContext): () => void {
   context.panelElement.style.overflow = "auto"; // Enable scrolling
+
   const root = createRoot(context.panelElement as HTMLElement);
   root.render(<SensorsStatusPanel context={context} />);
+
   // Return a function to run when the panel is removed
   return () => {
     root.unmount();
