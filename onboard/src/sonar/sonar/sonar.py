@@ -185,16 +185,9 @@ class Sonar(Node):
             sonar_scan = self.request_data_at_angle(i)
             sonar_sweep_data.append(sonar_scan)
 
-        sweep_data = np.vstack(sonar_sweep_data)
+        return np.vstack(sonar_sweep_data)
 
-        # Testing purposes for 11/8 pool test
-        denoised_sonar_image = sonar_object_detection.SonarDenoiser(sweep_data)
-        denoised_sonar_image.wall_block().percentile_filter().fourier_signal_processing().init_cartesian().normalize().blur()
-        self.denoised_image_publisher.publish(self.convert_to_ros_compressed_img(denoised_sonar_image.cartesian))
-
-        return sweep_data
-
-    def get_xy_of_object_in_sweep_old(self, start_angle: int, end_angle: int) -> \
+    def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int) -> \
             tuple[PoseStamped | None, np.ndarray, float | None]:
         """
         Get the depth of the sweep of a detected object. For now uses mean value.
@@ -206,16 +199,32 @@ class Sonar(Node):
         Returns:
             (Pose, List, float): Pose of the object in robot reference frame, sonar sweep array, and normal angle.
         """
-        cart_grid = self.get_sweep(start_angle, end_angle)
+        sweep = self.get_sweep(start_angle, end_angle)
 
-        sonar_index, normal_angle, _ = sonar_image_processing.find_center_point_and_angle(
-            cart_grid, self.VALUE_THRESHOLD, self.DBSCAN_EPS,
-            self.DBSCAN_MIN_SAMPLES, True)
+        denoiser = sonar_object_detection.SonarDenoiser(sweep)
+        denoiser.wall_block().percentile_filter().fourier_signal_processing().init_cartesian().normalize().blur()
+        self.denoised_image_publisher.publish(self.convert_to_ros_compressed_img(denoiser.cartesian))
+        color_image = sonar_image_processing.build_color_sonar_image_from_int_array(denoiser.cartesian)
 
-        color_image = sonar_image_processing.build_color_sonar_image_from_int_array(cart_grid)
+        segmentation = sonar_image_processing.SonarSegmentation(
+            denoiser.cartesian,
+            wall_object_threshold=0,
+            segment_size_threshold=2000/90*denoiser.shape_theta,
+            segment_brightness_threshold=60,
+            merge_threshold=1.5,
+            merge_angle_limit=6
+        )
 
-        if sonar_index is None:
+        nearest_segment = segmentation.get_nearest_segment()
+
+        if nearest_segment is None:
             return (None, color_image, None)
+
+        _, sonar_index = nearest_segment.get_average_coordinate_of_points()
+        normal_angle = np.arctan2(
+            nearest_segment.ortho_regression.unit_normal[1],
+            nearest_segment.ortho_regression.unit_normal[0]
+            )
 
         sonar_angle = (start_angle + end_angle) / 2  # Take the middle of the sweep
 
@@ -311,8 +320,8 @@ class Sonar(Node):
             self.set_new_range(new_range)
 
         try:
-            object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep_old(left_gradians, right_gradians)
-            self.get_logger().debug("Finished xy_of_object")
+            object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep(left_gradians, right_gradians)
+            self.get_logger().debug('Finished xy_of_object')
         except RuntimeError as e:
             response.success = False
             response.message = str(e)

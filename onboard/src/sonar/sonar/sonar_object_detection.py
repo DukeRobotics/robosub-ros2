@@ -251,6 +251,21 @@ class SonarSegment:
         self.nearest_object_distance = max(points.shape[0], points.shape[1]) * 2
         self.type = SonarSegmentType.NONE
 
+    def get_average_coordinate_of_points(self) -> tuple[int, int]:
+        """
+        Get the average (row, col) of the points in this SonarSegment.
+
+        Returns:
+            tuple(int, int): the coordinates of the average point.
+        """
+        coordinates = np.zeros(2)
+        for point in self.points:
+            coordinates = coordinates + point
+
+        coordinates = coordinates / self.points.shape[0]
+
+        return (np.round(coordinates[0]), np.round(coordinates[1]))
+
 class SonarSegmentation:
     """A class which segments an sonar image, and applies regressions to each segment."""
     def __init__(
@@ -372,10 +387,23 @@ class SonarSegmentation:
                     segment.nearest_object = point
                     segment.nearest_object_distance = distance
 
-    def plot_segments_together(self, plot, walls, objects) -> None:
+    def get_nearest_segment(self) -> 'SonarSegment':
         """
+        Get the nearest segment.
 
+        Returns:
+            SonarSegment: the nearest segment.
         """
+        nearest_segment = None
+        min_distance = 1000000
+        for segment in self.segments:
+            if(segment.nearest_object_distance < min_distance):
+                nearest_segment = segment
+                min_distance = segment.nearest_object_distance
+
+        return nearest_segment # type: ignore
+
+    def plot_segments_together(self, plot, walls, objects) -> None:
         for wall in walls:
             self.plot_segment(plot, wall, SonarSegmentType.WALL)
         for object in objects:
