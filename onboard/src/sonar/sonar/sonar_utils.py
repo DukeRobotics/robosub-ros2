@@ -164,7 +164,7 @@ def to_robot_position(angle: float, index: int, target_frame_id: str, sample_per
         target_frame_id (str): The target frame to transform the pose to.
         sample_period (int): the sample period of the ping360
         center_gradians (int): the gradian value of the center of the scan
-        negate (bool): whether to negate the pose or note
+        negate (bool): whether to negate the pose or not
         tf_buffer: tf2 buffer containing transform data
 
     Returns:

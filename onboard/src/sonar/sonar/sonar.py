@@ -58,6 +58,8 @@ class Sonar(Node):
 
     NUM_RETRIES = 10
 
+    NEGATE_POSE = False
+
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME)
         self.get_logger().info('Sonar planning node initialized')
@@ -187,7 +189,7 @@ class Sonar(Node):
 
         return np.vstack(sonar_sweep_data)
 
-    def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int) -> \
+    def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int, target_frame_id: str) -> \
             tuple[PoseStamped | None, np.ndarray, float | None]:
         """
         Get the depth of the sweep of a detected object. For now uses mean value.
@@ -195,6 +197,7 @@ class Sonar(Node):
         Args:
             start_angle (int): Angle to start sweep in gradians.
             end_angle (int): Angle to end sweep in gradians.
+            target_frame_id (str): Target frame id
 
         Returns:
             (Pose, List, float): Pose of the object in robot reference frame, sonar sweep array, and normal angle.
@@ -212,7 +215,7 @@ class Sonar(Node):
             segment_size_threshold=2000/90*denoiser.shape_theta,
             segment_brightness_threshold=60,
             merge_threshold=1.5,
-            merge_angle_limit=6
+            merge_angle_limit=6,
         )
 
         nearest_segment = segmentation.get_nearest_segment()
@@ -229,7 +232,9 @@ class Sonar(Node):
         sonar_angle = (start_angle + end_angle) / 2  # Take the middle of the sweep
 
         return (sonar_utils.to_robot_position(sonar_angle, sonar_index, target_frame_id, self.sample_period,
-                                              self.center_gradians, self.negate, self.tf_buffer), plot, normal_angle)
+                                              self.center_gradians, self.NEGATE_POSE, self.tf_buffer),
+                                              color_image,
+                                              normal_angle)
 
     def convert_to_ros_compressed_img(self, sonar_sweep: np.ndarray, compressed_format: str = 'jpg',
                                       is_color: bool = False) -> CompressedImage:
@@ -320,7 +325,11 @@ class Sonar(Node):
             self.set_new_range(new_range)
 
         try:
-            object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep(left_gradians, right_gradians)
+            object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep(
+                left_gradians,
+                right_gradians,
+                request.target_frame_id
+                )
             self.get_logger().debug('Finished xy_of_object')
         except RuntimeError as e:
             response.success = False
