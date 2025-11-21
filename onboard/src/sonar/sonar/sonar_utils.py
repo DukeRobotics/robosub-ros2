@@ -1,11 +1,12 @@
 import numpy as np
 import rclpy
-import sonar_image_processing
 import tf2_geometry_msgs
 import tf2_ros
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Pose
 from sensor_msgs.msg import CompressedImage
+
+from sonar import sonar_image_processing
 
 RADIANS_PER_GRADIAN = np.pi / 200
 GRADIANS_PER_DEGREE = 400 / 360
@@ -155,8 +156,8 @@ def get_distance_of_sample(sample_period: int, sample_index: int) -> float:
     # 0.5 for the average distance of sample
     return (sample_index + 0.5) * meters_per_sample(sample_period)
 
-def to_robot_position(angle: float, index: int, target_frame_id: str, sample_period: int,
-                      center_gradians: int, negate: bool, tf_buffer: tf2_ros.Buffer) -> Pose:
+def to_robot_position(angle: float, index: int, sample_period: int,
+                      center_gradians: int, negate: bool) -> Pose:
     """
     Convert a point in sonar space to a robot global position.
 
@@ -164,11 +165,9 @@ def to_robot_position(angle: float, index: int, target_frame_id: str, sample_per
         angle (float): Angle in gradians of the point relative to in front
             of the sonar device.
         index (int | float): Index of the data in the sonar response.
-        target_frame_id (str): The target frame to transform the pose to.
         sample_period (int): the sample period of the ping360
         center_gradians (int): the gradian value of the center of the scan
         negate (bool): whether to negate the pose or not
-        tf_buffer: tf2 buffer containing transform data
 
     Returns:
         Pose: Pose in target_frame_id containing x and y position of angle/index item.
@@ -192,7 +191,7 @@ def to_robot_position(angle: float, index: int, target_frame_id: str, sample_per
     pos_of_point.orientation.z = 0
     pos_of_point.orientation.w = 1
 
-    return transform_pose(tf_buffer, pos_of_point, 'sonar_ping_360', target_frame_id)
+    return pos_of_point
 
 def convert_to_ros_compressed_img(sonar_sweep: np.ndarray, cv_bridge: CvBridge,
                                   compressed_format: str = 'jpg', is_color: bool = False) -> CompressedImage:

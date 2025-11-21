@@ -12,13 +12,10 @@ import yaml
 from brping import Ping360
 from custom_msgs.srv import SonarSweepRequest
 from cv_bridge import CvBridge
-from geometry_msgs.msg import PoseStamped
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from geometry_msgs.msg import Pose, PoseStamped
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 from serial.tools import list_ports
-from sklearn.cluster import DBSCAN
-from sklearn.decomposition import PCA
 from std_msgs.msg import String
 
 from sonar import sonar_image_processing, sonar_object_detection, sonar_utils
@@ -189,15 +186,14 @@ class Sonar(Node):
 
         return np.vstack(sonar_sweep_data)
 
-    def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int, target_frame_id: str) -> \
-            tuple[PoseStamped | None, np.ndarray, float | None]:
+    def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int) -> \
+            tuple[Pose | None, np.ndarray, float | None]:
         """
         Get the depth of the sweep of a detected object. For now uses mean value.
 
         Args:
             start_angle (int): Angle to start sweep in gradians.
             end_angle (int): Angle to end sweep in gradians.
-            target_frame_id (str): Target frame id
 
         Returns:
             (Pose, List, float): Pose of the object in robot reference frame, sonar sweep array, and normal angle.
@@ -211,7 +207,7 @@ class Sonar(Node):
             )
         color_image = sonar_image_processing.build_color_sonar_image_from_int_array(denoiser.cartesian)
 
-        segmentation = sonar_image_processing.SonarSegmentation(
+        segmentation = sonar_object_detection.SonarSegmentation(
             denoiser.cartesian,
             wall_object_threshold=0,
             segment_size_threshold=2000/90*denoiser.shape_theta,
@@ -233,8 +229,8 @@ class Sonar(Node):
 
         sonar_angle = (start_angle + end_angle) / 2  # Take the middle of the sweep
 
-        return (sonar_utils.to_robot_position(sonar_angle, sonar_index, target_frame_id, self.sample_period,
-                                              self.center_gradians, self.NEGATE_POSE, self.tf_buffer),
+        return (sonar_utils.to_robot_position(sonar_angle, sonar_index, self.sample_period,
+                                              self.center_gradians, self.NEGATE_POSE),
                                               color_image,
                                               normal_angle)
 
@@ -313,7 +309,6 @@ class Sonar(Node):
             object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep(
                 left_gradians,
                 right_gradians,
-                request.target_frame_id
                 )
             self.get_logger().debug('Finished xy_of_object')
         except RuntimeError as e:
