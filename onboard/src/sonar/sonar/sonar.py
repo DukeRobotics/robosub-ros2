@@ -206,7 +206,9 @@ class Sonar(Node):
 
         denoiser = sonar_object_detection.SonarDenoiser(sweep)
         denoiser.wall_block().percentile_filter().fourier_signal_processing().init_cartesian().normalize().blur()
-        self.denoised_image_publisher.publish(self.convert_to_ros_compressed_img(denoiser.cartesian))
+        self.denoised_image_publisher.publish(
+            sonar_utils.convert_to_ros_compressed_img(denoiser.cartesian, self.cv_bridge),
+            )
         color_image = sonar_image_processing.build_color_sonar_image_from_int_array(denoiser.cartesian)
 
         segmentation = sonar_image_processing.SonarSegmentation(
@@ -236,23 +238,6 @@ class Sonar(Node):
                                               color_image,
                                               normal_angle)
 
-    def convert_to_ros_compressed_img(self, sonar_sweep: np.ndarray, compressed_format: str = 'jpg',
-                                      is_color: bool = False) -> CompressedImage:
-        """
-        Convert any kind of image to ROS Compressed Image.
-
-        Args:
-            sonar_sweep (int): numpy array of int values representing the sonar image.
-            compressed_format (string): format to compress the image to.
-            is_color (bool): Whether the image is color or not.
-
-        Returns:
-            CompressedImage: ROS Compressed Image message.
-        """
-        if not is_color:
-            sonar_sweep = sonar_image_processing.build_color_sonar_image_from_int_array(sonar_sweep)
-        return self.cv_bridge.cv2_to_compressed_imgmsg(sonar_sweep, dst_format=compressed_format)
-
     def constant_sweep(self) -> None:
         """
         In debug mode, scan indefinitely and publish images.
@@ -271,7 +256,7 @@ class Sonar(Node):
             sonar_sweep = self.get_sweep(self.CONSTANT_SWEEP_START, self.CONSTANT_SWEEP_END)
             self.get_logger().info('Finishng sweep')
             if self.stream:
-                compressed_image = self.convert_to_ros_compressed_img(sonar_sweep)
+                compressed_image = sonar_utils.convert_to_ros_compressed_img(sonar_sweep, self.cv_bridge)
                 self.sonar_image_publisher.publish(compressed_image)
         except (RuntimeError, ValueError) as e:
             self.get_logger().error(f'Error during constant sweep: {e}')
@@ -348,7 +333,7 @@ class Sonar(Node):
             response.message = 'Found object.'
 
         if self.stream:
-            sonar_image = self.convert_to_ros_compressed_img(plot, is_color=True)
+            sonar_image = sonar_utils.convert_to_ros_compressed_img(plot, self.cv_bridge, is_color=True)
             self.sonar_image_publisher.publish(sonar_image)
 
         return response

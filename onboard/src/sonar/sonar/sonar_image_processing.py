@@ -5,6 +5,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from numpy.typing import ArrayLike
 from rclpy.logging import get_logger
 from sklearn.cluster import DBSCAN
 from sklearn.linear_model import LinearRegression
@@ -15,7 +16,7 @@ from sonar import decode_ping_python_360
 SONAR_IMAGE_WIDTH = 16
 SONAR_IMAGE_HEIGHT = 2
 
-def build_color_sonar_image_from_int_array(int_array: list, npy_save_path: str | None = None,
+def build_color_sonar_image_from_int_array(int_array: ArrayLike, npy_save_path: str | None = None,
                                            jpeg_save_path: str | None = None) -> np.ndarray:
     """
     Build a sonar image from a list of data messages.

@@ -1,8 +1,11 @@
 import numpy as np
 import rclpy
+import sonar_image_processing
 import tf2_geometry_msgs
 import tf2_ros
+from cv_bridge import CvBridge
 from geometry_msgs.msg import Pose
+from sensor_msgs.msg import CompressedImage
 
 RADIANS_PER_GRADIAN = np.pi / 200
 GRADIANS_PER_DEGREE = 400 / 360
@@ -173,12 +176,12 @@ def to_robot_position(angle: float, index: int, target_frame_id: str, sample_per
     x_pos = get_distance_of_sample(
             sample_period, index,
         )*np.cos(
-            centered_gradians_to_radians(angle, center_gradians, negate)
+            centered_gradians_to_radians(angle, center_gradians, negate),
         )
     y_pos = -1 * get_distance_of_sample(
             sample_period, index,
         )*np.sin(
-            centered_gradians_to_radians(angle, center_gradians, negate)
+            centered_gradians_to_radians(angle, center_gradians, negate),
         )
     pos_of_point = Pose()
     pos_of_point.position.x = x_pos
@@ -190,3 +193,21 @@ def to_robot_position(angle: float, index: int, target_frame_id: str, sample_per
     pos_of_point.orientation.w = 1
 
     return transform_pose(tf_buffer, pos_of_point, 'sonar_ping_360', target_frame_id)
+
+def convert_to_ros_compressed_img(sonar_sweep: np.ndarray, cv_bridge: CvBridge,
+                                  compressed_format: str = 'jpg', is_color: bool = False) -> CompressedImage:
+    """
+    Convert any kind of image to ROS Compressed Image.
+
+    Args:
+        sonar_sweep (int): numpy array of int values representing the sonar image.
+        cv_bridge: the CV Bridge to use to convert to CompressedImage.
+        compressed_format (string): format to compress the image to.
+        is_color (bool): Whether the image is color or not.
+
+    Returns:
+        CompressedImage: ROS Compressed Image message.
+    """
+    if not is_color:
+        sonar_sweep = sonar_image_processing.build_color_sonar_image_from_int_array(sonar_sweep)
+    return cv_bridge.cv2_to_compressed_imgmsg(sonar_sweep, dst_format=compressed_format)
