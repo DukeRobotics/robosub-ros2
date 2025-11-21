@@ -16,122 +16,31 @@ const SET_CONTROL_TYPES_SERVICE = "/controls/set_control_types";
 const DESIRED_POWER_TOPIC = "/controls/desired_power";
 const DESIRED_POWER_SCHEMA = "geometry_msgs/Twist";
 
-// Joystick axes indices
-// TODO: Change this for keyboard mapping later
-const AXIS_MAP = {
-  xIndex: 1, // Joystick Forward/Backward
-  yIndex: 0, // Joystick Left/Right
-  zIndex: 5, // Throttle
-  yawIndex: 2, // Joystick Twist
-  pitchIndex: 9, // Thumb Joystick Forward/Backward
-  rollIndex: 9, // Thumb Joystick Right/Left
-};
-// Joystick button indices
-// TODO: Update these to key bindings
-const BUTTON_MAP = {
-  torpedoActivateIndex: 1, // Red/black striped button on Joystick
-  torpedoOneLaunchIndex: 4, // Button (5)
-  torpedoTwoLaunchIndex: 5, // Button (6)
-};
 const KEYBOARD_KEY_MAP = {
   linear: {
     forward: "w",
-    backward: ["s"],
-    left: ["a"],
-    right: ["d"],
-    up: ["arrowup"],
-    down: ["arrowdown"],
+    backward: "s",
+    left: "a",
+    right: "d",
+    up: "arrowup",
+    down: "arrowdown",
   },
   orientation: {
-    rollClockwise: ["l"],
-    rollAnticlockwise: ["j"],
-    pitchUp: ["k"],
-    pitchDown: ["i"],
-    yawClockwise: ["arrowright"],
-    yawAnticlockwise: ["arrowleft"],
+    rollClockwise: "l",
+    rollAnticlockwise: "j",
+    pitchUp: "k",
+    pitchDown: "i",
+    yawClockwise: "arrowright",
+    yawAnticlockwise: "arrowleft",
   },
 } as const;
-//helper function for determining if a key is pressed
-function isKeyPressed(pressedKeys:Set<string>, keys:string[]) : boolean {
-  return keys.some(key=>pressedKeys.has(key));
+
+// helper function for determining if a key is pressed
+function isKeyPressed(pressedKeys: Set<string>, keys: string[]): boolean {
+  return keys.some((key) => pressedKeys.has(key));
 }
 
-/**
- * Calculate power for pitch from thumb joystick input
- *
- */
-const pitchMapping = (value: number): number => {
-  const stationary = 3.2857141494750977;
-  if (value !== stationary && value !== 0) {
-    if (value > 0.7142857313156128 || value < -0.4285714030265808) {
-      return 0.5; // Up
-    } else if (value < 0.7142857313156128 && value > -0.4285714030265808) {
-      return -0.5; // Down
-    } else {
-      return 0;
-    }
-  } else {
-    return 0;
-  }
-};
-
-/**
- * Calculate power for roll from thumb joystick input
- * @param value Value from thumb joystick
- * @returns Desired power
- */
-const rollMapping = (value: number): number => {
-  // Thumb joystick input initialized at 0 but returns to this stationary value after being touched and released
-  const stationary = 3.2857141494750977;
-
-  if (value !== stationary && value !== 0) {
-    if (value > -1 && value < 0.14285719394683838) {
-      return 0.5; // Right
-    } else if (value > 0.14285719394683838) {
-      return -0.5; // Left
-    } else {
-      return 0;
-    }
-  } else {
-    return 0;
-  }
-};
-
-/**
- * Calculate power for linear axes. If the value is below a threshold, return 0.
- * @param input Value from linear axis
- * @param gain The value to multiply the input by
- */
-
-const linearMapping = (input: number, gain: number): number => {
-  const threshold = 0.01;
-  if (Math.abs(input) < threshold) {
-    return 0;
-  }
-  return gain * input;
-};
-function transformKeyboardInputs(pressedKeys: Set<String>): TransformedControlInputs {
- if (joystick[0]) {
-        const axes = joystick[0].axes;
-        const buttons = joystick[0].buttons;
-
-        const transformedJoystickInputs = {
-          xAxis:
-          yAxis: linearMapping(axes[AXIS_MAP.yIndex] ?? 0, -1),
-          zAxis: linearMapping(axes[AXIS_MAP.zIndex] ?? 0, 1),
-          yawAxis: linearMapping(axes[AXIS_MAP.yawIndex] ?? 0, -0.5),
-          pitchAxis: pitchMapping(axes[AXIS_MAP.pitchIndex] ?? 0),
-          rollAxis: rollMapping(axes[AXIS_MAP.rollIndex] ?? 0),
-          torpedoActivate: buttons[BUTTON_MAP.torpedoActivateIndex]?.value === 1,
-          torpedoOneLaunch: buttons[BUTTON_MAP.torpedoOneLaunchIndex]?.value === 1,
-          torpedoTwoLaunch: buttons[BUTTON_MAP.torpedoTwoLaunchIndex]?.value === 1,
-        };
-
-        // Update state
-        setState((prevState) => ({ ...prevState, transformedJoystickInputs }));
-}
-
-type TransformedControlInputs = {
+type TransformedKeyboardInputs = {
   xAxis: number;
   yAxis: number;
   zAxis: number;
@@ -146,17 +55,17 @@ type TransformedControlInputs = {
 type ToggleJoystickPanelState = {
   error?: Error;
   colorScheme?: RenderState["colorScheme"];
-  joystickEnabled: boolean;
-  transformedJoystickInputs: TransformedJoystickInputs;
-  joystickConnected: boolean;
+  keyboardEnabled: boolean;
+  transformedKeyboardInputs: TransformedKeyboardInputs;
+  keyboardConnected: boolean;
 };
 
 function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
   const [state, setState] = useState<ToggleJoystickPanelState>({
-    joystickEnabled: false,
-    joystickConnected: false,
-    transformedJoystickInputs: {
+    keyboardEnabled: false,
+    keyboardConnected: false,
+    transformedKeyboardInputs: {
       xAxis: 0,
       yAxis: 0,
       yawAxis: 0,
@@ -265,15 +174,16 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
     renderDone?.();
   }, [renderDone]);
 
-  const toggleJoystick = useCallback(() => {
+  const toggleKeyboard = useCallback(() => {
     // Check if service calling is supported by the context
+
     if (!context.callService) {
       console.error("Calling services is not supported by this connection");
       return;
     }
 
     // Request payload to toggle control types
-    const desiredControl: CustomMsgs.ControlTypesConst = state.joystickEnabled
+    const desiredControl: CustomMsgs.ControlTypesConst = state.keyboardEnabled
       ? CustomMsgs.ControlTypesConst.DESIRED_POSITION
       : CustomMsgs.ControlTypesConst.DESIRED_POWER;
     const request: CustomMsgs.SetControlTypesRequest = {
@@ -294,7 +204,7 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
         // Update the state based on the service response
         // If the service responds with failure, display the response message as an error
         if (response.success) {
-          setState((prevState) => ({ ...prevState, error: undefined, joystickEnabled: !prevState.joystickEnabled }));
+          setState((prevState) => ({ ...prevState, error: undefined, keyboardEnabled: !prevState.keyboardEnabled }));
         } else {
           setState((prevState) => ({ ...prevState, error: Error(response.message) }));
         }
@@ -304,14 +214,14 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
         setState((prevState) => ({ ...prevState, error: error as Error }));
       },
     );
-  }, [context, state.joystickEnabled]);
+  }, [context, state.keyboardEnabled]);
 
   /**
    * Publish transformed joystick inputs as a desired power message
-   * @param transformedJoystickInputs A TransformedJoystickInputs object used to create the desired power message
+   * @param transformedKeyboardInputs A TransformedKeyboardInputs object used to create the desired power message
    */
   const publishPower = useCallback(
-    (transformedJoystickInputs: TransformedJoystickInputs) => {
+    (transformedKeyboardInputs: TransformedKeyboardInputs) => {
       if (!context.advertise || !context.publish) {
         return;
       }
@@ -323,14 +233,14 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
       // Create and publish desired power message
       const request: GeometryMsgs.Twist = {
         linear: {
-          x: transformedJoystickInputs.xAxis,
-          y: transformedJoystickInputs.yAxis,
-          z: transformedJoystickInputs.zAxis,
+          x: transformedKeyboardInputs.xAxis,
+          y: transformedKeyboardInputs.yAxis,
+          z: transformedKeyboardInputs.zAxis,
         },
         angular: {
-          x: transformedJoystickInputs.rollAxis,
-          y: transformedJoystickInputs.pitchAxis,
-          z: transformedJoystickInputs.yawAxis,
+          x: transformedKeyboardInputs.rollAxis,
+          y: transformedKeyboardInputs.pitchAxis,
+          z: transformedKeyboardInputs.yawAxis,
         },
       };
       context.publish(DESIRED_POWER_TOPIC, request);
@@ -342,74 +252,64 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
     /**
      * Query joystick to read and transform inputs
      */
-    function queryJoystick() {
-      const joystick = navigator.getGamepads();
+    function queryKeyboard() {
+      const transformedKeyboardInputs = {
+        xAxis: isKeyPressed(pressedKeys, [KEYBOARD_KEY_MAP.linear.forward])
+          ? 0.5
+          : isKeyPressed(pressedKeys, [KEYBOARD_KEY_MAP.linear.backward])
+            ? -0.5
+            : 0,
+        yAxis: isKeyPressed(pressedKeys, [KEYBOARD_KEY_MAP.linear.left])
+          ? 0.5
+          : isKeyPressed(pressedKeys, [KEYBOARD_KEY_MAP.linear.right])
+            ? -0.5
+            : 0,
+        zAxis: isKeyPressed(pressedKeys, [KEYBOARD_KEY_MAP.linear.up])
+          ? 0.5
+          : isKeyPressed(pressedKeys, [KEYBOARD_KEY_MAP.linear.down])
+            ? -0.5
+            : 0,
+        yawAxis: isKeyPressed(pressedKeys, [KEYBOARD_KEY_MAP.orientation.yawAnticlockwise])
+          ? 0.5
+          : isKeyPressed(pressedKeys, [KEYBOARD_KEY_MAP.orientation.yawClockwise])
+            ? -0.5
+            : 0,
+        pitchAxis: isKeyPressed(pressedKeys, [KEYBOARD_KEY_MAP.orientation.pitchUp])
+          ? 0.5
+          : isKeyPressed(pressedKeys, [KEYBOARD_KEY_MAP.orientation.pitchDown])
+            ? -0.5
+            : 0,
+        rollAxis: isKeyPressed(pressedKeys, [KEYBOARD_KEY_MAP.orientation.rollAnticlockwise])
+          ? 0.5
+          : isKeyPressed(pressedKeys, [KEYBOARD_KEY_MAP.orientation.rollClockwise])
+            ? -0.5
+            : 0,
+        torpedoActivate: false,
+        torpedoOneLaunch: false,
+        torpedoTwoLaunch: false,
+      };
+      console.log("Transformed Keyboard Inputs:", transformedKeyboardInputs);
 
-      if (joystick[0]) {
-        const axes = joystick[0].axes;
-        const buttons = joystick[0].buttons;
+      // Update state
+      setState((prevState) => ({ ...prevState, transformedKeyboardInputs }));
 
-        const transformedJoystickInputs = {
-          xAxis: linearMapping(axes[AXIS_MAP.xIndex] ?? 0, -1),
-          yAxis: linearMapping(axes[AXIS_MAP.yIndex] ?? 0, -1),
-          zAxis: linearMapping(axes[AXIS_MAP.zIndex] ?? 0, 1),
-          yawAxis: linearMapping(axes[AXIS_MAP.yawIndex] ?? 0, -0.5),
-          pitchAxis: pitchMapping(axes[AXIS_MAP.pitchIndex] ?? 0),
-          rollAxis: rollMapping(axes[AXIS_MAP.rollIndex] ?? 0),
-          torpedoActivate: buttons[BUTTON_MAP.torpedoActivateIndex]?.value === 1,
-          torpedoOneLaunch: buttons[BUTTON_MAP.torpedoOneLaunchIndex]?.value === 1,
-          torpedoTwoLaunch: buttons[BUTTON_MAP.torpedoTwoLaunchIndex]?.value === 1,
-        };
-
-        // Update state
-        setState((prevState) => ({ ...prevState, transformedJoystickInputs }));
-
-        // Publish
-        if (state.joystickEnabled) {
-          publishPower(transformedJoystickInputs);
-          // TODO: Once torpedoes are implemented on Oogway, call the appropriate service to fire torpedoes here
-        }
+      // Publish
+      if (state.keyboardEnabled) {
+        publishPower(transformedKeyboardInputs);
+        console.log("Published!");
+        // TODO: Once torpedoes are implemented on Oogway, call the appropriate service to fire torpedoes here
       }
     }
 
     const intervalDelay = 1000 / PUBLISH_RATE; // Convert Hz to milliseconds
     const intervalId = setInterval(() => {
-      queryJoystick();
+      queryKeyboard();
     }, intervalDelay);
 
     return () => {
       clearInterval(intervalId); // Clear the interval on component unmount
     };
-  }, [publishPower, state.joystickEnabled]);
-
-  useEffect(() => {
-    const handleJoystickConnected = () => {
-      console.log("Joystick connected");
-
-      setState((prevState) => ({ ...prevState, joystickConnected: true }));
-    };
-    const handleJoystickDisconnected = () => {
-      console.log("Joystick disconnected");
-
-      setState((prevState) => ({ ...prevState, joystickConnected: false }));
-
-      // If the joystick is physically disconnected while enabled, disable it
-      // This will ensure that we stop continuously publishing the last known joystick inputs
-      if (state.joystickEnabled) {
-        toggleJoystick();
-      }
-    };
-
-    // Add event listeners
-    window.addEventListener("gamepadconnected", handleJoystickConnected);
-    window.addEventListener("gamepaddisconnected", handleJoystickDisconnected);
-
-    // Cleanup function to remove event listeners
-    return () => {
-      window.removeEventListener("gamepadconnected", handleJoystickConnected);
-      window.removeEventListener("gamepaddisconnected", handleJoystickDisconnected);
-    };
-  }, [state.joystickEnabled, toggleJoystick]);
+  }, [pressedKeys, publishPower, state.keyboardEnabled]);
 
   const theme = useTheme();
   return (
@@ -430,17 +330,16 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
             )}
           </Box>
         )}
-        <p>{pressedKeys}</p>
         {/* Toggle button */}
         <Box my={1}>
           <Button
             fullWidth
             variant="contained"
-            color={state.joystickEnabled ? "error" : "success"}
-            onClick={toggleJoystick}
-            disabled={context.callService == undefined || !state.joystickConnected}
+            color={state.keyboardEnabled ? "error" : "success"}
+            onClick={toggleKeyboard}
+            disabled={false}
           >
-            {state.joystickEnabled ? "Disable Joystick" : "Enable Joystick"}
+            {state.keyboardEnabled ? "Disable Keyboard" : "Enable Keybord"}
           </Button>
         </Box>
 
