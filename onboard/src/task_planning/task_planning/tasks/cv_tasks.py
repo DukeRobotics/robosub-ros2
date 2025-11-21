@@ -77,7 +77,7 @@ async def yaw_until_object_detection(self: Task, cv_object: CVObjectType , searc
 @task
 async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction=1,
                            yaw_threshold=math.radians(10), depth_threshold = 0.2, depth_level=0.5,
-                           pid_timeout = 10) -> Task[None, str | None, None]:
+                           pid_timeout = 10) -> Task[None, str | None, None] | None:
     """
     Yaw to an object detected by CV.
 
@@ -103,43 +103,37 @@ async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction=1
         await move_tasks.depth_correction(desired_depth=DEPTH_LEVEL, parent=self)
 
     if not CV().is_receiving_recent_cv_data(cv_object, 10):
-        foundObject = await yaw_until_object_detection()
-        if not foundObject:
+        found_object = await yaw_until_object_detection()
+        if not found_object:
             return
 
     logger.info('Starting yaw_to_cv_object')
 
     cv_object_yaw = CV().angles[cv_object]
     move_to_pose_task = move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, cv_object_yaw),
-                                depth_level=depth_level,
-                                pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
-                                time_limit=10,
-                                parent=self)
+                            depth_level=depth_level,
+                            pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
+                                                    angular=Vector3(x=0.2, y=0.3, z=yaw_threshold)),
+                            time_limit=10,
+                            parent=self)
 
     starting_time = Clock().now()
 
-    while (abs(cv_object_yaw) < yaw_threshold):
-        if (abs(State().depth - DEPTH_LEVEL) < depth_threshold):
+    while not move_to_pose_task.done:
+        if abs(State().depth - DEPTH_LEVEL) < depth_threshold:
             await correct_depth()
 
         move_to_pose_task.step()
 
         cv_object_yaw = CV().angles[cv_object]
-        move_to_pose_task = move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, cv_object_yaw),
-                                depth_level=depth_level,
-                                pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05), angular=Vector3(x=0.2, y=0.3, z=0.3)),
-                                time_limit=10,
-                                parent=self)
+        move_to_pose_task.send(cv_object_yaw)
 
-        if (Clock.now() - starting_time < pid_timeout)
+        if Clock.now() - starting_time < pid_timeout:
             logger.info('Timeout elapsed, Finishing Yaw To CV Object')
             return
 
     logger.info('PID Loop Complete, Finishing Yaw To CV Object')
-
-
-
-    return True
+    return
 
 
 # TODO: this task will likely be depleted once we complete the refactoring tasks in comp_tasks.py
