@@ -104,7 +104,7 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
                     }}
                   >
                     <TableCell>
-                      <Tooltip title={config.topic} arrow placement="left">
+                      <Tooltip title={config.topic} followCursor>
                         <Typography
                           variant="subtitle2"
                           color={theme.palette.common.white}
@@ -133,7 +133,6 @@ export function initSensorsStatusPanel(context: PanelExtensionContext): () => vo
   const root = createRoot(context.panelElement as HTMLElement);
   root.render(<SensorsStatusPanel context={context} />);
 
-  // Return a function to run when the panel is removed
   return () => {
     root.unmount();
   };
