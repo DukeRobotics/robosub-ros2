@@ -103,8 +103,8 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
                       backgroundColor: sensorPublishing ? theme.palette.success.dark : theme.palette.error.dark,
                     }}
                   >
-                    <TableCell>
-                      <Tooltip title={config.topic} followCursor>
+                    <Tooltip title={config.topic} followCursor>
+                      <TableCell>
                         <Typography
                           variant="subtitle2"
                           color={theme.palette.common.white}
@@ -114,8 +114,8 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
                         >
                           {config.displayName}
                         </Typography>
-                      </Tooltip>
-                    </TableCell>
+                      </TableCell>
+                    </Tooltip>
                   </TableRow>
                 );
               })}
