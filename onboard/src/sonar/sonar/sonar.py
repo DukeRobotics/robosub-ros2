@@ -317,7 +317,8 @@ class Sonar(Node):
             return response
 
         if object_pose is not None:
-            response.pose = object_pose
+            response.pose.pose = object_pose
+            response.header.stamp = self.get_clock().now().to_msg()
             response.normal_angle = normal_angle
             response.is_object = True
 
