@@ -38,7 +38,10 @@ gyro:
 modem:
   ftdi: CP2102
 thrusters:
-  - name: middle_right
+  - name: middle_right_first # TODO: Validate cw and standard_esc values for all middle_left and middle_right thrusters
+    cw: false
+    standard_esc: false
+  - name: middle_right_second
     cw: false
     standard_esc: false
   - name: front_right
@@ -50,7 +53,10 @@ thrusters:
   - name: back_left
     cw: true
     standard_esc: false
-  - name: middle_left
+  - name: middle_left_first
+    cw: true
+    standard_esc: true
+  - name: middle_left_second
     cw: true
     standard_esc: true
   - name: front_left
