@@ -105,16 +105,13 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
                     style={{
                       backgroundColor: sensorPublishing ? theme.palette.success.dark : theme.palette.error.dark,
                     }}
+                    onClick={() => {
+                      void navigator.clipboard.writeText(config.topic);
+                    }}
                   >
                     <Tooltip title={config.topic} followCursor>
                       <TableCell>
-                        <Typography
-                          variant="subtitle2"
-                          color={theme.palette.common.white}
-                          onClick={() => {
-                            void navigator.clipboard.writeText(config.topic);
-                          }}
-                        >
+                        <Typography variant="subtitle2" color={theme.palette.common.white}>
                           {config.displayName}
                         </Typography>
                       </TableCell>
