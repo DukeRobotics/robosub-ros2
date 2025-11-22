@@ -71,4 +71,4 @@ export const TOPIC_TO_SENSOR: Record<string, Sensor> = Object.fromEntries(
 /**
  * Time until sensor is considered down.
  */
-export const SENSOR_DOWN_THRESHOLD_NSEC = secToNsec(1);
+export const SENSOR_DOWN_THRESHOLD_NSEC = secToNsec(2);
