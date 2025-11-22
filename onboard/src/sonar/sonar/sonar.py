@@ -224,8 +224,8 @@ class Sonar(Node):
         _, sonar_index = nearest_segment.get_average_coordinate_of_points()
         normal_angle = np.arctan2(
             nearest_segment.ortho_regression.unit_normal[1],
-            nearest_segment.ortho_regression.unit_normal[0]
-            )
+            nearest_segment.ortho_regression.unit_normal[0],
+            ) + 45. # Since "forward" is represented by the line y=x, transform our normal angle by adding 45 degrees
 
         sonar_angle = (start_angle + end_angle) / 2  # Take the middle of the sweep
 

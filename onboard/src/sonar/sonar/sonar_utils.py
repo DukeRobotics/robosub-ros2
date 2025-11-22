@@ -12,6 +12,7 @@ RADIANS_PER_GRADIAN = np.pi / 200
 GRADIANS_PER_DEGREE = 400 / 360
 SPEED_OF_SOUND_IN_WATER = 1482 # m/s
 SAMPLE_PERIOD_TICK_DURATION = 25e-9  # s
+TRANSFORMATION_ANGLE = -np.pi/4
 
 def transform_pose(buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped,
                    source_frame_id: str, target_frame_id: str) -> tf2_geometry_msgs.PoseStamped:
@@ -182,9 +183,13 @@ def to_robot_position(angle: float, index: int, sample_period: int,
         )*np.sin(
             centered_gradians_to_radians(angle, center_gradians, negate),
         )
+
+    adjusted_x = x_pos * np.cos(TRANSFORMATION_ANGLE) - y_pos * np.sin(TRANSFORMATION_ANGLE)
+    adjusted_y = x_pos * np.sin(TRANSFORMATION_ANGLE) + y_pos * np.cos(TRANSFORMATION_ANGLE)
+
     pos_of_point = Pose()
-    pos_of_point.position.x = x_pos
-    pos_of_point.position.y = y_pos
+    pos_of_point.position.x = adjusted_x
+    pos_of_point.position.y = adjusted_y
     pos_of_point.position.z = 0  # z cord is not really 0 but we don't care
     pos_of_point.orientation.x = 0
     pos_of_point.orientation.y = 0
