@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 import argparse
 import functools
 import json
 import pathlib
 import shutil
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 
+import argcomplete
 import git
+from argcomplete.completers import FilesCompleter
 
 ORGANIZATION = 'dukerobotics'
 ROS_DISTRO = 'ros-jazzy'
@@ -94,9 +97,10 @@ def build(skip_ci: bool = False, extension_paths: Sequence[pathlib.Path] = EXTEN
         run('npx patch-package --patch-dir patches')
 
     # Compile local shared dependencies
-    dependencies = ['defs', 'theme']  # Specify build order
-    for dep in dependencies:
-        run_at_path('npm run build --if-present', FOXGLOVE_PATH / 'shared' / dep)
+    shared_path = FOXGLOVE_PATH / 'shared'
+    for item in shared_path.iterdir():
+        if item.is_dir():
+            run_at_path('npm run build --if-present', item)
 
     # Compile local nonshared dependencies
     for extension in extension_paths:
@@ -247,9 +251,35 @@ def extension_package(name: str) -> pathlib.Path:
     raise argparse.ArgumentTypeError(msg)
 
 
+def extension_name_completer(prefix: str, parsed_args: argparse.Namespace, **_) -> Iterable[str]:
+    """Return completions for extension arguments."""
+    extensions = getattr(parsed_args, 'extensions', None)
+
+    # Construct set of already selected extensions
+    selected = set()
+    if extensions:
+        try:
+            iterator = iter(extensions)
+        except TypeError:
+            iterator = (extensions,) # Make single extension iterable
+        for extension in iterator:
+            selected.add(pathlib.Path(extension).name)
+
+    return (
+        extension.name
+        for extension in EXTENSION_PATHS
+        if extension.name.startswith(prefix) and extension.name not in selected
+    )
+
+
 def clean() -> None:
     """Clean up the foxglove monorepo."""
-    run_at_path('git clean -ix foxglove', ROOT_PATH)
+    run_at_path('git clean -Xdn foxglove', ROOT_PATH)
+
+    print()
+
+    if input('Are you sure you want to delete these files? [y/n]: ') == 'y':
+        run_at_path('git clean -Xdf foxglove', ROOT_PATH)
 
 
 def main() -> None:
@@ -273,7 +303,7 @@ def main() -> None:
         aliases=['i'],
         help='Install Foxglove extensions locally.',
     )
-    install_parser.add_argument(
+    install_arg = install_parser.add_argument(
         'extensions',
         nargs='*',
         type=extension_package,
@@ -285,7 +315,7 @@ def main() -> None:
         aliases=['w'],
         help='Automatically reinstall a Foxglove extension after changes.',
     )
-    watch_parser.add_argument(
+    watch_arg = watch_parser.add_argument(
         'extensions',
         metavar='extension',
         nargs=1,
@@ -298,7 +328,7 @@ def main() -> None:
         aliases=['l'],
         help='Lint the Foxglove monorepo.',
     )
-    lint_parser.add_argument(
+    lint_arg = lint_parser.add_argument(
         'files',
         action='store',
         nargs='*',
@@ -315,7 +345,7 @@ def main() -> None:
         aliases=['p'],
         help='Publish Foxglove extensions to an organization.',
     )
-    publish_parser.add_argument(
+    publish_arg = publish_parser.add_argument(
         'extensions',
         nargs='*',
         type=extension_package,
@@ -350,6 +380,14 @@ def main() -> None:
         aliases=['d'],
         help='Troubleshoot the Foxglove development environment.',
     )
+
+    extension_args = (install_arg, publish_arg, watch_arg)
+    # argcomplete patches argparse.Action with the "completer" attribute at runtime so we ignore type checking here.
+    for arg in extension_args:
+        arg.completer = extension_name_completer  # pyright: ignore[reportAttributeAccessIssue]
+
+    lint_arg.completer = FilesCompleter()  # pyright: ignore[reportAttributeAccessIssue]
+    argcomplete.autocomplete(parser)
 
     args = parser.parse_args()
     if args.action in {'build', 'b'}:

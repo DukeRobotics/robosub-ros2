@@ -1,9 +1,11 @@
+import os
 from pathlib import Path
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
 from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 
 
@@ -16,6 +18,8 @@ def generate_launch_description() -> LaunchDescription:
     """
     pkg_controls = Path(get_package_share_directory('controls'))
     pkg_cv = Path(get_package_share_directory('cv'))
+    pkg_dvl_pathfinder = Path(get_package_share_directory('dvl_pathfinder'))  # noqa: F841 TODO tf lol
+    pkg_dvl_wayfinder = Path(get_package_share_directory('dvl_wayfinder'))
     pkg_offboard_comms = Path(get_package_share_directory('offboard_comms'))
     pkg_sensor_fusion = Path(get_package_share_directory('sensor_fusion'))
     pkg_sonar = Path(get_package_share_directory('sonar'))
@@ -23,7 +27,15 @@ def generate_launch_description() -> LaunchDescription:
     pkg_system_utils = Path(get_package_share_directory('system_utils'))
     pkg_vectornav = Path(get_package_share_directory('vectornav'))
 
+    robot_name = os.getenv('ROBOT_NAME')
+
     ld = LaunchDescription()
+
+    ld.add_action(DeclareLaunchArgument(
+        'enable_recording',
+        default_value='false',
+        description='Enable or disable recording functionality',
+    ))
 
     ld.add_action(IncludeLaunchDescription(
         XMLLaunchDescriptionSource(str(pkg_controls / 'launch' / 'controls.xml')),
@@ -32,6 +44,11 @@ def generate_launch_description() -> LaunchDescription:
     ld.add_action(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(pkg_cv / 'launch' / 'cv.launch.py')),
     ))
+
+    if robot_name == 'crush':
+        ld.add_action(IncludeLaunchDescription(
+            XMLLaunchDescriptionSource(str(pkg_dvl_wayfinder / 'launch' / 'dvl_wayfinder.xml')),
+        ))
 
     ld.add_action(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'offboard_comms.launch.py')),
@@ -51,6 +68,9 @@ def generate_launch_description() -> LaunchDescription:
 
     ld.add_action(IncludeLaunchDescription(
         XMLLaunchDescriptionSource(str(pkg_system_utils / 'launch' / 'system_utils.xml')),
+        launch_arguments=[
+            ('enable_recording', LaunchConfiguration('enable_recording')),
+        ],
     ))
 
     ld.add_action(IncludeLaunchDescription(
