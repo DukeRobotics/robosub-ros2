@@ -1,4 +1,4 @@
-import { Robot, getRobotName, NoRobotNameAlert } from "@duke-robotics/robot-name";
+import { NoRobotNameAlert, useRobotName } from "@duke-robotics/robot-name";
 import useTheme from "@duke-robotics/theme";
 import { timeToNsec } from "@duke-robotics/utils";
 import { Immutable, PanelExtensionContext, RenderState } from "@foxglove/extension";
@@ -23,7 +23,7 @@ const initSensorNsecs = (): SensorNsecs => Object.fromEntries(SENSORS.map((s) =>
 function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
 
-  const [robotName, setRobotName] = useState<Robot | undefined>(undefined);
+  const { robotName, withRobotName } = useRobotName(context);
   const [sensorNsecs, setSensorNsecs] = useState<SensorNsecs>(initSensorNsecs);
   const [currentNsecState, setCurrentNsecState] = useState<number | undefined>(undefined);
 
@@ -38,10 +38,8 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   }, [robotName]);
 
   useLayoutEffect(() => {
-    context.onRender = (renderState: Immutable<RenderState>, done: () => void) => {
+    context.onRender = withRobotName((renderState: Immutable<RenderState>, done: () => void) => {
       setRenderDone(() => done);
-
-      setRobotName(getRobotName(renderState));
 
       // Reset state when the user seeks the video
       if (renderState.didSeek ?? false) {
@@ -71,14 +69,13 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
           }));
         }
       }
-    };
+    });
 
     context.subscribe(Object.values(sensorsToMonitor).map((config) => ({ topic: config.topic })));
     context.watch("currentTime");
     context.watch("currentFrame");
     context.watch("didSeek");
-    context.watch("variables");
-  }, [context, sensorsToMonitor]);
+  }, [context, sensorsToMonitor, withRobotName]);
 
   useEffect(() => {
     renderDone?.();
