@@ -71,11 +71,14 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
       }
     });
 
-    context.subscribe(Object.values(sensorsToMonitor).map((config) => ({ topic: config.topic })));
     context.watch("currentTime");
     context.watch("currentFrame");
     context.watch("didSeek");
   }, [context, sensorsToMonitor, withRobotName]);
+
+  useEffect(() => {
+    context.subscribe(Object.values(sensorsToMonitor).map((config) => ({ topic: config.topic })));
+  }, [sensorsToMonitor, context]);
 
   useEffect(() => {
     renderDone?.();
