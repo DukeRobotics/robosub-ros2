@@ -33,8 +33,6 @@ setup(
             'depthai_publish_save_streams = cv.depthai_publish_save_streams:main',
             'depthai_spatial_detection = cv.depthai_spatial_detection:main',
             'depthai_usb_detection = cv.depthai_usb_detection:main',
-            'gpu_stat_test = cv.gpu_stat_test:main',
-            'monitor_usage = cv.monitor_usage:main',
             'path_marker_detector = cv.path_marker_detector:main',
             'pink_bins_detector = cv.pink_bins_detector:main',
             'torpedo_target_detector = cv.torpedo_target_detector:main',

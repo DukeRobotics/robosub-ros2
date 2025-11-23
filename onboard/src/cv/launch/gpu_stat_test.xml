@@ -1,3 +1,0 @@
-<launch>
-	<node name="gpu_stat_test" pkg="cv" exec="gpu_stat_test" output="screen"/>
-</launch>
