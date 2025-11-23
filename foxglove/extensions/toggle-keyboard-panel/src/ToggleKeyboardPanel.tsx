@@ -105,34 +105,29 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
     };
   }, [context]);
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      // Normalize key and ignore repeats
-      if (e.repeat) {
-        return;
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Normalize key and ignore repeats
+    if (e.repeat) {
+      return;
+    }
+    const key = e.key.toLowerCase();
+
+    // Only handle keys we consider valid
+    if (!VALID_KEYS.has(key)) {
+      return;
+    }
+
+    // Prevent default browser behavior only for our handled keys
+    e.preventDefault();
+
+    setPressedKeys((prev) => {
+      const next = new Set(prev);
+      if (!next.has(key)) {
+        next.add(key);
       }
-      const key = e.key.toLowerCase();
-
-      // Only handle keys we consider valid
-      if (!VALID_KEYS.has(key)) {
-        return;
-      }
-
-      // Prevent default browser behavior only for our handled keys
-      e.preventDefault();
-
-      setPressedKeys((prev) => {
-        const next = new Set(prev);
-        if (!next.has(key)) {
-          next.add(key);
-          console.log("Key down:", key);
-          console.log(pressedKeys);
-        }
-        return next;
-      });
-    },
-    [pressedKeys],
-  );
+      return next;
+    });
+  }, []);
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
     if (e.repeat) {
@@ -150,7 +145,6 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
       const next = new Set(prev);
       if (next.has(key)) {
         next.delete(key);
-        console.log("Key up:", key);
       }
       return next;
     });
@@ -283,7 +277,6 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
             ? -0.5
             : 0,
       };
-      console.log("Transformed Keyboard Inputs:", transformedKeyboardInputs);
 
       // Update state
       setState((prevState) => ({ ...prevState, transformedKeyboardInputs }));
