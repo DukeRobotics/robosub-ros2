@@ -3,11 +3,8 @@ import { GeometryMsgs, CustomMsgs } from "@duke-robotics/defs/types";
 import useTheme from "@duke-robotics/theme";
 import { Immutable, PanelExtensionContext, RenderState } from "@foxglove/extension";
 import { Button, Box, Alert, ThemeProvider } from "@mui/material";
-import { JsonViewer } from "@textea/json-viewer";
 import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-
-const DEBUG = false; // Set to true to display live transformed joystick inputs
 
 const PUBLISH_RATE = 20; // Hz
 
@@ -35,7 +32,7 @@ const KEYBOARD_KEY_MAP = {
   },
 } as const;
 
-// helper function for determining if a key is pressed
+// Helper function for determining if a key is pressed
 function isKeyPressed(pressedKeys: Set<string>, keys: string[]): boolean {
   return keys.some((key) => pressedKeys.has(key));
 }
@@ -47,12 +44,9 @@ type TransformedKeyboardInputs = {
   rollAxis: number;
   pitchAxis: number;
   yawAxis: number;
-  torpedoActivate: boolean;
-  torpedoOneLaunch: boolean;
-  torpedoTwoLaunch: boolean;
 };
 
-type ToggleJoystickPanelState = {
+type ToggleKeyboardPanelState = {
   error?: Error;
   colorScheme?: RenderState["colorScheme"];
   keyboardEnabled: boolean;
@@ -60,9 +54,9 @@ type ToggleJoystickPanelState = {
   keyboardConnected: boolean;
 };
 
-function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
+function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
-  const [state, setState] = useState<ToggleJoystickPanelState>({
+  const [state, setState] = useState<ToggleKeyboardPanelState>({
     keyboardEnabled: false,
     keyboardConnected: false,
     transformedKeyboardInputs: {
@@ -72,9 +66,6 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
       zAxis: 0,
       pitchAxis: 0,
       rollAxis: 0,
-      torpedoActivate: false,
-      torpedoOneLaunch: false,
-      torpedoTwoLaunch: false,
     },
   });
 
@@ -96,12 +87,12 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
 
   // Update color scheme and register render callback (cleaned up on unmount)
   useEffect(() => {
-    // preserve any existing handler so we can restore it on cleanup
+    // Preserve any existing handler so we can restore it on cleanup
     const prevOnRender = context.onRender;
 
     context.onRender = (renderState: Immutable<RenderState>, done) => {
       setState((prevState) => ({ ...prevState, colorScheme: renderState.colorScheme }));
-      // store the done callback so the panel lifecycle can call it later
+      // Store the done callback so the panel lifecycle can call it later
       setRenderDone(() => done);
     };
 
@@ -122,11 +113,15 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // normalize key and ignore repeats
-      if (e.repeat) return;
+      if (e.repeat) {
+        return;
+      }
       const key = e.key.toLowerCase();
 
       // only handle keys we consider valid
-      if (!VALID_KEYS.has(key)) return;
+      if (!VALID_KEYS.has(key)) {
+        return;
+      }
 
       // prevent default browser behavior only for our handled keys
       e.preventDefault();
@@ -143,10 +138,14 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.repeat) return;
+      if (e.repeat) {
+        return;
+      }
       const key = e.key.toLowerCase();
 
-      if (!VALID_KEYS.has(key)) return;
+      if (!VALID_KEYS.has(key)) {
+        return;
+      }
 
       e.preventDefault();
 
@@ -250,7 +249,7 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
 
   useEffect(() => {
     /**
-     * Query joystick to read and transform inputs
+     * Query keyboard to read and transform inputs
      */
     function queryKeyboard() {
       const transformedKeyboardInputs = {
@@ -284,9 +283,6 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
           : isKeyPressed(pressedKeys, [KEYBOARD_KEY_MAP.orientation.rollClockwise])
             ? -0.5
             : 0,
-        torpedoActivate: false,
-        torpedoOneLaunch: false,
-        torpedoTwoLaunch: false,
       };
       console.log("Transformed Keyboard Inputs:", transformedKeyboardInputs);
 
@@ -296,8 +292,6 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
       // Publish
       if (state.keyboardEnabled) {
         publishPower(transformedKeyboardInputs);
-        console.log("Published!");
-        // TODO: Once torpedoes are implemented on Oogway, call the appropriate service to fire torpedoes here
       }
     }
 
@@ -342,19 +336,6 @@ function ToggleJoystickPanel({ context }: { context: PanelExtensionContext }): R
             {state.keyboardEnabled ? "Disable Keyboard" : "Enable Keybord"}
           </Button>
         </Box>
-
-        {/* View live transformed joystick inputs */}
-        {/* eslint-disable-next-line @typescript-eslint/no-unnecessary-condition */}
-        {DEBUG && (
-          <JsonViewer
-            rootName={false}
-            value={state.transformedKeyboardInputs}
-            indentWidth={2}
-            theme={state.colorScheme}
-            enableClipboard={false}
-            displayDataTypes={false}
-          />
-        )}
       </Box>
     </ThemeProvider>
   );
@@ -364,7 +345,7 @@ export function initToggleKeyboardPanel(context: PanelExtensionContext): () => v
   context.panelElement.style.overflow = "auto"; // Enable scrolling
 
   const root = createRoot(context.panelElement as HTMLElement);
-  root.render(<ToggleJoystickPanel context={context} />);
+  root.render(<ToggleKeyboardPanel context={context} />);
 
   // Return a function to run when the panel is removed
   return () => {
