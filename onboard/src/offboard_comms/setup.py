@@ -32,9 +32,9 @@ setup(
         'console_scripts': [
             'arduino = offboard_comms.arduino:main',
             'dvl_pathfinder_raw = offboard_comms.dvl_pathfinder_raw:main',
-            'dvl_pathfinder_to_odom = offboard_comms.dvl_pathfinder_to_odom:main',
             'dvl_wayfinder = offboard_comms.dvl_wayfinder:main',
             'gyro = offboard_comms.gyro:main',
+            'modem = offboard_comms.modem:main',
             'peripheral = offboard_comms.peripheral:main',
             'test_thrusters = offboard_comms.test_thrusters:main',
             'thrusters = offboard_comms.thrusters:main',

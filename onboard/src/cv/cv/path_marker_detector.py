@@ -54,7 +54,6 @@ class PathMarkerDetector(Node):
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
         # Find contours in the mask
-
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         contours = [contour for contour in contours if len(contour) > PathMarker.MIN_CONTOUR_LENGTH and
                     cv2.contourArea(contour) > PathMarker.MIN_CONTOUR_AREA]

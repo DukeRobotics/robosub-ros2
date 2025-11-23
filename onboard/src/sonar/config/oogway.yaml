@@ -1,3 +1,3 @@
 ftdi: DK0C1WF7
 center_gradians: 200
-negate: false
+increase_ccw: false

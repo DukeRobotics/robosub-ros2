@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 from custom_msgs.msg import CVObject
 from geometry_msgs.msg import Point, Polygon
+from scipy.spatial.distance import cdist
 
 
 def check_file_writable(filepath: Path) -> bool:
@@ -84,7 +85,7 @@ def calculate_relative_pose(bbox_bounds: list[int | float], input_size: tuple[fl
     Args:
         bbox_bounds (object): The detection object.
         input_size (list[float]): Array with input size, where [0] is width and [1] is height.
-        label_shape (list[float]): The label shape, where [0] is width (only this is accessed) and [1] is height.
+        label_shape (list[float]): The label shape, where [0] is width and [1] is height (now used for distance calc).
         focal_length (float): The distance between the lens and the image sensor when the lens is focused on a subject.
         sensor_size (tuple[float, float]): The physical size of the camera's image sensor.
         adjustment_factor (int): 1 if mono, 2 if depthai.
@@ -94,18 +95,18 @@ def calculate_relative_pose(bbox_bounds: list[int | float], input_size: tuple[fl
     """
     xmin, ymin, xmax, ymax = bbox_bounds
 
-    bbox_width = (xmax - xmin) * input_size[0]
+    bbox_height = (ymax - ymin) * input_size[1]
     bbox_center_x = (xmin + xmax) / 2 * input_size[0]
     bbox_center_y = (ymin + ymax) / 2 * input_size[1]
-    meters_per_pixel = label_shape[0] / bbox_width
+    meters_per_pixel = label_shape[1] / bbox_height
     dist_x = bbox_center_x - input_size[0] // 2
     dist_y = bbox_center_y - input_size[1] // 2
 
     y_meters = dist_x * meters_per_pixel * -1
     z_meters = dist_y * meters_per_pixel * -1
 
-    x_meters = cam_dist_with_obj_width(bbox_width, label_shape[0], focal_length, input_size, sensor_size,
-                                       adjustment_factor)
+    x_meters = cam_dist_with_obj_height(bbox_height, label_shape[1], focal_length, input_size, sensor_size,
+                                        adjustment_factor)
 
     return [x_meters, y_meters, z_meters]
 
@@ -180,6 +181,64 @@ def compute_center_distance(bbox_center_x: float, bbox_center_y: float, frame_wi
     distance_y = bbox_center_y - frame_center_y + width_adjustment_constant
 
     return distance_x, distance_y
+
+def group_contours_by_distance(contours: list[np.ndarray], dist_thresh: float) -> list[np.ndarray]:
+        """
+        Group contours that are within a certain distance threshold.
+
+        Args:
+            contours (list[np.ndarray]): List of contours to group.
+            dist_thresh (float): Distance threshold to group contours.
+
+        Returns:
+            list[np.ndarray]: List of grouped contours.
+        """
+        centers = []
+        valid_contours = []
+        for contour in contours:
+            m = cv2.moments(contour)
+            if m['m00'] != 0:
+                cx = int(m['m10'] / m['m00'])
+                cy = int(m['m01'] / m['m00'])
+                centers.append([cx, cy])
+                valid_contours.append(contour)
+
+        centers = np.array(centers)
+        n = len(centers)
+        if n == 0:
+            return []
+
+        dist_matrix = cdist(centers, centers)
+        groups = []
+        visited = set()
+
+        for i in range(n):
+            if i in visited:
+                continue
+            group = {i}
+            neighbors = set(np.where(dist_matrix[i] < dist_thresh)[0])
+            group = group.union(neighbors)
+
+            expanded = True
+            while expanded:
+                expanded = False
+                new_neighbors = set()
+                for idx in group:
+                    idx_neighbors = set(np.where(dist_matrix[idx] < dist_thresh)[0])
+                    if not idx_neighbors.issubset(group):
+                        new_neighbors = new_neighbors.union(idx_neighbors.difference(group))
+                        expanded = True
+                group = group.union(new_neighbors)
+
+            visited = visited.union(group)
+            groups.append(list(group))
+
+        merged_contours = []
+        for group_indices in groups:
+            merged_points = np.vstack([valid_contours[idx] for idx in group_indices])
+            merged_contours.append(merged_points)
+
+        return merged_contours
 
 
 class DetectionVisualizer:
