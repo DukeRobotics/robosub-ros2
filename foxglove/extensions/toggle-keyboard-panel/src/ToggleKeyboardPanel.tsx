@@ -32,6 +32,21 @@ const KEYBOARD_KEY_MAP = {
   },
 } as const;
 
+const VALID_KEYS = new Set<string>([
+  "w",
+  "a",
+  "s",
+  "d",
+  "arrowup",
+  "arrowdown",
+  "arrowleft",
+  "arrowright",
+  "l",
+  "j",
+  "i",
+  "k",
+]);
+
 // Helper function for determining if a key is pressed
 function isKeyPressed(pressedKeys: Set<string>, keys: string[]): boolean {
   return keys.some((key) => pressedKeys.has(key));
@@ -70,20 +85,6 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
   });
 
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set());
-  const VALID_KEYS = new Set<string>([
-    "w",
-    "a",
-    "s",
-    "d",
-    "arrowup",
-    "arrowdown",
-    "arrowleft",
-    "arrowright",
-    "l",
-    "j",
-    "i",
-    "k",
-  ]);
 
   // Update color scheme and register render callback (cleaned up on unmount)
   useEffect(() => {
@@ -96,34 +97,28 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
       setRenderDone(() => done);
     };
 
-    // Ask context to watch colorScheme so we get updates
-    try {
-      context.watch?.("colorScheme");
-    } catch {
-      // context.watch may throw in some environments; ignore safely
-    }
+    context.watch("colorScheme");
 
     return () => {
-      // restore previous handler if any
+      // Restore previous handler if any
       context.onRender = prevOnRender;
     };
   }, [context]);
 
-  // Keyboard handlers: add/remove listeners and log keys
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // normalize key and ignore repeats
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      // Normalize key and ignore repeats
       if (e.repeat) {
         return;
       }
       const key = e.key.toLowerCase();
 
-      // only handle keys we consider valid
+      // Only handle keys we consider valid
       if (!VALID_KEYS.has(key)) {
         return;
       }
 
-      // prevent default browser behavior only for our handled keys
+      // Prevent default browser behavior only for our handled keys
       e.preventDefault();
 
       setPressedKeys((prev) => {
@@ -135,30 +130,34 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
         }
         return next;
       });
-    };
+    },
+    [pressedKeys],
+  );
 
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.repeat) {
-        return;
+  const handleKeyUp = useCallback((e: KeyboardEvent) => {
+    if (e.repeat) {
+      return;
+    }
+    const key = e.key.toLowerCase();
+
+    if (!VALID_KEYS.has(key)) {
+      return;
+    }
+
+    e.preventDefault();
+
+    setPressedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+        console.log("Key up:", key);
       }
-      const key = e.key.toLowerCase();
+      return next;
+    });
+  }, []);
 
-      if (!VALID_KEYS.has(key)) {
-        return;
-      }
-
-      e.preventDefault();
-
-      setPressedKeys((prev) => {
-        const next = new Set(prev);
-        if (next.has(key)) {
-          next.delete(key);
-          console.log("Key up:", key);
-        }
-        return next;
-      });
-    };
-
+  // Keyboard handlers: add/remove listeners and log keys
+  useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
 
@@ -166,7 +165,7 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, []); // no deps so we install once
+  }, [handleKeyDown, handleKeyUp]); // No deps so we install once
 
   // Call our done function at the end of each render
   useEffect(() => {
