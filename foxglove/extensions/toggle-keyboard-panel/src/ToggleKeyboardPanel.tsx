@@ -33,18 +33,8 @@ const KEYBOARD_KEY_MAP = {
 } as const;
 
 const VALID_KEYS = new Set<string>([
-  "w",
-  "a",
-  "s",
-  "d",
-  "arrowup",
-  "arrowdown",
-  "arrowleft",
-  "arrowright",
-  "l",
-  "j",
-  "i",
-  "k",
+  ...Object.values(KEYBOARD_KEY_MAP.linear),
+  ...Object.values(KEYBOARD_KEY_MAP.orientation),
 ]);
 
 // Helper function for determining if a key is pressed
@@ -101,9 +91,7 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
 
     setPressedKeys((prev) => {
       const next = new Set(prev);
-      if (!next.has(key)) {
-        next.add(key);
-      }
+      next.add(key);
       return next;
     });
   }, []);
@@ -122,9 +110,7 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
 
     setPressedKeys((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      }
+      next.delete(key);
       return next;
     });
   }, []);
@@ -309,7 +295,7 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
             variant="contained"
             color={state.keyboardEnabled ? "error" : "success"}
             onClick={toggleKeyboard}
-            disabled={false}
+            disabled={context.callService == undefined}
           >
             {state.keyboardEnabled ? "Disable Keyboard" : "Enable Keyboard"}
           </Button>
