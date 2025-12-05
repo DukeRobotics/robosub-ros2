@@ -86,9 +86,6 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
       return;
     }
 
-    // Prevent default browser behavior only for our handled keys
-    //e.preventDefault();
-
     setPressedKeys((prev) => {
       const next = new Set(prev);
       next.add(key);
@@ -105,8 +102,6 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
     if (!VALID_KEYS.has(key)) {
       return;
     }
-
-    //e.preventDefault();
 
     setPressedKeys((prev) => {
       const next = new Set(prev);
