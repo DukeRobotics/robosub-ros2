@@ -271,19 +271,17 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
                       void navigator.clipboard.writeText(row.topic);
                     }}
                   >
-                    <>
-                      <TableCell>
-                        <Typography variant="subtitle2" color={theme.palette.common.white}>
-                          {row.name}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="subtitle2" color={theme.palette.common.white}>
-                          {row.value?.toFixed(1)}
-                          {row.suffix}
-                        </Typography>
-                      </TableCell>
-                    </>
+                    <TableCell>
+                      <Typography variant="subtitle2" color={theme.palette.common.white}>
+                        {row.name}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="subtitle2" color={theme.palette.common.white}>
+                        {row.value?.toFixed(1)}
+                        {row.suffix}
+                      </Typography>
+                    </TableCell>
                   </TableRow>
                 </Tooltip>
               ))}
