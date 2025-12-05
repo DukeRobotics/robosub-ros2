@@ -17,10 +17,3 @@ roslaunch controls controls.launch
 ```
 
 Click the button to toggle keyboard control. If the call fails, an alert is displayed.
-
-## Configuration
-The following constants can be modified:
-- `PUBLISH_RATE`: The rate (in Hz) to publish desired power.
-- `SET_CONTROL_TYPES_SERVICE`: The service that handles enabling/disabling keyboard control.
-- `DESIRED_POWER_TOPIC`: The topic that transformed keyboard inputs are published to.
-- `KEYBOARD_KEY_MAP`: The map from each direction of motion to indices in the keyboard inputs.
