@@ -66,14 +66,12 @@ type ToggleKeyboardPanelState = {
   colorScheme?: RenderState["colorScheme"];
   keyboardEnabled: boolean;
   transformedKeyboardInputs: TransformedKeyboardInputs;
-  keyboardConnected: boolean;
 };
 
 function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
   const [state, setState] = useState<ToggleKeyboardPanelState>({
     keyboardEnabled: false,
-    keyboardConnected: false,
     transformedKeyboardInputs: {
       xAxis: 0,
       yAxis: 0,
@@ -85,25 +83,6 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
   });
 
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set());
-
-  // Update color scheme and register render callback (cleaned up on unmount)
-  useEffect(() => {
-    // Preserve any existing handler so we can restore it on cleanup
-    const prevOnRender = context.onRender;
-
-    context.onRender = (renderState: Immutable<RenderState>, done) => {
-      setState((prevState) => ({ ...prevState, colorScheme: renderState.colorScheme }));
-      // Store the done callback so the panel lifecycle can call it later
-      setRenderDone(() => done);
-    };
-
-    context.watch("colorScheme");
-
-    return () => {
-      // Restore previous handler if any
-      context.onRender = prevOnRender;
-    };
-  }, [context]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     // Normalize key and ignore repeats
@@ -118,7 +97,7 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
     }
 
     // Prevent default browser behavior only for our handled keys
-    e.preventDefault();
+    //e.preventDefault();
 
     setPressedKeys((prev) => {
       const next = new Set(prev);
@@ -139,7 +118,7 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
       return;
     }
 
-    e.preventDefault();
+    //e.preventDefault();
 
     setPressedKeys((prev) => {
       const next = new Set(prev);
@@ -209,19 +188,14 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
   }, [context, state.keyboardEnabled]);
 
   /**
-   * Publish transformed joystick inputs as a desired power message
+   * Publish transformed keyboard inputs as a desired power message
    * @param transformedKeyboardInputs A TransformedKeyboardInputs object used to create the desired power message
    */
   const publishPower = useCallback(
     (transformedKeyboardInputs: TransformedKeyboardInputs) => {
       if (!context.advertise || !context.publish) {
         return;
-      }
-
-      context.advertise(DESIRED_POWER_TOPIC, DESIRED_POWER_SCHEMA, {
-        datatypes: allDatatypeMaps.ros2jazzy[DESIRED_POWER_SCHEMA],
-      });
-
+      } 
       // Create and publish desired power message
       const request: GeometryMsgs.Twist = {
         linear: {
@@ -239,6 +213,18 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
     },
     [context],
   );
+
+  useEffect(() => {
+
+    if (!context.advertise || !context.publish) {
+      return;
+    }
+
+    context.advertise(DESIRED_POWER_TOPIC, DESIRED_POWER_SCHEMA, {
+      datatypes: allDatatypeMaps.ros2jazzy[DESIRED_POWER_SCHEMA],
+    });
+
+  }, []);
 
   useEffect(() => {
     /**
