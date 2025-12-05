@@ -160,7 +160,7 @@ class CV:
             )
 
         # Lane marker-specific data
-        self._lane_marker_data = {}
+        self._lane_marker_data = {'touching_top': False, 'touching_bottom': False, 'height': 0.0}
         self._lane_marker_heights = []
 
     @property
