@@ -12,13 +12,16 @@ import yaml
 from brping import Ping360
 from custom_msgs.srv import SonarSweepRequest
 from cv_bridge import CvBridge
-from geometry_msgs.msg import Pose, PoseStamped
+from geometry_msgs.msg import PoseStamped
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 from serial.tools import list_ports
+from sklearn.cluster import DBSCAN
+from sklearn.decomposition import PCA
 from std_msgs.msg import String
 
-from sonar import sonar_image_processing, sonar_object_detection, sonar_utils
+from sonar import sonar_image_processing, sonar_utils
 
 
 class Sonar(Node):
@@ -42,7 +45,6 @@ class Sonar(Node):
     SONAR_STATUS_TOPIC = 'sonar/status'
     SONAR_REQUEST_TOPIC = 'sonar/request'
     SONAR_IMAGE_TOPIC = 'sonar/image/compressed'
-    SONAR_DENOISED_IMAGE_TOPIC = 'sonar/image/denoised'
 
     NODE_NAME = 'sonar'
 
@@ -54,8 +56,6 @@ class Sonar(Node):
     DBSCAN_MIN_SAMPLES = 10  # DBSCAN min samples
 
     NUM_RETRIES = 10
-
-    NEGATE_POSE = False
 
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME)
@@ -80,7 +80,6 @@ class Sonar(Node):
         self.cv_bridge = CvBridge()
         if self.stream:
             self.sonar_image_publisher = self.create_publisher(CompressedImage, self.SONAR_IMAGE_TOPIC, 10)
-            self.denoised_image_publisher = self.create_publisher(CompressedImage, self.SONAR_DENOISED_IMAGE_TOPIC, 10)
 
         self.current_scan = (-1, -1, -1)  # (start_angle, end_angle, distance_of_scan)
 
@@ -112,18 +111,65 @@ class Sonar(Node):
 
     def init_sonar(self) -> None:
         """Set up default parameters for the sonar device."""
-        self.ping360.set_number_of_samples(self.DEFAULT_NUMER_OF_SAMPLES)
+        self.number_of_samples = self.DEFAULT_NUMER_OF_SAMPLES
+        self.ping360.set_number_of_samples(self.number_of_samples)
 
-        self.sample_period = sonar_utils.range_to_period(self.DEFAULT_RANGE, self.DEFAULT_NUMER_OF_SAMPLES)
+        self.sample_period = self.range_to_period(self.DEFAULT_RANGE)
         self.ping360.set_sample_period(self.sample_period)
 
-        self.transmit_duration = sonar_utils.range_to_transmit(self.DEFAULT_RANGE, self.DEFAULT_NUMER_OF_SAMPLES)
+        self.transmit_duration = self.range_to_transmit(self.DEFAULT_RANGE)
         self.ping360.set_transmit_duration(self.transmit_duration)
 
     def publish_status(self) -> None:
         """Publish the status of the sonar device."""
         # make string type std_msgs String
         self.status_publisher.publish(String(data='Sonar Running'))
+
+    def range_to_period(self, sonar_range: int) -> int:
+        """
+        From a given range determines the sample_period.
+
+        Sample_period is the time between each sample. Given a distance we can calculate the sample period using the
+        formula: 2 * range / (number_of_samples * speed_of_sound_in_water * 25e-9) where number of samples is the
+        number of samples taken between 0m and the set range, speed of sound in water is 1480m/s and 25e-9 is the
+        sample period tick duration.
+
+        https://discuss.bluerobotics.com/t/please-provide-some-answer-regards-ping360/6393/3
+
+        Args:
+            sonar_range (int): max range in meters of the sonar scan.
+
+        Returns:
+            sample_period (int): sample period in ms.
+        """
+        period = 2 * sonar_range / (self.number_of_samples * self.SPEED_OF_SOUND_IN_WATER
+                                    * self.SAMPLE_PERIOD_TICK_DURATION)
+        return round(period)
+
+    def range_to_transmit(self, sonar_range: int) -> int:
+        """
+        From a given range determines the transmit_duration.
+
+        Per firmware engineer:
+        1. Starting point is TxPulse in usec = ((one-way range in metres) * 8000) /
+        (Velocity of sound in metres per second)
+        2. Then check that TxPulse is wide enough for currently selected sample interval in usec,
+        i.e., if TxPulse < (2.5 * sample interval) then TxPulse = (2.5 * sample interval)
+        3. Perform limit checking
+        https://discuss.bluerobotics.com/t/please-provide-some-answer-regards-ping360/6393/3
+
+        Args:
+            sonar_range (int): max range in meters of the sonar scan.
+
+        Returns:
+            transmit_duration (int): max transmit duration in ms.
+        """
+        # 1
+        transmit_duration = 8000 * sonar_range / self.SPEED_OF_SOUND_IN_WATER
+        # 2 (transmit duration is microseconds, samplePeriod() is nanoseconds)
+        transmit_duration = max(self.range_to_period(sonar_range) / 40, transmit_duration)
+        # 3 min_transmit is 5 and max_transmit is 500
+        return round(max(5, min(500, transmit_duration)))
 
     def set_new_range(self, sonar_range: int) -> None:
         """
@@ -133,11 +179,59 @@ class Sonar(Node):
             sonar_range (int): max range in meters of the sonar scan.
         """
         self.prev_range = sonar_range
-        self.sample_period = sonar_utils.range_to_period(self.DEFAULT_RANGE, self.DEFAULT_NUMER_OF_SAMPLES)
+        self.sample_period = self.range_to_period(sonar_range)
         self.ping360.set_sample_period(self.sample_period)
 
-        self.transmit_duration = sonar_utils.range_to_transmit(sonar_range, self.DEFAULT_NUMER_OF_SAMPLES)
+        self.transmit_duration = self.range_to_transmit(sonar_range)
         self.ping360.set_transmit_duration(self.transmit_duration)
+
+    def meters_per_sample(self) -> float:
+        """
+        Return the target distance per sample, in meters.
+
+        https://discuss.bluerobotics.com/t/access-ping360-data-for-post-processing-python/10416/2
+
+        Returns:
+            float: Distance per sample.
+        """
+        # sample_period is in 25ns increments
+        # time of flight includes there and back, so divide by 2
+        return self.SPEED_OF_SOUND_IN_WATER * self.sample_period * self.SAMPLE_PERIOD_TICK_DURATION / 2.0
+
+    def get_distance_of_sample_old(self, sample_index: int) -> float:
+        """
+        Get the distance in meters of a sample given its index in the data array returned from the device.
+
+        Computes distance using formula from
+        https://bluerobotics.com/learn/understanding-and-using-scanning-sonars/.
+
+        Args:
+            sample_index (int): Index of the sample in the data array, from 0 to N-1,
+            where N = number of samples.
+
+        Returns:
+            float: Distance in meters of the sample from the sonar device.
+        """
+        # 0.5 for the average distance of sample
+        return (sample_index + 0.5) * self.meters_per_sample()
+
+    def get_distance_of_sample(self, pixel_distance: float) -> float:
+        """
+        Get the distance in meters of a sample given its index in the data array returned from the device.
+
+        Computes distance using formula from
+        https://bluerobotics.com/learn/understanding-and-using-scanning-sonars/.
+
+        Args:
+            sample_index (int): Index of the sample in the data array, from 0 to N-1,
+            where N = number of samples.
+            pixel_distance (float): Pixel distance of the sample.
+
+        Returns:
+            float: Distance in meters of the sample from the sonar device.
+        """
+        # 0.5 for the average distance of sample
+        return (pixel_distance + 0.5) * self.meters_per_sample()
 
     def request_data_at_angle(self, angle_in_gradians: float) -> list:
         """
@@ -161,7 +255,7 @@ class Sonar(Node):
                 break
             self.get_logger().error(f'Error in getting data at angle {angle_in_gradians}')
 
-        response_to_int_array = [int(item) for item in response.data]
+        response_to_int_array = [int(item) for item in response.data]  # converts bytestring to int array
         return [0] * self.FILTER_INDEX + response_to_int_array[self.FILTER_INDEX:]
 
     def get_sweep(self, range_start: int = 100, range_end: int = 300) -> np.ndarray:
@@ -183,11 +277,41 @@ class Sonar(Node):
         for i in range(range_end, range_start + 1, -1 if self.increase_ccw else 1):
             sonar_scan = self.request_data_at_angle(i)
             sonar_sweep_data.append(sonar_scan)
+        sweep = np.vstack(sonar_sweep_data)
+        cart_grid = sonar_utils.polar2cart(sweep, range_start, range_end)
+        return sweep, cart_grid
 
-        return np.vstack(sonar_sweep_data)
+    def to_robot_position(self, angle: float, index: int) -> PoseStamped:
+        """
+        Convert a point in sonar space to a robot global position.
 
-    def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int) -> \
-            tuple[Pose | None, np.ndarray, float | None]:
+        Args:
+            angle (float): Angle in gradians of the point relative to in front
+                of the sonar device.
+            index (int | float): Index of the data in the sonar response.
+
+        Returns:
+            PoseStamped: PoseStamped in the sonar's frame containing x and y position of angle/index item.
+        """
+        x_pos = self.get_distance_of_sample(index)*np.cos(
+            sonar_utils.centered_gradians_to_radians(angle, self.center_gradians, self.increase_ccw))
+        y_pos = -1 * self.get_distance_of_sample(index)*np.sin(
+            sonar_utils.centered_gradians_to_radians(angle, self.center_gradians, self.increase_ccw))
+        pos_of_point = PoseStamped()
+        pos_of_point.header.stamp = self.get_clock().now().to_msg()
+        pos_of_point.header.frame_id = 'sonar_ping_360'
+        pos_of_point.pose.position.x = x_pos
+        pos_of_point.pose.position.y = y_pos
+        pos_of_point.pose.position.z = 0.0  # z cord is not really 0 but we don't care
+        pos_of_point.pose.orientation.x = 0.0
+        pos_of_point.pose.orientation.y = 0.0
+        pos_of_point.pose.orientation.z = 0.0
+        pos_of_point.pose.orientation.w = 1.0
+
+        return pos_of_point
+
+    def get_xy_of_object_in_sweep_old(self, start_angle: int, end_angle: int) -> \
+            tuple[PoseStamped | None, np.ndarray, float | None]:
         """
         Get the depth of the sweep of a detected object. For now uses mean value.
 
@@ -196,43 +320,187 @@ class Sonar(Node):
             end_angle (int): Angle to end sweep in gradians.
 
         Returns:
-            (Pose, List, float): Pose of the object in robot reference frame, sonar sweep array, and normal angle.
+            (PoseStamped, np.ndarray, float): Pose of the object in robot reference frame, sonar sweep array, and normal
+                angle.
         """
-        sweep = self.get_sweep(start_angle, end_angle)
+        _, cart_grid = self.get_sweep(start_angle, end_angle)
 
-        denoiser = sonar_object_detection.SonarDenoiser(sweep)
-        denoiser.wall_block().percentile_filter().fourier_signal_processing().init_cartesian().normalize().blur()
-        self.denoised_image_publisher.publish(
-            sonar_utils.convert_to_ros_compressed_img(denoiser.cartesian, self.cv_bridge),
-            )
-        color_image = sonar_image_processing.build_color_sonar_image_from_int_array(denoiser.cartesian)
+        sonar_index, normal_angle, _ = sonar_image_processing.find_center_point_and_angle(
+            cart_grid, self.VALUE_THRESHOLD, self.DBSCAN_EPS,
+            self.DBSCAN_MIN_SAMPLES, True)
 
-        segmentation = sonar_object_detection.SonarSegmentation(
-            denoiser.cartesian,
-            wall_object_threshold=0,
-            segment_size_threshold=2000/90*denoiser.shape_theta,
-            segment_brightness_threshold=60,
-            merge_threshold=1.5,
-            merge_angle_limit=6,
-        )
+        color_image = sonar_image_processing.build_color_sonar_image_from_int_array(cart_grid)
 
-        nearest_segment = segmentation.get_nearest_segment()
-
-        if nearest_segment is None:
+        if sonar_index is None:
             return (None, color_image, None)
-
-        _, sonar_index = nearest_segment.get_average_coordinate_of_points()
-        normal_angle = np.arctan2(
-            nearest_segment.ortho_regression.unit_normal[1],
-            nearest_segment.ortho_regression.unit_normal[0],
-            ) + 45. # Since "forward" is represented by the line y=x, transform our normal angle by adding 45 degrees
 
         sonar_angle = (start_angle + end_angle) / 2  # Take the middle of the sweep
 
-        return (sonar_utils.to_robot_position(sonar_angle, sonar_index, self.sample_period,
-                                              self.center_gradians, self.NEGATE_POSE),
-                                              color_image,
-                                              normal_angle)
+        return (self.to_robot_position(sonar_angle, sonar_index), color_image, normal_angle)
+
+    def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int) -> \
+                tuple[PoseStamped | None, np.ndarray, float | None]:  # noqa: PLR0915
+        """
+        Get the depth of the sweep of a detected object. For now uses mean value.
+
+        Args:
+            start_angle (int): Angle to start sweep in gradians.
+            end_angle (int): Angle to end sweep in gradians.
+
+        Returns:
+            (PoseStamped, np.ndarray, float): Pose of the object in robot reference frame, sonar sweep array, and normal
+                angle.
+        """
+        sonar_sweep_array, cart_grid = self.get_sweep(start_angle, end_angle)
+        np.save(f'onboard/src/sonar/sonar/sweep_data/sweep_{self.get_clock().now().nanoseconds}',sonar_sweep_array)
+        intensity_threshold = 0.6*np.max(sonar_sweep_array) # Example threshold
+        line_points_mask = cart_grid > intensity_threshold
+
+        # Get the coordinates of the line points
+        line_points_coords = np.argwhere(line_points_mask)
+
+        center_x = None
+        center_y = None
+        line_angle_deg = None
+        normal_angle_deg = None
+
+        if len(line_points_coords) > 1:
+            # --- Apply DBSCAN to cluster the points ---
+            dbscan = DBSCAN(eps=self.DBSCAN_EPS, min_samples=self.DBSCAN_MIN_SAMPLES)  # tune eps/min_samples as needed
+            labels = dbscan.fit_predict(line_points_coords)
+
+            # Ignore noise points (-1)
+            unique_labels, counts = np.unique(labels[labels >= 0], return_counts=True)
+
+            if len(unique_labels) == 0:
+                self.get_logger().info('DBSCAN found no clusters.')
+                color_image = sonar_image_processing.build_color_sonar_image_from_int_array(cart_grid)
+                return (None, color_image, normal_angle_deg)
+
+            # Select largest cluster
+            largest_cluster_label = unique_labels[np.argmax(counts)]
+            largest_cluster_points = line_points_coords[labels == largest_cluster_label]
+
+            # --- PCA on largest DBSCAN cluster ---
+            pca = PCA(n_components=2)
+            pca.fit(largest_cluster_points)
+
+            # The center of the points is the mean
+            center_y, center_x = pca.mean_ # Note: pca.mean_ gives [mean_y, mean_x]
+            self.get_logger().info(f'Sonar: Got center of object at ({center_x:.2f}, {center_y:.2f})')
+
+            # The first principal component gives the direction of the line
+            # The components are the eigenvectors, pca.components_[0] is the first eigenvector [dy, dx]
+            direction_vector = pca.components_[0]
+            # Calculate the angle from the direction vector (arctan2 handles quadrants)
+            line_angle_rad = np.arctan2(direction_vector[0], direction_vector[1]) # arctan2(dy, dx)
+            line_angle_deg = np.degrees(line_angle_rad)
+
+            # Normalize the angle to be within a specific range (e.g., -180 to 180)
+            line_angle_deg = np.clip(line_angle_deg, -180, 180)
+
+            # Calculate the normal angle (perpendicular to the line)
+            normal_angle_rad = line_angle_rad + np.pi/2
+            normal_angle_deg = np.degrees(normal_angle_rad)
+            self.get_logger().info(f'Sonar: Got normal angle at {normal_angle_deg:.2f} degrees')
+            # Normalize the normal angle to be within a specific range (e.g., -180 to 180)
+
+
+        else:
+            self.get_logger().info('Not enough line points found to apply PCA.')
+            color_image = sonar_image_processing.build_color_sonar_image_from_int_array(cart_grid)
+            return (None, color_image, normal_angle_deg)
+
+
+        # Step 3: Visualize the center point and the principal axis (representing the line)
+        # Overlay identified center point and principal axis onto the Cartesian grid visualization to verify the result.
+        h, w = cart_grid.shape
+        dpi = 100  # you can adjust depending on desired output scaling
+        plot = plt.figure(figsize=(w/dpi, h/dpi), dpi=dpi)
+
+        plt.imshow(cart_grid, cmap='viridis', interpolation='none')  # no resampling
+        plt.axis('off')  # no ticks/axes
+        plt.tight_layout(pad=0)  # remove padding
+        plt.axis('off')  # Turn off axis for a clean image
+
+        # Plot the identified center point if found
+        if center_x is not None and center_y is not None:
+            plt.plot(center_x, center_y, 'ro') # 'ro' for red circle marker
+            plt.text(center_x, center_y, f' Center ({center_x:.0f}, {center_y:.0f})',
+                     color='red', fontsize=10, ha='left')
+
+        # Plot the principal axis if PCA was applied
+        if len(line_points_coords) > 1:
+            # To plot the line, we can use the center and the direction vector
+            # We'll plot a line segment around the center
+            scale_factor = 1000 # Adjust this to make the line visible
+            start_point = pca.mean_ - direction_vector * scale_factor
+            end_point = pca.mean_ + direction_vector * scale_factor
+            # Note: plot takes [x_coords], [y_coords]
+            plt.plot([start_point[1], end_point[1]], [start_point[0], end_point[0]], 'r-', label='Principal Axis (PCA)')
+            plt.legend()
+
+        fig = plt.gcf()
+        canvas = FigureCanvas(fig)
+        canvas.draw()
+
+        image = np.frombuffer(canvas.tostring_argb(), dtype='uint8')
+        image = image.reshape((*fig.canvas.get_width_height()[::-1], 4))
+        plot_img = cv2.cvtColor(image[:, :, 1:], cv2.COLOR_RGB2BGR)
+
+        # Converting stuff to fit return format:
+        # Convert plt to array, and convert center_x and center_y to distances.
+        center = self.DEFAULT_NUMER_OF_SAMPLES
+        dx = center_x - center
+        dy = center_y - center
+        distance = np.sqrt(dx**2 + dy**2)
+        angle_rad = np.arctan2(dy, dx)
+        sample_index = round(distance)
+        meters = self.get_distance_of_sample(sample_index)
+        x_pos = meters * np.cos(angle_rad)
+        y_pos = meters * np.sin(angle_rad)
+        pose = PoseStamped()
+        pose.header.stamp = self.get_clock().now().to_msg()
+        pose.header.frame_id = 'map'
+        pose.pose.position.x = x_pos
+        pose.pose.position.y = y_pos
+        pose.pose.position.z = 0.0
+        plot.savefig('sonar_plot.png')
+        self.get_logger().info(f'Sonar: Got pose at ({x_pos:.2f}, {y_pos:.2f}, 0.0)')
+
+        return (pose, plot_img, normal_angle_deg)
+
+    def convert_plt_to_array(self, plt_fig:plt.Figure) -> np.ndarray:
+        """
+        Convert a Matplotlib figure to a NumPy array.
+
+        Args:
+            plt_fig (plt.Figure): The Matplotlib figure to convert.
+
+        Returns:
+            np.ndarray: The resulting image as a NumPy array.
+        """
+        buf = io.BytesIO()
+        plt_fig.savefig(buf, format='png')
+        buf.seek(0)
+        return plt.imread(buf)
+
+    def convert_to_ros_compressed_img(self, sonar_sweep: np.ndarray, compressed_format: str = 'jpg',
+                                      is_color: bool = False) -> CompressedImage:
+        """
+        Convert any kind of image to ROS Compressed Image.
+
+        Args:
+            sonar_sweep (int): numpy array of int values representing the sonar image.
+            compressed_format (string): format to compress the image to.
+            is_color (bool): Whether the image is color or not.
+
+        Returns:
+            CompressedImage: ROS Compressed Image message.
+        """
+        if not is_color:
+            sonar_sweep = sonar_image_processing.build_color_sonar_image_from_int_array(sonar_sweep)
+        return self.cv_bridge.cv2_to_compressed_imgmsg(sonar_sweep, dst_format=compressed_format)
 
     def constant_sweep(self) -> None:
         """
@@ -252,7 +520,7 @@ class Sonar(Node):
             sonar_sweep = self.get_sweep(self.CONSTANT_SWEEP_START, self.CONSTANT_SWEEP_END)
             self.get_logger().info('Finishng sweep')
             if self.stream:
-                compressed_image = sonar_utils.convert_to_ros_compressed_img(sonar_sweep, self.cv_bridge)
+                compressed_image = self.convert_to_ros_compressed_img(sonar_sweep)
                 self.sonar_image_publisher.publish(compressed_image)
         except (RuntimeError, ValueError) as e:
             self.get_logger().error(f'Error during constant sweep: {e}')
@@ -306,18 +574,14 @@ class Sonar(Node):
             self.set_new_range(new_range)
 
         try:
-            object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep(
-                left_gradians,
-                right_gradians,
-                )
-            self.get_logger().debug('Finished xy_of_object')
+            object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep(left_gradians, right_gradians)
         except RuntimeError as e:
             response.success = False
             response.message = str(e)
             return response
 
         if object_pose is not None:
-            response.pose.pose = object_pose
+            response.pose = object_pose
             response.normal_angle = normal_angle
             response.is_object = True
 
@@ -328,8 +592,10 @@ class Sonar(Node):
             response.message = 'Found object.'
 
         if self.stream:
-            sonar_image = sonar_utils.convert_to_ros_compressed_img(plot, self.cv_bridge, is_color=True)
+            sonar_image = self.convert_to_ros_compressed_img(plot, is_color=True)
             self.sonar_image_publisher.publish(sonar_image)
+
+        response.success = True
 
         return response
 
