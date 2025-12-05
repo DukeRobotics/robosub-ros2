@@ -1,7 +1,7 @@
 import { allDatatypeMaps } from "@duke-robotics/defs/datatype_maps";
 import { GeometryMsgs, CustomMsgs } from "@duke-robotics/defs/types";
 import useTheme from "@duke-robotics/theme";
-import { Immutable, PanelExtensionContext, RenderState } from "@foxglove/extension";
+import { PanelExtensionContext, RenderState } from "@foxglove/extension";
 import { Button, Box, Alert, ThemeProvider } from "@mui/material";
 import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -59,7 +59,6 @@ type ToggleKeyboardPanelState = {
 };
 
 function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
-  const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
   const [state, setState] = useState<ToggleKeyboardPanelState>({
     keyboardEnabled: false,
     transformedKeyboardInputs: {
@@ -120,11 +119,6 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
       window.removeEventListener("keyup", handleKeyUp);
     };
   }, [handleKeyDown, handleKeyUp]); // No deps so we install once
-
-  // Call our done function at the end of each render
-  useEffect(() => {
-    renderDone?.();
-  }, [renderDone]);
 
   const toggleKeyboard = useCallback(() => {
     // Check if service calling is supported by the context
@@ -203,7 +197,7 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
     context.advertise(DESIRED_POWER_TOPIC, DESIRED_POWER_SCHEMA, {
       datatypes: allDatatypeMaps.ros2jazzy[DESIRED_POWER_SCHEMA],
     });
-  }, []);
+  }, [context]);
 
   useEffect(() => {
     /**

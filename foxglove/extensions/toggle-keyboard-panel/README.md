@@ -3,6 +3,29 @@ This is a panel to toggle keyboard control on/off, as well as to publish transfo
 
 Keyboard inputs consist of movement in the x, y, z, roll, pitch, and yaw axes.
 
+## Keyboard mappings
+
+1. Linear:
+- x:
+   - Forward: **W**
+   - Backward: **S**
+- y:
+   - Left: **A**
+   - Right: **D**
+- z:
+   - Up: **up arrow**
+   - Down: **down arrow**
+2. Orientation:
+- Roll (back view):
+   - Clockwise roll: **L**
+   - Anti-clockwise roll: **J**
+- Pitch:
+   - Down pitch: **I**
+   - Up pitch: **K**
+- Yaw (top view):
+   - Clockwise yaw: **right arrow**
+   - Anti-clockwise yaw **left arrow**
+
 When keyboard control is toggled on, a request is sent to `/controls/set_control_types` toggling each control to `DESIRED_POWER` mode. Keyboard inputs are now read and interpreted as power in each direction.
 
 When keyboard control is toggled off, a request is sent to `/controls/set_control_types` toggling each control to `DESIRED_POSITION` mode. Keyboard inputs are now ignored.
