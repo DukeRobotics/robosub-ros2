@@ -24,7 +24,7 @@ Keyboard inputs consist of movement in the x, y, z, roll, pitch, and yaw axes.
    - Up pitch: **K**
 - Yaw (top view):
    - Clockwise yaw: **right arrow**
-   - Anti-clockwise yaw **left arrow**
+   - Anti-clockwise yaw: **left arrow**
 
 When keyboard control is toggled on, a request is sent to `/controls/set_control_types` toggling each control to `DESIRED_POWER` mode. Keyboard inputs are now read and interpreted as power in each direction.
 
