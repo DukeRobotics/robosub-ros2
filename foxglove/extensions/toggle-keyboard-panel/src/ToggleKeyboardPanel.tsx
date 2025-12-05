@@ -311,7 +311,7 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
             variant="contained"
             color={state.keyboardEnabled ? "error" : "success"}
             onClick={toggleKeyboard}
-            disabled={false}
+            disabled={context.callService == undefined}
           >
             {state.keyboardEnabled ? "Disable Keyboard" : "Enable Keyboard"}
           </Button>
