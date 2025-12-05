@@ -144,9 +144,7 @@ This command will exit with a non-zero status if any potential problems are foun
 
 ## Monorepo Structure
 ### Extensions
-- [`call-service-panel`](extensions/call-service-panel/README.md) - Example panel to call services
-- [`publish-topic-panel`](extensions/publish-topic-panel/README.md) - Example panel to publish topics
-- [`subscribe-topic-panel`](extensions/subscribe-topic-panel/README.md) - Example panel to subscribe to topics
+- [`publish-topic-panel`](extensions/publish-topic-panel/README.md) - Panel to publish topics
 - [`toggle-controls-panel`](extensions/toggle-controls-panel/README.md) - Panel to toggle controls on/off
 - [`system-status-panel`](extensions/system-status-panel/README.md) - Panel that displays system usage of the onboard computer
 - [`sensors-status-panel`](extensions/sensors-status-panel/README.md) - Panel that displays the connected/disconnected status of sensors
