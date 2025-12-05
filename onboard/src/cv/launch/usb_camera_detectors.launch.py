@@ -42,4 +42,9 @@ def generate_launch_description() -> LaunchDescription:
             XMLLaunchDescriptionSource(str(pkg_cv / 'launch' / 'hsv_pink_bin_bottom.xml')),
         ))
 
+    # TODO: remove this before merging changes into main
+    ld.add_action(IncludeLaunchDescription(
+        XMLLaunchDescriptionSource(str(pkg_cv / 'launch' / 'lane_marker_detector.xml')),
+    ))
+
     return ld

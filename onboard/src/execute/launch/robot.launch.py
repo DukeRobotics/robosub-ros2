@@ -37,6 +37,12 @@ def generate_launch_description() -> LaunchDescription:
         description='Enable or disable recording functionality',
     ))
 
+    ld.add_action(DeclareLaunchArgument(
+        'prequal',
+        default_value='false',
+        description='Enable or disable recording functionality',
+    ))
+
     ld.add_action(IncludeLaunchDescription(
         XMLLaunchDescriptionSource(str(pkg_controls / 'launch' / 'controls.xml')),
     ))
