@@ -152,6 +152,7 @@ This command will exit with a non-zero status if any potential problems are foun
 - [`sensors-status-panel`](extensions/sensors-status-panel/README.md) - Panel that displays the connected/disconnected status of sensors
 - [`thruster-allocs-panel`](extensions/thruster-allocs-panel/README.md) - Panel that displays the current thruster allocs and publishes desired thruster allocs
 - [`toggle-joystick-panel`](extensions/toggle-joystick-panel/README.md) - Panel to toggle joystick control on/off, as well as publish transformed joystick inputs as a desired power
+- [`toggle-keyboard-panel`](extensions/toggle-keyboard-panel/README.md) - Panel to toggle keyboard control on/off, as well as publish transformed keyboard inputs as a desired power
 - [`pid-panel`](extensions/pid-panel/README.md) - Panel to read/set PID gains
 - [`discrete-servos-panel`](extensions/discrete-servos-panel/README.md) - Panel to control discrete servos
 
