@@ -1,6 +1,7 @@
 import { CustomMsgs, StdMsgs } from "@duke-robotics/defs/types";
 import { NoRobotNameAlert, Robot, useRobotName } from "@duke-robotics/robot-name";
 import useTheme from "@duke-robotics/theme";
+import { secToNsec, timeToNsec } from "@duke-robotics/utils";
 import { PanelExtensionContext, RenderState, MessageEvent, Immutable } from "@foxglove/extension";
 import {
   Box,
@@ -16,6 +17,8 @@ import {
 } from "@mui/material";
 import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
+
+const TOPIC_DOWN_THRESHOLD_NSEC = secToNsec(2);
 
 enum Status {
   CPU = "CPU",
@@ -135,10 +138,13 @@ const ROBOT_CONFIG: Record<Robot, Status[]> = {
 };
 
 type StatusValues = Partial<Record<Status, number>>;
+type TopicNsecs = Record<string, number | undefined>;
 
 function SystemStatusPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
   const [statusValues, setStatusValues] = useState<StatusValues>({});
+  const [topicNsecs, setTopicNsecs] = useState<TopicNsecs>({});
+  const [currentNsecState, setCurrentNsecState] = useState<number | undefined>(undefined);
 
   const { robotName, withRobotName } = useRobotName(context);
 
@@ -169,13 +175,20 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
       // Reset state when the user seeks the video
       if (renderState.didSeek ?? false) {
         setStatusValues({});
+        setTopicNsecs({});
+        setCurrentNsecState(undefined);
         return;
+      }
+
+      const currentNsec = renderState.currentTime != undefined ? timeToNsec(renderState.currentTime) : undefined;
+      if (currentNsec != undefined) {
+        setCurrentNsecState(currentNsec);
       }
 
       // Check for new messages
       if (renderState.currentFrame) {
         const updates: StatusValues = {};
-
+        const topicsSeen = new Set<string>();
         renderState.currentFrame.forEach((event) => {
           const statusesForTopic = TOPIC_TO_STATUSES[event.topic];
           if (statusesForTopic == undefined) {
@@ -183,11 +196,20 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
             return;
           }
 
+          topicsSeen.add(event.topic);
+
           statusesForTopic.forEach((status) => {
             const config = STATUS_CONFIG[status];
             updates[status] = config.parse(event);
           });
         });
+
+        if (currentNsec != undefined) {
+          setTopicNsecs((prev) => ({
+            ...prev,
+            ...Object.fromEntries([...topicsSeen].map((topic) => [topic, currentNsec])),
+          }));
+        }
 
         setStatusValues((prev) => ({
           ...prev,
@@ -195,6 +217,7 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
         }));
       }
     });
+    context.watch("currentTime");
     context.watch("currentFrame");
     context.watch("didSeek");
   }, [context, withRobotName]);
@@ -207,12 +230,19 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
   const rows = statusesToMonitor.map((status) => {
     const config = STATUS_CONFIG[status];
     const value = statusValues[status];
+    const topicNsec = topicNsecs[config.topic];
+    const topicPublishing =
+      currentNsecState != undefined &&
+      topicNsec != undefined &&
+      0 <= currentNsecState - topicNsec &&
+      currentNsecState - topicNsec <= TOPIC_DOWN_THRESHOLD_NSEC;
     return {
       topic: config.topic,
       name: config.displayName,
       value,
       suffix: config.suffix,
       warn: config.warn(value),
+      publishing: topicPublishing,
     };
   });
 
@@ -229,8 +259,7 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
                   key={row.name}
                   style={{
                     backgroundColor: (() => {
-                      // If no value has ever been set for this sensor, show error color
-                      if (row.value == undefined) {
+                      if (!row.publishing || row.value == undefined) {
                         return theme.palette.error.dark;
                       } else if (row.warn) {
                         return theme.palette.warning.main;
