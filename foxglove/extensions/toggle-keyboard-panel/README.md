@@ -7,7 +7,7 @@ When keyboard control is toggled on, a request is sent to `/controls/set_control
 
 When keyboard control is toggled off, a request is sent to `/controls/set_control_types` toggling each control to `DESIRED_POSITION` mode. Keyboard inputs are now ignored.
 
-When Keyboard control is enabled, keyboard inputs are published to `/controls/desired_power`.
+When keyboard control is enabled, keyboard inputs are published to `/controls/desired_power`.
 
 ## Usage
 
