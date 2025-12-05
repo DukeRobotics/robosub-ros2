@@ -16,7 +16,7 @@ from sonar import decode_ping_python_360
 SONAR_IMAGE_WIDTH = 16
 SONAR_IMAGE_HEIGHT = 2
 
-def build_color_sonar_image_from_int_array(int_array: ArrayLike, npy_save_path: str | None = None,
+def build_color_sonar_image_from_int_array(int_array: np.ndarray, npy_save_path: str | None = None,
                                            jpeg_save_path: str | None = None) -> np.ndarray:
     """
     Build a sonar image from a list of data messages.
@@ -32,8 +32,7 @@ def build_color_sonar_image_from_int_array(int_array: ArrayLike, npy_save_path: 
     Returns:
         ndarray: Sonar image from the scan.
     """
-    sonar_img = cv2.cvtColor(int_array.astype(np.uint8), cv2.COLOR_GRAY2BGR)
-    sonar_img = cv2.applyColorMap(sonar_img, cv2.COLORMAP_VIRIDIS)
+    sonar_img = np.stack([int_array, int_array, int_array], axis=-1)
     if jpeg_save_path:
         plt.imsave(jpeg_save_path, sonar_img)
     if npy_save_path:

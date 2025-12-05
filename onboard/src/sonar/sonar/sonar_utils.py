@@ -12,7 +12,7 @@ RADIANS_PER_GRADIAN = np.pi / 200
 GRADIANS_PER_DEGREE = 400 / 360
 SPEED_OF_SOUND_IN_WATER = 1482 # m/s
 SAMPLE_PERIOD_TICK_DURATION = 25e-9  # s
-TRANSFORMATION_ANGLE = -np.pi/4
+TRANSFORMATION_ANGLE = 0
 
 def transform_pose(buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped,
                    source_frame_id: str, target_frame_id: str) -> tf2_geometry_msgs.PoseStamped:
@@ -139,7 +139,7 @@ def meters_per_sample(sample_period : int) -> float:
     # time of flight includes there and back, so divide by 2
     return SPEED_OF_SOUND_IN_WATER * sample_period * SAMPLE_PERIOD_TICK_DURATION / 2.0
 
-def get_distance_of_sample(sample_period: int, sample_index: int) -> float:
+def get_distance_of_sample(sample_period: float, sample_index: int) -> float:
     """
     Get the distance in meters of a sample given its index in the data array returned from the device.
 
@@ -157,7 +157,7 @@ def get_distance_of_sample(sample_period: int, sample_index: int) -> float:
     # 0.5 for the average distance of sample
     return (sample_index + 0.5) * meters_per_sample(sample_period)
 
-def to_robot_position(angle: float, index: int, sample_period: int,
+def to_robot_position(angle: float, index: int, sample_period: float,
                       center_gradians: int, negate: bool) -> Pose:
     """
     Convert a point in sonar space to a robot global position.
@@ -187,14 +187,16 @@ def to_robot_position(angle: float, index: int, sample_period: int,
     adjusted_x = x_pos * np.cos(TRANSFORMATION_ANGLE) - y_pos * np.sin(TRANSFORMATION_ANGLE)
     adjusted_y = x_pos * np.sin(TRANSFORMATION_ANGLE) + y_pos * np.cos(TRANSFORMATION_ANGLE)
 
+    yaw = np.arctan2(adjusted_y, adjusted_x)
+
     pos_of_point = Pose()
     pos_of_point.position.x = adjusted_x
     pos_of_point.position.y = adjusted_y
-    pos_of_point.position.z = 0  # z cord is not really 0 but we don't care
-    pos_of_point.orientation.x = 0
-    pos_of_point.orientation.y = 0
-    pos_of_point.orientation.z = 0
-    pos_of_point.orientation.w = 1
+    pos_of_point.position.z = 0.  # z cord is not really 0 but we don't care
+    pos_of_point.orientation.x = 0.
+    pos_of_point.orientation.y = 0.
+    pos_of_point.orientation.z = np.sin(yaw/2)
+    pos_of_point.orientation.w = np.cos(yaw/2)
 
     return pos_of_point
 

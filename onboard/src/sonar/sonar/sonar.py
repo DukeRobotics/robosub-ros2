@@ -198,7 +198,8 @@ class Sonar(Node):
         Returns:
             (Pose, List, float): Pose of the object in robot reference frame, sonar sweep array, and normal angle.
         """
-        sweep = self.get_sweep(start_angle, end_angle)
+        # sweep = self.get_sweep(start_angle, end_angle)
+        sweep = np.load(r'onboard/src/sonar/sweep_data/03-wall_farthest.npy')
 
         denoiser = sonar_object_detection.SonarDenoiser(sweep)
         denoiser.wall_block().percentile_filter().fourier_signal_processing().init_cartesian().normalize().blur()
@@ -225,7 +226,7 @@ class Sonar(Node):
         normal_angle = np.arctan2(
             nearest_segment.ortho_regression.unit_normal[1],
             nearest_segment.ortho_regression.unit_normal[0],
-            ) + 45. # Since "forward" is represented by the line y=x, transform our normal angle by adding 45 degrees
+        )
 
         sonar_angle = (start_angle + end_angle) / 2  # Take the middle of the sweep
 
@@ -318,9 +319,10 @@ class Sonar(Node):
 
         if object_pose is not None:
             response.pose.pose = object_pose
-            response.header.stamp = self.get_clock().now().to_msg()
+            response.pose.header.stamp = self.get_clock().now().to_msg()
             response.normal_angle = normal_angle
             response.is_object = True
+            response.pose.header.frame_id = 'robot'
 
         if object_pose is None:
             self.get_logger().error('No object found')
@@ -332,6 +334,7 @@ class Sonar(Node):
             sonar_image = sonar_utils.convert_to_ros_compressed_img(plot, self.cv_bridge, is_color=True)
             self.sonar_image_publisher.publish(sonar_image)
 
+        response.success = True
         return response
 
     def run(self) -> None:
