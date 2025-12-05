@@ -13,7 +13,7 @@ When keyboard control is enabled, keyboard inputs are published to `/controls/de
 
 Ensure that controls is running:
 ```bash
-roslaunch controls controls.launch
+ros2 launch controls controls.xml
 ```
 
 Click the button to toggle keyboard control. If the call fails, an alert is displayed.
