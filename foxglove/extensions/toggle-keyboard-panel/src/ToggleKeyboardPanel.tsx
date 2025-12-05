@@ -33,18 +33,8 @@ const KEYBOARD_KEY_MAP = {
 } as const;
 
 const VALID_KEYS = new Set<string>([
-  "w",
-  "a",
-  "s",
-  "d",
-  "arrowup",
-  "arrowdown",
-  "arrowleft",
-  "arrowright",
-  "l",
-  "j",
-  "i",
-  "k",
+  ...Object.values(KEYBOARD_KEY_MAP.linear),
+  ...Object.values(KEYBOARD_KEY_MAP.orientation),
 ]);
 
 // Helper function for determining if a key is pressed
