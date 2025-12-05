@@ -3,7 +3,9 @@ from pathlib import Path
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.conditions import IfCondition
+from launch.substitutions import LaunchConfiguration
 from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 
 
@@ -19,6 +21,12 @@ def generate_launch_description() -> LaunchDescription:
     pkg_cv = Path(get_package_share_directory('cv'))
 
     ld = LaunchDescription()
+
+    ld.add_action(DeclareLaunchArgument(
+        'enable_lane_marker',
+        default_value='false',
+        description='Whether to launch the lane marker detector node',
+    ))
 
     ld.add_action(IncludeLaunchDescription(
         XMLLaunchDescriptionSource(str(pkg_cv / 'launch' / 'usb_camera.xml')),
@@ -41,5 +49,10 @@ def generate_launch_description() -> LaunchDescription:
         ld.add_action(IncludeLaunchDescription(
             XMLLaunchDescriptionSource(str(pkg_cv / 'launch' / 'hsv_pink_bin_bottom.xml')),
         ))
+
+    ld.add_action(IncludeLaunchDescription(
+        XMLLaunchDescriptionSource(str(pkg_cv / 'launch' / 'lane_marker_detector.xml')),
+        condition=IfCondition(LaunchConfiguration('enable_lane_marker')),
+    ))
 
     return ld

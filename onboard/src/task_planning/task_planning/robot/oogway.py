@@ -1,4 +1,4 @@
-# ruff: noqa: ERA001, F401, N806
+# ruff: noqa: ERA001, F401, N806, F841
 from math import radians
 
 from task_planning.interface.cv import CVObjectType
@@ -28,10 +28,10 @@ async def main(self: Task) -> Task[None, None, None]:
     tasks = [
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
-        comp_tasks.initial_submerge(DEPTH, parent=self),
+        # comp_tasks.initial_submerge(DEPTH, parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
-        comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
-                                direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
+        #                         direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
         # TODO: task not found???
         # comp_tasks.send_torpedo_ivc(parent=self),
         # comp_tasks.octagon_task(direction=1, parent=self),
@@ -78,7 +78,7 @@ async def main(self: Task) -> Task[None, None, None]:
         # buoyancy_tasks.buoyancy_task(-0.5, parent=self),  # Submerge and stabilize buoyancy
 
         ######## Prequal tasks ########
-        # prequal_tasks.prequal_task(parent=self),
+        prequal_tasks.prequal_task(parent=self),
     ]
 
     for task_to_run in tasks:

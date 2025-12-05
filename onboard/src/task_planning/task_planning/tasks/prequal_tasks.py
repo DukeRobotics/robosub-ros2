@@ -19,7 +19,7 @@ LANE_MARKER_HEIGHT_METERS = 0.3048
 @task
 async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
     """Complete the prequalification task by tracking the lane marker."""
-    DEPTH_LEVEL = -0.5
+    DEPTH_LEVEL = -0.7
 
     await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, DEPTH_LEVEL, 0, 0, 0),
@@ -76,7 +76,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
             step_size (float): The distance to move the robot in meters each step.
         """
         direction_term = 'forward' if forward else 'backward'
-        logger.info(f'track_lane_marker {distance} {direction_term}')
+        logger.info(f'[track_lane_marker] distance: {distance} {direction_term}')
 
         direction_sign = 1 if forward else -1
 
@@ -140,7 +140,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
             # Y correction so the robot is centered on the lane marker
             dist_pixels = CV().distances[CVObjectType.LANE_MARKER].y
             height_pixels = CV().lane_marker_data['height']
-            dist_meters = dist_pixels * LANE_MARKER_HEIGHT_METERS / height_pixels
+            dist_meters = dist_pixels * LANE_MARKER_HEIGHT_METERS / height_pixels if height_pixels != 0.0 else 0.0
             if abs(dist_meters) > 0:
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, dist_meters, 0, 0, 0, 0),
