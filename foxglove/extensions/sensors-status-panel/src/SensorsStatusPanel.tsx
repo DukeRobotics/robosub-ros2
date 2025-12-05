@@ -88,7 +88,7 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   return (
     <ThemeProvider theme={theme}>
       <Box m={1}>
-        <NoRobotNameAlert robotName={robotName} />
+        <NoRobotNameAlert robotName={robotName} context={context} />
         <TableContainer component={Paper}>
           <Table size="small">
             <TableBody>

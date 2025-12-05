@@ -84,7 +84,7 @@ function DiscreteServosPanel({ context }: { context: PanelExtensionContext }): R
   return (
     <ThemeProvider theme={theme}>
       <Box m={1}>
-        <NoRobotNameAlert robotName={robotName} />
+        <NoRobotNameAlert robotName={robotName} context={context} />
         {context.callService == undefined && (
           <Box mb={1}>
             <Alert variant="filled" severity="error">
