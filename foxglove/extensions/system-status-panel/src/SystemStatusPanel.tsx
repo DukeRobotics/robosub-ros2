@@ -255,20 +255,22 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
           <Table size="small">
             <TableBody>
               {rows.map((row) => (
-                <TableRow
-                  key={row.name}
-                  style={{
-                    backgroundColor: (() => {
-                      if (!row.publishing || row.value == undefined) {
-                        return theme.palette.error.dark;
-                      } else if (row.warn) {
-                        return theme.palette.warning.main;
-                      }
-                      return theme.palette.success.dark;
-                    })(),
-                  }}
-                >
-                  <Tooltip title={row.topic} followCursor>
+                <Tooltip key={row.name} title={row.topic} followCursor>
+                  <TableRow
+                    style={{
+                      backgroundColor: (() => {
+                        if (!row.publishing || row.value == undefined) {
+                          return theme.palette.error.dark;
+                        } else if (row.warn) {
+                          return theme.palette.warning.main;
+                        }
+                        return theme.palette.success.dark;
+                      })(),
+                    }}
+                    onClick={() => {
+                      void navigator.clipboard.writeText(row.topic);
+                    }}
+                  >
                     <>
                       <TableCell>
                         <Typography variant="subtitle2" color={theme.palette.common.white}>
@@ -282,8 +284,8 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
                         </Typography>
                       </TableCell>
                     </>
-                  </Tooltip>
-                </TableRow>
+                  </TableRow>
+                </Tooltip>
               ))}
             </TableBody>
           </Table>

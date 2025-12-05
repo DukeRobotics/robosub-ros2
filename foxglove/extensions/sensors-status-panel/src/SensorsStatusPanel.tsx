@@ -100,23 +100,22 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
                   0 <= currentNsecState - sensorNsec &&
                   currentNsecState - sensorNsec <= SENSOR_DOWN_THRESHOLD_NSEC;
                 return (
-                  <TableRow
-                    key={sensor}
-                    style={{
-                      backgroundColor: sensorPublishing ? theme.palette.success.dark : theme.palette.error.dark,
-                    }}
-                    onClick={() => {
-                      void navigator.clipboard.writeText(config.topic);
-                    }}
-                  >
-                    <Tooltip title={config.topic} followCursor>
+                  <Tooltip key={sensor} title={config.topic} followCursor>
+                    <TableRow
+                      style={{
+                        backgroundColor: sensorPublishing ? theme.palette.success.dark : theme.palette.error.dark,
+                      }}
+                      onClick={() => {
+                        void navigator.clipboard.writeText(config.topic);
+                      }}
+                    >
                       <TableCell>
                         <Typography variant="subtitle2" color={theme.palette.common.white}>
                           {config.displayName}
                         </Typography>
                       </TableCell>
-                    </Tooltip>
-                  </TableRow>
+                    </TableRow>
+                  </Tooltip>
                 );
               })}
             </TableBody>
