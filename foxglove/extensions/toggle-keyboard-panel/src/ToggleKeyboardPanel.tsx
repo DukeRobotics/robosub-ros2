@@ -325,7 +325,7 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
             onClick={toggleKeyboard}
             disabled={false}
           >
-            {state.keyboardEnabled ? "Disable Keyboard" : "Enable Keybord"}
+            {state.keyboardEnabled ? "Disable Keyboard" : "Enable Keyboard"}
           </Button>
         </Box>
       </Box>
