@@ -18,7 +18,6 @@ def generate_launch_description() -> LaunchDescription:
     """
     pkg_controls = Path(get_package_share_directory('controls'))
     pkg_cv = Path(get_package_share_directory('cv'))
-    pkg_dvl_pathfinder = Path(get_package_share_directory('dvl_pathfinder'))  # noqa: F841 TODO tf lol
     pkg_dvl_wayfinder = Path(get_package_share_directory('dvl_wayfinder'))
     pkg_offboard_comms = Path(get_package_share_directory('offboard_comms'))
     pkg_sensor_fusion = Path(get_package_share_directory('sensor_fusion'))
@@ -40,7 +39,7 @@ def generate_launch_description() -> LaunchDescription:
     ld.add_action(DeclareLaunchArgument(
         'prequal',
         default_value='false',
-        description='Enable or disable recording functionality',
+        description='Whether this is being launched for a prequal run',
     ))
 
     ld.add_action(IncludeLaunchDescription(
@@ -49,6 +48,9 @@ def generate_launch_description() -> LaunchDescription:
 
     ld.add_action(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(pkg_cv / 'launch' / 'cv.launch.py')),
+        launch_arguments=[
+            ('prequal', LaunchConfiguration('prequal')),
+        ],
     ))
 
     if robot_name == 'crush':
