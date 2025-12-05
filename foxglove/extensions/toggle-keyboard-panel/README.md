@@ -30,20 +30,13 @@ When keyboard control is toggled on, a request is sent to `/controls/set_control
 
 When keyboard control is toggled off, a request is sent to `/controls/set_control_types` toggling each control to `DESIRED_POSITION` mode. Keyboard inputs are now ignored.
 
-When Keyboard control is enabled, keyboard inputs are published to `/controls/desired_power`.
+When keyboard control is enabled, keyboard inputs are published to `/controls/desired_power`.
 
 ## Usage
 
 Ensure that controls is running:
 ```bash
-roslaunch controls controls.launch
+ros2 launch controls controls.xml
 ```
 
 Click the button to toggle keyboard control. If the call fails, an alert is displayed.
-
-## Configuration
-The following constants can be modified:
-- `PUBLISH_RATE`: The rate (in Hz) to publish desired power.
-- `SET_CONTROL_TYPES_SERVICE`: The service that handles enabling/disabling keyboard control.
-- `DESIRED_POWER_TOPIC`: The topic that transformed keyboard inputs are published to.
-- `KEYBOARD_KEY_MAP`: The map from each direction of motion to indices in the keyboard inputs.
