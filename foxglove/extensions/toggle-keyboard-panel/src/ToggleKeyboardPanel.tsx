@@ -112,9 +112,7 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
 
     setPressedKeys((prev) => {
       const next = new Set(prev);
-      if (!next.has(key)) {
-        next.add(key);
-      }
+      next.add(key);
       return next;
     });
   }, []);
