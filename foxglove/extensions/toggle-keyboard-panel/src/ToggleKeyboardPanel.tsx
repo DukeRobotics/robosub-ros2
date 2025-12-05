@@ -181,7 +181,7 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
     (transformedKeyboardInputs: TransformedKeyboardInputs) => {
       if (!context.advertise || !context.publish) {
         return;
-      } 
+      }
       // Create and publish desired power message
       const request: GeometryMsgs.Twist = {
         linear: {
@@ -201,7 +201,6 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
   );
 
   useEffect(() => {
-
     if (!context.advertise || !context.publish) {
       return;
     }
@@ -209,7 +208,6 @@ function ToggleKeyboardPanel({ context }: { context: PanelExtensionContext }): R
     context.advertise(DESIRED_POWER_TOPIC, DESIRED_POWER_SCHEMA, {
       datatypes: allDatatypeMaps.ros2jazzy[DESIRED_POWER_SCHEMA],
     });
-
   }, []);
 
   useEffect(() => {
