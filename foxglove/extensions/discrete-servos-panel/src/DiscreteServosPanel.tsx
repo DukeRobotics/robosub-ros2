@@ -97,7 +97,7 @@ function DiscreteServosPanel({ context }: { context: PanelExtensionContext }): R
           {robotServos.map((servo) => (
             <Box key={servo.name}>
               <Typography>{servo.name}</Typography>
-              <ButtonGroup variant="outlined">
+              <ButtonGroup variant="outlined" disabled={context.callService == undefined}>
                 {servo.states.map((state) => (
                   <Button
                     key={state}
