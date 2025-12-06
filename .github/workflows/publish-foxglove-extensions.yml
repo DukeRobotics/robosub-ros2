@@ -27,7 +27,7 @@ jobs:
           echo "USER_UID=$(id -u)" >> .env
           echo "USER_GID=$(id -g)" >> .env
 
-      - name: Build and run Docker container
+      - name: Build Docker image
         run: ./docker-build.sh --github-action
 
       - name: Run Docker container
