@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - robot-agnostic-foxglove
 
 concurrency:
   group: publish-foxglove-extensions
