@@ -180,7 +180,7 @@ Running `fox build` will automatically apply these patches.
 
 ## Contributing
 ### Adding a New Extension
-Copy an existing Duke Robotics example extension (`call-service-panel`, `publish-topic-panel`, or `subscribe-topic-panel`) as a starting point. This ensures that all of our extensions have the same code structure and use the same core set of dependencies.
+Copy an existing Duke Robotics extension as a starting point. This ensures that all of our extensions have the same code structure and use the same core set of dependencies.
 
 ### Adding a New Local Dependency
 All local dependencies must expose an `npm run build` command in `package.json`. During build, `foxglove.py` will compile each local dependency to `node_modules` where they can be consumed by an extension.
