@@ -38,7 +38,10 @@ def build_color_sonar_image_from_int_array(int_array: np.ndarray, npy_save_path:
     if npy_save_path:
         np.save(npy_save_path, sonar_img)
 
-    return sonar_img
+    sonar_img = sonar_img - np.min(sonar_img)
+    sonar_img = (sonar_img / np.max(sonar_img)) * 255
+
+    return sonar_img.astype(np.uint8)
 
 def find_center_point_and_angle(array: np.ndarray, threshold: int, eps: float,
                                 min_samples: int, get_plot: bool = True) -> tuple:

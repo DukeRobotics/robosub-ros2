@@ -201,7 +201,7 @@ def to_robot_position(angle: float, index: int, sample_period: float,
     return pos_of_point
 
 def convert_to_ros_compressed_img(sonar_sweep: np.ndarray, cv_bridge: CvBridge,
-                                  compressed_format: str = 'jpg', is_color: bool = False) -> CompressedImage:
+                                  compressed_format: str = 'jpeg', is_color: bool = False) -> CompressedImage:
     """
     Convert any kind of image to ROS Compressed Image.
 
