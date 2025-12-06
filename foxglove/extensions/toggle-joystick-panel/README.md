@@ -14,7 +14,7 @@ Connect a [Thrustmaster T.Flight HOTAS X](https://www.thrustmaster.com/products/
 
 Ensure that controls is running:
 ```bash
-roslaunch controls controls.launch
+ros2 launch controls controls.xml
 ```
 
 Click the button to toggle joystick control. If the call fails, an alert is displayed.
