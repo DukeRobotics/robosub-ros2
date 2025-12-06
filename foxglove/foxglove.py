@@ -153,7 +153,7 @@ def publish(
         extension_paths: Sequence of extension paths to publish.
         version: Version to publish extensions under. If None, the short HEAD commit hash is used.
         force: If True, publish extensions even if the repository is dirty.
-        github_action: If True, append "-actions" to the publish version to avoid collisions.
+        github_action: If True, append "-prod" to the publish version to avoid collisions.
 
     Raises:
         SystemExit: If the repository is dirty and no version is given.
@@ -166,7 +166,7 @@ def publish(
     if version is None:
         version = repo.head.object.hexsha[:7]
     if github_action:
-        version = f'{version}-actions'
+        version = f'{version}-prod'
 
     successes = 0
     for extension in extension_paths:
@@ -373,7 +373,7 @@ def main() -> None:
     publish_parser.add_argument(
         '--github-action',
         action='store_true',
-        help='Append "-actions" to the publish version to prevent collisions in CI.',
+        help='Append "-prod" to the publish version to prevent collisions in CI.',
     )
 
     subparsers.add_parser(

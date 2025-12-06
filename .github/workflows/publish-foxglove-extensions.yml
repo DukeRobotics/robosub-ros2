@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - robot-agnostic-foxglove
-  workflow_dispatch:
 
 concurrency:
   group: publish-foxglove-extensions
@@ -50,10 +49,8 @@ jobs:
 
       - name: Publish Foxglove extensions
         if: steps.run-docker.outcome == 'success'
-        env:
-          FOXGLOVE_API_KEY: ${{ secrets.FOXGLOVE_API_KEY }}
         run: |
-          docker compose exec -T -e FOXGLOVE_API_KEY="$FOXGLOVE_API_KEY" robosub-ros2 bash /home/ubuntu/robosub-ros2/.github/workflows/publish-foxglove.sh
+          docker compose exec -T robosub-ros2 bash /home/ubuntu/robosub-ros2/.github/workflows/publish-foxglove.sh
 
       - name: Stop Docker container
         if: always() && steps.run-docker.outcome == 'success'
