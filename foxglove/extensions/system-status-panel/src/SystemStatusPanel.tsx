@@ -12,6 +12,7 @@ import {
   TableCell,
   TableContainer,
   TableRow,
+  Snackbar,
   ThemeProvider,
   Tooltip,
 } from "@mui/material";
@@ -145,6 +146,7 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
   const [statusValues, setStatusValues] = useState<StatusValues>({});
   const [topicNsecs, setTopicNsecs] = useState<TopicNsecs>({});
   const [currentNsecState, setCurrentNsecState] = useState<number | undefined>(undefined);
+  const [copyToast, setCopyToast] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
 
   const { robotName, withRobotName } = useRobotName(context);
 
@@ -255,7 +257,7 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
           <Table size="small">
             <TableBody>
               {rows.map((row) => (
-                <Tooltip key={row.name} title={row.topic} followCursor>
+                <Tooltip key={row.name} title={row.topic} followCursor placement="top">
                   <TableRow
                     style={{
                       backgroundColor: (() => {
@@ -268,7 +270,14 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
                       })(),
                     }}
                     onClick={() => {
-                      void navigator.clipboard.writeText(row.topic);
+                      void navigator.clipboard.writeText(row.topic).then(
+                        () => {
+                          setCopyToast({ open: true, message: `Copied ${row.topic} to clipboard.` });
+                        },
+                        () => {
+                          setCopyToast({ open: true, message: "Failed to copy topic to clipboard." });
+                        },
+                      );
                     }}
                   >
                     <TableCell>
@@ -288,6 +297,13 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
             </TableBody>
           </Table>
         </TableContainer>
+        <Snackbar
+          open={copyToast.open}
+          message={copyToast.message}
+          onClose={() => {
+            setCopyToast({ open: false, message: "" });
+          }}
+        />
       </Box>
     </ThemeProvider>
   );

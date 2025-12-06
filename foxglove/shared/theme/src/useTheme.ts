@@ -19,6 +19,20 @@ const useTheme = (): Theme => {
           },
         },
       },
+      MuiSnackbar: {
+        styleOverrides: {
+          root: {
+            position: "absolute",
+          },
+        },
+        defaultProps: {
+          anchorOrigin: {
+            vertical: "bottom",
+            horizontal: "center",
+          },
+          autoHideDuration: 5000,
+        },
+      },
     },
   });
 
