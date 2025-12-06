@@ -2,7 +2,18 @@ import { NoRobotNameAlert, useRobotName } from "@duke-robotics/robot-name";
 import useTheme from "@duke-robotics/theme";
 import { timeToNsec } from "@duke-robotics/utils";
 import { Immutable, PanelExtensionContext, RenderState } from "@foxglove/extension";
-import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableRow, Typography, Tooltip } from "@mui/material";
+import {
+  Box,
+  Paper,
+  Snackbar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
+  Typography,
+  Tooltip,
+} from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import { createRoot } from "react-dom/client";
@@ -26,6 +37,7 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   const { robotName, withRobotName } = useRobotName(context);
   const [sensorNsecs, setSensorNsecs] = useState<SensorNsecs>(initSensorNsecs);
   const [currentNsecState, setCurrentNsecState] = useState<number | undefined>(undefined);
+  const [copyToast, setCopyToast] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
 
   const sensorsToMonitor = React.useMemo(() => {
     const map: Partial<Record<Sensor, SensorConfig>> = {};
@@ -88,7 +100,7 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
   return (
     <ThemeProvider theme={theme}>
       <Box m={1}>
-        <NoRobotNameAlert robotName={robotName} />
+        <NoRobotNameAlert robotName={robotName} context={context} />
         <TableContainer component={Paper}>
           <Table size="small">
             <TableBody>
@@ -100,28 +112,41 @@ function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): Re
                   0 <= currentNsecState - sensorNsec &&
                   currentNsecState - sensorNsec <= SENSOR_DOWN_THRESHOLD_NSEC;
                 return (
-                  <TableRow
-                    key={sensor}
-                    style={{
-                      backgroundColor: sensorPublishing ? theme.palette.success.dark : theme.palette.error.dark,
-                    }}
-                    onClick={() => {
-                      void navigator.clipboard.writeText(config.topic);
-                    }}
-                  >
-                    <Tooltip title={config.topic} followCursor>
+                  <Tooltip key={sensor} title={config.topic} followCursor placement="top">
+                    <TableRow
+                      style={{
+                        backgroundColor: sensorPublishing ? theme.palette.success.dark : theme.palette.error.dark,
+                      }}
+                      onClick={() => {
+                        void navigator.clipboard.writeText(config.topic).then(
+                          () => {
+                            setCopyToast({ open: true, message: `Copied ${config.topic} to clipboard.` });
+                          },
+                          () => {
+                            setCopyToast({ open: true, message: "Failed to copy topic to clipboard." });
+                          },
+                        );
+                      }}
+                    >
                       <TableCell>
                         <Typography variant="subtitle2" color={theme.palette.common.white}>
                           {config.displayName}
                         </Typography>
                       </TableCell>
-                    </Tooltip>
-                  </TableRow>
+                    </TableRow>
+                  </Tooltip>
                 );
               })}
             </TableBody>
           </Table>
         </TableContainer>
+        <Snackbar
+          open={copyToast.open}
+          message={copyToast.message}
+          onClose={() => {
+            setCopyToast({ open: false, message: "" });
+          }}
+        />
       </Box>
     </ThemeProvider>
   );

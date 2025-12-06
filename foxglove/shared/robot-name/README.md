@@ -25,7 +25,7 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): React.JS
     return (
         <Box>
             {/* Alert user if no robot name is set */}
-            <NoRobotNameAlert robotName={robotName} />
+            <NoRobotNameAlert robotName={robotName} context={context} />
         </Box>
     );
 }

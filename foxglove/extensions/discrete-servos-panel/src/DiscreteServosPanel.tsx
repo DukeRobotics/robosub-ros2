@@ -1,4 +1,5 @@
 import { CustomMsgs } from "@duke-robotics/defs/types";
+import { NoRobotNameAlert, Robot, useRobotName } from "@duke-robotics/robot-name";
 import useTheme from "@duke-robotics/theme";
 import { ThemeProvider } from "@emotion/react";
 import { PanelExtensionContext } from "@foxglove/extension";
@@ -6,7 +7,7 @@ import { ButtonGroup, Stack, Typography } from "@mui/material";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button/Button";
-import React, { useState } from "react";
+import React, { useLayoutEffect, useMemo, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 
 interface DiscreteServo {
@@ -15,10 +16,10 @@ interface DiscreteServo {
   states: string[];
 }
 
-const DISCRETE_SERVOS: DiscreteServo[] = [
-  { name: "Marker Dropper", service: "/servos/marker_dropper", states: ["left", "right"] },
-  { name: "Torpedo", service: "/servos/torpedo", states: ["left", "right"] },
-];
+const ROBOT_SERVOS: Record<Robot, DiscreteServo[]> = {
+  [Robot.Crush]: [{ name: "Marker Dropper", service: "/servos/marker_dropper", states: ["left", "right"] }],
+  [Robot.Oogway]: [{ name: "Torpedo", service: "/servos/torpedo", states: ["left", "right"] }],
+};
 
 type DiscreteServosPanel = {
   message?: string; // Response from service call
@@ -27,6 +28,15 @@ type DiscreteServosPanel = {
 
 function DiscreteServosPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [panelState, setPanelState] = useState<DiscreteServosPanel>();
+  const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
+
+  const { robotName, withRobotName } = useRobotName(context);
+
+  useLayoutEffect(() => {
+    context.onRender = withRobotName((_, done) => {
+      setRenderDone(() => done);
+    });
+  }, [context, withRobotName]);
 
   // Send a SetDiscreteServoRequest to the specified service
   const callService = (service: string, state: string) => {
@@ -64,10 +74,17 @@ function DiscreteServosPanel({ context }: { context: PanelExtensionContext }): R
     );
   };
 
+  useEffect(() => {
+    renderDone?.();
+  }, [renderDone]);
+
+  const robotServos = useMemo(() => (robotName != undefined ? ROBOT_SERVOS[robotName] : []), [robotName]);
+
   const theme = useTheme();
   return (
     <ThemeProvider theme={theme}>
       <Box m={1}>
+        <NoRobotNameAlert robotName={robotName} context={context} />
         {context.callService == undefined && (
           <Box mb={1}>
             <Alert variant="filled" severity="error">
@@ -77,10 +94,10 @@ function DiscreteServosPanel({ context }: { context: PanelExtensionContext }): R
         )}
 
         <Stack spacing={1}>
-          {DISCRETE_SERVOS.map((servo) => (
+          {robotServos.map((servo) => (
             <Box key={servo.name}>
               <Typography>{servo.name}</Typography>
-              <ButtonGroup variant="outlined">
+              <ButtonGroup variant="outlined" disabled={context.callService == undefined}>
                 {servo.states.map((state) => (
                   <Button
                     key={state}
