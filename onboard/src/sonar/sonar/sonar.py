@@ -39,12 +39,12 @@ class Sonar(Node):
     SONAR_STATUS_TOPIC = 'sonar/status'
     SONAR_REQUEST_TOPIC = 'sonar/request'
     SONAR_IMAGE_TOPIC = 'sonar/image/compressed'
-    SONAR_DENOISED_IMAGE_TOPIC = 'sonar/image/denoised'
+    SONAR_RAW_IMAGE_TOPIC = 'sonar/image/raw'
 
     NODE_NAME = 'sonar'
 
-    CONSTANT_SWEEP_START = 100
-    CONSTANT_SWEEP_END = 300
+    CONSTANT_SWEEP_START = 250
+    CONSTANT_SWEEP_END = 150
 
     VALUE_THRESHOLD = 95  # Sonar intensity threshold
     DBSCAN_EPS = 3  # DBSCAN epsilon
@@ -77,7 +77,7 @@ class Sonar(Node):
         self.cv_bridge = CvBridge()
         if self.stream:
             self.sonar_image_publisher = self.create_publisher(CompressedImage, self.SONAR_IMAGE_TOPIC, 10)
-            self.denoised_image_publisher = self.create_publisher(CompressedImage, self.SONAR_DENOISED_IMAGE_TOPIC, 10)
+            self.raw_image_publisher = self.create_publisher(CompressedImage, self.SONAR_RAW_IMAGE_TOPIC, 10)
 
         self.current_scan = (-1, -1, -1)  # (start_angle, end_angle, distance_of_scan)
 
@@ -195,14 +195,19 @@ class Sonar(Node):
         Returns:
             (Pose, List, float): Pose of the object in robot reference frame, sonar sweep array, and normal angle.
         """
-        # sweep = self.get_sweep(start_angle, end_angle)
-        sweep = np.load(r'onboard/src/sonar/sweep_data/03-wall_farthest.npy')
+        sweep = self.get_sweep(start_angle, end_angle)
+        # sweep = np.load(r'onboard/src/sonar/sweep_data/11-buoy_wall.npy')
+
+        if(self.stream):
+            self.raw_image_publisher.publish(sonar_utils.convert_to_ros_compressed_img(
+                sonar_object_detection.SonarDenoiser(sweep).init_cartesian().cartesian,
+                self.cv_bridge,
+                ),
+            )
 
         denoiser = sonar_object_detection.SonarDenoiser(sweep)
         denoiser.wall_block().percentile_filter().fourier_signal_processing().init_cartesian().normalize().blur()
-        self.denoised_image_publisher.publish(
-            sonar_utils.convert_to_ros_compressed_img(denoiser.cartesian, self.cv_bridge),
-            )
+
         color_image = sonar_image_processing.build_color_sonar_image_from_int_array(denoiser.cartesian)
 
         segmentation = sonar_object_detection.SonarSegmentation(
@@ -250,8 +255,11 @@ class Sonar(Node):
             sonar_sweep = self.get_sweep(self.CONSTANT_SWEEP_START, self.CONSTANT_SWEEP_END)
             self.get_logger().info('Finishng sweep')
             if self.stream:
-                compressed_image = sonar_utils.convert_to_ros_compressed_img(sonar_sweep, self.cv_bridge)
-                self.sonar_image_publisher.publish(compressed_image)
+                self.raw_image_publisher.publish(sonar_utils.convert_to_ros_compressed_img(
+                    sonar_object_detection.SonarDenoiser(sonar_sweep).init_cartesian().cartesian,
+                    self.cv_bridge,
+                ),
+            )
         except (RuntimeError, ValueError) as e:
             self.get_logger().error(f'Error during constant sweep: {e}')
             rclpy.shutdown()
