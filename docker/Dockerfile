@@ -120,6 +120,7 @@ RUN /home/ubuntu/venv/bin/pip install pandas
 RUN /home/ubuntu/venv/bin/pip install pyserial
 RUN /home/ubuntu/venv/bin/pip install python-nmap
 RUN /home/ubuntu/venv/bin/pip install ruff
+RUN /home/ubuntu/venv/bin/pip install scikit-image
 RUN /home/ubuntu/venv/bin/pip install scikit-learn
 RUN /home/ubuntu/venv/bin/pip install sympy
 RUN /home/ubuntu/venv/bin/pip install transforms3d
