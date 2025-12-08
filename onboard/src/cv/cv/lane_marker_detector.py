@@ -41,9 +41,7 @@ class LaneMarkerDetector(Node):
                 self.angle_pub.publish(angle_msg)
 
             if distance is not None:
-                distance_msg = Point()
-                distance_msg.y = distance
-                self.distance_pub.publish(distance_msg)
+                self.distance_pub.publish(distance)
 
             if bounding_box is not None:
                 self.bounding_box_pub.publish(bounding_box)
@@ -116,17 +114,17 @@ class LaneMarkerDetector(Node):
             # Compute distance between center of bounding box and center of image
             # Here, image x is robot's y, and image y is robot's z
             distance = Point()
-            distance.x = rect_center[0] - frame_center[0]
-            distance.y = frame_center[1] - rect_center[1]
+            distance.x = float(rect_center[0] - frame_center[0])
+            distance.y = float(frame_center[1] - rect_center[1])
 
             # Create CVObject message
             bounding_box = CVObject()
             bounding_box.header.stamp = self.get_clock().now().to_msg()
             bounding_box.coords = Point()
-            bounding_box.coords.x = rect_center[0]
-            bounding_box.coords.y = rect_center[1]
-            bounding_box.width = rect[1][0]
-            bounding_box.height = rect[1][1]
+            bounding_box.coords.x = float(rect_center[0])
+            bounding_box.coords.y = float(rect_center[1])
+            bounding_box.width = int(rect[1][0])
+            bounding_box.height = int(rect[1][1])
             bounding_box.yaw = math.radians(angle_in_degrees)
 
         return math.radians(angle_in_degrees), distance, bounding_box, frame
