@@ -106,6 +106,7 @@ fox publish [extensions ...]
 - `extensions`: A list of extensions to publish. If no extensions are given, all extensions are published.
 - `-v, --version`: Version to publish extensions under. If no version is given, the short (length 7) HEAD commit hash is used. A version is required if the `robosub-ros2` git reposititory is dirty.
 - `-f, --force`: Publish extensions even if the repository is dirty.
+- `--github-action`: Append `-prod` to the publish version (to avoid version collisions).
 
 #### Clean
 To clean up the Foxglove monorepo, run:
@@ -144,9 +145,7 @@ This command will exit with a non-zero status if any potential problems are foun
 
 ## Monorepo Structure
 ### Extensions
-- [`call-service-panel`](extensions/call-service-panel/README.md) - Example panel to call services
-- [`publish-topic-panel`](extensions/publish-topic-panel/README.md) - Example panel to publish topics
-- [`subscribe-topic-panel`](extensions/subscribe-topic-panel/README.md) - Example panel to subscribe to topics
+- [`publish-topic-panel`](extensions/publish-topic-panel/README.md) - Panel to publish topics
 - [`toggle-controls-panel`](extensions/toggle-controls-panel/README.md) - Panel to toggle controls on/off
 - [`system-status-panel`](extensions/system-status-panel/README.md) - Panel that displays system usage of the onboard computer
 - [`sensors-status-panel`](extensions/sensors-status-panel/README.md) - Panel that displays the connected/disconnected status of sensors
@@ -181,7 +180,7 @@ Running `fox build` will automatically apply these patches.
 
 ## Contributing
 ### Adding a New Extension
-Copy an existing Duke Robotics example extension (`call-service-panel`, `publish-topic-panel`, or `subscribe-topic-panel`) as a starting point. This ensures that all of our extensions have the same code structure and use the same core set of dependencies.
+Copy an existing Duke Robotics extension as a starting point. This ensures that all of our extensions have the same code structure and use the same core set of dependencies.
 
 ### Adding a New Local Dependency
 All local dependencies must expose an `npm run build` command in `package.json`. During build, `foxglove.py` will compile each local dependency to `node_modules` where they can be consumed by an extension.
