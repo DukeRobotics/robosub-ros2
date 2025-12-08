@@ -5,7 +5,6 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from numpy.typing import ArrayLike
 from rclpy.logging import get_logger
 from sklearn.cluster import DBSCAN
 from sklearn.linear_model import LinearRegression
@@ -15,6 +14,7 @@ from sonar import decode_ping_python_360
 
 SONAR_IMAGE_WIDTH = 16
 SONAR_IMAGE_HEIGHT = 2
+MIN_DIMENSIONS_FOR_SEGMENTATION = 2
 
 def build_color_sonar_image_from_int_array(int_array: np.ndarray, npy_save_path: str | None = None,
                                            jpeg_save_path: str | None = None) -> np.ndarray:
@@ -219,7 +219,7 @@ def sonar_gaussian_mixture_model_cluster(sonar_data: np.ndarray) -> np.ndarray:
     mask = finalcopygrid.reshape(-1) != 0
     x_masked = x[mask]
 
-    if x_masked.shape[0] >= 2:
+    if x_masked.shape[0] >= MIN_DIMENSIONS_FOR_SEGMENTATION:
         gmm = GaussianMixture(n_components=2, random_state=42)
         gmm.fit(x_masked)
         cluster_labels = np.full(mask.shape, -1)

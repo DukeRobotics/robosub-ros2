@@ -196,7 +196,6 @@ class Sonar(Node):
             (Pose, List, float): Pose of the object in robot reference frame, sonar sweep array, and normal angle.
         """
         sweep = self.get_sweep(start_angle, end_angle)
-        # sweep = np.load(r'onboard/src/sonar/sweep_data/11-buoy_wall.npy')
 
         if(self.stream):
             self.raw_image_publisher.publish(sonar_utils.convert_to_ros_compressed_img(

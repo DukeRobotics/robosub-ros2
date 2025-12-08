@@ -1,13 +1,12 @@
 from enum import Enum
 
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import gridspec
 from scipy.signal import convolve2d
 from skimage.filters import sobel
 from skimage.measure import label
 from skimage.segmentation import watershed
 
+NUM_DIMENSIONS_FOR_REPEAT = 3
 
 class SonarDenoiser:
     """Class to denoise sonar scans to prepare them for segmentation and pose estimation."""
@@ -25,7 +24,7 @@ class SonarDenoiser:
         #Reshape data
         processed_data = np.zeros(shape=(
             100,
-            np.floor(self.shape_radius * 1.41421356).astype(int))
+            np.floor(self.shape_radius * 1.41421356).astype(int)),
         )
         processed_data[:self.shape_theta, :self.shape_radius] = self.data[: self.shape_theta]
 
@@ -95,7 +94,7 @@ class SonarDenoiser:
         radius = np.sqrt(xv**2 + yv**2)
         mask = (radius < outer_radius) & (radius >= inner_radius)
         mask = mask.astype(np.float32)
-        if self.data.ndim == 3 and self.data.shape[2] == 3:
+        if self.data.ndim == NUM_DIMENSIONS_FOR_REPEAT and self.data.shape[2] == NUM_DIMENSIONS_FOR_REPEAT:
             mask = np.repeat(mask[:, :, np.newaxis], 3, axis=2)
         fimg = np.fft.fftshift(np.fft.fft2(self.data, axes=(0, 1))) * mask
 
@@ -401,37 +400,4 @@ class SonarSegmentation:
                 nearest_segment = segment
                 min_distance = segment.nearest_object_distance
 
-        return nearest_segment # type: ignore
-
-    def plot_segments_together(self, plot, walls, objects) -> None:
-        for wall in walls:
-            self.plot_segment(plot, wall, SonarSegmentType.WALL)
-        for object in objects:
-            self.plot_segment(plot, object, SonarSegmentType.OBJECT)
-
-    def plot_segment(self, plot, segment, segment_type=SonarSegmentType.NONE):
-        plot.scatter(segment.points[:,1], segment.points[:,0], s=1, label=f"{segment.number}: {segment.ortho_regression.r2}")
-        plot.legend()
-
-        if segment_type != SonarSegmentType.WALL:
-            plot.scatter(segment.nearest_object[1], segment.nearest_object[0], s=5, c="red")
-
-        if segment_type != SonarSegmentType.OBJECT:
-            X_fit = np.linspace(0, self.side_length)
-            y_fit = segment.ortho_regression.y_given_x(X_fit)
-
-            # plot line wrt X. only keep parts where y is in frame
-            X_fit_1 = X_fit[y_fit<=self.side_length]
-            y_fit_1 = y_fit[y_fit<=self.side_length]
-            X_fit_1 = X_fit_1[y_fit_1>=0]
-            y_fit_1 = y_fit_1[y_fit_1>=0]
-            plot.plot(X_fit_1, y_fit_1)
-
-            # plot wrt y in case line is too vertical => no y values is in frame due to sampling gaps
-            y_fit = np.linspace(0, self.side_length)
-            X_fit = segment.ortho_regression.x_given_y(y_fit)
-            y_fit_2 = y_fit[X_fit<=self.side_length]
-            X_fit_2 = X_fit[X_fit<=self.side_length]
-            y_fit_2 = y_fit_2[X_fit_2>=0]
-            X_fit_2 = X_fit_2[X_fit_2>=0]
-            plot.plot(X_fit_2, y_fit_2)
+        return nearest_segment
