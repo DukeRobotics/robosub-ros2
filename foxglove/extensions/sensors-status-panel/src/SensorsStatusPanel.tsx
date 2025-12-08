@@ -1,174 +1,152 @@
+import { NoRobotNameAlert, useRobotName } from "@duke-robotics/robot-name";
 import useTheme from "@duke-robotics/theme";
-import { Immutable, PanelExtensionContext, RenderState, MessageEvent, Subscription } from "@foxglove/extension";
-import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableRow, Typography, Tooltip } from "@mui/material";
+import { timeToNsec } from "@duke-robotics/utils";
+import { Immutable, PanelExtensionContext, RenderState } from "@foxglove/extension";
+import {
+  Box,
+  Paper,
+  Snackbar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
+  Typography,
+  Tooltip,
+} from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import { createRoot } from "react-dom/client";
 
-// Map of sensor name to topic name
-const TOPICS_MAP = {
-  DVL: "/sensors/dvl/raw",
-  IMU: "/vectornav/imu",
-  Pressure: "/sensors/depth",
-  Gyro: "/sensors/gyro/status",
-  "Front DAI": "/camera/front/rgb/preview/compressed",
-  "Front Mono": "/camera/usb/front/compressed",
-  "Bottom Mono": "/camera/usb/bottom/compressed",
-  Sonar: "/sonar/status",
-  "IVC Modem": "/sensors/modem/status",
-};
+import {
+  SensorConfig,
+  Sensor,
+  SENSORS,
+  ROBOT_CONFIG,
+  SENSOR_CONFIG,
+  TOPIC_TO_SENSOR,
+  SENSOR_DOWN_THRESHOLD_NSEC,
+} from "./config";
 
-type topicsMapKeys = keyof typeof TOPICS_MAP;
-
-// Seconds until sensor is considered disconnected
-const SENSOR_DOWN_THRESHOLD = 1;
-
-const TOPICS_MAP_REVERSED: Record<string, topicsMapKeys> = {};
-for (const [key, value] of Object.entries(TOPICS_MAP)) {
-  TOPICS_MAP_REVERSED[value] = key as topicsMapKeys;
-}
-
-// Array of all topics: [{topic: topic1}, {topic: topic2}, ... ]
-
-const TOPICS_LIST: Subscription[] = [];
-for (const value of Object.values(TOPICS_MAP)) {
-  TOPICS_LIST.push({ topic: value });
-}
-
-// Time of last message received from sensor
-type SensorsTime = Record<topicsMapKeys, number>;
-// True if SensorsTime is within SENSOR_DOWN_THRESHOLD seconds
-type ConnectStatus = Record<topicsMapKeys, boolean>;
-
-type SensorsStatusPanelState = {
-  sensorsTime: SensorsTime;
-  connectStatus: ConnectStatus;
-  currentTime: number;
-};
-
-const initState = () => {
-  const state: Partial<SensorsStatusPanelState> = {};
-
-  // Initialize sensorsTime with 0's
-  const sensorsTime: Partial<SensorsTime> = {};
-  for (const key in TOPICS_MAP) {
-    sensorsTime[key as keyof SensorsTime] = 0;
-  }
-  state.sensorsTime = sensorsTime as SensorsTime;
-
-  // Initialize connectStatus with false's
-  const connectStatus: Partial<ConnectStatus> = {};
-  for (const key in TOPICS_MAP) {
-    connectStatus[key as keyof ConnectStatus] = false;
-  }
-  state.connectStatus = connectStatus as ConnectStatus;
-
-  // Initialize currentTime with Infinity
-  // This ensures that (currentTime - sensorsTime > SENSOR_DOWN_THRESHOLD) so that the sensor is initially considered disconnected
-  state.currentTime = Infinity;
-
-  return state as SensorsStatusPanelState;
-};
+type SensorNsecs = Record<Sensor, number | undefined>; // Time of last message received from sensor
+const initSensorNsecs = (): SensorNsecs => Object.fromEntries(SENSORS.map((s) => [s, undefined])) as SensorNsecs;
 
 function SensorsStatusPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
-  const [state, setState] = useState<SensorsStatusPanelState>(initState());
 
-  // Subscribe to all topics
-  context.subscribe(TOPICS_LIST);
+  const { robotName, withRobotName } = useRobotName(context);
+  const [sensorNsecs, setSensorNsecs] = useState<SensorNsecs>(initSensorNsecs);
+  const [currentNsecState, setCurrentNsecState] = useState<number | undefined>(undefined);
+  const [copyToast, setCopyToast] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
 
-  // Watch currentFrame for messages from each sensor
+  const sensorsToMonitor = React.useMemo(() => {
+    const map: Partial<Record<Sensor, SensorConfig>> = {};
+    if (robotName != undefined) {
+      for (const sensor of ROBOT_CONFIG[robotName]) {
+        map[sensor] = SENSOR_CONFIG[sensor];
+      }
+    }
+    return map;
+  }, [robotName]);
+
   useLayoutEffect(() => {
-    context.onRender = (renderState: Immutable<RenderState>, done: unknown) => {
+    context.onRender = withRobotName((renderState: Immutable<RenderState>, done: () => void) => {
       setRenderDone(() => done);
 
       // Reset state when the user seeks the video
       if (renderState.didSeek ?? false) {
-        setState(initState());
+        setSensorNsecs(initSensorNsecs());
+        setCurrentNsecState(undefined);
+        return;
       }
 
-      // Updates currentTime
       if (renderState.currentTime != undefined) {
-        setState((prevState) => ({
-          ...prevState,
-          currentTime: renderState.currentTime!.sec,
-        }));
-      }
+        const currentNsec = timeToNsec(renderState.currentTime);
+        setCurrentNsecState(currentNsec);
 
-      if (renderState.currentFrame && renderState.currentFrame.length !== 0) {
-        const lastFrame = renderState.currentFrame.at(-1) as MessageEvent;
-        const sensorName = TOPICS_MAP_REVERSED[lastFrame.topic] as string;
-
-        // Update sensorsTime to the current time and set connectStatus to true
-        setState((prevState) => ({
-          ...prevState,
-          sensorsTime: {
-            ...prevState.sensorsTime,
-            [sensorName]: prevState.currentTime,
-          },
-          connectStatus: {
-            ...prevState.connectStatus,
-            [sensorName]: true,
-          },
-        }));
-      }
-
-      // Compare current time to each sensorsTime and set connectStatus to false if the sensor is down
-      for (const key in TOPICS_MAP) {
-        setState((prevState) => {
-          if (prevState.currentTime - prevState.sensorsTime[key as topicsMapKeys] > SENSOR_DOWN_THRESHOLD) {
-            return {
-              ...prevState,
-              connectStatus: {
-                ...prevState.connectStatus,
-                [key as topicsMapKeys]: false,
-              },
-            };
+        if (renderState.currentFrame != undefined) {
+          // Find all sensors that have published in the current frame
+          const seenSensors = new Set<Sensor>();
+          for (const event of renderState.currentFrame) {
+            const sensor = TOPIC_TO_SENSOR[event.topic];
+            if (sensor != undefined) {
+              seenSensors.add(sensor);
+            }
           }
-          return prevState;
-        });
+
+          // Update the last seen time for all sensors that have published in this frame
+          setSensorNsecs((prev) => ({
+            ...prev,
+            ...Object.fromEntries([...seenSensors].map((sensor) => [sensor, currentNsec])),
+          }));
+        }
       }
-    };
+    });
 
     context.watch("currentTime");
     context.watch("currentFrame");
     context.watch("didSeek");
-  }, [context]);
+  }, [context, sensorsToMonitor, withRobotName]);
 
-  // Call our done function at the end of each render.
+  useEffect(() => {
+    context.subscribe(Object.values(sensorsToMonitor).map((config) => ({ topic: config.topic })));
+  }, [sensorsToMonitor, context]);
+
   useEffect(() => {
     renderDone?.();
   }, [renderDone]);
 
-  // Create a table of all the sensors and their status
   const theme = useTheme();
   return (
     <ThemeProvider theme={theme}>
       <Box m={1}>
+        <NoRobotNameAlert robotName={robotName} context={context} />
         <TableContainer component={Paper}>
           <Table size="small">
             <TableBody>
-              {Object.entries(TOPICS_MAP).map(([sensor, topic]) => (
-                <TableRow
-                  key={sensor}
-                  style={{
-                    backgroundColor: state.connectStatus[sensor as topicsMapKeys]
-                      ? theme.palette.success.dark
-                      : theme.palette.error.dark,
-                  }}
-                >
-                  <TableCell>
-                    <Tooltip title={topic} arrow placement="left">
-                      <Typography variant="subtitle2" color={theme.palette.common.white}>
-                        {sensor}
-                      </Typography>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {Object.entries(sensorsToMonitor).map(([sensor, config]) => {
+                const sensorNsec = sensorNsecs[sensor as Sensor];
+                const sensorPublishing =
+                  currentNsecState != undefined &&
+                  sensorNsec != undefined &&
+                  0 <= currentNsecState - sensorNsec &&
+                  currentNsecState - sensorNsec <= SENSOR_DOWN_THRESHOLD_NSEC;
+                return (
+                  <Tooltip key={sensor} title={config.topic} followCursor placement="top">
+                    <TableRow
+                      style={{
+                        backgroundColor: sensorPublishing ? theme.palette.success.dark : theme.palette.error.dark,
+                      }}
+                      onClick={() => {
+                        void navigator.clipboard.writeText(config.topic).then(
+                          () => {
+                            setCopyToast({ open: true, message: `Copied ${config.topic} to clipboard.` });
+                          },
+                          () => {
+                            setCopyToast({ open: true, message: "Failed to copy topic to clipboard." });
+                          },
+                        );
+                      }}
+                    >
+                      <TableCell>
+                        <Typography variant="subtitle2" color={theme.palette.common.white}>
+                          {config.displayName}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  </Tooltip>
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
+        <Snackbar
+          open={copyToast.open}
+          message={copyToast.message}
+          onClose={() => {
+            setCopyToast({ open: false, message: "" });
+          }}
+        />
       </Box>
     </ThemeProvider>
   );
@@ -180,7 +158,6 @@ export function initSensorsStatusPanel(context: PanelExtensionContext): () => vo
   const root = createRoot(context.panelElement as HTMLElement);
   root.render(<SensorsStatusPanel context={context} />);
 
-  // Return a function to run when the panel is removed
   return () => {
     root.unmount();
   };

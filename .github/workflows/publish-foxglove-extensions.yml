@@ -1,0 +1,56 @@
+name: publish-foxglove-extensions
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: publish-foxglove-extensions
+  cancel-in-progress: true
+
+jobs:
+  publish-foxglove-extensions:
+    name: Publish Foxglove extensions
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create .env file
+        run: |
+          echo "ENABLE_GIT=false" >> .env
+          echo "USER_UID=$(id -u)" >> .env
+          echo "USER_GID=$(id -g)" >> .env
+
+      - name: Build Docker image
+        run: ./docker-build.sh --github-action
+
+      - name: Run Docker container
+        id: run-docker
+        run: docker compose up -d
+
+      - name: Build Foxglove environment
+        if: steps.run-docker.outcome == 'success'
+        run: |
+          docker compose exec robosub-ros2 bash /home/ubuntu/robosub-ros2/.github/workflows/build-foxglove.sh
+
+      - name: Configure Foxglove authentication
+        if: steps.run-docker.outcome == 'success'
+        env:
+          FOXGLOVE_API_KEY: ${{ secrets.FOXGLOVE_API_KEY }}
+        run: |
+          docker compose exec -T robosub-ros2 bash -c "printf 'auth_type: 2\nbase_url: https://api.foxglove.dev\nbearer_token: %s\n' \"${FOXGLOVE_API_KEY}\" > /home/ubuntu/.foxgloverc"
+
+      - name: Publish Foxglove extensions
+        if: steps.run-docker.outcome == 'success'
+        run: |
+          docker compose exec -T robosub-ros2 bash /home/ubuntu/robosub-ros2/.github/workflows/publish-foxglove.sh
+
+      - name: Stop Docker container
+        if: always() && steps.run-docker.outcome == 'success'
+        run: docker compose down

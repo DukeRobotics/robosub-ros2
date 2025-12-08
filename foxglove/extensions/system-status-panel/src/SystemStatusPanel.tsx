@@ -1,5 +1,7 @@
 import { CustomMsgs, StdMsgs } from "@duke-robotics/defs/types";
+import { NoRobotNameAlert, Robot, useRobotName } from "@duke-robotics/robot-name";
 import useTheme from "@duke-robotics/theme";
+import { secToNsec, timeToNsec } from "@duke-robotics/utils";
 import { PanelExtensionContext, RenderState, MessageEvent, Immutable } from "@foxglove/extension";
 import {
   Box,
@@ -10,188 +12,272 @@ import {
   TableCell,
   TableContainer,
   TableRow,
+  Snackbar,
   ThemeProvider,
   Tooltip,
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 
-interface Status {
-  name: string;
+const TOPIC_DOWN_THRESHOLD_NSEC = secToNsec(2);
+
+enum Status {
+  CPU = "CPU",
+  RAM = "RAM",
+  Voltage = "Voltage",
+  HumiditySignal = "HumiditySignal",
+  TempSignal = "TempSignal",
+  HumidityBattery = "HumidityBattery",
+  TempBattery = "TempBattery",
+  TempGyro = "TempGyro",
+}
+const STATUSES = Object.values(Status);
+
+interface StatusConfig {
+  displayName: string;
+  topic: string;
   suffix: string;
-  // Extract a numeric value from an incoming ROS message event.
+  // Extract a numeric value from a ROS message event.
   parse: (event: MessageEvent) => number;
   // Return whether the sensor reading should trigger a "warning" styling.
   warn: (value: number | undefined) => boolean;
 }
 
-// Map topic to status array
-const topicToStatus: Record<string, Status[]> = {
-  "/system/usage": [
-    {
-      name: "CPU",
-      suffix: "%",
-      parse: (event) => {
-        const msgEvent = event as MessageEvent<CustomMsgs.SystemUsage>;
-        return msgEvent.message.cpu_percent;
-      },
-      warn: (value) => value != undefined && value >= 90,
+const STATUS_CONFIG: Record<Status, StatusConfig> = {
+  [Status.CPU]: {
+    displayName: "CPU",
+    topic: "/system/usage",
+    suffix: "%",
+    parse: (event) => {
+      const msgEvent = event as MessageEvent<CustomMsgs.SystemUsage>;
+      return msgEvent.message.cpu_percent;
     },
-    {
-      name: "RAM",
-      suffix: "%",
-      parse: (event) => {
-        const msgEvent = event as MessageEvent<CustomMsgs.SystemUsage>;
-        return msgEvent.message.ram.percentage;
-      },
-      warn: (value) => value != undefined && value >= 90,
+    warn: (value) => value != undefined && value >= 90,
+  },
+  [Status.RAM]: {
+    displayName: "RAM",
+    topic: "/system/usage",
+    suffix: "%",
+    parse: (event) => {
+      const msgEvent = event as MessageEvent<CustomMsgs.SystemUsage>;
+      return msgEvent.message.ram.percentage;
     },
-  ],
-  "/sensors/voltage": [
-    {
-      name: "Voltage",
-      suffix: "V",
-      parse: (event) => {
-        const msgEvent = event as MessageEvent<StdMsgs.Float64>;
-        return msgEvent.message.data;
-      },
-      warn: (value) => value != undefined && value <= 15,
+    warn: (value) => value != undefined && value >= 90,
+  },
+  [Status.Voltage]: {
+    displayName: "Voltage",
+    topic: "/sensors/voltage",
+    suffix: "V",
+    parse: (event) => {
+      const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+      return msgEvent.message.data;
     },
-  ],
-  "/sensors/humidity/signal": [
-    {
-      name: "Humidity (S)",
-      suffix: "%",
-      parse: (event) => {
-        const msgEvent = event as MessageEvent<StdMsgs.Float64>;
-        return msgEvent.message.data;
-      },
-      warn: (value) => value != undefined && value >= 80,
+    warn: (value) => value != undefined && value <= 15,
+  },
+  [Status.HumiditySignal]: {
+    displayName: "Humidity (Signal)",
+    topic: "/sensors/humidity/signal",
+    suffix: "%",
+    parse: (event) => {
+      const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+      return msgEvent.message.data;
     },
-  ],
-  "/sensors/temperature/signal": [
-    {
-      name: "Temp (S)",
-      suffix: "F",
-      parse: (event) => {
-        const msgEvent = event as MessageEvent<StdMsgs.Float64>;
-        return msgEvent.message.data;
-      },
-      warn: (value) => value != undefined && value >= 100,
+    warn: (value) => value != undefined && value >= 80,
+  },
+  [Status.TempSignal]: {
+    displayName: "Temp (Signal)",
+    topic: "/sensors/temperature/signal",
+    suffix: "F",
+    parse: (event) => {
+      const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+      return msgEvent.message.data;
     },
-  ],
-  "/sensors/humidity/battery": [
-    {
-      name: "Humidity (B)",
-      suffix: "%",
-      parse: (event) => {
-        const msgEvent = event as MessageEvent<StdMsgs.Float64>;
-        return msgEvent.message.data;
-      },
-      warn: (value) => value != undefined && value >= 80,
+    warn: (value) => value != undefined && value >= 100,
+  },
+  [Status.HumidityBattery]: {
+    displayName: "Humidity (Battery)",
+    topic: "/sensors/humidity/battery",
+    suffix: "%",
+    parse: (event) => {
+      const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+      return msgEvent.message.data;
     },
-  ],
-  "/sensors/temperature/battery": [
-    {
-      name: "Temp (B)",
-      suffix: "F",
-      parse: (event) => {
-        const msgEvent = event as MessageEvent<StdMsgs.Float64>;
-        return msgEvent.message.data;
-      },
-      warn: (value) => value != undefined && value >= 100,
+    warn: (value) => value != undefined && value >= 80,
+  },
+  [Status.TempBattery]: {
+    displayName: "Temp (Battery)",
+    topic: "/sensors/temperature/battery",
+    suffix: "F",
+    parse: (event) => {
+      const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+      return msgEvent.message.data;
     },
-  ],
-  "/sensors/gyro/temperature/slow": [
-    {
-      name: "Temp (Gyro)",
-      suffix: "F",
-      parse: (event) => {
-        const msgEvent = event as MessageEvent<StdMsgs.Float64>;
-        return msgEvent.message.data;
-      },
-      warn: (value) => value != undefined && value >= 150,
+    warn: (value) => value != undefined && value >= 100,
+  },
+  [Status.TempGyro]: {
+    displayName: "Temp (Gyro)",
+    topic: "/sensors/gyro/temperature/slow",
+    suffix: "F",
+    parse: (event) => {
+      const msgEvent = event as MessageEvent<StdMsgs.Float64>;
+      return msgEvent.message.data;
     },
-  ],
+    warn: (value) => value != undefined && value >= 150,
+  },
 };
+
+const TOPIC_TO_STATUSES = STATUSES.reduce<Record<string, Status[]>>((acc, status) => {
+  const topic = STATUS_CONFIG[status].topic;
+  acc[topic] = acc[topic] ?? [];
+  acc[topic].push(status);
+  return acc;
+}, {});
+
+const ROBOT_CONFIG: Record<Robot, Status[]> = {
+  [Robot.Crush]: STATUSES,
+  [Robot.Oogway]: [Status.CPU, Status.RAM, Status.Voltage, Status.HumiditySignal, Status.TempSignal, Status.TempGyro],
+};
+
+type StatusValues = Partial<Record<Status, number>>;
+type TopicNsecs = Record<string, number | undefined>;
 
 function SystemStatusPanel({ context }: { context: PanelExtensionContext }): React.JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
-  const [sensorValues, setSensorValues] = useState<Record<string, number | undefined>>({}); // Map sensor name to last known value
+  const [statusValues, setStatusValues] = useState<StatusValues>({});
+  const [topicNsecs, setTopicNsecs] = useState<TopicNsecs>({});
+  const [currentNsecState, setCurrentNsecState] = useState<number | undefined>(undefined);
+  const [copyToast, setCopyToast] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
 
-  // Subscribe to all topics
-  context.subscribe(Object.keys(topicToStatus).map((topic) => ({ topic })));
+  const { robotName, withRobotName } = useRobotName(context);
 
-  // Watch system usage topic and update state
+  const statusesToMonitor = useMemo<Status[]>(() => {
+    if (robotName == undefined) {
+      return [];
+    }
+    return ROBOT_CONFIG[robotName];
+  }, [robotName]);
+
+  const topicsToMonitor = useMemo(() => {
+    const topics = new Set<string>();
+    statusesToMonitor.forEach((status) => {
+      topics.add(STATUS_CONFIG[status].topic);
+    });
+    return [...topics];
+  }, [statusesToMonitor]);
+
   useEffect(() => {
-    context.onRender = (renderState: Immutable<RenderState>, done) => {
+    context.subscribe(topicsToMonitor.map((topic) => ({ topic })));
+  }, [context, topicsToMonitor]);
+
+  // Update status values
+  useLayoutEffect(() => {
+    context.onRender = withRobotName((renderState: Immutable<RenderState>, done) => {
       setRenderDone(() => done);
 
       // Reset state when the user seeks the video
       if (renderState.didSeek ?? false) {
-        setSensorValues({});
+        setStatusValues({});
+        setTopicNsecs({});
+        setCurrentNsecState(undefined);
+        return;
+      }
+
+      const currentNsec = renderState.currentTime != undefined ? timeToNsec(renderState.currentTime) : undefined;
+      if (currentNsec != undefined) {
+        setCurrentNsecState(currentNsec);
       }
 
       // Check for new messages
-      if (renderState.currentFrame && renderState.currentFrame.length > 0) {
-        // Get last message
-        const latestFrame = renderState.currentFrame.at(-1);
-        if (latestFrame) {
-          // Access the status array for this topic
-          const allStatus = topicToStatus[latestFrame.topic] ?? [];
-          allStatus.forEach((status) => {
-            const parsedValue = status.parse(latestFrame);
-            setSensorValues((prev) => ({
-              ...prev,
-              [status.name]: parsedValue,
-            }));
+      if (renderState.currentFrame) {
+        const updates: StatusValues = {};
+        const topicsSeen = new Set<string>();
+        renderState.currentFrame.forEach((event) => {
+          const statusesForTopic = TOPIC_TO_STATUSES[event.topic];
+          if (statusesForTopic == undefined) {
+            console.warn(`Received message for unmonitored topic: ${event.topic}`);
+            return;
+          }
+
+          topicsSeen.add(event.topic);
+
+          statusesForTopic.forEach((status) => {
+            const config = STATUS_CONFIG[status];
+            updates[status] = config.parse(event);
           });
+        });
+
+        if (currentNsec != undefined) {
+          setTopicNsecs((prev) => ({
+            ...prev,
+            ...Object.fromEntries([...topicsSeen].map((topic) => [topic, currentNsec])),
+          }));
         }
+
+        setStatusValues((prev) => ({
+          ...prev,
+          ...updates,
+        }));
       }
-    };
+    });
+    context.watch("currentTime");
     context.watch("currentFrame");
     context.watch("didSeek");
-  }, [context]);
+  }, [context, withRobotName]);
 
   // Call the done function after each render
   useEffect(() => {
     renderDone?.();
   }, [renderDone]);
 
-  // Construct table rows based on the config array and sensorValues state
-  const rows = Object.entries(topicToStatus).flatMap(([topic, allStatus]) =>
-    allStatus.map((status) => {
-      const value = sensorValues[status.name];
-      return {
-        topic,
-        name: status.name,
-        value,
-        suffix: status.suffix,
-        warn: status.warn(value),
-      };
-    }),
-  );
+  const rows = statusesToMonitor.map((status) => {
+    const config = STATUS_CONFIG[status];
+    const value = statusValues[status];
+    const topicNsec = topicNsecs[config.topic];
+    const topicPublishing =
+      currentNsecState != undefined &&
+      topicNsec != undefined &&
+      0 <= currentNsecState - topicNsec &&
+      currentNsecState - topicNsec <= TOPIC_DOWN_THRESHOLD_NSEC;
+    return {
+      topic: config.topic,
+      name: config.displayName,
+      value,
+      suffix: config.suffix,
+      warn: config.warn(value),
+      publishing: topicPublishing,
+    };
+  });
 
   const theme = useTheme();
   return (
     <ThemeProvider theme={theme}>
       <Box m={1}>
+        <NoRobotNameAlert robotName={robotName} context={context} />
         <TableContainer component={Paper}>
           <Table size="small">
             <TableBody>
               {rows.map((row) => (
-                <Tooltip title={row.topic} arrow placement="left" key={row.name}>
+                <Tooltip key={row.name} title={row.topic} followCursor placement="top">
                   <TableRow
                     style={{
                       backgroundColor: (() => {
-                        // If no value has ever been set for this sensor, show error color
-                        if (row.value == undefined) {
+                        if (!row.publishing || row.value == undefined) {
                           return theme.palette.error.dark;
                         } else if (row.warn) {
                           return theme.palette.warning.main;
                         }
                         return theme.palette.success.dark;
                       })(),
+                    }}
+                    onClick={() => {
+                      void navigator.clipboard.writeText(row.topic).then(
+                        () => {
+                          setCopyToast({ open: true, message: `Copied ${row.topic} to clipboard.` });
+                        },
+                        () => {
+                          setCopyToast({ open: true, message: "Failed to copy topic to clipboard." });
+                        },
+                      );
                     }}
                   >
                     <TableCell>
@@ -211,6 +297,13 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
             </TableBody>
           </Table>
         </TableContainer>
+        <Snackbar
+          open={copyToast.open}
+          message={copyToast.message}
+          onClose={() => {
+            setCopyToast({ open: false, message: "" });
+          }}
+        />
       </Box>
     </ThemeProvider>
   );
@@ -219,10 +312,9 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
 export function initSystemStatusPanel(context: PanelExtensionContext): () => void {
   context.panelElement.style.overflow = "auto"; // Enable scrolling
 
-  const root = createRoot(context.panelElement as HTMLElement);
+  const root = createRoot(context.panelElement);
   root.render(<SystemStatusPanel context={context} />);
 
-  // Return a function to run when the panel is removed
   return () => {
     root.unmount();
   };
