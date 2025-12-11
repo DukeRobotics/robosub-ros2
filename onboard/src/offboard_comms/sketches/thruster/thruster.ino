@@ -55,7 +55,7 @@ void setup() {
             THRUSTER_PWM_OFFSET = 57;
             break;
         case CRUSH:
-            NUM_THRUSTERS = 6;
+            NUM_THRUSTERS = 8;
             THRUSTER_PWM_OFFSET = 63;
             break;
         default:
