@@ -223,15 +223,17 @@ class Sonar(Node):
         if nearest_segment is None:
             return (None, color_image, None)
 
-        _, sonar_index = nearest_segment.get_average_coordinate_of_points()
+        x_index, y_index = nearest_segment.get_average_coordinate_of_points()
         normal_angle = np.arctan2(
             nearest_segment.ortho_regression.unit_normal[1],
             nearest_segment.ortho_regression.unit_normal[0],
-        )
+        ) - np.pi/4
+
+        self.get_logger().info(f'x: {x_index}, y: {y_index}, normal: {normal_angle}')
 
         sonar_angle = (start_angle + end_angle) / 2  # Take the middle of the sweep
 
-        return (sonar_utils.to_robot_position(sonar_angle, sonar_index, self.sample_period,
+        return (sonar_utils.to_robot_position(sonar_angle, x_index, y_index, self.sample_period,
                                               self.center_gradians, self.NEGATE_POSE),
                                               color_image,
                                               normal_angle)

@@ -12,7 +12,7 @@ RADIANS_PER_GRADIAN = np.pi / 200
 GRADIANS_PER_DEGREE = 400 / 360
 SPEED_OF_SOUND_IN_WATER = 1482 # m/s
 SAMPLE_PERIOD_TICK_DURATION = 25e-9  # s
-TRANSFORMATION_ANGLE = 0
+TRANSFORMATION_ANGLE = np.pi/4
 
 def transform_pose(buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped,
                    source_frame_id: str, target_frame_id: str) -> tf2_geometry_msgs.PoseStamped:
@@ -157,7 +157,7 @@ def get_distance_of_sample(sample_period: float, sample_index: int) -> float:
     # 0.5 for the average distance of sample
     return (sample_index + 0.5) * meters_per_sample(sample_period)
 
-def to_robot_position(angle: float, index: int, sample_period: float,
+def to_robot_position(angle: float, x_index: int, y_index: int, sample_period: float,
                       center_gradians: int, negate: bool) -> Pose:
     """
     Convert a point in sonar space to a robot global position.
@@ -165,7 +165,8 @@ def to_robot_position(angle: float, index: int, sample_period: float,
     Args:
         angle (float): Angle in gradians of the point relative to in front
             of the sonar device.
-        index (int | float): Index of the data in the sonar response.
+        x_index (int | float): x-index of the data in the sonar response.
+        y_index (int | float): y-index of the data in the sonar response.
         sample_period (int): the sample period of the ping360
         center_gradians (int): the gradian value of the center of the scan
         negate (bool): whether to negate the pose or not
@@ -174,18 +175,14 @@ def to_robot_position(angle: float, index: int, sample_period: float,
         Pose: Pose in target_frame_id containing x and y position of angle/index item.
     """
     x_pos = get_distance_of_sample(
-            sample_period, index,
-        )*np.cos(
-            centered_gradians_to_radians(angle, center_gradians, negate),
+            sample_period, x_index,
         )
-    y_pos = -1 * get_distance_of_sample(
-            sample_period, index,
-        )*np.sin(
-            centered_gradians_to_radians(angle, center_gradians, negate),
+    y_pos = get_distance_of_sample(
+            sample_period, y_index,
         )
 
-    adjusted_x = x_pos * np.cos(TRANSFORMATION_ANGLE) - y_pos * np.sin(TRANSFORMATION_ANGLE)
-    adjusted_y = x_pos * np.sin(TRANSFORMATION_ANGLE) + y_pos * np.cos(TRANSFORMATION_ANGLE)
+    adjusted_x = x_pos * np.cos(TRANSFORMATION_ANGLE) + y_pos * np.sin(TRANSFORMATION_ANGLE)
+    adjusted_y = -x_pos * np.sin(TRANSFORMATION_ANGLE) + y_pos * np.cos(TRANSFORMATION_ANGLE)
 
     yaw = np.arctan2(adjusted_y, adjusted_x)
 
