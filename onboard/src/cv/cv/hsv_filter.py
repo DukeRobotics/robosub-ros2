@@ -16,7 +16,8 @@ from cv.utils import calculate_relative_pose, compute_center_distance, compute_y
 
 class HSVFilter(Node, ABC):
     """Parent class for all HSV filtering scripts."""
-    def __init__(self, name: str, camera: str, mask_ranges: np.ndarray, width: float, height: float | None = None,
+    def __init__(self, name: str, camera: str, mask_ranges: list[np.ndarray],
+                 width: float | None = None, height: float | None = None,
                  pubs: list[str] | None = None, retrieval: int = cv2.RETR_TREE,
                  approx: int = cv2.CHAIN_APPROX_SIMPLE) -> None:
         super().__init__(f'{name}_hsv_filter')
@@ -27,8 +28,11 @@ class HSVFilter(Node, ABC):
         self.mask_ranges = mask_ranges
         self.retrieval = retrieval
         self.approx = approx
-        self.width = width  # Width of object in meters
-        self.height = width if height is None else height  # Height of object in meters
+        # NOTE: detectors whose handle_contours rely on width must have width defined,
+        # else they must supply their own handle_contour
+        # TODO: is there any Pythonic systemic way to make this idiot proof
+        self.width = width if width else 0  # Width of object in meters
+        self.height = height if height else width  # Height of object in meters
 
         self.image_sub = self.create_subscription(CompressedImage, f'/camera/usb/{camera}/compressed',
                                                   self.image_callback, 10)
@@ -74,82 +78,122 @@ class HSVFilter(Node, ABC):
         hsv_opencv[..., 2] = (hsv_actual[..., 2] / 100 * 255).astype(np.uint8)  # Value
         return hsv_opencv
 
-    def create_pub_group(self, msg_type, base: str, pubs: list[str] | None = None, qos: int = 10):
-        """
-        Create a group of publishers under base topic.
+    def image_callback(self, data: CompressedImage) -> None:
+        """Attemp to convert image and apply contours."""
+        try:
+            # Convert the image from the compressed format to OpenCV format
+            np_arr = np.frombuffer(data.data, np.uint8)
+            image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        except (TypeError, AttributeError) as t:
+            self.get_logger().error(f'Failed to convert image: {t}')
+            return
 
-        - base: e.g. f'/cv/{camera}_usb/{name}/bounding_box'
-        - pubs: list of suffix names or None => a single publisher at base
-        Returns list of publishers (length == len(pubs or [None])).
-        """
-        pubs_list = pubs if pubs else [None]
-        created = []
-        for p in pubs_list:
-            suffix = f'/{p}' if p is not None else ''
-            topic = f'{base}{suffix}'
-            created.append(self.create_publisher(msg_type, topic, qos))
-        return created
+        # Apply HSV filtering on the image
+        masks = [cv2.inRange(hsv_image, self.actual_to_opencv_hsv(r[0]),
+                             self.actual_to_opencv_hsv(r[1])) for r in self.mask_ranges]
+        mask = reduce(cv2.bitwise_or, masks)
 
-    def handle_detections(self, final_contours: list[np.ndarray], image: np.ndarray, bbox_img: np.ndarray) -> None:
+        # Apply morphological filters as necessary to clean up binary image
+        final_hsv = self.morphology(mask)
+
+        # Publish the HSV filtered image
+        hsv_filtered_msg = self.bridge.cv2_to_imgmsg(final_hsv, 'mono8')
+        self.hsv_filtered_pub.publish(hsv_filtered_msg)
+
+        # Find contours in the image
+        contours, _ = cv2.findContours(final_hsv, self.retrieval, self.approx)
+
+        if not contours:
+            return
+
+        # Filter contours as desired
+        final_contours = self.filter(contours)
+
+        # Allow filter function to determine that a contour set is invalid, even if detections exist
+        if final_contours == []:
+            return
+
+        bbox_img = image.copy()
+
+        # Process contours
+        self.process_contours(final_contours, image, bbox_img)
+
+    def process_contours(self, final_contours: list[np.ndarray], image: np.ndarray, bbox_img: np.ndarray) -> None:
         """
         Handle contours.
 
-        Default handler to iterate contours and publish:
-        - contour image for each publisher (self.contour_image_pub)
-        - CVObject bounding boxes and distances (self.bounding_box_pub, self.distance_pub)
-        Children may override this to publish other messages (angles, compressed images, etc).
+        TODO: docstring.
         """
         for i in range(min(len(final_contours), len(self.contour_image_pub))):
             contour = final_contours[i]
             if contour is None:
                 continue
-            rect = cv2.minAreaRect(contour)
-            box = np.int0(cv2.boxPoints(rect))
 
-            # publish contour visualization
+            # Get the minimum area rectangle that encloses the combined contour
+            rect = cv2.minAreaRect(contour)
+
+            # Draw contours onto image and publish
             image_with_contours = image.copy()
+            box = np.int0(cv2.boxPoints(rect))
             cv2.drawContours(image_with_contours, [box], 0, (0, 0, 255), 3)
             self.contour_image_pub[i].publish(self.bridge.cv2_to_imgmsg(image_with_contours, 'bgr8'))
 
-            # compute rectangle center/size
+            # Obtain the center of the rectangle
             rect_center = rect[0]
-            x_f, y_f = rect_center[0], rect_center[1]
-            w_f, h_f = rect[1][0], rect[1][1]
+            x, y, w, h = (rect_center[0], rect_center[1], rect[1][0], rect[1][1])
 
-            if w_f <= 0 or h_f <= 0:
+            # Check if width is 0, and return base case of None
+            if (w == 0 or h == 0):
                 continue
 
-            meters_per_pixel = self.width / w_f
+            # Get dimensions, attributes of relevant shapes
+            meters_per_pixel = self.width / w
 
-            # create basic CVObject (same fields your parent currently fills)
+            # Create CVObject message, and populate relevant attributes
             bounding_box = CVObject()
             sec, nsec = self.get_clock().now().seconds_nanoseconds()
             bounding_box.header.stamp.sec = sec
             bounding_box.header.stamp.nanosec = nsec
 
-            bounding_box.xmin = x_f * meters_per_pixel
-            bounding_box.ymin = y_f * meters_per_pixel
-            bounding_box.xmax = (x_f + w_f) * meters_per_pixel
-            bounding_box.ymax = (y_f + h_f) * meters_per_pixel
+            # Get dimensions that CVObject wants for our rectangle
+            bounding_box.xmin = (x) * meters_per_pixel
+            bounding_box.ymin = (y) * meters_per_pixel
+            bounding_box.xmax = (x + w) * meters_per_pixel
+            bounding_box.ymax = (y + h) * meters_per_pixel
             bounding_box.score = cv2.contourArea(contour)
-            final_x_normalized = x_f / MonoCam.IMG_SHAPE[0]
-            bounding_box.yaw = compute_yaw(final_x_normalized, final_x_normalized, MonoCam.IMG_SHAPE[0])
-            bounding_box.width, bounding_box.height = int(w_f), int(h_f)
 
-            dist_x, dist_y = compute_center_distance(x_f, y_f, *MonoCam.IMG_SHAPE,
-                                                     height_adjustment_constant=15,
+            final_x_normalized = x / MonoCam.IMG_SHAPE[0]
+            bounding_box.yaw = compute_yaw(final_x_normalized, final_x_normalized, MonoCam.IMG_SHAPE[0])
+            bounding_box.width, bounding_box.height = int(w), int(h)
+
+            # Compute distance between center of bounding box and center of image
+            # Here, image x is robot's y, and image y is robot's z
+            dist_x, dist_y = compute_center_distance(x, y, *MonoCam.IMG_SHAPE, height_adjustment_constant=15,
                                                      width_adjustment_constant=10)
+
+            # Create Point message and populate x and y distances
             dist_point = Point()
             dist_point.x = dist_x
             dist_point.y = -dist_y
 
+            bbox_bounds = (x / MonoCam.IMG_SHAPE[0], y / MonoCam.IMG_SHAPE[1], (x+w) /
+                        MonoCam.IMG_SHAPE[0], (y+h) / MonoCam.IMG_SHAPE[1])
+
+            # Point coords represents the 3D position of the object represented by the bounding box relative to robot
+            coords_list = calculate_relative_pose(bbox_bounds,
+                                                  MonoCam.IMG_SHAPE,
+                                                  (self.width, self.height),
+                                                  MonoCam.FOCAL_LENGTH,
+                                                  MonoCam.SENSOR_SIZE, 1)
+            bounding_box.coords.x, bounding_box.coords.y, bounding_box.coords.z = coords_list
+
             self.bounding_box_pub[i].publish(bounding_box)
             self.distance_pub[i].publish(dist_point)
 
-            # draw bbox on image used for all_contours_pub
-            cv2.rectangle(bbox_img, (int(x_f), int(y_f)), (int(x_f + w_f), int(y_f + h_f)), (0, 255, 0), 2)
+            # Draw bounding box on the image
+            cv2.rectangle(bbox_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-        # publish the stitched image with all bboxes
         self.all_contours_pub.publish(self.bridge.cv2_to_imgmsg(bbox_img, 'bgr8'))
 
     @abstractmethod
@@ -161,6 +205,7 @@ class HSVFilter(Node, ABC):
     def morphology(self, mask: np.ndarray) -> np.ndarray:
         """Apply morphology to mask."""
         return mask
+
 
 def main(args: list[str] | None = None) -> None:
     """DO NOT RUN this node."""
