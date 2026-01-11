@@ -2,10 +2,10 @@ import cv.config as cv_constants
 import cv2
 import numpy as np
 import rclpy
-from cv import hsv_filter
+from cv.hsv_filter import HSVFilter
 
 
-class HSVLaneMarker(hsv_filter.HSVFilter):
+class HSVLaneMarker(HSVFilter):
     """HSV Lane Marker Detector."""
     def __init__(self) -> None:
         super().__init__(

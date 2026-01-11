@@ -3,7 +3,6 @@ from functools import reduce
 
 import cv2
 import numpy as np
-import rclpy
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Point
@@ -20,6 +19,11 @@ class HSVFilter(Node, ABC):
                  width: float | None = None, height: float | None = None,
                  pubs: list[str] | None = None, retrieval: int = cv2.RETR_TREE,
                  approx: int = cv2.CHAIN_APPROX_SIMPLE) -> None:
+        """
+        Initiate an HSV filtering script.
+
+        # TODO: detailed docstring to explain each argument.
+        """
         super().__init__(f'{name}_hsv_filter')
 
         self.bridge = CvBridge()
@@ -28,10 +32,10 @@ class HSVFilter(Node, ABC):
         self.mask_ranges = mask_ranges
         self.retrieval = retrieval
         self.approx = approx
-        # NOTE: detectors whose handle_contours rely on width must have width defined,
-        # else they must supply their own handle_contour
+        # NOTE: detectors whose process_contours rely on width must have width defined,
+        # else they must supply their own process_contour
         # TODO: is there any Pythonic systemic way to make this idiot proof
-        self.width = width if width else 0  # Width of object in meters
+        self.width = width if width else 1  # Width of object in meters
         self.height = height if height else width  # Height of object in meters
 
         self.image_sub = self.create_subscription(CompressedImage, f'/camera/usb/{camera}/compressed',
@@ -79,7 +83,7 @@ class HSVFilter(Node, ABC):
         return hsv_opencv
 
     def image_callback(self, data: CompressedImage) -> None:
-        """Attemp to convert image and apply contours."""
+        """Attempt to convert image and apply contours."""
         try:
             # Convert the image from the compressed format to OpenCV format
             np_arr = np.frombuffer(data.data, np.uint8)
@@ -205,21 +209,3 @@ class HSVFilter(Node, ABC):
     def morphology(self, mask: np.ndarray) -> np.ndarray:
         """Apply morphology to mask."""
         return mask
-
-
-def main(args: list[str] | None = None) -> None:
-    """DO NOT RUN this node."""
-    rclpy.init(args=args)
-    hsv_filter = HSVFilter()
-
-    try:
-        rclpy.spin(hsv_filter)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        hsv_filter.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
-
-if __name__ == '__main__':
-    main()
