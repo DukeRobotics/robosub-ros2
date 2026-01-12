@@ -33,3 +33,6 @@ increase_ccw: Whether angle values increases counterclockwise or not
 - `/sonar/image/compressed`
   - When the sonar pipeline runs, it publishes the denoised image to this topic
   - Type: `sensor_msgs/CompressedImage`
+- `/sonar/wall/angle`
+  - When the sonar pipeline runs, it publishes the relative angle of a wall (if found) to the robot
+  - Type: `sensor_msgs/Float32`

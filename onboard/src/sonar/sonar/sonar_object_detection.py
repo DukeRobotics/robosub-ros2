@@ -8,8 +8,10 @@ from skimage.segmentation import watershed
 
 NUM_DIMENSIONS_FOR_REPEAT = 3
 
+
 class SonarDenoiser:
     """Class to denoise sonar scans to prepare them for segmentation and pose estimation."""
+
     def __init__(self, data: np.ndarray) -> None:
         """
         Construct a SonarDenoising object.
@@ -21,17 +23,16 @@ class SonarDenoiser:
         self.shape_theta = min(100, self.data.shape[0])
         self.shape_radius = self.data.shape[1]
 
-        #Reshape data
-        processed_data = np.zeros(shape=(
-            100,
-            np.floor(self.shape_radius * 1.41421356).astype(int)),
+        # Reshape data
+        processed_data = np.zeros(
+            shape=(100, np.floor(self.shape_radius * 1.41421356).astype(int)),
         )
-        processed_data[:self.shape_theta, :self.shape_radius] = self.data[: self.shape_theta]
+        processed_data[: self.shape_theta, : self.shape_radius] = self.data[: self.shape_theta]
 
         self.data = processed_data
         self.cartesian: np.ndarray
 
-    def wall_block(self, threshold: float = 0.95) -> 'SonarDenoiser':
+    def wall_block(self, threshold: float = 0.95) -> "SonarDenoiser":
         """
         Remove signal behind a known wall.
 
@@ -47,13 +48,13 @@ class SonarDenoiser:
         for theta in range(self.shape_theta):
             max_along_theta = 0
             for r in range(self.shape_radius):
-                if (self.data[theta][r] > max_along_theta * threshold):
+                if self.data[theta][r] > max_along_theta * threshold:
                     max_along_theta = self.data[theta][r]
                 else:
                     self.data[theta][r] = 0
         return self
 
-    def percentile_filter(self, threshold: float = 0.7) -> 'SonarDenoiser':
+    def percentile_filter(self, threshold: float = 0.7) -> "SonarDenoiser":
         """
         Apply percentile filtering to reduce noise.
 
@@ -73,7 +74,7 @@ class SonarDenoiser:
         inner_radius: float = 0.001,
         outer_radius: float = 0.25,
         threshold: float = 40,
-        ) -> 'SonarDenoiser':
+    ) -> "SonarDenoiser":
         """
         Denoise a sonar scan using the Fast Fourier Transform. Adapted from Pranav Bijith's Fourier analysis.
 
@@ -90,7 +91,7 @@ class SonarDenoiser:
         xv = np.fft.fftshift(xv)
         yv = np.fft.fftshift(yv)
 
-        #Applies the Radial Mask
+        # Applies the Radial Mask
         radius = np.sqrt(xv**2 + yv**2)
         mask = (radius < outer_radius) & (radius >= inner_radius)
         mask = mask.astype(np.float32)
@@ -98,15 +99,15 @@ class SonarDenoiser:
             mask = np.repeat(mask[:, :, np.newaxis], 3, axis=2)
         fimg = np.fft.fftshift(np.fft.fft2(self.data, axes=(0, 1))) * mask
 
-        #Filter
+        # Filter
         self.data = np.fft.ifft2(np.fft.ifftshift(fimg))
         self.data = np.abs(self.data)
         self.data[self.data < threshold] = 0
 
-        #Return self
+        # Return self
         return self
 
-    def init_cartesian(self) -> 'SonarDenoiser':
+    def init_cartesian(self) -> "SonarDenoiser":
         """
         Update cartesian data based on gradian data.
 
@@ -117,15 +118,15 @@ class SonarDenoiser:
         x, y = np.meshgrid(shape_array, shape_array)
 
         theta = np.zeros(shape=(self.shape_radius, self.shape_radius), dtype=x.dtype)
-        theta[:, 0] = 89 # x=0
+        theta[:, 0] = 89  # x=0
         theta[:, 1:] = np.arctan(y[:, 1:] / x[:, 1:]) / np.pi * 180
         theta_gradians = (theta / 90 * 100).astype(int)
-        r = (np.floor(np.sqrt(x ** 2 + y ** 2))).astype(int)
+        r = (np.floor(np.sqrt(x**2 + y**2))).astype(int)
 
         self.cartesian = self.data[theta_gradians, r]
         return self
 
-    def normalize(self) -> 'SonarDenoiser':
+    def normalize(self) -> "SonarDenoiser":
         """
         Normalize the cartesian image.
 
@@ -137,7 +138,7 @@ class SonarDenoiser:
 
         return self
 
-    def blur(self, factor: int = 16) -> 'SonarDenoiser':
+    def blur(self, factor: int = 16) -> "SonarDenoiser":
         """
         Apply box blur onto cartesian image.
 
@@ -152,12 +153,14 @@ class SonarDenoiser:
 
         self.normalize()
 
-        self.cartesian = np.where(self.cartesian > 1/5, self.cartesian, 0)
+        self.cartesian = np.where(self.cartesian > 1 / 5, self.cartesian, 0)
 
         return self
 
+
 class OrthogonalRegression:
     """A class representing the Orthogonal Regression of a group of points."""
+
     def __init__(self, points: np.ndarray) -> None:
         """
         Construct a OrthogonalRegression object given a group of points.
@@ -174,11 +177,11 @@ class OrthogonalRegression:
         self.unit_normal = np.array([-self.unit_tangent[1], self.unit_tangent[0]])
 
         if self.unit_tangent[0] == 0:
-            self.slope = 999
+            self.slope = (2**31) - 1
         else:
             self.slope = self.unit_tangent[1] / self.unit_tangent[0]
 
-        self.intercept = self.points[:,0].mean() - self.slope * self.points[:,1].mean()
+        self.intercept = self.points[:, 0].mean() - self.slope * self.points[:, 1].mean()
 
         self.orthogonal_projections = np.matmul(
             np.dot(self.points - np.array([self.intercept, 0]), self.unit_tangent[::-1])[:, np.newaxis],
@@ -189,7 +192,7 @@ class OrthogonalRegression:
         residuals = np.linalg.norm(self.residual_vectors, axis=1)
 
         self.mse = np.sum(np.square(residuals)) / residuals.shape[0]
-        self.r2 = 1 - np.sum(np.square(residuals)) / (np.sum(np.square(self.points[:,0] - np.mean(self.points[:,0]))))
+        self.r2 = 1 - np.sum(np.square(residuals)) / (np.sum(np.square(self.points[:, 0] - np.mean(self.points[:, 0]))))
 
     def y_given_x(self, x: float) -> float:
         """
@@ -227,14 +230,18 @@ class OrthogonalRegression:
         else:
             self._slope = value
 
+
 class SonarSegmentType(Enum):
     """Enum for Sonar Segment types."""
+
     NONE = 0
     WALL = 1
     OBJECT = 2
 
+
 class SonarSegment:
     """Class to define a sonar segment segment."""
+
     def __init__(self, points: np.ndarray) -> None:
         """
         Construct a SonarSegment object.
@@ -265,17 +272,19 @@ class SonarSegment:
 
         return (np.round(coordinates[0]), np.round(coordinates[1]))
 
+
 class SonarSegmentation:
     """A class which segments an sonar image, and applies regressions to each segment."""
+
     def __init__(
-            self,
-            image: np.ndarray,
-            wall_object_threshold: float = 0.,
-            segment_size_threshold: float = 0.,
-            segment_brightness_threshold: float = 0.,
-            merge_threshold: float = 1.1,
-            merge_angle_limit: float = 5.,
-        ) -> None:
+        self,
+        image: np.ndarray,
+        wall_object_threshold: float = 0.0,
+        segment_size_threshold: float = 0.0,
+        segment_brightness_threshold: float = 0.0,
+        merge_threshold: float = 1.1,
+        merge_angle_limit: float = 5.0,
+    ) -> None:
         self.segment_size_threshold = segment_size_threshold
         self.segment_brightness_threshold = segment_brightness_threshold
         self.merge_threshold = merge_threshold
@@ -335,20 +344,20 @@ class SonarSegmentation:
         changed = False
 
         for num, segment in enumerate(segments):
-            if (num == current_segment_num or segment is None):
+            if num == current_segment_num or segment is None:
                 continue
             concatenated = SonarSegment(np.concatenate((current_segment.points, segment.points)))
             concatenated.number = current_segment.number
             concatenated.ortho_regression = OrthogonalRegression(concatenated.points)
-            if ((concatenated.ortho_regression.mse < current_segment.ortho_regression.mse * self.merge_threshold
-                or concatenated.ortho_regression.mse < segment.ortho_regression.mse * self.merge_threshold)
-                and
-                (np.abs(np.dot(concatenated.ortho_regression.unit_normal, current_segment.ortho_regression.unit_normal))
-                 > np.cos(np.radians(self.merge_angle_limit))
-                 or
-                 np.abs(np.dot(concatenated.ortho_regression.unit_normal, segment.ortho_regression.unit_normal))
-                 > np.cos(np.radians(self.merge_angle_limit)))):
-
+            if (
+                concatenated.ortho_regression.mse < current_segment.ortho_regression.mse * self.merge_threshold
+                or concatenated.ortho_regression.mse < segment.ortho_regression.mse * self.merge_threshold
+            ) and (
+                np.abs(np.dot(concatenated.ortho_regression.unit_normal, current_segment.ortho_regression.unit_normal))
+                > np.cos(np.radians(self.merge_angle_limit))
+                or np.abs(np.dot(concatenated.ortho_regression.unit_normal, segment.ortho_regression.unit_normal))
+                > np.cos(np.radians(self.merge_angle_limit))
+            ):
                 current_segment = concatenated
                 segments[current_segment_num] = concatenated
                 segments[num] = None
@@ -386,7 +395,7 @@ class SonarSegmentation:
                     segment.nearest_object = point
                     segment.nearest_object_distance = distance
 
-    def get_nearest_segment(self) -> 'SonarSegment':
+    def get_nearest_segment(self) -> "SonarSegment":
         """
         Get the nearest segment.
 
@@ -396,7 +405,7 @@ class SonarSegmentation:
         nearest_segment = None
         min_distance = 1000000
         for segment in self.segments:
-            if(segment.nearest_object_distance < min_distance):
+            if segment.nearest_object_distance < min_distance:
                 nearest_segment = segment
                 min_distance = segment.nearest_object_distance
 
