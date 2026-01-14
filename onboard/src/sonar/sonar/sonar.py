@@ -13,14 +13,15 @@ from geometry_msgs.msg import Pose, PoseStamped
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 from serial.tools import list_ports
-from std_msgs.msg import String
+from std_msgs.msg import Float32, String
 
 from sonar import sonar_image_processing, sonar_object_detection, sonar_utils
 
 
 class Sonar(Node):
     """Class to interface with the Sonar device."""
-    CONFIG_FILE_PATH = f'package://sonar/config/{os.getenv("ROBOT_NAME")}.yaml'
+
+    CONFIG_FILE_PATH = f"package://sonar/config/{os.getenv('ROBOT_NAME')}.yaml"
 
     BAUD_RATE = 2000000  # hz
     SAMPLE_PERIOD_TICK_DURATION = 25e-9  # s
@@ -34,14 +35,15 @@ class Sonar(Node):
     _serial_port = None
     CONNECTION_RETRY_PERIOD = 5  # s
     LOOP_RATE = 10  # Hz
-    STATUS_LOOP_RATE = 5 # Hz
+    STATUS_LOOP_RATE = 5  # Hz
 
-    SONAR_STATUS_TOPIC = 'sonar/status'
-    SONAR_REQUEST_TOPIC = 'sonar/request'
-    SONAR_IMAGE_TOPIC = 'sonar/image/compressed'
-    SONAR_RAW_IMAGE_TOPIC = 'sonar/image/raw'
+    SONAR_STATUS_TOPIC = "sonar/status"
+    SONAR_REQUEST_TOPIC = "sonar/request"
+    SONAR_IMAGE_TOPIC = "sonar/image/compressed"
+    SONAR_RAW_IMAGE_TOPIC = "sonar/image/raw"
+    SONAR_WALL_ANGLE_PUBLISHER = "sonar/wall/angle"
 
-    NODE_NAME = 'sonar'
+    NODE_NAME = "sonar"
 
     CONSTANT_SWEEP_START = 250
     CONSTANT_SWEEP_END = 150
@@ -56,17 +58,17 @@ class Sonar(Node):
 
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME)
-        self.get_logger().info('Sonar planning node initialized')
+        self.get_logger().info("Sonar planning node initialized")
 
-        self.stream = self.declare_parameter('stream', True).value
-        self.debug = self.declare_parameter('debug', False).value
+        self.stream = self.declare_parameter("stream", True).value
+        self.debug = self.declare_parameter("debug", False).value
 
         with Path(rr.get_filename(self.CONFIG_FILE_PATH, use_protocol=False)).open() as f:
             self._config_data = yaml.safe_load(f)
 
-        self.ftdi = self._config_data['ftdi']
-        self.center_gradians = self._config_data['center_gradians']
-        self.increase_ccw = self._config_data['increase_ccw']
+        self.ftdi = self._config_data["ftdi"]
+        self.center_gradians = self._config_data["center_gradians"]
+        self.increase_ccw = self._config_data["increase_ccw"]
 
         self.status_publisher = self.create_publisher(String, self.SONAR_STATUS_TOPIC, 10)
 
@@ -78,6 +80,7 @@ class Sonar(Node):
         if self.stream:
             self.sonar_image_publisher = self.create_publisher(CompressedImage, self.SONAR_IMAGE_TOPIC, 10)
             self.raw_image_publisher = self.create_publisher(CompressedImage, self.SONAR_RAW_IMAGE_TOPIC, 10)
+            self.wall_angle_publisher = self.create_publisher(Float32, self.SONAR_WALL_ANGLE_PUBLISHER, 10)
 
         self.current_scan = (-1, -1, -1)  # (start_angle, end_angle, distance_of_scan)
 
@@ -88,7 +91,7 @@ class Sonar(Node):
         try:
             self._serial_port = next(list_ports.grep(self.ftdi)).device
         except StopIteration:
-            self.get_logger().error('Sonar not found.')
+            self.get_logger().error("Sonar not found.")
             rclpy.shutdown()
 
         self.connect_timer = self.create_timer(1.0 / self.CONNECTION_RETRY_PERIOD, self.connect)
@@ -100,12 +103,13 @@ class Sonar(Node):
             self.ping360.connect_serial(str(self._serial_port), self.BAUD_RATE)
             self.ping360.initialize()
             self.connect_timer.cancel()
-            self.get_logger().info('Connected to sonar.')
+            self.get_logger().info("Connected to sonar.")
             self.init_sonar()
             self.run()
         except StopIteration:
-            self.get_logger().error(f'Error in connecting to sonar, trying again in '
-                                    f'{self.CONNECTION_RETRY_PERIOD} seconds.')
+            self.get_logger().error(
+                f"Error in connecting to sonar, trying again in {self.CONNECTION_RETRY_PERIOD} seconds."
+            )
 
     def init_sonar(self) -> None:
         """Set up default parameters for the sonar device."""
@@ -120,7 +124,7 @@ class Sonar(Node):
     def publish_status(self) -> None:
         """Publish the status of the sonar device."""
         # make string type std_msgs String
-        self.status_publisher.publish(String(data='Sonar Running'))
+        self.status_publisher.publish(String(data="Sonar Running"))
 
     def set_new_range(self, sonar_range: int) -> None:
         """
@@ -156,10 +160,10 @@ class Sonar(Node):
             response = self.ping360.transmitAngle(angle_in_gradians)
             if response is not None:
                 break
-            self.get_logger().error(f'Error in getting data at angle {angle_in_gradians}')
+            self.get_logger().error(f"Error in getting data at angle {angle_in_gradians}")
 
         response_to_int_array = [int(item) for item in response.data]
-        return [0] * self.FILTER_INDEX + response_to_int_array[self.FILTER_INDEX:]
+        return [0] * self.FILTER_INDEX + response_to_int_array[self.FILTER_INDEX :]
 
     def get_sweep(self, range_start: int = 100, range_end: int = 300) -> np.ndarray:
         """
@@ -183,8 +187,9 @@ class Sonar(Node):
 
         return np.vstack(sonar_sweep_data)
 
-    def get_xy_of_object_in_sweep(self, start_angle: int, end_angle: int) -> \
-            tuple[Pose | None, np.ndarray, float | None]:
+    def get_xy_of_object_in_sweep(
+        self, start_angle: int, end_angle: int
+    ) -> tuple[Pose | None, np.ndarray, float | None]:
         """
         Get the depth of the sweep of a detected object. For now uses mean value.
 
@@ -197,10 +202,11 @@ class Sonar(Node):
         """
         sweep = self.get_sweep(start_angle, end_angle)
 
-        if(self.stream):
-            self.raw_image_publisher.publish(sonar_utils.convert_to_ros_compressed_img(
-                sonar_object_detection.SonarDenoiser(sweep).init_cartesian().cartesian,
-                self.cv_bridge,
+        if self.stream:
+            self.raw_image_publisher.publish(
+                sonar_utils.convert_to_ros_compressed_img(
+                    sonar_object_detection.SonarDenoiser(sweep).init_cartesian().cartesian,
+                    self.cv_bridge,
                 ),
             )
 
@@ -212,7 +218,7 @@ class Sonar(Node):
         segmentation = sonar_object_detection.SonarSegmentation(
             denoiser.cartesian,
             wall_object_threshold=0,
-            segment_size_threshold=2000/90*denoiser.shape_theta,
+            segment_size_threshold=2000 / 90 * denoiser.shape_theta,
             segment_brightness_threshold=60,
             merge_threshold=1.5,
             merge_angle_limit=6,
@@ -223,7 +229,12 @@ class Sonar(Node):
         if nearest_segment is None:
             return (None, color_image, None)
 
-        x_index, y_index = nearest_segment.get_average_coordinate_of_points()
+        if self.stream and nearest_segment.type == sonar_utils.SonarSegmentType.Wall:
+            msg = Float32()
+            msg.data = np.arctan(nearest_segment.slope) - np.pi / 4
+            self.wall_angle_publisher.publish(msg)
+
+        _, sonar_index = nearest_segment.get_average_coordinate_of_points()
         normal_angle = np.arctan2(
             nearest_segment.ortho_regression.unit_normal[1],
             nearest_segment.ortho_regression.unit_normal[0],
@@ -233,10 +244,13 @@ class Sonar(Node):
 
         sonar_angle = (start_angle + end_angle) / 2  # Take the middle of the sweep
 
-        return (sonar_utils.to_robot_position(sonar_angle, x_index, y_index, self.sample_period,
-                                              self.center_gradians, self.NEGATE_POSE),
-                                              color_image,
-                                              normal_angle)
+        return (
+            sonar_utils.to_robot_position(
+                sonar_angle, sonar_index, self.sample_period, self.center_gradians, self.NEGATE_POSE
+            ),
+            color_image,
+            normal_angle,
+        )
 
     def constant_sweep(self) -> None:
         """
@@ -247,26 +261,28 @@ class Sonar(Node):
             end_angle (int): Angle to end sweep in gradians.
             distance_of_scan (int): Distance in meters to scan.
         """
-        self.get_logger().info('Starting constant sweep')
+        self.get_logger().info("Starting constant sweep")
         self.set_new_range(self.DEFAULT_RANGE)
 
         # Perform a scan
         try:
-            self.get_logger().info(f'Starting sweep from {self.CONSTANT_SWEEP_START} to {self.CONSTANT_SWEEP_END}')
+            self.get_logger().info(f"Starting sweep from {self.CONSTANT_SWEEP_START} to {self.CONSTANT_SWEEP_END}")
             sonar_sweep = self.get_sweep(self.CONSTANT_SWEEP_START, self.CONSTANT_SWEEP_END)
-            self.get_logger().info('Finishng sweep')
+            self.get_logger().info("Finishng sweep")
             if self.stream:
-                self.raw_image_publisher.publish(sonar_utils.convert_to_ros_compressed_img(
-                    sonar_object_detection.SonarDenoiser(sonar_sweep).init_cartesian().cartesian,
-                    self.cv_bridge,
-                ),
-            )
+                self.raw_image_publisher.publish(
+                    sonar_utils.convert_to_ros_compressed_img(
+                        sonar_object_detection.SonarDenoiser(sonar_sweep).init_cartesian().cartesian,
+                        self.cv_bridge,
+                    ),
+                )
         except (RuntimeError, ValueError) as e:
-            self.get_logger().error(f'Error during constant sweep: {e}')
+            self.get_logger().error(f"Error during constant sweep: {e}")
             rclpy.shutdown()
 
-    def perform_sonar_request(self, request: SonarSweepRequest.Request, response: SonarSweepRequest.Response) -> \
-            SonarSweepRequest.Response:
+    def perform_sonar_request(
+        self, request: SonarSweepRequest.Request, response: SonarSweepRequest.Response
+    ) -> SonarSweepRequest.Response:
         """
         Perform a sonar request.
 
@@ -295,18 +311,17 @@ class Sonar(Node):
 
         if start_degrees > end_degrees:
             response.success = False
-            response.message = f'Start angle {start_degrees} must be less than or equal to end angle {end_degrees}.'
+            response.message = f"Start angle {start_degrees} must be less than or equal to end angle {end_degrees}."
             return response
 
         left_gradians = sonar_utils.degrees_to_centered_gradians(start_degrees, self.center_gradians, self.increase_ccw)
-        right_gradians = sonar_utils.degrees_to_centered_gradians(end_degrees, self.center_gradians,
-                                                                  self.increase_ccw)
+        right_gradians = sonar_utils.degrees_to_centered_gradians(end_degrees, self.center_gradians, self.increase_ccw)
 
-        self.get_logger().info(f'Recieved Sonar request: {left_gradians}, {right_gradians}, {new_range}')
+        self.get_logger().info(f"Recieved Sonar request: {left_gradians}, {right_gradians}, {new_range}")
 
         # Angle must be between 0 and 400 and range must be positive
-        if left_gradians < 0 or right_gradians < 0 or right_gradians > 400 or new_range < 0: # noqa: PLR2004
-            self.get_logger().error('Bad sonar request')
+        if left_gradians < 0 or right_gradians < 0 or right_gradians > 400 or new_range < 0:  # noqa: PLR2004
+            self.get_logger().error("Bad sonar request")
             return response
 
         if new_range != self.prev_range:
@@ -316,8 +331,8 @@ class Sonar(Node):
             object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep(
                 left_gradians,
                 right_gradians,
-                )
-            self.get_logger().debug('Finished xy_of_object')
+            )
+            self.get_logger().debug("Finished xy_of_object")
         except RuntimeError as e:
             response.success = False
             response.message = str(e)
@@ -328,13 +343,13 @@ class Sonar(Node):
             response.pose.header.stamp = self.get_clock().now().to_msg()
             response.normal_angle = normal_angle
             response.is_object = True
-            response.pose.header.frame_id = 'robot'
+            response.pose.header.frame_id = "robot"
 
         if object_pose is None:
-            self.get_logger().error('No object found')
-            response.message = 'No object found.'
+            self.get_logger().error("No object found")
+            response.message = "No object found."
         else:
-            response.message = 'Found object.'
+            response.message = "Found object."
 
         if self.stream:
             sonar_image = sonar_utils.convert_to_ros_compressed_img(plot, self.cv_bridge, is_color=True)
@@ -348,7 +363,8 @@ class Sonar(Node):
         if self.debug:
             self.create_timer(1.0 / self.LOOP_RATE, self.constant_sweep)
         else:
-            self.create_service(SonarSweepRequest, 'sonar/request', self.perform_sonar_request)
+            self.create_service(SonarSweepRequest, "sonar/request", self.perform_sonar_request)
+
 
 def main(args: list[str] | None = None) -> None:
     """Initialize and run the Sonar node."""
@@ -364,5 +380,6 @@ def main(args: list[str] | None = None) -> None:
         if rclpy.ok():
             rclpy.shutdown()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
