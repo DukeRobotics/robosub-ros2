@@ -3,6 +3,9 @@ import cv2
 import numpy as np
 import rclpy
 from cv.hsv_filter import HSVFilter
+from sensor_msgs.msg import CompressedImage
+from std_msgs.msg import Float64
+
 
 
 class HSVLaneMarker(HSVFilter):
@@ -19,6 +22,8 @@ class HSVLaneMarker(HSVFilter):
     def create_additional_pubs_subs_vars(self) -> None:
         """Additional publishers and subscribers specific to this class."""
         # TODO: implement this to add publishers from lane_marker_detector.py that are missing in the default HSVFilter
+        self.detections_pub = self.create_publisher(CompressedImage, '/cv/bottom/detections/compressed', 10)
+        self.angle_pub = self.create_publisher(Float64, '/cv/bottom/lane_marker/angle', 10)
 
     def process_contours(self, final_contours: list[np.ndarray], image: np.ndarray, bbox_img: np.ndarray) -> None:
         """Process lane marker contour."""
@@ -26,7 +31,7 @@ class HSVLaneMarker(HSVFilter):
         # TODO: implement this to match behavior of lane_marker_detector.py perfectly
 
     def filter(self, contours: list) -> list:
-        """Pick the largest contour only."""
+        """Pick the largest contour onguly."""
         final_contours = sorted(contours, key=cv2.contourArea, reverse=True)
         return final_contours[0]
 
