@@ -18,7 +18,7 @@ MAX_STEPS = 3
 
 @task
 async def sonar_test(_self: Task, start_angle: float, end_angle: float, scan_distance: float) -> Task[None, None, None]:
-   """Repeatedly perform sonar scans."""
+   """Repeatedly perform sonar scans. """
    while True:
        logger.info(f'Sonar scan from {start_angle} to {end_angle} degrees, distance: {scan_distance} m')
        future = Sonar().sweep(
