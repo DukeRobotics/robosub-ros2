@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
 from pathlib import Path
-
+from datetime import datetime
 import pytz
 from custom_msgs.msg import ModemStatus, StringWithHeader
 from custom_msgs.srv import SendModemMessage
@@ -10,8 +9,7 @@ from rclpy.logging import get_logger
 from rclpy.node import Node
 from rclpy.task import Future
 from rclpy.time import Time
-from task_planning.utils.other_utils import singleton
-
+from task_planning.utils.other_utils import singleton, ros_timestamp_to_pacific_time
 logger = get_logger('ivc_interface')
 
 class IVCMessageType(Enum):
@@ -52,29 +50,6 @@ class IVCMessage:
     """
     timestamp: Time
     msg: IVCMessageType
-
-def ros_timestamp_to_pacific_time(sec: int, nanosec: int) -> str:
-    """
-    Convert ROS timestamp (seconds and nanoseconds) to human-readable Pacific time.
-
-    # TODO: move to utils + merge with same function in ivc_tasks.py
-
-    Args:
-        sec (int): Seconds since epoch
-        nanosec (int): Nanoseconds
-
-    Returns:
-        str: Human-readable timestamp in Pacific timezone
-    """
-    # Convert to datetime object
-    pacific_tz = pytz.timezone('US/Pacific')
-    timestamp = datetime.fromtimestamp(sec + nanosec / 1e9, tz=pacific_tz)
-
-    # Convert to Pacific timezone
-    pacific_time = timestamp.astimezone(pacific_tz)
-
-    # Format as human-readable string
-    return pacific_time.strftime('%Y-%m-%d %H:%M:%S %Z')
 
 @singleton
 class IVC:

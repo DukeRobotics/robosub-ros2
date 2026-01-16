@@ -1,13 +1,14 @@
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
-
+import aiofiles
 import pytz
 from rclpy.duration import Duration
 from rclpy.logging import get_logger
 from task_planning.interface.ivc import IVC, IVCMessageType
 from task_planning.task import Task, task
 from task_planning.tasks import util_tasks
+from task_planning.utils.other_utils import ros_timestamp_to_pacific_time
 
 if TYPE_CHECKING:
     from custom_msgs.srv import SendModemMessage
@@ -16,30 +17,6 @@ if TYPE_CHECKING:
 # TODO: add docstrings for all tasks
 
 logger = get_logger('ivc_tasks')
-
-def ros_timestamp_to_pacific_time(sec: int, nanosec: int) -> str:
-    """
-    Convert ROS timestamp (seconds and nanoseconds) to human-readable Pacific time.
-
-    # TODO: move to utils + merge with same function in ivc.py
-
-    Args:
-        sec (int): Seconds since epoch
-        nanosec (int): Nanoseconds
-
-    Returns:
-        str: Human-readable timestamp in Pacific timezone
-    """
-    # Convert to datetime object
-    pacific_tz = pytz.timezone('US/Pacific')
-    timestamp = datetime.fromtimestamp(sec + nanosec / 1e9, tz=pacific_tz)
-
-    # Convert to Pacific timezone
-    pacific_time = timestamp.astimezone(pacific_tz)
-
-    # Format as human-readable string
-    return pacific_time.strftime('%Y-%m-%d %H:%M:%S %Z')
-
 
 @task
 async def wait_for_modem_status(self: Task[None, None, None], timeout: float = 10) -> bool:
@@ -99,7 +76,7 @@ async def wait_for_modem_ready(self: Task[None, None, None], timeout: float = 15
     logger.info('Modem is ready.')
     return True
 
-
+# TODO: read through this to see what's unique
 @task
 async def test_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
     """Test inter-vehicle communication."""
@@ -153,7 +130,7 @@ async def ivc_receive(self: Task[None, None, None], timeout: float = 10) -> IVCM
     """Receive IVC message."""
     await wait_for_modem_ready(parent=self)
 
-    messages_received = len(IVC().messages)
+    messages_received = len(IVC().messages) # TODO: This is slightly dumb. re-think if possible.
 
     sleep_task = util_tasks.sleep(timeout, parent=self)
     while not (len(IVC().messages) > messages_received):
@@ -175,15 +152,6 @@ async def ivc_receive(self: Task[None, None, None], timeout: float = 10) -> IVCM
 
     logger.warning(f'Received message {IVC().messages[-1].msg.name} is unknown.')
     return IVCMessageType.UNKNOWN
-
-
-@task
-async def crush_ivc_spam(self: Task[None, None, None], msg_to_send: IVCMessageType) -> Task[None, None, None]:
-    """Spam IVC message for Crush."""
-    while True:
-        await ivc_send(msg_to_send, parent=self) # Send crush is done with gate
-        await util_tasks.sleep(20, parent=self)
-
 
 @task
 async def ivc_send_then_receive(self: Task[None, None, None], msg_to_send: IVCMessageType,
@@ -246,12 +214,12 @@ async def ivc_receive_then_send(self: Task[None, None, None], msg: IVCMessageTyp
 @task
 async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:  # noqa: ARG001
     """Append a header to the IVC log file."""
-    with Path('ivc_log.txt').open('a') as f:  # noqa: ASYNC230 TODO eventually use async io
-        f.write('----- NEW RUN STARTED -----\n')
+    async with aiofiles.open('ivc_log.txt', 'a') as f:
+        await f.write('----- NEW RUN STARTED -----\n')
 
 
 @task
 async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[None, None, None]:  # noqa: ARG001
     """Add a message to the IVC log file."""
-    with Path('ivc_log.txt').open('a') as f: # noqa: ASYNC230 TODO eventually use async io
-        f.write(f'{message}\n')
+    async with aiofiles.open('ivc_log.txt', 'a') as f:
+        await f.write(f'{message}\n')
