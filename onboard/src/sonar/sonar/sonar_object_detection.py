@@ -32,7 +32,7 @@ class SonarDenoiser:
         self.data = processed_data
         self.cartesian: np.ndarray
 
-    def wall_block(self, threshold: float = 0.95) -> "SonarDenoiser":
+    def wall_block(self, threshold: float = 0.95) -> 'SonarDenoiser':
         """
         Remove signal behind a known wall.
 
@@ -54,7 +54,7 @@ class SonarDenoiser:
                     self.data[theta][r] = 0
         return self
 
-    def percentile_filter(self, threshold: float = 0.7) -> "SonarDenoiser":
+    def percentile_filter(self, threshold: float = 0.7) -> 'SonarDenoiser':
         """
         Apply percentile filtering to reduce noise.
 
@@ -74,7 +74,7 @@ class SonarDenoiser:
         inner_radius: float = 0.001,
         outer_radius: float = 0.25,
         threshold: float = 40,
-    ) -> "SonarDenoiser":
+    ) -> 'SonarDenoiser':
         """
         Denoise a sonar scan using the Fast Fourier Transform. Adapted from Pranav Bijith's Fourier analysis.
 
@@ -107,7 +107,7 @@ class SonarDenoiser:
         # Return self
         return self
 
-    def init_cartesian(self) -> "SonarDenoiser":
+    def init_cartesian(self) -> 'SonarDenoiser':
         """
         Update cartesian data based on gradian data.
 
@@ -126,7 +126,7 @@ class SonarDenoiser:
         self.cartesian = self.data[theta_gradians, r]
         return self
 
-    def normalize(self) -> "SonarDenoiser":
+    def normalize(self) -> 'SonarDenoiser':
         """
         Normalize the cartesian image.
 
@@ -138,7 +138,7 @@ class SonarDenoiser:
 
         return self
 
-    def blur(self, factor: int = 16) -> "SonarDenoiser":
+    def blur(self, factor: int = 16) -> 'SonarDenoiser':
         """
         Apply box blur onto cartesian image.
 
@@ -395,7 +395,7 @@ class SonarSegmentation:
                     segment.nearest_object = point
                     segment.nearest_object_distance = distance
 
-    def get_nearest_segment(self) -> "SonarSegment":
+    def get_nearest_segment(self) -> 'SonarSegment':
         """
         Get the nearest segment.
 

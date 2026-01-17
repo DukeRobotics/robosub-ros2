@@ -10,12 +10,14 @@ from sonar import sonar_image_processing
 
 RADIANS_PER_GRADIAN = np.pi / 200
 GRADIANS_PER_DEGREE = 400 / 360
-SPEED_OF_SOUND_IN_WATER = 1482 # m/s
+SPEED_OF_SOUND_IN_WATER = 1482  # m/s
 SAMPLE_PERIOD_TICK_DURATION = 25e-9  # s
-TRANSFORMATION_ANGLE = np.pi/4
+TRANSFORMATION_ANGLE = np.pi / 4
 
-def transform_pose(buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped,
-                   source_frame_id: str, target_frame_id: str) -> tf2_geometry_msgs.PoseStamped:
+
+def transform_pose(
+    buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped, source_frame_id: str, target_frame_id: str
+) -> tf2_geometry_msgs.PoseStamped:
     """
     Transform pose from source reference frame to target reference frame.
 
@@ -31,15 +33,21 @@ def transform_pose(buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped,
     try:
         # Wait for transform to be available
         transform = buffer.lookup_transform(
-            target_frame_id, source_frame_id, rclpy.time.Time(),
+            target_frame_id,
+            source_frame_id,
+            rclpy.time.Time(),
         )
 
         # Transform the pose
         return tf2_geometry_msgs.do_transform_pose(pose, transform)
 
-    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException,
-            tf2_ros.InvalidArgumentException) as e:
-        error_message = f'Failed to transform pose: {e}'
+    except (
+        tf2_ros.LookupException,
+        tf2_ros.ConnectivityException,
+        tf2_ros.ExtrapolationException,
+        tf2_ros.InvalidArgumentException,
+    ) as e:
+        error_message = f"Failed to transform pose: {e}"
         raise RuntimeError(error_message) from e
 
 
@@ -74,7 +82,8 @@ def degrees_to_centered_gradians(angle_degrees: float, center_gradians: float, i
     angle_gradians_centered = angle_gradians + center_gradians
     return int(angle_gradians_centered)
 
-def range_to_period(sonar_range: int, number_of_samples : int) -> int:
+
+def range_to_period(sonar_range: int, number_of_samples: int) -> int:
     """
     From a given range determines the sample_period.
 
@@ -92,11 +101,11 @@ def range_to_period(sonar_range: int, number_of_samples : int) -> int:
     Returns:
         sample_period (int): sample period in ms.
     """
-    period = 2 * sonar_range / (number_of_samples * SPEED_OF_SOUND_IN_WATER
-                                * SAMPLE_PERIOD_TICK_DURATION)
+    period = 2 * sonar_range / (number_of_samples * SPEED_OF_SOUND_IN_WATER * SAMPLE_PERIOD_TICK_DURATION)
     return round(period)
 
-def range_to_transmit(sonar_range: int, number_of_samples : int) -> int:
+
+def range_to_transmit(sonar_range: int, number_of_samples: int) -> int:
     """
     From a given range determines the transmit_duration.
 
@@ -118,12 +127,12 @@ def range_to_transmit(sonar_range: int, number_of_samples : int) -> int:
     # 1
     transmit_duration = 8000 * sonar_range / SPEED_OF_SOUND_IN_WATER
     # 2 (transmit duration is microseconds, samplePeriod() is nanoseconds)
-    transmit_duration = max(range_to_period(sonar_range, number_of_samples) / 40,
-                            transmit_duration)
+    transmit_duration = max(range_to_period(sonar_range, number_of_samples) / 40, transmit_duration)
     # 3 min_transmit is 5 and max_transmit is 500
     return round(max(5, min(500, transmit_duration)))
 
-def meters_per_sample(sample_period : int) -> float:
+
+def meters_per_sample(sample_period: int) -> float:
     """
     Return the target distance per sample, in meters.
 
@@ -138,6 +147,7 @@ def meters_per_sample(sample_period : int) -> float:
     # sample_period is in 25ns increments
     # time of flight includes there and back, so divide by 2
     return SPEED_OF_SOUND_IN_WATER * sample_period * SAMPLE_PERIOD_TICK_DURATION / 2.0
+
 
 def get_distance_of_sample(sample_period: float, sample_index: int) -> float:
     """
@@ -157,48 +167,49 @@ def get_distance_of_sample(sample_period: float, sample_index: int) -> float:
     # 0.5 for the average distance of sample
     return (sample_index + 0.5) * meters_per_sample(sample_period)
 
-def to_robot_position(angle: float, x_index: int, y_index: int, sample_period: float,
-                      center_gradians: int, negate: bool) -> Pose:
+
+def to_robot_position(x_index: int, y_index: int, sample_period: float, negate: bool) -> Pose:
     """
     Convert a point in sonar space to a robot global position.
 
     Args:
-        angle (float): Angle in gradians of the point relative to in front
-            of the sonar device.
         x_index (int | float): x-index of the data in the sonar response.
         y_index (int | float): y-index of the data in the sonar response.
         sample_period (int): the sample period of the ping360
-        center_gradians (int): the gradian value of the center of the scan
         negate (bool): whether to negate the pose or not
 
     Returns:
         Pose: Pose in target_frame_id containing x and y position of angle/index item.
     """
     x_pos = get_distance_of_sample(
-            sample_period, x_index,
-        )
+        sample_period,
+        x_index,
+    )
     y_pos = get_distance_of_sample(
-            sample_period, y_index,
-        )
+        sample_period,
+        y_index,
+    )
 
-    adjusted_x = x_pos * np.cos(TRANSFORMATION_ANGLE) + y_pos * np.sin(TRANSFORMATION_ANGLE)
-    adjusted_y = -x_pos * np.sin(TRANSFORMATION_ANGLE) + y_pos * np.cos(TRANSFORMATION_ANGLE)
+    adjusted_x = x_pos * np.cos(TRANSFORMATION_ANGLE) + y_pos * np.sin(TRANSFORMATION_ANGLE) * -1 if negate else 1
+    adjusted_y = -x_pos * np.sin(TRANSFORMATION_ANGLE) + y_pos * np.cos(TRANSFORMATION_ANGLE) * -1 if negate else 1
 
     yaw = np.arctan2(adjusted_y, adjusted_x)
 
     pos_of_point = Pose()
     pos_of_point.position.x = adjusted_x
     pos_of_point.position.y = adjusted_y
-    pos_of_point.position.z = 0.  # z cord is not really 0 but we don't care
-    pos_of_point.orientation.x = 0.
-    pos_of_point.orientation.y = 0.
-    pos_of_point.orientation.z = np.sin(yaw/2)
-    pos_of_point.orientation.w = np.cos(yaw/2)
+    pos_of_point.position.z = 0.0  # z cord is not really 0 but we don't care
+    pos_of_point.orientation.x = 0.0
+    pos_of_point.orientation.y = 0.0
+    pos_of_point.orientation.z = np.sin(yaw / 2)
+    pos_of_point.orientation.w = np.cos(yaw / 2)
 
     return pos_of_point
 
-def convert_to_ros_compressed_img(sonar_sweep: np.ndarray, cv_bridge: CvBridge,
-                                  compressed_format: str = 'jpeg', is_color: bool = False) -> CompressedImage:
+
+def convert_to_ros_compressed_img(
+    sonar_sweep: np.ndarray, cv_bridge: CvBridge, compressed_format: str = "jpeg", is_color: bool = False
+) -> CompressedImage:
     """
     Convert any kind of image to ROS Compressed Image.
 
