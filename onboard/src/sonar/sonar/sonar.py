@@ -108,7 +108,7 @@ class Sonar(Node):
             self.run()
         except StopIteration:
             self.get_logger().error(
-                f'Error in connecting to sonar, trying again in {self.CONNECTION_RETRY_PERIOD} seconds.'
+                f'Error in connecting to sonar, trying again in {self.CONNECTION_RETRY_PERIOD} seconds.',
             )
 
     def init_sonar(self) -> None:
@@ -188,7 +188,7 @@ class Sonar(Node):
         return np.vstack(sonar_sweep_data)
 
     def get_xy_of_object_in_sweep(
-        self, start_angle: int, end_angle: int
+        self, start_angle: int, end_angle: int,
     ) -> tuple[Pose | None, np.ndarray, float | None]:
         """
         Get the depth of the sweep of a detected object. For now uses mean value.
@@ -245,8 +245,6 @@ class Sonar(Node):
 
         self.get_logger().info(f'x: {x_index}, y: {y_index}, normal: {normal_angle}')
 
-        sonar_angle = (start_angle + end_angle) / 2  # Take the middle of the sweep
-
         return (
             sonar_utils.to_robot_position(x_index, y_index, self.sample_period, self.NEGATE_POSE),
             color_image,
@@ -282,7 +280,7 @@ class Sonar(Node):
             rclpy.shutdown()
 
     def perform_sonar_request(
-        self, request: SonarSweepRequest.Request, response: SonarSweepRequest.Response
+        self, request: SonarSweepRequest.Request, response: SonarSweepRequest.Response,
     ) -> SonarSweepRequest.Response:
         """
         Perform a sonar request.

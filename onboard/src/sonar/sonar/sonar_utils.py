@@ -16,7 +16,7 @@ TRANSFORMATION_ANGLE = np.pi / 4
 
 
 def transform_pose(
-    buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped, source_frame_id: str, target_frame_id: str
+    buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped, source_frame_id: str, target_frame_id: str,
 ) -> tf2_geometry_msgs.PoseStamped:
     """
     Transform pose from source reference frame to target reference frame.
@@ -47,7 +47,7 @@ def transform_pose(
         tf2_ros.ExtrapolationException,
         tf2_ros.InvalidArgumentException,
     ) as e:
-        error_message = f"Failed to transform pose: {e}"
+        error_message = f'Failed to transform pose: {e}'
         raise RuntimeError(error_message) from e
 
 
@@ -208,7 +208,7 @@ def to_robot_position(x_index: int, y_index: int, sample_period: float, negate: 
 
 
 def convert_to_ros_compressed_img(
-    sonar_sweep: np.ndarray, cv_bridge: CvBridge, compressed_format: str = "jpeg", is_color: bool = False
+    sonar_sweep: np.ndarray, cv_bridge: CvBridge, compressed_format: str = 'jpeg', is_color: bool = False,
 ) -> CompressedImage:
     """
     Convert any kind of image to ROS Compressed Image.
