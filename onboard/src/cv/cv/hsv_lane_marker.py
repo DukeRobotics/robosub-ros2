@@ -18,8 +18,8 @@ class HSVLaneMarker(HSVFilter):
 
     def __init__(self) -> None:
         super().__init__(
-            name="lane_marker",
-            camera="bottom",
+            name='lane_marker',
+            camera='bottom',
             mask_ranges=[
                 [cv_constants.LaneMarker.LANE_MARKER_BOT, cv_constants.LaneMarker.LANE_MARKER_TOP],
             ],
@@ -28,14 +28,14 @@ class HSVLaneMarker(HSVFilter):
     def create_additional_pubs_subs_vars(self) -> None:
         """Additional publishers and subscribers specific to this class."""
         # TODO: implement this to add publishers from lane_marker_detector.py that are missing in the default HSVFilter
-        self.detections_pub = self.create_publisher(CompressedImage, "/cv/bottom/detections/compressed", 10)
-        self.angle_pub = self.create_publisher(Float64, "/cv/bottom/lane_marker/angle", 10)
+        self.detections_pub = self.create_publisher(CompressedImage, '/cv/bottom/detections/compressed', 10)
+        self.angle_pub = self.create_publisher(Float64, '/cv/bottom/lane_marker/angle', 10)
 
     def process_contours(self, final_contours: list[np.ndarray], image: np.ndarray, bbox_img: np.ndarray) -> None:
         """Process lane marker contour."""
         # TODO: implement this to match behavior of lane_marker_detector.py perfectly
         if not final_contours:
-            self.get_logger().error("No contours found?")
+            self.get_logger().error('No contours found?')
 
         angle_in_degrees = None
         distance = None
@@ -148,5 +148,5 @@ def main(args: list[str] | None = None) -> None:
             rclpy.shutdown()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
