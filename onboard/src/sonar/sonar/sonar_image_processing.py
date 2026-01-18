@@ -229,4 +229,3 @@ def sonar_gaussian_mixture_model_cluster(sonar_data: np.ndarray) -> np.ndarray:
         cluster_labels = np.full(mask.shape, -1)
 
     return cluster_labels.reshape(finalcopygrid.shape)
-

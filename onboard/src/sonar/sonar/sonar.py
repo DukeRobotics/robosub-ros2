@@ -201,6 +201,7 @@ class Sonar(Node):
             (Pose, List, float): Pose of the object in robot reference frame, sonar sweep array, and normal angle.
         """
         sweep = self.get_sweep(start_angle, end_angle)
+        self.get_logger().info('Finished sweep')
 
         if self.stream:
             self.raw_image_publisher.publish(
@@ -212,8 +213,10 @@ class Sonar(Node):
 
         denoiser = sonar_object_detection.SonarDenoiser(sweep)
         denoiser.wall_block().percentile_filter().fourier_signal_processing().init_cartesian().normalize().blur()
+        self.get_logger().info('Finished Denoising')
 
         color_image = sonar_image_processing.build_color_sonar_image_from_int_array(denoiser.cartesian)
+        self.get_logger().info('Color image built')
 
         segmentation = sonar_object_detection.SonarSegmentation(
             denoiser.cartesian,
@@ -223,15 +226,17 @@ class Sonar(Node):
             merge_threshold=1.5,
             merge_angle_limit=6,
         )
+        self.get_logger().info('Segmented')
 
         nearest_segment = segmentation.get_nearest_segment()
 
         if nearest_segment is None:
             return (None, color_image, None)
 
-        if self.stream and nearest_segment.type == sonar_utils.SonarSegmentType.Wall:
-            msg = Float32()
-            msg.data = np.arctan(nearest_segment.slope) - np.pi / 4
+        self.get_logger().info('Got segment')
+
+        if self.stream:
+            msg = Float32(data=float(np.arctan(nearest_segment.ortho_regression.slope)+np.pi / 4.))
             self.wall_angle_publisher.publish(msg)
 
         x_index, y_index = nearest_segment.get_average_coordinate_of_points()
@@ -240,7 +245,7 @@ class Sonar(Node):
                 nearest_segment.ortho_regression.unit_normal[1],
                 nearest_segment.ortho_regression.unit_normal[0],
             )
-            - np.pi / 4
+            - np.pi / 4.
         )
 
         self.get_logger().info(f'x: {x_index}, y: {y_index}, normal: {normal_angle}')
@@ -340,7 +345,7 @@ class Sonar(Node):
         if object_pose is not None:
             response.pose.pose = object_pose
             response.pose.header.stamp = self.get_clock().now().to_msg()
-            response.normal_angle = normal_angle
+            response.normal_angle = normal_angle * 1.0
             response.is_object = True
             response.pose.header.frame_id = 'robot_sonar'
 
