@@ -34,6 +34,7 @@ async def sonar_test(_self: Task, start_angle: float, end_angle: float, scan_dis
             logger.info(f'Sonar scan response: {service_response}')
 
 
+@task
 async def get_normal_angle(start_angle: float, end_angle: float, scan_distance: float) -> float:
     """Get a normal angle from the sonar scan."""
     future = Sonar().sweep(start_angle=start_angle, end_angle=end_angle, scan_distance=scan_distance)
@@ -98,8 +99,8 @@ async def rotate_to_angle_from_normal(
         pose_tolerances=create_twist_tolerance(angular_yaw=0.1),
         parent=self,
     )
-    new_angle = await get_normal_angle(start_angle, end_angle, scan_distance)
-    new_angle = rotated_angle + new_angle
+    normal_angle = await get_normal_angle(start_angle, end_angle, scan_distance)
+    new_angle = rotated_angle + normal_angle
     steps = 0
     while new_angle > yaw_threshold + angle and steps < MAX_STEPS:
         await move_to_pose_local(
