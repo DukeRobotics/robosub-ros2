@@ -6,11 +6,9 @@ import numpy as np
 import rclpy
 from custom_msgs.msg import CVObject
 from cv.hsv_filter import HSVFilter
+from cv_bridge import CvBridgeError
 from geometry_msgs.msg import Point
-from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float64
-from cv_bridge import CvBridge, CvBridgeError
-
 
 
 class HSVLaneMarker(HSVFilter):
@@ -28,8 +26,8 @@ class HSVLaneMarker(HSVFilter):
     def create_additional_pubs_subs_vars(self) -> None:
         """Additional publishers and subscribers specific to this class."""
         # TODO: implement this to add publishers from lane_marker_detector.py that are missing in the default HSVFilter
-        self.detections_pub = self.create_publisher(CompressedImage, '/cv/bottom/detections/compressed', 10)
-        self.angle_pub = self.create_publisher(Float64, '/cv/bottom/lane_marker/angle', 10)
+        # self.detections_pub = self.create_publisher(CompressedImage, '/cv/bottom/detections/compressed', 10)
+        self.angle_pubs = [self.create_publisher(Float64, '/cv/bottom_usb/lane_marker/angle', 10)]
 
     def process_contours(self, final_contours: list[np.ndarray], image: np.ndarray, bbox_img: np.ndarray) -> None:
         """Process lane marker contour."""
@@ -100,27 +98,23 @@ class HSVLaneMarker(HSVFilter):
         if angle_in_degrees is not None:
             angle_msg = Float64()
             angle_msg.data = angle_in_degrees
-            self.angle_pub.publish(angle_msg)
+            self.angle_pubs[i].publish(angle_msg)
 
         if distance is not None:
             distance_msg = Point()
             distance_msg.y = distance
-            self.distance_pub.publish(distance_msg)
+            self.distance_pubs[i].publish(distance_msg)
 
         if bounding_box is not None:
-            self.bounding_box_pub.publish(bounding_box)
+            self.bounding_box_pubs[i].publish(bounding_box)
 
 
         # Publish the processed frame with the rectangle drawn
         try:
             compressed_image_msg = self.bridge.cv2_to_compressed_imgmsg(image)
-            self.detections_pub.publish(compressed_image_msg)
+            self.contour_image_pubs[i].publish(compressed_image_msg)
         except CvBridgeError as e:
             self.get_logger().error(f'Failed to publish processed image: {e}')
-
-
-
-
 
     def filter(self, contours: list) -> list:
         """Pick the largest contour onguly."""

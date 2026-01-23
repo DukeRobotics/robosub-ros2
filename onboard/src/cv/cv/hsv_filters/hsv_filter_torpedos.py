@@ -25,10 +25,10 @@ class HSVFilterTorpedos(Node):
         self.MIN_AREA_OF_CONTOUR = 75
         self.MATCH_TOLERANCE = 1.0
 
-        self.mask_ranges=[
-                [Torpedo.LOW_BOT, Torpedo.LOW_TOP],
-                [Torpedo.HIGH_BOT, Torpedo.HIGH_TOP],
-            ]
+        self.mask_ranges = [
+            [Torpedo.LOW_BOT, Torpedo.LOW_TOP],
+            [Torpedo.HIGH_BOT, Torpedo.HIGH_TOP],
+        ]
 
         # Load the reference image in grayscale (assumes the image is already binary: white and black)
         reference_image_path = 'package://cv/assets/torpedo_target_mask.png'

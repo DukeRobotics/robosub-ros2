@@ -45,9 +45,9 @@ class HSVFilter(Node, ABC):
 
         self.all_contours_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/all_contours', 10)
 
-        self.bounding_box_pub = []
-        self.contour_image_pub = []
-        self.distance_pub = []
+        self.bounding_box_pubs = []
+        self.contour_image_pubs = []
+        self.distance_pubs = []
 
         self.pubs = pubs if pubs else [None]
 
@@ -55,9 +55,9 @@ class HSVFilter(Node, ABC):
             suffix = f'/{pub}' if pub is not None else ''
             base = f'/cv/{camera}_usb/{name}{suffix}'
 
-            self.bounding_box_pub.append(self.create_publisher(CVObject, f'{base}/bounding_box', 10))
-            self.contour_image_pub.append(self.create_publisher(Image, f'{base}/contour_image', 10))
-            self.distance_pub.append(self.create_publisher(Point, f'{base}/distance', 10))
+            self.bounding_box_pubs.append(self.create_publisher(CVObject, f'{base}/bounding_box', 10))
+            self.contour_image_pubs.append(self.create_publisher(Image, f'{base}/contour_image', 10))
+            self.distance_pubs.append(self.create_publisher(Point, f'{base}/distance', 10))
 
         self.create_additional_pubs_subs_vars()
 
@@ -129,7 +129,7 @@ class HSVFilter(Node, ABC):
 
         TODO: docstring.
         """
-        for i in range(min(len(final_contours), len(self.contour_image_pub))):
+        for i in range(min(len(final_contours), len(self.contour_image_pubs))):
             contour = final_contours[i]
             if contour is None:
                 continue
@@ -141,7 +141,7 @@ class HSVFilter(Node, ABC):
             image_with_contours = image.copy()
             box = np.int0(cv2.boxPoints(rect))
             cv2.drawContours(image_with_contours, [box], 0, (0, 0, 255), 3)
-            self.contour_image_pub[i].publish(self.bridge.cv2_to_imgmsg(image_with_contours, 'bgr8'))
+            self.contour_image_pubs[i].publish(self.bridge.cv2_to_imgmsg(image_with_contours, 'bgr8'))
 
             # Obtain the center of the rectangle
             rect_center = rect[0]
@@ -192,8 +192,8 @@ class HSVFilter(Node, ABC):
                                                   MonoCam.SENSOR_SIZE, 1)
             bounding_box.coords.x, bounding_box.coords.y, bounding_box.coords.z = coords_list
 
-            self.bounding_box_pub[i].publish(bounding_box)
-            self.distance_pub[i].publish(dist_point)
+            self.bounding_box_pubs[i].publish(bounding_box)
+            self.distance_pubs[i].publish(dist_point)
 
             # Draw bounding box on the image
             cv2.rectangle(bbox_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
