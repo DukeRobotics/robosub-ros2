@@ -36,12 +36,16 @@ async def sonar_test(_self: Task, start_angle: float, end_angle: float, scan_dis
 
 
 @task
-async def rotate_to_normal(self: Task, start_angle: float, end_angle: float, scan_distance: float, yaw_threshold: float) -> Task[None, None, None]:
+async def rotate_to_normal(self: Task,
+                           start_angle: float,
+                           end_angle: float,
+                           scan_distance: float,
+                           yaw_threshold: float) -> Task[None, None, None]:
     """Rotates to face a normal angle."""
     logger.info(f'Sonar scan from {start_angle} to {end_angle} degrees, distance: {scan_distance} m')
 
     normal_angle = await get_normal_angle(start_angle, end_angle, scan_distance)
-    logger.info('Initial Normal Angle:' + str(normal_angle))
+    logger.info(f'Initial Normal Angle:  {normal_angle}')
     await move_to_pose_local(
         geometry_utils.create_pose(0, 0, 0, 0, 0, normal_angle),
         keep_orientation=True,
@@ -60,18 +64,22 @@ async def rotate_to_normal(self: Task, start_angle: float, end_angle: float, sca
         )
         normal_angle = await get_normal_angle(start_angle, end_angle, scan_distance)
         steps += 1
-        logger.info('Normal Angle:' + str(normal_angle) + ' At step: ' + str(steps))
-
+        logger.info(f'Normal Angle: + {normal_angle} +  At step:  + {steps}')
 
 
 @task
-async def rotate_to_angle_from_normal(self: Task, start_angle: float, end_angle: float, scan_distance: float, yaw_threshold: float, rotated_angle: float) -> Task[None, None, None]:
+async def rotate_to_angle_from_normal(self: Task,
+                                      start_angle: float,
+                                      end_angle: float,
+                                      scan_distance: float,
+                                      yaw_threshold: float,
+                                      rotated_angle: float) -> Task[None, None, None]:
     """Rotates to a specified angle using Sonar normal angle."""
     logger.info(f'Sonar scan from {start_angle} to {end_angle} degrees, distance: {scan_distance} m')
 
     angle = await get_normal_angle(start_angle, end_angle, scan_distance)
     angle = rotated_angle + angle
-    logger.info('Initial Angle:' + str(angle))
+    logger.info(f'Initial Angle:  {angle}')
     await move_to_pose_local(
         geometry_utils.create_pose(0, 0, 0, 0, 0, angle),
         keep_orientation=True,
@@ -91,7 +99,7 @@ async def rotate_to_angle_from_normal(self: Task, start_angle: float, end_angle:
         new_angle = await get_normal_angle(start_angle, end_angle, scan_distance)
         new_angle = rotated_angle + new_angle
         steps += 1
-        logger.info('Angle:' + str(normal_angle) + ' At step: ' + str(steps))
+        logger.info(f'Angle: + {normal_angle} +  At step:  + {steps}')
 
 
 async def get_normal_angle(start_angle: float, end_angle: float, scan_distance: float) -> float:
