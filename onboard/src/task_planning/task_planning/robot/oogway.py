@@ -35,7 +35,7 @@ async def main(self: Task) -> Task[None, None, None]:
         # TODO: task not found???
         # comp_tasks.send_torpedo_ivc(parent=self),
         # comp_tasks.octagon_task(direction=1, parent=self),
-
+        
         ######## Unused competition tasks ########
         ## Coin flip
         # comp_tasks.coin_flip(parent=self),

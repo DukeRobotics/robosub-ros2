@@ -49,6 +49,13 @@ def generate_launch_description() -> LaunchDescription:
         ld.add_action(IncludeLaunchDescription(
             XMLLaunchDescriptionSource(str(pkg_dvl_wayfinder / 'launch' / 'dvl_wayfinder.xml')),
         ))
+    else:
+        ld.add_action(IncludeLaunchDescription(
+        XMLLaunchDescriptionSource(str(pkg_dvl_pathfinder / 'launch' / 'dvl_pathfinder.xml')),
+    ))
+        ld.add_action(IncludeLaunchDescription(
+            XMLLaunchDescriptionSource(str(pkg_dvl_pathfinder / 'launch' / 'dvl_logger.xml')),
+        ))
 
     ld.add_action(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'offboard_comms.launch.py')),
@@ -76,5 +83,6 @@ def generate_launch_description() -> LaunchDescription:
     ld.add_action(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(pkg_vectornav / 'launch' / 'vectornav.launch.py')),
     ))
+
 
     return ld
