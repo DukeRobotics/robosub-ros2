@@ -194,7 +194,7 @@ class CV:
                 for the moving average filter. Defaults to 10.
 
         """
-        #logger.info(f'Received bounding box data for {object_type}: {cv_data}')
+
         # Special filtering for TORPEDO_BANNER
         if object_type == CVObjectType.TORPEDO_BANNER:
             current_time = time.time()
@@ -384,4 +384,3 @@ class CV:
 
         data = self._bounding_boxes[name]
         return (data.sonar_start_angle, data.sonar_end_angle, data.sonar_scan_distance)
-

@@ -95,7 +95,6 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
             # then one or both of these flags will be true
 
             # If lane marker detection is touching the top of the frame
-            logger.info(f'Lane marker data: {CV().lane_marker_data}')
             touching_top = CV().lane_marker_data['touching_top']
 
              # If lane marker detection is touching the bottom of the frame
@@ -173,26 +172,21 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
             logger.info(f'Moved {direction_term} {total_dist}')
 
     # Move up to gate
-    #await track_lane_marker(2, True)
-    await move_with_directions([(2,0,0)], depth_level=DEPTH_LEVEL)
+    await track_lane_marker(2, True)
 
     # Submerge below gate
-    await move_with_directions([(0, 0, -0.5)], depth_level=DEPTH_LEVEL)
+    await move_with_directions([(0, 0, -0.5)])
     DEPTH_LEVEL = State().depth
 
     # Move through gate
     await move_with_directions([(2.5, 0, 0)], depth_level=DEPTH_LEVEL)
 
     # Come back up
-    await move_with_directions([(0, 0, 0.2)], depth_level=DEPTH_LEVEL)
+    await move_with_directions([(0, 0, 0.2)])
     DEPTH_LEVEL = State().depth
 
     # Move to buoy
-    #await track_lane_marker(7, True)
-    await move_with_directions([(7/4, 0, 0)], depth_level=DEPTH_LEVEL)
-    await move_with_directions([(7/4, 0, 0)], depth_level=DEPTH_LEVEL)
-    await move_with_directions([(7/4, 0, 0)], depth_level=DEPTH_LEVEL)
-    await move_with_directions([(7/4, 0, 0)], depth_level=DEPTH_LEVEL)
+    await track_lane_marker(7, True)
 
     # Dead reckon around buoy
     directions = [
@@ -202,30 +196,24 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
     await move_with_directions(directions, depth_level=DEPTH_LEVEL)
 
     # Follow lane marker in adjacent lane backwards
-    #await track_lane_marker(3, False)
-    await rotate_deg(math.radians(180), 'Rotate 180 degrees', depth_level=DEPTH_LEVEL)
-    await move_with_directions([(3, 0, 0)], depth_level=DEPTH_LEVEL)
+    await track_lane_marker(3, False)
+
     # Move back to the original lane
-    await move_with_directions([(0, 2.5, 0)], depth_level=DEPTH_LEVEL)
+    await move_with_directions([(0, -2.5, 0)], depth_level=DEPTH_LEVEL)
 
     # Come back to gate
-    #await track_lane_marker(7, False)
-    await move_with_directions([(7/4, 0, 0)], depth_level=DEPTH_LEVEL)
-    await move_with_directions([(7/4, 0, 0)], depth_level=DEPTH_LEVEL)
-    await move_with_directions([(7/4, 0, 0)], depth_level=DEPTH_LEVEL)
-    await move_with_directions([(7/4, 0, 0)], depth_level=DEPTH_LEVEL)
+    await track_lane_marker(7, False)
 
     # Move down to go through gate
-    await move_with_directions([(0, 0, -0.1)], depth_level=DEPTH_LEVEL)
+    await move_with_directions([(0, 0, -0.1)])
     DEPTH_LEVEL = State().depth
 
     # Move back through gate
-    await move_with_directions([(2.5, 0, 0)], depth_level=DEPTH_LEVEL)
+    await move_with_directions([(2.5, 0, 0)])
 
     # Come back up
-    await move_with_directions([(0, 0, 0.2)], depth_level=DEPTH_LEVEL)
+    await move_with_directions([(0, 0, 0.2)])
     DEPTH_LEVEL = State().depth
 
     # Return to start
-    #await track_lane_marker(1, False)
-    await move_with_directions([(1, 0, 0)], depth_level=DEPTH_LEVEL)
+    await track_lane_marker(1, False)

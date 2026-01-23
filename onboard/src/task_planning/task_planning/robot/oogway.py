@@ -29,7 +29,6 @@ async def main(self: Task) -> Task[None, None, None]:
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(DEPTH, parent=self),
-        
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
         # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
         #                         direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
@@ -79,7 +78,7 @@ async def main(self: Task) -> Task[None, None, None]:
         # buoyancy_tasks.buoyancy_task(-0.5, parent=self),  # Submerge and stabilize buoyancy
 
         ######## Prequal tasks ########
-        prequal_tasks.prequal_task(parent=self),
+        # prequal_tasks.prequal_task(parent=self),
     ]
 
     for task_to_run in tasks:
