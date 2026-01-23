@@ -194,7 +194,6 @@ class CV:
                 for the moving average filter. Defaults to 10.
 
         """
-
         # Special filtering for TORPEDO_BANNER
         if object_type == CVObjectType.TORPEDO_BANNER:
             current_time = time.time()
