@@ -39,11 +39,11 @@ async def yaw_until_object_detection(self: Task, cv_object: CVObjectType, search
     depth_level = State().orig_depth - depth_level
 
     @task
-    async def correct_depth() -> None:
+    async def correct_depth(self: Task) -> None:
         await move_tasks.depth_correction(desired_depth=depth_level, parent=self)
 
     @task
-    async def object_search_pattern() -> bool:
+    async def object_search_pattern(self: Task) -> bool:
         step = 0
         while step <= num_steps * 2 + 1:
             if step <= num_steps - 1:
@@ -59,20 +59,20 @@ async def yaw_until_object_detection(self: Task, cv_object: CVObjectType, search
                                     depth_level=depth_level,
                                     pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
                                                           angular=Vector3(x=0.2, y=0.3, z=0.3)),
-                                    time_limit=10,
+                                    timeout=10,
                                     parent=self)
             # TODO: confirm that this actually steps and doesn't go through the whole thing when we call outer function
             step += 1
         return False
 
-    object_search_task = object_search_pattern()
+    object_search_task = object_search_pattern(parent=self)
 
     while not CV().is_receiving_recent_cv_data(cv_object, 10):
         if object_search_task.done:
             return False
 
         if (abs(State().depth - depth_level) < depth_threshold):
-            await correct_depth()
+            await correct_depth(parent=self)
 
         object_search_task.step()
 
@@ -103,11 +103,12 @@ async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction :
     depth_level = State().orig_depth - depth_level
 
     @task
-    async def correct_depth() -> None:
+    async def correct_depth(self: Task) -> None:
         await move_tasks.depth_correction(desired_depth=depth_level, parent=self)
 
     if not CV().is_receiving_recent_cv_data(cv_object, 10):
-        found_object = await yaw_until_object_detection(cv_object, search_direction, depth_threshold, depth_level)
+        found_object = await yaw_until_object_detection(cv_object, search_direction,
+                                                        depth_threshold, depth_level, parent=self)
         if not found_object:
             return
 
@@ -119,14 +120,14 @@ async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction :
                             depth_level=depth_level,
                             pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
                                                     angular=Vector3(x=0.2, y=0.3, z=yaw_threshold)),
-                            time_limit=10,
+                            timout=10,
                             parent=self)
 
     starting_time = Clock().now()
 
     while not move_to_pose_task.done:
         if abs(State().depth - depth_level) < depth_threshold:
-            await correct_depth()
+            await correct_depth(parent=self)
 
         move_to_pose_task.step()
 

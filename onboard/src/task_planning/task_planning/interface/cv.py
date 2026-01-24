@@ -221,7 +221,10 @@ class CV:
 
         # self._angles[object_type] = self.update_moving_average(self._angle_queues[object_type],
         #                                                        cv_data.yaw, filter_len)
-        self._angles[object_type] = self.update_exponential_moving_average(self._angles[object_type], cv_data.yaw)
+        if object_type not in self._angles:
+            self._angles[object_type] = cv_data.yaw
+        else:
+            self._angles[object_type] = self.update_exponential_moving_average(self._angles[object_type], cv_data.yaw)
 
     def _on_receive_distance_data(self, distance_data: Point, object_type: CVObjectType, filter_len: int = 10) -> None:
         """
