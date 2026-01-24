@@ -28,7 +28,7 @@ async def main(self: Task) -> Task[None, None, None]:
     tasks = [
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
-        comp_tasks.initial_submerge(DEPTH, parent=self),
+        # comp_tasks.initial_submerge(DEPTH, parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
         # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
         #                         direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
@@ -79,6 +79,10 @@ async def main(self: Task) -> Task[None, None, None]:
 
         ######## Prequal tasks ########
         # prequal_tasks.prequal_task(parent=self),
+
+        ######## Sonar tasks ########
+        sonar_tasks.rotate_to_normal(-45., 45., 5., 5., parent=self),
+        sonar_tasks.rotate_to_angle_from_normal(-45., 45., 5., 5., 3.1415/6., parent=self),
     ]
 
     for task_to_run in tasks:
