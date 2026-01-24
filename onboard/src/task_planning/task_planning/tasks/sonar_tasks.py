@@ -43,7 +43,6 @@ async def rotate_to_normal(self: Task,
                            yaw_threshold: float) -> Task[None, None, None]:
     """Rotates to face a normal angle."""
     logger.info(f'Sonar scan from {start_angle} to {end_angle} degrees, distance: {scan_distance} m')
-
     normal_angle = await get_normal_angle(start_angle, end_angle, scan_distance)
     logger.info(f'Initial Normal Angle:  {normal_angle}')
     await move_to_pose_local(
@@ -65,7 +64,6 @@ async def rotate_to_normal(self: Task,
         normal_angle = await get_normal_angle(start_angle, end_angle, scan_distance)
         steps += 1
         logger.info(f'Normal Angle: + {normal_angle} +  At step:  + {steps}')
-
 
 @task
 async def rotate_to_angle_from_normal(self: Task,
@@ -101,10 +99,9 @@ async def rotate_to_angle_from_normal(self: Task,
         steps += 1
         logger.info(f'Angle: + {normal_angle} +  At step:  + {steps}')
 
-
 async def get_normal_angle(start_angle: float, end_angle: float, scan_distance: float) -> float:
     """Get a normal angle from the sonar scan."""
-    future = Sonar().sweep(start_angle=start_angle, end_angle=end_angle, scan_distance=scan_distance)
+    future = await Sonar().sweep(start_angle=start_angle, end_angle=end_angle, scan_distance=scan_distance)
     response = await future
     if not response.is_object:
         logger.error('No object detected — cannot rotate')
@@ -112,6 +109,6 @@ async def get_normal_angle(start_angle: float, end_angle: float, scan_distance: 
     if response.normal_angle is None:
         logger.error('[Sonar] normal_angle was None — cannot rotate')
         return np.nan
-    return response.normal_angle
+    return response.normal_angle * (180 / np.pi)
 
 
