@@ -24,6 +24,9 @@ def generate_launch_description() -> LaunchDescription:
         ld.add_action(IncludeLaunchDescription(
             XMLLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'dvl_pathfinder_raw.xml')),
         ))
+        ld.add_action(IncludeLaunchDescription(
+            XMLLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'dvl_logger.xml')),
+        ))
 
     ld.add_action(IncludeLaunchDescription(
         XMLLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'gyro.xml')),
