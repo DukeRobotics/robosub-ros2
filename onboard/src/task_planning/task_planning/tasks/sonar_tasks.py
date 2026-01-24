@@ -113,3 +113,5 @@ async def get_normal_angle(start_angle: float, end_angle: float, scan_distance: 
         logger.error('[Sonar] normal_angle was None — cannot rotate')
         return np.nan
     return response.normal_angle
+
+
