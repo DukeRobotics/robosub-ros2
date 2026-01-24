@@ -47,7 +47,7 @@ async def rotate_to_normal(self: Task,
     logger.info(f'Initial Normal Angle:  {normal_angle}')
     if np.isnan(normal_angle):
         logger.error(f'Normal angle does not exist, exiting task.')
-        return;
+        return
 
     await move_to_pose_local(
         geometry_utils.create_pose(0, 0, 0, 0, 0, normal_angle),
@@ -82,7 +82,7 @@ async def rotate_to_angle_from_normal(self: Task,
     angle = await get_normal_angle(start_angle, end_angle, scan_distance)
     if np.isnan(angle):
         logger.error(f'Normal angle does not exist, exiting task.')
-        return;
+        return
 
     angle = rotated_angle + angle
     logger.info(f'Initial Angle:  {angle}')
