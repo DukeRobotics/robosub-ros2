@@ -22,7 +22,7 @@ async def main(self: Task) -> Task[None, None, None]:
         comp_tasks.slalom_task_dead_reckoning(depth_level=0.975, parent=self),  # Move through slalom via 2,2,2
         # Move to octagon front via 2,2; left strafe via 0.75
         comp_tasks.slalom_to_octagon_dead_reckoning(depth_level=0.975, parent=self),
-        ivc_tasks.crush_ivc_spam(msg_to_send=IVCMessageType.CRUSH_OCTAGON, parent=self),
+        ivc_tasks.ivc_send(msg=IVCMessageType.CRUSH_OCTAGON, parent=self),
 
         ######## Unused competition tasks ########
         ## Gate
