@@ -8,6 +8,7 @@ import rclpy
 import resource_retriever as rr
 import yaml
 from custom_msgs.msg import CVObject, SonarSweepRequest, SonarSweepResponse
+from foxglove_msgs.msg import CameraCalibration
 from rclpy.node import Node
 from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from sensor_msgs.msg import CompressedImage
@@ -241,6 +242,17 @@ class DepthAISpatialDetector(Node):
             publisher_dict[model_class] = self.create_publisher(CVObject, publisher_name, 10)
         self.publishers_dict = publisher_dict
 
+        # calibration = CameraCalibration()
+        # calibration.timestamp = self.get_clock().now().to_msg()
+        # calibration.frame_id = 'camera_frame'
+        # calibration.width = self.camera_pixel_width
+        # calibration.height = self.camera_pixel_height
+        # calibration.distortion_model = ''
+        # calibration.D = []
+        # calibration.K = []
+        # calibration.R = []
+        # calibration.P = []
+
         # Create CompressedImage publishers for the raw RGB feed and detections feed
         if self.rgb_raw:
             self.rgb_preview_publisher = self.create_publisher(
@@ -441,6 +453,15 @@ class DepthAISpatialDetector(Node):
 
         # Connect to camera and initialize queues
         self.device = depthai_camera_connect.connect(self, self.camera, self.pipeline)
+        calibData = device.readCalibration()
+        # extract intrinsics
+        intrinsics = calibData.getCameraIntrinsics(dai.CameraBoardSocket.RGB)
+        # distortion coefficients
+        dist = calibData.getDistortionCoeffs(dai.CameraBoardSocket.RGB)
+
+        self.get_logger().info(f'Intrinsics: {intrinsics} Distortion: {dist}')
+
+
         self.init_queues(self.device)
         self.detection_visualizer = DetectionVisualizer(self.classes, self.colors, self.show_class_name,
                                                         self.show_confidence)
