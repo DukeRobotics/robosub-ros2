@@ -1,3 +1,3 @@
 <launch>
-  <node pkg="dvl_pathfinder" exec="dvl_logger" name="dvl_logger" output="screen" />
+  <node pkg="offboard_comms" exec="dvl_logger" name="dvl_logger" output="screen" />
 </launch>

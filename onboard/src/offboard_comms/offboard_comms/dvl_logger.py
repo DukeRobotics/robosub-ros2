@@ -1,6 +1,7 @@
-from onboard.src.cv.cv import bin_detector
 import rclpy
+from rclpy.node import Node
 from custom_msgs.msg import DVLRaw
+from pathlib import Path
 
 
 class DVLLogger(Node):
@@ -10,15 +11,21 @@ class DVLLogger(Node):
         super().__init__('dvl_logger')
 
         self.get_logger().info('DVL Logger node started.')
-        self.log_file = open('dvl_logs/dvl_timestamps.txt', 'a')
+
+        filename = Path('~/robosub-ros2/dvl_timestamps.txt').expanduser()
+        if filename.exists:
+            self.log_file = filename.open('a')
+        else:
+            self.log_file = filename.open('w')
+
         # Subscribe to image topic to get images
         self.image_sub = self.create_subscription(DVLRaw, '/sensors/dvl/raw', self.dvl_callback,
                                                    10)
 
     def dvl_callback(self, data: DVLRaw) -> None:
         """Write timestamps to file."""
-        timestamp = self.get_clock().now().seconds_nanoseconds()[1]
-        self.log_file.write(f'{timestamp}\n')
+        curtime = self.get_clock().now().seconds_nanoseconds()
+        self.log_file.write(f'{curtime[0]}.{curtime[1]}\n')
         self.log_file.flush()
 
 def main(args: None = None) -> None:
