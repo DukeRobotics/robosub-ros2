@@ -1,0 +1,3 @@
+<launch>
+	<node name="hsv_lane_marker" pkg="cv" exec="hsv_lane_marker" output="screen"/>
+</launch>

@@ -76,7 +76,7 @@ def compute_angle_from_x_offset(x_offset: float, camera_pixel_width: float) -> f
     return math.degrees(math.atan((x_offset - image_center_x) * 0.005246675486))
 
 
-def calculate_relative_pose(bbox_bounds: list[int | float], input_size: tuple[float, float],
+def calculate_relative_pose(bbox_bounds: tuple[int | float, ...], input_size: tuple[float, float],
                             label_shape: tuple[float, float], focal_length: float,
                             sensor_size: tuple[float, float], adjustment_factor: int) -> list[float]:
     """

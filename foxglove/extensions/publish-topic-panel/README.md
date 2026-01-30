@@ -1,5 +1,7 @@
 # Publish Topic Panel
-This is an example panel to publish topics. Base a new extension off of this panel if it requires publishing topics.
+This panel allows you to publish topics. Compared to the build-in Foxglove Publish panel, this custom panel allows for the following:
+- Publishing custom Duke Robotics Club message schemas.
+- Publishing at continuous rates.
 
 ## Usage
 Enter the Topic Name, Schema Name, and Request in the appropriate input fields.

@@ -9,8 +9,7 @@ setup(
     version='0.0.0',
     packages=find_packages(include=['cv', 'cv.*']),
     data_files=[
-        ('share/ament_index/resource_index/packages',
-            ['resource/' + package_name]),
+        ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         (str(Path('share') / package_name / 'assets'), list(map(str, Path('./assets').glob('*.png')))),
         (str(Path('share') / package_name / 'config'), list(map(str, Path('./config').glob('*.yaml')))),
@@ -27,7 +26,6 @@ setup(
     entry_points={
         'console_scripts': [
             'bin_detector = cv.bin_detector:main',
-            'lane_marker_detector = cv.lane_marker_detector:main',
             'buoy_detector = cv.buoy_detector:main',
             'depthai_camera_connect = cv.depthai_camera_connect:main',
             'depthai_publish_save_streams = cv.depthai_publish_save_streams:main',
@@ -38,9 +36,10 @@ setup(
             'torpedo_target_detector = cv.torpedo_target_detector:main',
             'usb_camera = cv.usb_camera:main',
             'hsv_filter = cv.hsv_filter:main',
-            'hsv_red_bin = cv.hsv_red_bin:main',
-            'hsv_pink_bin_front = cv.hsv_pink_bin_front:main',
-            'hsv_pink_bin_bottom = cv.hsv_pink_bin_bottom:main',
+            'hsv_lane_marker = cv.hsv_filters.hsv_lane_marker:main',
+            'hsv_red_bin = cv.hsv_filters.hsv_red_bin:main',
+            'hsv_pink_bin_front = cv.hsv_filters.hsv_pink_bin_front:main',
+            'hsv_pink_bin_bottom = cv.hsv_filters.hsv_pink_bin_bottom:main',
         ],
     },
 )
