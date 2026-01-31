@@ -30,6 +30,8 @@ arduino:
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketches/thruster
+    libraries:
+      - "'Adafruit BusIO'"
 gyro:
   ftdi: FT81SUWZ
   zero_bias: 0.0023800993

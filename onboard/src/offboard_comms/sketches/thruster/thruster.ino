@@ -6,6 +6,9 @@
 #define OOGWAY_SHELL 1
 #define CRUSH 2
 
+#define CRUSH_MUX_OSCILLATOR_FREQ 27800000
+#define OOGWAY_MUX_OSCILLATOR_FREQ 27800000 // todo
+
 #define BAUD_RATE 57600
 #define THRUSTER_TIMEOUT_MS 1000
 #define THRUSTER_STOP_PWM 1500
@@ -56,7 +59,7 @@ void setup() {
             break;
         case CRUSH:
             NUM_THRUSTERS = 8;
-            THRUSTER_PWM_OFFSET = 63;
+            THRUSTER_PWM_OFFSET = 203;
             break;
         default:
             valid_robot = false;
@@ -67,6 +70,13 @@ void setup() {
     thrusters = new MultiplexedBasicESC[NUM_THRUSTERS];
 
     pwm_multiplexer.begin();
+
+    if (ROBOT_NAME == CRUSH) {
+        pwm_multiplexer.setOscillatorFrequency(CRUSH_MUX_OSCILLATOR_FREQ);
+    } else {
+        pwm_multiplexer.setOscillatorFrequency(OOGWAY_MUX_OSCILLATOR_FREQ);
+    }
+
     for (uint8_t i = 0; i < NUM_THRUSTERS; i++) {
         thrusters[i].initialize(&pwm_multiplexer);
         thrusters[i].attach(i);
