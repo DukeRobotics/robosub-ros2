@@ -8,10 +8,9 @@ import rclpy
 import resource_retriever as rr
 import yaml
 from custom_msgs.msg import CVObject, SonarSweepRequest, SonarSweepResponse
-from foxglove_msgs.msg import CameraCalibration
 from rclpy.node import Node
 from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
-from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import CameraInfo, CompressedImage
 from std_msgs.msg import String
 
 from cv import depthai_camera_connect
@@ -242,16 +241,16 @@ class DepthAISpatialDetector(Node):
             publisher_dict[model_class] = self.create_publisher(CVObject, publisher_name, 10)
         self.publishers_dict = publisher_dict
 
-        # calibration = CameraCalibration()
-        # calibration.timestamp = self.get_clock().now().to_msg()
-        # calibration.frame_id = 'camera_frame'
-        # calibration.width = self.camera_pixel_width
-        # calibration.height = self.camera_pixel_height
-        # calibration.distortion_model = ''
-        # calibration.D = []
-        # calibration.K = []
-        # calibration.R = []
-        # calibration.P = []
+        calibration = CameraInfo()
+        calibration.header.stamp = self.get_clock().now().to_msg()
+        calibration.header.frame_id = 'camera_frame'
+        calibration.width = self.camera_pixel_width
+        calibration.height = self.camera_pixel_height
+        calibration.distortion_model = 'plumb_bob'
+        calibration.d = []
+        calibration.k = [2297.61, 0., 1901.77, 0., 2297.61, 1104.7, 0., 0., 1.]
+        calibration.r = [1., 0., 0., 0., 1., 0., 0., 0., 1.]
+        calibration.p = [2297.609375, 0.0, 1901.772583, 0.0, 0.0, 2297.609375, 1104.698730, 0.0, 0.0, 0.0, 1.0, 0.0]
 
         # Create CompressedImage publishers for the raw RGB feed and detections feed
         if self.rgb_raw:
