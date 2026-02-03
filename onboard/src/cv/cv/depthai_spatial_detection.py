@@ -457,6 +457,9 @@ class DepthAISpatialDetector(Node):
         intrinsics = calibData.getCameraIntrinsics(dai.CameraBoardSocket.RGB)
         # distortion coefficients
         dist = calibData.getDistortionModel(dai.CameraBoardSocket.RGB)
+        distortion_coefficients = np.array(calibData.getDistortionCoefficients(dai.CameraBoardSocket.RIGHT))
+        print(f'Distortion Coefficients (OpenCV style): {distortion_coefficients}')
+
         # Intrinsics: [[2297.609375, 0.0, 1901.7725830078125], [0.0, 2297.609375, 1104.69873046875], [0.0, 0.0, 1.0]] Distortion: CameraModel.Perspective
 
         self.get_logger().info(f'Intrinsics: {intrinsics} Distortion: {dist}')
