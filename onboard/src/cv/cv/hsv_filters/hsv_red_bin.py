@@ -1,3 +1,5 @@
+# TODO: this needs to be rewritten to do both sides of the bin
+
 import cv2
 import numpy as np
 import rclpy

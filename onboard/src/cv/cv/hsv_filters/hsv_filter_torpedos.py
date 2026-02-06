@@ -1,3 +1,5 @@
+# TODO: this needs to be rewritten to inherit the HSVFilter node
+
 from functools import reduce
 
 import cv2
