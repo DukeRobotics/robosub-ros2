@@ -13,7 +13,7 @@ from cv.hsv_filter import HSVFilter
 
 
 class HSVLaneMarker(HSVFilter):
-    """HSV Lane Marker Detector."""
+    """HSV Lane Marker Detector. Detects lane marker in Taishoff Aquatics Pavillion."""
 
     def __init__(self) -> None:
         super().__init__(
@@ -31,7 +31,7 @@ class HSVLaneMarker(HSVFilter):
     def process_contours(self, final_contours: list[np.ndarray], image: np.ndarray) -> None:
         """Process lane marker contour."""
         if not final_contours:
-            self.get_logger().error('No contours found?')
+            self.get_logger().error('No contours found.')
 
         angle_in_degrees = None
         distance = None
@@ -44,9 +44,10 @@ class HSVLaneMarker(HSVFilter):
         rect = cv2.minAreaRect(all_points)
 
         # Draw the rectangle on the frame
-        box = cv2.boxPoints(rect)
-        box = np.int0(box)
-        cv2.drawContours(image, [box], 0, (0, 0, 255), 3)
+        image_with_contours = image.copy()
+        box = np.int0(cv2.boxPoints(rect))
+        cv2.drawContours(image_with_contours, [box], 0, (0, 0, 255), 3)
+        self.contour_image_pubs[0].publish(self.bridge.cv2_to_compressed_imgmsg(image_with_contours, 'bgr8'))
 
         # Sort the points based on their x-coordinates to identify left and right sides
         box = sorted(box, key=lambda pt: pt[0])
@@ -71,6 +72,10 @@ class HSVLaneMarker(HSVFilter):
         if angle_in_degrees in {-90, 90}:
             angle_in_degrees = 0.0
 
+        angle_msg = Float64()
+        angle_msg.data = angle_in_degrees
+        self.angle_pubs[0].publish(angle_msg)
+
         # Calculate the center of the rectangle
         rect_center = rect[0]
 
@@ -83,6 +88,8 @@ class HSVLaneMarker(HSVFilter):
         distance.x = rect_center[0] - frame_center[0]
         distance.y = frame_center[1] - rect_center[1]
 
+        self.distance_pubs[0].publish(distance)
+
         # Create CVObject message
         bounding_box = CVObject()
         bounding_box.header.stamp = self.get_clock().now().to_msg()
@@ -93,26 +100,12 @@ class HSVLaneMarker(HSVFilter):
         bounding_box.height = rect[1][1]
         bounding_box.yaw = math.radians(angle_in_degrees)
 
-        if angle_in_degrees is not None:
-            angle_msg = Float64()
-            angle_msg.data = angle_in_degrees
-            self.angle_pubs[0].publish(angle_msg)
+        self.bounding_box_pubs[0].publish(bounding_box)
 
-        if distance is not None:
-            distance_msg = Point()
-            distance_msg.y = distance
-            self.distance_pubs[0].publish(distance_msg)
-
-        if bounding_box is not None:
-            self.bounding_box_pubs[0].publish(bounding_box)
-
-
-        # Publish the processed frame with the rectangle drawn
-        try:
-            compressed_image_msg = self.bridge.cv2_to_compressed_imgmsg(image)
-            self.contour_image_pubs[0].publish(compressed_image_msg)
-        except CvBridgeError as e:
-            self.get_logger().error(f'Failed to publish processed image: {e}')
+        # TODO: draw contour as a rotated rectangle onto a copy of the image (image.copy())
+        # Reference https://github.com/DukeRobotics/robosub-ros/blob/master/onboard/catkin_ws/src/cv/scripts/path_marker_detector.py
+        cv2.rectangle(bbox_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        self.all_contours_pub.publish(self.bridge.cv2_to_imgmsg(bbox_img, 'bgr8'))
 
     def filter(self, contours: list) -> list:
         """Pick the largest contour onguly."""
