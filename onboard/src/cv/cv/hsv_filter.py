@@ -35,8 +35,8 @@ class HSVFilter(Node, ABC):
         # NOTE: detectors whose process_contours rely on width must have width defined,
         # else they must supply their own process_contour
         # TODO: is there any Pythonic systemic way to make this idiot proof
-        self.width = width if width else 1  # Width of object in meters
-        self.height = height if height else width  # Height of object in meters
+        self.width = width or 1  # Width of object in meters
+        self.height = height or width  # Height of object in meters
 
         self.image_sub = self.create_subscription(CompressedImage, f'/camera/usb/{camera}/compressed',
                                                   self.image_callback, 10)
@@ -49,7 +49,7 @@ class HSVFilter(Node, ABC):
         self.contour_image_pubs = []
         self.distance_pubs = []
 
-        self.pubs = pubs if pubs else [None]
+        self.pubs = pubs or [None]
 
         for pub in self.pubs:
             suffix = f'/{pub}' if pub is not None else ''
