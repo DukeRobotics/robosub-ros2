@@ -8,10 +8,12 @@ import rclpy
 import resource_retriever as rr
 import yaml
 from custom_msgs.msg import CVObject, SonarSweepRequest, SonarSweepResponse
+from geometry_msgs.msg import Point
 from rclpy.node import Node
 from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from sensor_msgs.msg import CameraInfo, CompressedImage
 from std_msgs.msg import String
+from visualization_msgs.msg import ImageMarker
 
 from cv import depthai_camera_connect
 from cv.image_tools import ImageTools
@@ -63,6 +65,10 @@ class DepthAISpatialDetector(Node):
         self.camera_pixel_height = None
         self.detection_feed_publisher = None
         self.rgb_preview_publisher = None
+        self.camera_calibration_publisher = None
+        self.annotations_publisher = None
+        self.current_annotation_id = 0
+        self.annotation_namespace = 'front_detections'
         self.detection_visualizer = None
 
         self.image_tools = ImageTools()
@@ -241,16 +247,12 @@ class DepthAISpatialDetector(Node):
             publisher_dict[model_class] = self.create_publisher(CVObject, publisher_name, 10)
         self.publishers_dict = publisher_dict
 
-        calibration = CameraInfo()
-        calibration.header.stamp = self.get_clock().now().to_msg()
-        calibration.header.frame_id = 'camera_frame'
-        calibration.width = self.camera_pixel_width
-        calibration.height = self.camera_pixel_height
-        calibration.distortion_model = 'rational_polynomial'
-        calibration.d = [1.23423684, -0.10953265, -0.00015251, 0.00021924, -0.02442527, 1.57654548, 0.18101713, -0.08576866]
-        calibration.k = [2297.61, 0., 1901.77, 0., 2297.61, 1104.7, 0., 0., 1.]
-        calibration.r = [1., 0., 0., 0., 1., 0., 0., 0., 1.]
-        calibration.p = [2297.609375, 0.0, 1901.772583, 0.0, 0.0, 2297.609375, 1104.698730, 0.0, 0.0, 0.0, 1.0, 0.0]
+        self.camera_calibration_publisher = self.create_publisher(
+            CameraInfo, f'camera/{self.camera}/camera_info', 10)
+        self.camera_calibration_publisher.publish(self.get_camera_info())
+
+        self.annotations_publisher = self.create_publisher(
+            ImageMarker, f'camera/{self.camera}/annotations', 10)
 
         # Create CompressedImage publishers for the raw RGB feed and detections feed
         if self.rgb_raw:
@@ -260,6 +262,42 @@ class DepthAISpatialDetector(Node):
         if self.rgb_detections:
             self.detection_feed_publisher = self.create_publisher(
                 CompressedImage, f'cv/{self.camera}/detections/compressed', 10)
+
+    def get_camera_info(self) -> CameraInfo:
+        """Get camera info."""
+        calib_info = self.cv_config['depthai']['cameras'][self.camera]['calibration']
+        calibration = CameraInfo()
+        calibration.header.stamp = self.get_clock().now().to_msg()
+        calibration.header.frame_id = self.frame_id
+        calibration.width = self.camera_pixel_width
+        calibration.height = self.camera_pixel_height
+        calibration.distortion_model = calib_info['distortion']['model']
+        calibration.d = [
+            calib_info['distortion']['k1'],
+            calib_info['distortion']['k2'],
+            calib_info['distortion']['p1'],
+            calib_info['distortion']['p2'],
+            calib_info['distortion']['k3'],
+            calib_info['distortion']['k4'],
+            calib_info['distortion']['k5'],
+            calib_info['distortion']['k6'],
+        ]
+        calibration.k = [
+            calib_info['k']['fx'], 0., calib_info['k']['cx'],
+            0., calib_info['k']['fy'], calib_info['k']['cy'],
+            0., 0., 1.,
+        ]
+        calibration.r = [
+            calib_info['r']['r1'], calib_info['r']['r2'], calib_info['r']['r3'],
+            calib_info['r']['r4'], calib_info['r']['r5'], calib_info['r']['r6'],
+            calib_info['r']['r7'], calib_info['r']['r8'], calib_info['r']['r9'],
+        ]
+        calibration.p = [
+            calib_info['k']['fx'], 0.0, calib_info['k']['cx'], 0.0,
+            0.0, calib_info['k']['fy'], calib_info['k']['cy'], 0.0,
+            0.0, 0.0, 1.0, 0.0,
+        ]
+        return calibration
 
     def init_queues(self, device: dai.Device) -> None:  # noqa: ARG002
         """
@@ -355,6 +393,8 @@ class DepthAISpatialDetector(Node):
                 bbox, det_coords_robot_mm, yaw_offset, label, confidence,
                 (self.camera_pixel_height, self.camera_pixel_width), self.using_sonar)
 
+            self.publish_annotation(bbox)
+
     def publish_prediction(self, bbox: tuple, det_coords: tuple, yaw: float, label: str, confidence: float,
                            shape: tuple, using_sonar: bool) -> None:
         """
@@ -410,6 +450,29 @@ class DepthAISpatialDetector(Node):
         if self.publishers_dict:
             self.get_logger().debug('Publishing')
             self.publishers_dict[label].publish(object_msg)
+
+    def publish_annotation(self, bbox: tuple) -> None:
+        marker = ImageMarker()
+        marker.header.stamp = self.get_clock().now().to_msg()
+        marker.header.frame_id = self.frame_id
+        marker.ns = self.annotation_namespace
+        marker.id = self.current_annotation_id
+        self.current_annotation_id = self.current_annotation_id + 1
+        marker.type = ImageMarker.LINE_STRIP
+        marker.action = ImageMarker.ADD
+        marker.scale = 1.0
+        marker.outline_color.r = 1.0
+        marker.outline_color.g = 0.0
+        marker.outline_color.b = 0.0
+        marker.outline_color.a = 1.0
+        marker.filled = False
+        p1 = Point(x=bbox[0], y=bbox[1], z=0.0)
+        p2 = Point(x=bbox[2], y=bbox[1], z=0.0)
+        p3 = Point(x=bbox[2], y=bbox[3], z=0.0)
+        p4 = Point(x=bbox[0], y=bbox[3], z=0.0)
+        marker.points = [p1, p2, p3, p4, p1]
+
+        self.annotations_publisher.publish(marker)
 
     def update_sonar(self, sonar_results: SonarSweepResponse) -> None:
         """
