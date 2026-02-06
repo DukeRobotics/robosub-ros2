@@ -246,8 +246,8 @@ class DepthAISpatialDetector(Node):
         calibration.header.frame_id = 'camera_frame'
         calibration.width = self.camera_pixel_width
         calibration.height = self.camera_pixel_height
-        calibration.distortion_model = 'plumb_bob'
-        calibration.d = []
+        calibration.distortion_model = 'rational_polynomial'
+        calibration.d = [1.23423684, -0.10953265, -0.00015251, 0.00021924, -0.02442527, 1.57654548, 0.18101713, -0.08576866]
         calibration.k = [2297.61, 0., 1901.77, 0., 2297.61, 1104.7, 0., 0., 1.]
         calibration.r = [1., 0., 0., 0., 1., 0., 0., 0., 1.]
         calibration.p = [2297.609375, 0.0, 1901.772583, 0.0, 0.0, 2297.609375, 1104.698730, 0.0, 0.0, 0.0, 1.0, 0.0]
