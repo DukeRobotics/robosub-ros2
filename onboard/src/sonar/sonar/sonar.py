@@ -189,7 +189,7 @@ class Sonar(Node):
 
     def get_xy_of_object_in_sweep(
         self, start_angle: int, end_angle: int,
-    ) -> tuple[Pose | None, np.ndarray, float | None]:
+    ) -> tuple[Pose | None, np.ndarray, float | None, float | None]:
         """
         Get the depth of the sweep of a detected object. For now uses mean value.
 
@@ -198,7 +198,8 @@ class Sonar(Node):
             end_angle (int): Angle to end sweep in gradians.
 
         Returns:
-            (Pose, List, float): Pose of the object in robot reference frame, sonar sweep array, and normal angle.
+            (Pose, List, float, float): Pose of the object in robot reference frame, sonar sweep array, normal angle,
+            and angle of wall.
         """
         sweep = self.get_sweep(start_angle, end_angle)
         self.get_logger().info('Finished sweep')
@@ -254,6 +255,7 @@ class Sonar(Node):
             sonar_utils.to_robot_position(x_index, y_index, self.sample_period, self.NEGATE_POSE),
             color_image,
             normal_angle,
+            np.arctan(nearest_segment.ortho_regression.slope)+np.pi / 4.),
         )
 
     def constant_sweep(self) -> None:
@@ -332,7 +334,7 @@ class Sonar(Node):
             self.set_new_range(new_range)
 
         try:
-            object_pose, plot, normal_angle = self.get_xy_of_object_in_sweep(
+            object_pose, plot, normal_angle, wall_angle = self.get_xy_of_object_in_sweep(
                 left_gradians,
                 right_gradians,
             )
@@ -345,9 +347,10 @@ class Sonar(Node):
         if object_pose is not None:
             response.pose.pose = object_pose
             response.pose.header.stamp = self.get_clock().now().to_msg()
-            response.normal_angle = normal_angle * 1.0
+            response.normal_angle = normal_angle
             response.is_object = True
             response.pose.header.frame_id = 'robot_sonar'
+            response.angle_of_wall = wall_angle
 
         if object_pose is None:
             self.get_logger().error('No object found')
