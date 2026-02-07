@@ -341,7 +341,7 @@ class DepthAISpatialDetector(Node):
                                            det_coords_robot_mm[2])  # Maintain original z
 
             self.publish_prediction(
-                bbox, det_coords_robot_mm, yaw_offset, label, confidence,
+                bbox, det_coords_robot_mm, -yaw_offset, label, confidence,
                 (self.camera_pixel_height, self.camera_pixel_width), self.using_sonar)
 
     def publish_prediction(self, bbox: tuple, det_coords: tuple, yaw: float, label: str, confidence: float,
@@ -381,7 +381,7 @@ class DepthAISpatialDetector(Node):
         object_msg.xmax = bbox[2]
         object_msg.ymax = bbox[3]
 
-        object_msg.yaw = -yaw
+        object_msg.yaw = yaw
 
         object_msg.height = shape[0]
         object_msg.width = shape[1]
