@@ -255,8 +255,7 @@ class Sonar(Node):
             sonar_utils.to_robot_position(x_index, y_index, self.sample_period, self.NEGATE_POSE),
             color_image,
             normal_angle,
-            np.arctan(nearest_segment.ortho_regression.slope)+np.pi / 4.),
-        )
+            np.arctan(nearest_segment.ortho_regression.slope)+np.pi / 4.)
 
     def constant_sweep(self) -> None:
         """
