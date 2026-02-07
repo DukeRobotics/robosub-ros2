@@ -108,6 +108,51 @@ async def rotate_to_angle_from_normal(self: Task,
         steps += 1
         logger.info(f'Angle: + {normal_angle} +  At step:  + {steps}')
 
+@task
+async def align_to_wall(self: Task,
+                        start_angle: float,
+                        end_angle: float,
+                        scan_distance: float,
+                        yaw_threshold: float) -> Task[None, None, None]:
+    """Rotates to a specified angle using Sonar normal angle."""
+    logger.info(f'Sonar scan from {start_angle} to {end_angle} degrees, distance: {scan_distance} m')
+
+    angle, wall_angle = await get_normal_and_wall_angle(start_angle, end_angle, scan_distance)
+    if not angle or not wall_angle:
+        logger.error('Normal angle does not exist, exiting task.')
+        return
+
+    angle = wall_angle - angle
+    logger.info(f'Initial Angle:  {angle}')
+
+    await move_to_pose_local(
+        geometry_utils.create_pose(0, 0, 0, 0, 0, angle),
+        keep_orientation=True,
+        pose_tolerances=create_twist_tolerance(angular_yaw=0.1),
+        parent=self,
+    )
+    angle, wall_angle = await get_normal_and_wall_angle(start_angle, end_angle, scan_distance)
+    if not angle or not wall_angle:
+        logger.error('Normal angle does not exist, exiting task.')
+        return
+
+    new_angle = wall_angle - angle
+    steps = 0
+    while new_angle > yaw_threshold + angle and steps < MAX_STEPS:
+        await move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, new_angle),
+            keep_orientation=True,
+            pose_tolerances=create_twist_tolerance(angular_yaw=0.1),
+            parent=self,
+        )
+        angle, wall_angle = await get_normal_and_wall_angle(start_angle, end_angle, scan_distance)
+        if not angle or not wall_angle:
+            logger.error('Normal angle does not exist, exiting task.')
+            return
+        new_angle = wall_angle - angle
+        steps += 1
+        logger.info(f'Angle: + {normal_angle} +  At step:  + {steps}')
+
 async def get_normal_angle(start_angle: float, end_angle: float, scan_distance: float) -> float:
     """Get a normal angle from the sonar scan."""
     response = await Sonar().sweep(start_angle=start_angle, end_angle=end_angle, scan_distance=scan_distance)
@@ -118,3 +163,18 @@ async def get_normal_angle(start_angle: float, end_angle: float, scan_distance: 
         logger.error('[Sonar] normal_angle was None — cannot rotate')
         return np.nan
     return response.normal_angle * (180 / np.pi)
+
+async def get_normal_and_wall_angle(
+    start_angle: float,
+    end_angle: float,
+    scan_distance: float,
+) -> tuple[float | None, float | None]:
+    """Get a normal angle and wall angle from the sonar scan."""
+    response = await Sonar().sweep(start_angle=start_angle, end_angle=end_angle, scan_distance=scan_distance)
+    if not response.is_object:
+        logger.error('No object detected — cannot rotate')
+        return (None, None)
+    if response.normal_angle is None:
+        logger.error('[Sonar] normal_angle was None — cannot rotate')
+        return (None, None)
+    return (response.normal_angle, response.angle_of_wall)
