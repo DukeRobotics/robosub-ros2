@@ -232,7 +232,7 @@ class Sonar(Node):
         nearest_segment = segmentation.get_nearest_segment()
 
         if nearest_segment is None:
-            return (None, color_image, None)
+            return (None, color_image, None, None)
 
         self.get_logger().info('Got segment')
 

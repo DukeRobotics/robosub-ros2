@@ -8,7 +8,6 @@ from task_planning.task import Task, task
 from task_planning.tasks import (
     buoyancy_tasks,
     comp_tasks,
-    ivc_tasks,
     move_tasks,
     prequal_tasks,
     servos_tasks,
@@ -22,13 +21,14 @@ async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     # Constants
     DIRECTION_OF_TORPEDO_BANNER = 1
-    DEPTH = 0.7
+    DEPTH = 0.5
     # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
     FIRST_TARGET = CVObjectType.TORPEDO_REEF_SHARK_TARGET
     tasks = [
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
-        # comp_tasks.initial_submerge(DEPTH, parent=self),
+        comp_tasks.initial_submerge(DEPTH, parent=self),
+        # move_tasks.move_with_directions([(1, 0, 0), (0, 0.5, 0), (-1, 0, 0), (0, -0.5, 0)], parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
         # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
         #                         direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
@@ -81,8 +81,8 @@ async def main(self: Task) -> Task[None, None, None]:
         # prequal_tasks.prequal_task(parent=self),
 
         ######## Sonar tasks ########
-        sonar_tasks.rotate_to_normal(-45., 45., 5., 5., parent=self),
-        sonar_tasks.rotate_to_angle_from_normal(-45., 45., 5., 5., 3.1415/6., parent=self),
+        sonar_tasks.rotate_to_normal(-45., 45., 5., 0.01, parent=self),
+        # sonar_tasks.rotate_to_angle_from_normal(-45., 45., 5., 5., 3.1415/6., parent=self),
     ]
 
     for task_to_run in tasks:

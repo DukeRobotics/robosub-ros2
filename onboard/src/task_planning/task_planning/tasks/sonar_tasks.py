@@ -50,7 +50,7 @@ async def rotate_to_normal(self: Task,
         return
 
     await move_to_pose_local(
-        geometry_utils.create_pose(0, 0, 0, 0, 0, normal_angle),
+        geometry_utils.create_pose(0, 0, 0, 0, 0, -normal_angle),
         keep_orientation=True,
         pose_tolerances=create_twist_tolerance(angular_yaw=0.1),
         parent=self,
@@ -60,7 +60,7 @@ async def rotate_to_normal(self: Task,
     steps = 0
     while normal_angle > yaw_threshold and steps < MAX_STEPS:
         await move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, normal_angle),
+            geometry_utils.create_pose(0, 0, 0, 0, 0, -normal_angle),
             keep_orientation=True,
             pose_tolerances=create_twist_tolerance(angular_yaw=0.1),
             parent=self,
@@ -151,7 +151,7 @@ async def align_to_wall(self: Task,
             return
         new_angle = wall_angle - angle
         steps += 1
-        logger.info(f'Angle: + {normal_angle} +  At step:  + {steps}')
+        logger.info(f'Angle: + {new_angle} +  At step:  + {steps}')
 
 async def get_normal_angle(start_angle: float, end_angle: float, scan_distance: float) -> float:
     """Get a normal angle from the sonar scan."""
@@ -162,7 +162,7 @@ async def get_normal_angle(start_angle: float, end_angle: float, scan_distance: 
     if response.normal_angle is None:
         logger.error('[Sonar] normal_angle was None — cannot rotate')
         return np.nan
-    return response.normal_angle * (180 / np.pi)
+    return response.normal_angle
 
 async def get_normal_and_wall_angle(
     start_angle: float,
