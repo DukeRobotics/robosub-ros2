@@ -25,7 +25,7 @@ class DVLLogger(Node):
     def dvl_callback(self, data: DVLRaw) -> None:
         """Write timestamps to file."""
         curtime = self.get_clock().now().seconds_nanoseconds()
-        self.log_file.write(f'{curtime[0]}.{curtime[1]}\n')
+        self.log_file.write(f'{curtime[0]}.{curtime[1]:09d}\n')
         self.log_file.flush()
 
 def main(args: None = None) -> None:
