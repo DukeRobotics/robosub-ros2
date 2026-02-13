@@ -6,7 +6,7 @@
 #define OOGWAY_SHELL 1
 #define CRUSH 2
 
-#define CRUSH_MUX_OSCILLATOR_FREQ 27800000
+#define CRUSH_MUX_OSCILLATOR_FREQ 27000000
 #define OOGWAY_MUX_OSCILLATOR_FREQ 27800000 // todo
 
 #define BAUD_RATE 57600
@@ -59,7 +59,7 @@ void setup() {
             break;
         case CRUSH:
             NUM_THRUSTERS = 8;
-            THRUSTER_PWM_OFFSET = 203;
+            THRUSTER_PWM_OFFSET = 175;
             break;
         default:
             valid_robot = false;
