@@ -98,6 +98,8 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = Fa
             local_pose.position.z = depth_delta
         global_pose = geometry_utils.local_pose_to_global(State().tf_buffer, pose)
 
+        logger.info(f'Global Pose: {global_pose}')
+
         if keep_orientation:
             orig_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(
                 State().orig_state.pose.pose.orientation))

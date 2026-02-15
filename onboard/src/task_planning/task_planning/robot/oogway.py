@@ -23,14 +23,14 @@ async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     # Constants
     DIRECTION_OF_TORPEDO_BANNER = 1
-    DEPTH = 0.7
+    DEPTH = 0.5
     # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
-    FIRST_TARGET = CVObjectType.TORPEDO_REEF_SHARK_TARGET
+    FIRST_TARGET = CVObjectType.BUOY
     tasks = [
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
-        # comp_tasks.initial_submerge(DEPTH, parent=self),
-        # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
+        comp_tasks.initial_submerge(DEPTH, parent=self),
+        # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),             
         cv_tasks.yaw_to_cv_obj(FIRST_TARGET, parent=self),
         # TODO: task not found???
         # comp_tasks.send_torpedo_ivc(parent=self),

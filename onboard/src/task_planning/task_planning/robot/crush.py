@@ -3,7 +3,7 @@ from math import radians
 
 import numpy as np
 from task_planning.interface.cv import CVObjectType
-from task_planning.interface.ivc import IVCMessageType
+# from task_planning.interface.ivc import IVCMessageType
 from task_planning.task import Task, task
 from task_planning.tasks import buoyancy_tasks, comp_tasks, ivc_tasks, move_tasks, prequal_tasks, sonar_tasks
 from task_planning.utils import geometry_utils

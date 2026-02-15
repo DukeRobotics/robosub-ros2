@@ -55,6 +55,7 @@ async def yaw_until_object_detection(self: Task, cv_object: CVObjectType, search
             else:
                 angle = 3 * yaw_pid_step_size
                 logger.info('Yawed to find object more than 7 times, breaking loop.')
+            logger.info(f'On step {step}, Desired angle is {angle}')
             await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, angle * search_direction),
                                     depth_level=depth_level,
                                     pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
@@ -65,23 +66,31 @@ async def yaw_until_object_detection(self: Task, cv_object: CVObjectType, search
             step += 1
         return False
 
-    object_search_task = object_search_pattern(parent=self)
+    object_search_task = None
 
     while not CV().is_receiving_recent_cv_data(cv_object, 10):
-        if object_search_task.done:
-            return False
+        if object_search_task is None:
+            object_search_task = object_search_pattern(parent=self)
 
-        if (abs(State().depth - depth_level) < depth_threshold):
-            await correct_depth(parent=self)
-
+        logger.info('Stepping through object search task')
         object_search_task.step()
 
+        if object_search_task.done:
+            logger.info('Failed to find object. Exiting search pattern')
+            return False
+
+        if (abs(State().depth - depth_level) > depth_threshold):
+            logger.info(f'State: {State().depth}, Level: {depth_level}')
+            logger.info('Correcting Depth')
+            await correct_depth(parent=self)
+
+    logger.info('Found object. Exiting search pattern')
     return True
 
 @task
 async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction : int = 1,
                            yaw_threshold : float = math.radians(10), depth_threshold : float = 0.2,
-                           depth_level : float =0.5, pid_timeout : float = 10) -> Task[None, str | None, None] | None:
+                           depth_level : float = 0.5, pid_timeout : float = 20) -> Task[None, str | None, None] | None:
     """
     Yaw to an object detected by CV.
 
@@ -120,21 +129,22 @@ async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction :
                             depth_level=depth_level,
                             pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
                                                     angular=Vector3(x=0.2, y=0.3, z=yaw_threshold)),
-                            timout=10,
+                            timeout=10,
                             parent=self)
 
-    starting_time = Clock().now()
+    move_to_pose_task.step()
+
+    clock = Clock()
+    starting_time = clock.now()
 
     while not move_to_pose_task.done:
-        if abs(State().depth - depth_level) < depth_threshold:
+        if abs(State().depth - depth_level) > depth_threshold:
             await correct_depth(parent=self)
 
-        move_to_pose_task.step()
-
         cv_object_yaw = CV().angles[cv_object]
-        move_to_pose_task.send(cv_object_yaw)
+        move_to_pose_task.send(geometry_utils.create_pose(0, 0, 0, 0, 0, cv_object_yaw))
 
-        if Clock.now() - starting_time > pid_timeout:
+        if (clock.now() - starting_time).nanoseconds * 1e-9 > pid_timeout:
             logger.info('Timeout elapsed, Finishing Yaw To CV Object')
             return
 
