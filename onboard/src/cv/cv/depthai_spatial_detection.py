@@ -16,6 +16,7 @@ from std_msgs.msg import String
 from cv import depthai_camera_connect
 from cv.image_tools import ImageTools
 from cv.utils import DetectionVisualizer, calculate_relative_pose
+from cv.config import Torpedo
 
 MM_IN_METER = 1000
 CV_CONFIG_PATH = f'package://cv/config/{os.getenv('ROBOT_NAME')}.yaml'
@@ -308,10 +309,20 @@ class DepthAISpatialDetector(Node):
 
             confidence = detection.confidence
 
-            # Calculate relative pose
+            # Calculate relative pose, and pull scalings from config dependent on model
+            match label:
+                case "torpedo_banner":
+                    scale_x = Torpedo.TORPEDO_BANNER_X_SCALE
+                    scale_y = Torpedo.TORPEDO_BANNER_Y_SCALE
+                case _:
+                    scale_x = 1
+                    scale_y = 1
+                    scale_z = 1
+
             det_coords_robot_mm = calculate_relative_pose(bbox, tuple(model['input_size']),
-                                                          tuple(model['sizes'][label]),
-                                                          self.focal_length, self.sensor_size, 2)
+                                                        tuple(model['sizes'][label]),
+                                                        self.focal_length, self.sensor_size, 2, 
+                                                        scale_x=scale_x, scale_y=scale_y, scale_z=scale_z)
 
             # Find yaw angle offset
             left_end_compute = self.compute_angle_from_x_offset(detection.xmin * self.camera_pixel_width)
@@ -367,14 +378,9 @@ class DepthAISpatialDetector(Node):
         object_msg.label = label
         object_msg.score = confidence
 
-        if label == 'torpedo_banner':
-            object_msg.coords.x = 1.2 * det_coords[0]
-            object_msg.coords.y = 0.5 * det_coords[1]
-            object_msg.coords.z = det_coords[2]
-        else:
-            object_msg.coords.x = det_coords[0]
-            object_msg.coords.y = det_coords[1]
-            object_msg.coords.z = det_coords[2]
+        object_msg.coords.x = det_coords[0]
+        object_msg.coords.y = det_coords[1]
+        object_msg.coords.z = det_coords[2]
 
         object_msg.xmin = bbox[0]
         object_msg.ymin = bbox[1]
