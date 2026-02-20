@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from setuptools import find_packages, setup
 
 package_name = 'acoustics'
@@ -10,13 +12,15 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/config', [str(file) for file in Path('./config').glob('*.yaml')]),
+        ('share/' + package_name + '/launch', [str(p) for p in Path('./launch').glob('*')]),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='Duke Robotics',
     maintainer_email='hello@duke-robotics.com',
-    description='TODO: Acoustics Service',
-    license='Apache-2.0',
+    description='Acoustics Service',
+    license='MIT',
     extras_require={
         'test': [
             'pytest',
@@ -24,8 +28,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'acoustic_service = py_srvcli.acoustic_service:main',
-            'acoustic_client = py_srvcli.client_member_function:main',
+            'acoustics = acoustics.acoustics:main',
+            'acoustics_test_client = acoustics.acoustics_test_client:main',
         ],
     },
 )
