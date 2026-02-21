@@ -29,8 +29,8 @@ class Buoy:
 
 class LaneMarker:
     """Lane marker color constants."""
-    LANE_MARKER_BOT = np.array([175, 10, 25])
-    LANE_MARKER_TOP = np.array([255, 100, 70])
+    LANE_MARKER_BOT = np.array([190, 40, 45])
+    LANE_MARKER_TOP = np.array([250, 90, 80])
 
 class Torpedo:
     """Torpedo dimension and color constants."""

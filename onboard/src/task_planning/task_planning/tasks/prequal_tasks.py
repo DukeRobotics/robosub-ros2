@@ -19,7 +19,7 @@ LANE_MARKER_HEIGHT_METERS = 0.3048
 @task
 async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
     """Complete the prequalification task by tracking the lane marker."""
-    DEPTH_LEVEL = -0.7
+    DEPTH_LEVEL = -0.5
 
     await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, DEPTH_LEVEL, 0, 0, 0),
@@ -187,23 +187,23 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
     DEPTH_LEVEL = State().depth
 
     # Move to buoy
-    await track_lane_marker(7, True)
+    await track_lane_marker(6, True)
 
     # Dead reckon around buoy
     directions = [
-        (3, 0, 0),
+        (1, 0, 0),
         (0, 2, 0),
     ]
     await move_with_directions(directions, depth_level=DEPTH_LEVEL)
 
     # Follow lane marker in adjacent lane backwards
-    await track_lane_marker(3, False)
+    await track_lane_marker(-1, False)
 
     # Move back to the original lane
     await move_with_directions([(0, -2.5, 0)], depth_level=DEPTH_LEVEL)
 
     # Come back to gate
-    await track_lane_marker(7, False)
+    await track_lane_marker(6, False)
 
     # Move down to go through gate
     await move_with_directions([(0, 0, -0.1)])

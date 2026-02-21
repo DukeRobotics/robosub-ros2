@@ -7,7 +7,7 @@ from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point
 from rclpy.node import Node
-from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import CompressedImage, Image
 from std_msgs.msg import Float64
 
 from cv.config import LaneMarker
@@ -25,6 +25,7 @@ class LaneMarkerDetector(Node):
         self.distance_pub = self.create_publisher(Point, '/cv/bottom/lane_marker/distance', 10)
         self.detections_pub = self.create_publisher(CompressedImage, '/cv/bottom/detections/compressed', 10)
         self.bounding_box_pub = self.create_publisher(CVObject, '/cv/bottom/lane_marker/bounding_box', 10)
+        self.hsv_filtered_pub = self.create_publisher(CompressedImage, '/cv/bottom/detections/hsv_filtered', 10)
 
     def image_callback(self, data: CompressedImage) -> None:
         """Process image and, if proper, draws rectangle and publishes image."""
@@ -56,13 +57,35 @@ class LaneMarkerDetector(Node):
         except CvBridgeError as e:
             self.get_logger().error(f'Could not convert image: {e}')
 
+    def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:
+        """
+        Convert actual HSV values to OpenCV HSV.
+
+        Parameters:
+            hsv_actual (np.ndarray): Array of shape (..., 3) with HSV values:
+                                    H in [0, 360], S and V in [0, 100]
+
+        Returns:
+            np.ndarray: Converted HSV in OpenCV format:
+                        H in [0,179], S and V in [0,255], same shape as input
+        """
+        hsv_opencv = np.empty_like(hsv_actual, dtype=np.uint8)
+        hsv_opencv[..., 0] = (hsv_actual[..., 0] / 2).astype(np.uint8)          # Hue
+        hsv_opencv[..., 1] = (hsv_actual[..., 1] / 100 * 255).astype(np.uint8)  # Saturation
+        hsv_opencv[..., 2] = (hsv_actual[..., 2] / 100 * 255).astype(np.uint8)  # Value
+        return hsv_opencv
+
     def get_angle_and_distance_of_rectangle(self, frame: np.array) -> tuple[float, int, CVObject, np.array]:
         """Get angle (in radians) and distance of rectangle contour."""
         # Convert frame to HSV color space
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # Define range for blue color of lane marker and create mask
-        mask = cv2.inRange(hsv, LaneMarker.LANE_MARKER_BOT, LaneMarker.LANE_MARKER_TOP)
+        mask = cv2.inRange(hsv, self.actual_to_opencv_hsv(LaneMarker.LANE_MARKER_BOT),
+                             self.actual_to_opencv_hsv(LaneMarker.LANE_MARKER_TOP))
+
+        compressed_image_msg = self.bridge.cv2_to_compressed_imgmsg(mask)
+        self.hsv_filtered_pub.publish(compressed_image_msg)
 
         # Find contours in the mask
         contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -127,7 +150,7 @@ class LaneMarkerDetector(Node):
             bounding_box.height = int(rect[1][1])
             bounding_box.yaw = math.radians(angle_in_degrees)
 
-        return math.radians(angle_in_degrees), distance, bounding_box, frame
+        return math.radians(angle_in_degrees) if angle_in_degrees else angle_in_degrees, distance, bounding_box, frame
 
 
 def main(args: None = None) -> None:

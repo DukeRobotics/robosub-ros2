@@ -8,7 +8,6 @@ from task_planning.task import Task, task
 from task_planning.tasks import (
     buoyancy_tasks,
     comp_tasks,
-    ivc_tasks,
     move_tasks,
     prequal_tasks,
     servos_tasks,
