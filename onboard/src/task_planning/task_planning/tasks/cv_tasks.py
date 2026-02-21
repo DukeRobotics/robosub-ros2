@@ -34,8 +34,8 @@ async def yaw_until_object_detection(self: Task, cv_object: CVObjectType, search
     """
     logger.info('Beginning yaw_util_object_detection task')
 
-    yaw_pid_step_size = math.radians(45)
-    num_steps = 3
+    yaw_pid_step_size = math.radians(90) # How big a single step is
+    num_steps = 1 # How many steps are taken in each direction
     depth_level = State().orig_depth - depth_level
 
     @task
@@ -45,25 +45,41 @@ async def yaw_until_object_detection(self: Task, cv_object: CVObjectType, search
     @task
     async def object_search_pattern(self: Task) -> bool:
         step = 0
-        while step <= num_steps * 2 + 1:
-            if step <= num_steps - 1:
-                angle = yaw_pid_step_size
-            elif step == num_steps:
-                angle = -3 * yaw_pid_step_size
-            elif step <= num_steps * 2:
-                angle = -1 * yaw_pid_step_size
-            else:
-                angle = 3 * yaw_pid_step_size
-                logger.info('Yawed to find object more than 7 times, breaking loop.')
-            logger.info(f'On step {step}, Desired angle is {angle}')
-            await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, angle * search_direction),
-                                    depth_level=depth_level,
-                                    pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
-                                                          angular=Vector3(x=0.2, y=0.3, z=0.3)),
-                                    timeout=10,
-                                    parent=self)
-            # TODO: confirm that this actually steps and doesn't go through the whole thing when we call outer function
-            step += 1
+        move_task = move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_pid_step_size * search_direction),
+                        depth_level=depth_level,
+                        pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
+                                                angular=Vector3(x=0.2, y=0.3, z=0.3)),
+                        timeout=10,
+                        parent=self)
+        move_task.step()
+
+        while True:
+            if move_task.done:
+                step += 1
+
+                if step <= num_steps - 1:
+                    angle = yaw_pid_step_size
+                elif step == num_steps:
+                    angle = -num_steps * yaw_pid_step_size
+                elif step <= num_steps * 2:
+                    angle = -1 * yaw_pid_step_size
+                elif step == num_steps * 2 + 1:
+                    angle = num_steps * yaw_pid_step_size
+                else:
+                    break
+
+                logger.info(f'On step {step}, Desired angle is {angle}') 
+                move_task = move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, angle * search_direction),
+                        depth_level=depth_level,
+                        pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
+                                                angular=Vector3(x=0.2, y=0.3, z=0.3)),
+                        timeout=10,
+                        parent=self)
+
+            move_task.step()
+            await Yield()
+
+        logger.info('Could not find object, breaking loop.')
         return False
 
     object_search_task = None
@@ -124,7 +140,6 @@ async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction :
     logger.info('Starting yaw_to_cv_object')
 
     cv_object_yaw = CV().angles[cv_object]
-    #TODO: may need to multiply cv_object_yaw by a magic scaler
     move_to_pose_task = move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, cv_object_yaw),
                             depth_level=depth_level,
                             pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
@@ -142,6 +157,9 @@ async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction :
             await correct_depth(parent=self)
 
         cv_object_yaw = CV().angles[cv_object]
+
+        logger.info(f'Current object yaw is {cv_object_yaw}')     #TODO: may need to multiply cv_object_yaw by a magic scaler
+
         move_to_pose_task.send(geometry_utils.create_pose(0, 0, 0, 0, 0, cv_object_yaw))
 
         if (clock.now() - starting_time).nanoseconds * 1e-9 > pid_timeout:
