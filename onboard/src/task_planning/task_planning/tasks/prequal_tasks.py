@@ -186,11 +186,11 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
     DEPTH_LEVEL = State().depth
 
     # Move to buoy
-    await track_lane_marker(6, True)
+    await track_lane_marker(7, True)
 
     # Dead reckon around buoy
     directions = [
-        (1, 0, 0),
+        (2, 0, 0),
         (0, 2, 0),
     ]
     await move_with_directions(directions, depth_level=DEPTH_LEVEL)
