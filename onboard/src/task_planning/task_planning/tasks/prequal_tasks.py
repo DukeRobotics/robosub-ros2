@@ -126,6 +126,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
             elif not touching_top and touching_bottom:
                 await move_tasks.move_to_pose_local(
                     geometry_utils.create_pose(0, -0.2, 0, 0, 0, 0),
+                    keep_orientation=True,
                     depth_level=DEPTH_LEVEL,
                     parent=self)
                 logger.info('Touching bottom correction: Moved 0.2 to the right')
