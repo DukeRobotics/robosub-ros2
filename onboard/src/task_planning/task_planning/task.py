@@ -360,7 +360,7 @@ def task[YieldType, SendType, ReturnType](func: Callable[..., Coroutine[YieldTyp
         Callable[..., Task[YieldType, SendType, ReturnType]]:
     """Wrap a coroutine within Task."""
 
-    def wrapper(*args, **kwargs) -> Task:
+    def wrapper(*args, **kwargs) -> Task[YieldType, SendType, ReturnType]:
         return Task(func, *args, **kwargs)
     return wrapper
 

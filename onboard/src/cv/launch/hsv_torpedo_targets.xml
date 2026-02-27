@@ -1,0 +1,3 @@
+<launch>
+	<node name="hsv_torpedo_targets" pkg="cv" exec="hsv_torpedo_targets" output="screen"/>
+</launch>

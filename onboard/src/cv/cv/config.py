@@ -1,3 +1,5 @@
+from enum import Enum
+
 import numpy as np
 
 
@@ -32,7 +34,13 @@ class LaneMarker:
 
 class Torpedo:
     """Torpedo dimension and color constants."""
-    WIDTH = 0.2032  # TODO: update this when dimensions are released
+    WIDTH = 0.1016
+
+    # No sun flickering values
+    LOW_BOT = np.array([0, 50, 45])
+    LOW_TOP = np.array([5, 95, 95])
+    HIGH_BOT = np.array([330, 50, 45])
+    HIGH_TOP = np.array([360, 95, 95])
 
 class BlueRect:
     """BlueRect color constants."""
@@ -42,18 +50,40 @@ class BlueRect:
 class PathMarker:
     """Path marker color bounds and contour parameters."""
     ORANGE_BOT = np.array([0, 130, 100])
-    ORANGE_TOP = np.array([20, 255, 255])
+    ORANGE_TOP = np.array([50, 255, 255])
 
     MIN_CONTOUR_LENGTH = 5
     MIN_CONTOUR_AREA = 500
 
 class PinkBins:
     """Pink bins color bounds."""
-    PINK_1_BOT = np.array([110, 50, 130])
-    PINK_1_TOP = np.array([130, 100, 200])
+    PINK_1_BOT = np.array([0, 0, 30])
+    PINK_1_TOP = np.array([15, 70, 100])
 
-    PINK_2_BOT = np.array([130, 80, 130])
-    PINK_2_TOP = np.array([160, 150, 255])
+    PINK_2_BOT = np.array([260, 0, 50])
+    PINK_2_TOP = np.array([360, 70, 100])
 
-    PINK_3_BOT = np.array([155, 100, 150])
-    PINK_3_TOP = np.array([175, 255, 255])
+    PINK_3_BOT = np.array([190, 0, 40])
+    PINK_3_TOP = np.array([250, 30, 70])
+
+    PINK_4_BOT = np.array([215, 12, 40])
+    PINK_4_TOP = np.array([280, 33, 50])
+
+class YellowBins:
+    """Pink bins color bounds."""
+    YELLOW_1_BOT = np.array([20, 60, 60])
+    YELLOW_1_TOP = np.array([30, 100, 100])
+
+    YELLOW_2_BOT = np.array([35, 43, 40])
+    YELLOW_2_TOP = np.array([60, 95, 90])
+
+    YELLOW_3_BOT = np.array([30, 70, 70])
+    YELLOW_3_TOP = np.array([35, 95, 95])
+
+    YELLOW_4_BOT = np.array([60, 45, 35])
+    YELLOW_4_TOP = np.array([70, 80, 75])
+
+class USBCamera(Enum):
+    """Enum for different USB cameras."""
+    front = 0
+    bottom = 1

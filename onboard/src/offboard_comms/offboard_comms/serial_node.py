@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from contextlib import suppress
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
 import resource_retriever as rr
 import serial
@@ -93,11 +94,19 @@ class SerialNode(Node, ABC):
             self._serial = serial.Serial(self._serial_port, self._baud, timeout=self._read_timeout, write_timeout=None,
                                          bytesize=serial.EIGHTBITS, parity=self._parity, stopbits=serial.STOPBITS_ONE)
             self.connect_timer.cancel()
+            self.after_connect()
             self.read_timer.reset()
             self.get_logger().info(f'Connected to {self._serial_device_name} at {self._serial_port}.')
         except StopIteration:
             self.get_logger().error(f'Error in connecting to {self._serial_device_name} over serial, trying again in '
                                     f'{self._connection_retry_period} seconds.')
+
+    def after_connect(self) -> Any:  # noqa: ANN401
+        """
+        Perform actions after a successful connection to the serial port but before starting the read timer.
+
+        This method can be overridden by subclasses to perform additional actions after connecting.
+        """
 
     def readline_nonblocking(self, tout: int = 1) -> str:
         """

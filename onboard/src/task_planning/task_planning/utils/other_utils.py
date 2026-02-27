@@ -1,5 +1,29 @@
+import os
 from collections.abc import Callable
+from enum import Enum
 from typing import Any
+
+
+class RobotName(Enum):
+    """Enum for valid robot names."""
+    OOGWAY = 'oogway'
+    OOGWAY_SHELL = 'oogway_shell'
+    CRUSH = 'crush'
+
+
+def get_robot_name() -> RobotName:
+    """
+    Get the robot name from the ROBOT_NAME environment variable.
+
+    Returns:
+        RobotName: The robot name from the environment variable.
+    """
+    robot_name = os.getenv('ROBOT_NAME', '')
+    try:
+        return RobotName(robot_name)
+    except ValueError as e:
+        msg = f'Invalid robot name: {robot_name}. Must be one of: oogway, oogway_shell, crush'
+        raise ValueError(msg) from e
 
 
 def singleton(cls: type) -> Callable[[Any, Any], type]:
