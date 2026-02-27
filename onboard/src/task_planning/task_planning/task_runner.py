@@ -45,6 +45,7 @@ class TaskPlanning(Node):
         State(self, tf_buffer=tf_buffer, bypass=self.bypass)
         CV(self, bypass=self.bypass)
         Servos(self, bypass=self.bypass)
+        Acoustics(self, bypass=self.bypass)
 
         # Initialize the task update publisher
         TaskUpdatePublisher(self)
