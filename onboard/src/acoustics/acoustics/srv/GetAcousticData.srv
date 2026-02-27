@@ -1,8 +1,0 @@
-float64 start_time
-float64 end_time
-float64 duration
-string encoding_preference
----
-bool success
-string message
-acoustics/AcousticSample[] samples

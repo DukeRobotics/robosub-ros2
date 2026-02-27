@@ -29,7 +29,6 @@ setup(
     entry_points={
         'console_scripts': [
             'acoustics = acoustics.acoustics:main',
-            'acoustics_test_client = acoustics.acoustics_test_client:main',
         ],
     },
 )

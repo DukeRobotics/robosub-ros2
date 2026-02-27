@@ -1,20 +1,15 @@
 import rclpy
 from rclpy.node import Node
 from custom_msgs.srv import AcousticsRequest
-
+from acoustics.acoustics_v3 import controller
 
 class Acoustics(Node):
     def __init__(self):
         super().__init__('acoustics')
         self.get_logger().info('Acoustics node initialized')
 
-        # TODO: add additional setup code
-
-    def run(self) -> None:
-        """Run the main loop of the node."""
         self.create_service(AcousticsRequest, 'acoustics/request', self.perform_acoustics_request)
-
-        # Create publishers for status, data and response
+        # TODO: add additional setup code
 
     def perform_acoustics_request(
             self, request: AcousticsRequest.Request, response: AcousticsRequest.Response
@@ -29,7 +24,18 @@ class Acoustics(Node):
         2. Call whatever method in Acoustics needs to be called, and get the answer
         3. Populate the response, and return the response.
         """
-        pass
+        self.get_logger.info(f'Receieved acoustics request')
+
+        # Parse request details, if any
+
+        # Call controller, should intialize logic and do all of the work
+        closest, nearby = controller.main()
+
+        # Post processing
+        response.closest = closest
+        response.nearby = nearby
+
+        return response
 
 
 def main(args=None):
