@@ -9,7 +9,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.fft import fft, fftfreq
 
-from hydrophones import hydrophone as hydrophone_module
+from . import hydrophone as hydrophone_module
 
 
 class HydrophoneArray:

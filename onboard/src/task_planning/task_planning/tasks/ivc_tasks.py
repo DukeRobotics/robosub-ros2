@@ -2,7 +2,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-import pytz
 from rclpy.duration import Duration
 from rclpy.logging import get_logger
 from task_planning.interface.ivc import IVC, IVCMessageType

@@ -1,9 +1,9 @@
 """Controller module for hydrophone data acquisition and analysis."""
 import os
 import time
-from logic import logic
-from hydrophones import hydrophone_array
-from analyzers import TOAEnvelopeAnalyzer, NearbyAnalyzer
+from .logic import logic
+from .hydrophones import hydrophone_array
+from .analyzers import TOAEnvelopeAnalyzer, NearbyAnalyzer
 
 
 def run_controller(
@@ -143,7 +143,7 @@ def find_closest_hydrophone(analysis_results):
 
 def main():
     # Whether to capture new data from Logic hardware (True) or use existing file (False)
-    CAPTURE_NEW_DATA = False
+    CAPTURE_NEW_DATA = True
 
     # Path to existing data file (used when CAPTURE_NEW_DATA = False)
     DATA_FILE = "data/2.8.2026/0_2026-02-07--15-24-04/0_epoch_001_2026-02-07--15-24-04.bin"

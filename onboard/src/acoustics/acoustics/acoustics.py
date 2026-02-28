@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from custom_msgs.srv import AcousticsRequest
-from acoustics.acoustics_v3 import controller
+from acoustics.acoustics_v3.scripts import controller
 
 class Acoustics(Node):
     def __init__(self):
@@ -9,6 +9,7 @@ class Acoustics(Node):
         self.get_logger().info('Acoustics node initialized')
 
         self.create_service(AcousticsRequest, 'acoustics/request', self.perform_acoustics_request)
+        self.get_logger().info('Service initialized')
         # TODO: add additional setup code
 
     def perform_acoustics_request(
@@ -24,7 +25,7 @@ class Acoustics(Node):
         2. Call whatever method in Acoustics needs to be called, and get the answer
         3. Populate the response, and return the response.
         """
-        self.get_logger.info(f'Receieved acoustics request')
+        self.get_logger().info(f'Receieved acoustics request')
 
         # Parse request details, if any
 
@@ -46,7 +47,6 @@ def main(args=None):
     finally:
         node.destroy_node()
         rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()
