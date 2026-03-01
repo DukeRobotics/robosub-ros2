@@ -224,8 +224,8 @@ class Sonar(Node):
             wall_object_threshold=0,
             segment_size_threshold=2000 / 90 * denoiser.shape_theta,
             segment_brightness_threshold=60,
-            merge_threshold=1.5,
-            merge_angle_limit=6,
+            merge_threshold=2,
+            merge_angle_limit=12,
         )
         self.get_logger().info('Segmented')
 
