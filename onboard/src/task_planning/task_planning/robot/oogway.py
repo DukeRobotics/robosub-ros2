@@ -81,7 +81,8 @@ async def main(self: Task) -> Task[None, None, None]:
         # prequal_tasks.prequal_task(parent=self),
 
         ######## Sonar tasks ########
-        sonar_tasks.rotate_to_normal(-45., 45., 5., 0.01, parent=self),
+        sonar_tasks.sonar_test(-45., 45., 10., parent=self)
+        # sonar_tasks.rotate_to_normal(-45., 45., 10., 0.01, parent=self),
         # sonar_tasks.rotate_to_angle_from_normal(-45., 45., 5., 5., 3.1415/6., parent=self),
     ]
 

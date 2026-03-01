@@ -34,7 +34,6 @@ async def sonar_test(_self: Task, start_angle: float, end_angle: float, scan_dis
             logger.info(f'Sonar scan response: {service_response}')
 
 
-
 @task
 async def rotate_to_normal(self: Task,
                            start_angle: float,
@@ -162,6 +161,10 @@ async def get_normal_angle(start_angle: float, end_angle: float, scan_distance: 
     if response.normal_angle is None:
         logger.error('[Sonar] normal_angle was None — cannot rotate')
         return np.nan
+
+    if response.normal_angle < -np.pi/2.:
+        return response.normal_angle + np.pi
+
     return response.normal_angle
 
 async def get_normal_and_wall_angle(

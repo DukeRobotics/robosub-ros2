@@ -410,3 +410,48 @@ class SonarSegmentation:
                 min_distance = segment.nearest_object_distance
 
         return nearest_segment
+
+class SonarSegmentation2:
+    """A class which treats all non-zero sonar data as a single segment."""
+
+    def __init__(
+        self,
+        image: np.ndarray,
+        wall_object_threshold: float = 0.0,
+        segment_size_threshold: float = 0.0,
+        segment_brightness_threshold: float = 0.0,
+        merge_threshold: float = 1.1,
+        merge_angle_limit: float = 5.0,
+    ) -> None:
+
+        # Store image
+        self.image = image
+        self.side_length = image.shape[0]
+
+        # Get ALL non-zero pixels
+        points = np.argwhere(image > 0)
+
+        if points.shape[0] == 0:
+            self.raw_segments = []
+            self.segments = []
+            self.walls = []
+            self.objects = []
+            return
+
+        # Create single segment
+        segment = SonarSegment(points)
+        segment.number = 1
+        segment.ortho_regression = OrthogonalRegression(segment.points)
+
+        # Everything is now one segment
+        self.raw_segments = [segment]
+        self.segments = [segment]
+
+    def get_nearest_segment(self) -> 'SonarSegment':
+        """
+        Get the nearest segment.
+
+        Returns:
+            SonarSegment: the nearest segment.
+        """
+        return self.segments[0]
