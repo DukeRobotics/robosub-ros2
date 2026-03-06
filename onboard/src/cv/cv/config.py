@@ -53,7 +53,7 @@ class PathMarker:
 class PinkBins:
     """Pink bins color bounds."""
     PINK_1_BOT = np.array([0, 0, 30])
-    PINK_1_TOP = np.array([15, 70, 100])
+    PINK_1_TOP = np.array([35, 70, 100])
 
     PINK_2_BOT = np.array([260, 0, 50])
     PINK_2_TOP = np.array([360, 70, 100])

@@ -4,7 +4,7 @@ import rclpy
 
 import cv.config as cv_constants
 from cv import hsv_filter
-from onboard.src.cv.cv import utils
+from cv import utils
 
 
 class HSVPinkBinBottom(hsv_filter.HSVFilter):
