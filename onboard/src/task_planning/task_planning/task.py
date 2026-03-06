@@ -346,13 +346,16 @@ class Task[YieldType, SendType, ReturnType]:
         Raises:
             Type[BaseException]: If the coroutine raises an exception
         """
+        from rclpy.task import Future
         input_ = None
         output = None
         while not self._done:
-            # Yield output and accept input only if the coroutine has been started
             if self._started:
                 input_ = (yield output)
             output = self.send(input_)
+            while isinstance(output, Future) and not output.done() and not self._done:
+                yield output  # keep yielding the same future until rclpy resolves it
+            input_ = None  # after future resolves, send None to continue
         return output
 
 
