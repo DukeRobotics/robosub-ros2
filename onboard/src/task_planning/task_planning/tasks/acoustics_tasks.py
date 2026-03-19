@@ -6,14 +6,18 @@ from task_planning.tasks import util_tasks
 
 logger = get_logger('acoustics_tasks')
 
+
 @task
-async def move_torward_pinger(self: Task) -> Task[None, None, None]:
-    logger.info("[move_torward_pinger] Calling acoustics service.")
+async def request_acoustics(self: Task) -> Task[None, None, None]:
+    """
+    Make a call to acoustics, and return the response.
+
+    Future processing can be done here. For now, abstraction will be trusted!
+    """
+    logger.info('[move_torward_pinger] Calling acoustics service.')
     response = Acoustics().request()
 
     if not response.is_object:
-        logger.error(f'[move_torward_pinger] Error from acoustics service')
-    
-    closest = response.closest
+        logger.error('[move_torward_pinger] Error from acoustics service')
 
-    # TODO ask about directions and move to that direction
+    return response

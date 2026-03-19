@@ -15,7 +15,7 @@ from task_planning.interface.servos import MarkerDropperStates, TorpedoStates
 from task_planning.interface.sonar import Sonar
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield
-from task_planning.tasks import move_tasks, servos_tasks, util_tasks
+from task_planning.tasks import move_tasks, servos_tasks, util_tasks, acoustics_tasks
 from task_planning.tasks.base_comp_task import CompTask, comp_task
 from task_planning.utils import geometry_utils
 from task_planning.utils.other_utils import RobotName, get_robot_name
@@ -1239,3 +1239,20 @@ async def return_task_dead_reckoning(self: CompTask, depth_level: float = 0.7) -
         await self.move_with_directions(directions, depth_level=DEPTH_LEVEL, timeout=15)
 
     logger.info('[return_task_dead_reckoning] Moved through gate return')
+
+@comp_task
+async def acoustics_blocking(self: CompTask, attempts: int = 5, timeout: int = 60) -> Task[None, None, None]:
+    for i in range(0,attempts):
+        print(f'[acoustics_blocking]: making call {i+1} to acoustics task')
+        closest, is_nearby, valid = await acoustics_tasks.request_acoustics(parent=self)
+        if valid:
+            print(f'[acoustics_blocking]: valid response from acoustics, closest {closest}, is_nearby {is_nearby}')
+            break
+        print('[acoustics_blocking]: invalid response from acoustics')
+
+    if is_nearby:
+        pass
+    else:
+        pass
+
+
