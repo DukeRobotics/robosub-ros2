@@ -13,6 +13,7 @@ from custom_msgs.msg import TaskUpdate
 if TYPE_CHECKING:
     from rclpy.node import Node
 from rclpy.qos import HistoryPolicy, QoSProfile
+from rclpy.task import Future
 from std_msgs.msg import Header
 
 from task_planning.message_conversion.jsonpickle_custom_handlers import register_custom_jsonpickle_handlers
@@ -353,6 +354,9 @@ class Task[YieldType, SendType, ReturnType]:
             if self._started:
                 input_ = (yield output)
             output = self.send(input_)
+            while isinstance(output, Future) and not output.done() and not self._done:
+                yield output
+            input_ = None
         return output
 
 
