@@ -14,7 +14,6 @@ SPEED_OF_SOUND_IN_WATER = 1482  # m/s
 SAMPLE_PERIOD_TICK_DURATION = 25e-9  # s
 TRANSFORMATION_ANGLE = np.pi / 4
 
-
 def transform_pose(
     buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped, source_frame_id: str, target_frame_id: str,
 ) -> tf2_geometry_msgs.PoseStamped:

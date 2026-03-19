@@ -13,6 +13,7 @@ from custom_msgs.msg import TaskUpdate
 if TYPE_CHECKING:
     from rclpy.node import Node
 from rclpy.qos import HistoryPolicy, QoSProfile
+from rclpy.task import Future
 from std_msgs.msg import Header
 
 from task_planning.message_conversion.jsonpickle_custom_handlers import register_custom_jsonpickle_handlers
@@ -346,7 +347,6 @@ class Task[YieldType, SendType, ReturnType]:
         Raises:
             Type[BaseException]: If the coroutine raises an exception
         """
-        from rclpy.task import Future
         input_ = None
         output = None
         while not self._done:
