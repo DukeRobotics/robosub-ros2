@@ -2,9 +2,6 @@ from functools import reduce
 
 import cv2
 import numpy as np
-import ros_numpy
-import rospy
-
 import rclpy
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
@@ -33,32 +30,54 @@ class Yolo(Node):
 
         self.image_sub = self.create_subscription(CompressedImage, f'/camera/usb/{camera}/compressed',
                                                   self.image_callback, 10)
+        self.latest_rgb = None
+        self.rgb_sub = self.create_subscription(Image, '/camera/color/image_raw', self.rgb_callback, 10)
         if pubs is None:
-            self.det_image_pub = [self.create_publisher(Image, f'/cv/{camera}_usb/{name}/distance', 10)]
-            self.seg_image_pub = [self.create_publisher(Image, f'/cv/{camera}_usb/{name}/distance', 10)]
+            self.det_image_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/distance', 10)
+            self.seg_image_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/distance', 10)
 
         else:
             self.det_image_pub = []
             self.seg_image_pub = []
 
             for pub in pubs:
-                self.det_image_pub = [self.create_publisher(Image, f'/cv/{camera}_usb/{name}/{pub}/distance', 10)]
-                self.seg_image_pub = [self.create_publisher(Image, f'/cv/{camera}_usb/{name}/{pub}distance', 10)]
+                self.det_image_pub.append = [self.create_publisher(Image, f'/cv/{camera}_usb/{name}/{pub}/distance', 10)]
+                self.seg_image_pub.append = [self.create_publisher(Image, f'/cv/{camera}_usb/{name}/{pub}distance', 10)]
 
         self.create_additional_pubs_subs_vars()
 
     def image_callback(self, data: CompressedImage) -> None:
-        array = ros_numpy.numpify(data)
-        if self.det_image_pub.get_num_connections():
+        array = self.bridge.compressed_imgmsg_to_cv2(data)
+        if self.det_image_pub.get_subscription_count():
             det_result = detection_model(array)
             det_annotated = det_result[0].plot(show=False)
-            self.det_image_pub.publish(ros_numpy.msgify(Image, det_annotated, encoding="rgb8"))
+            self.det_image_pub.publish(self.bridge.cv2_to_imgmsg(det_annotated, encoding="rgb8"))
 
-        if self.seg_image_pub.get_num_connections():
+        if self.seg_image_pub.get_subscription_count():
             seg_result = segmentation_model(array)
             seg_annotated = seg_result[0].plot(show=False)
-            self.seg_image_pub.publish(ros_numpy.msgify(Image, seg_annotated, encoding="rgb8"))
+            self.seg_image_pub.publish(self.bridge.cv2_to_imgmsg(det_annotated, encoding="rgb8"))
 
+        if self.latest_rgb is None:
+            return  # haven't received an RGB frame yet, skip
+        image = self.latest_rgb
+        depth = ros_numpy.numpify(data)
+        result = segmentation_model(image)
+
+        all_objects = []
+        for index, cls in enumerate(result[0].boxes.cls):
+            class_index = int(cls.cpu().numpy())
+            name = result[0].names[class_index]
+            mask = result[0].masks.data.cpu().numpy()[index, :, :].astype(int)
+            obj = depth[mask == 1]
+            obj = obj[~np.isnan(obj)]
+            avg_distance = np.mean(obj) if len(obj) else np.inf
+            all_objects.append(f"{name}: {avg_distance:.2f}m")
+
+        classes_pub.publish(String(data=str(all_objects)))
+
+    def rgb_callback(self, msg: Image) -> None:
+        self.latest_rgb = self.bridge.imgmsg_to_cv2(msg, desired_encoding='rgb8')
 
     def create_additional_pubs_subs_vars(self) -> None:
         """Additional publishers and subscribers to be used later."""
