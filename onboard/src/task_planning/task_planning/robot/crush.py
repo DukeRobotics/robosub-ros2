@@ -14,16 +14,17 @@ async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Crush."""
     tasks = [
         ######## Main competition tasks ########
-        ivc_tasks.delineate_ivc_log(parent=self),
-        comp_tasks.initial_submerge(0.5, z_tolerance=0.15, enable_controls_flag=True, timeout=10, parent=self),
-        comp_tasks.coin_flip(enable_same_direction=False, parent=self),
-        comp_tasks.gate_task_dead_reckoning(depth_level=0.7, parent=self),  # Move through gate via 2,2; right strafe via 1.5  # noqa: E501
-        comp_tasks.gate_style_task(depth_level=0.975, parent=self),  # Spin
-        comp_tasks.slalom_task_dead_reckoning(depth_level=0.975, parent=self),  # Move through slalom via 2,2,2
-        # Move to octagon front via 2,2; left strafe via 0.75
-        comp_tasks.slalom_to_octagon_dead_reckoning(depth_level=0.975, parent=self),
-        ivc_tasks.ivc_send(msg=IVCMessageType.CRUSH_OCTAGON, parent=self),
-
+        # ivc_tasks.delineate_ivc_log(parent=self),
+        # comp_tasks.initial_submerge(0.5, z_tolerance=0.15, enable_controls_flag=True, timeout=10, parent=self),
+        # comp_tasks.coin_flip(enable_same_direction=False, parent=self),
+        # comp_tasks.gate_task_dead_reckoning(depth_level=0.7, parent=self),  # Move through gate via 2,2; right strafe via 1.5  # noqa: E501
+        # comp_tasks.gate_style_task(depth_level=0.975, parent=self),  # Spin
+        # comp_tasks.slalom_task_dead_reckoning(depth_level=0.975, parent=self),  # Move through slalom via 2,2,2
+        # # Move to octagon front via 2,2; left strafe via 0.75
+        # comp_tasks.slalom_to_octagon_dead_reckoning(depth_level=0.975, parent=self),
+        # ivc_tasks.ivc_send(msg=IVCMessageType.CRUSH_OCTAGON, parent=self),
+        ivc_tasks.wait_for_modem_ready(timeout=30, parent=self),
+        ivc_tasks.test_ivc(IVCMessageType.CRUSH_TEST, parent=self),
         ######## Unused competition tasks ########
         ## Gate
         # comp_tasks.gate_task(offset=-0.1, direction=-1, parent=self),

@@ -29,10 +29,10 @@ class IVCMessageType(Enum):
     """
     UNKNOWN = ''
     OOGWAY_TEST = 'to'
+    CRUSH_TEST = 'tc'
     OOGWAY_GATE = 'og'
     OOGWAY_ACKNOWLEDGE = 'oa'
     OOGWAY_TORPEDOES = 'fu'
-    CRUSH_TEST = 'tc'
     CRUSH_GATE = 'cg'
     CRUSH_ACKNOWLEDGE = 'ca'
     CRUSH_OCTAGON = 'ky'
