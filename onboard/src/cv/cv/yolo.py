@@ -1,5 +1,5 @@
 from functools import reduce
-
+import string
 import cv2
 import numpy as np
 import rclpy
@@ -33,20 +33,24 @@ class Yolo(Node):
         self.latest_rgb = None
         self.rgb_sub = self.create_subscription(Image, '/camera/color/image_raw', self.rgb_callback, 10)
         if pubs is None:
-            self.det_image_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/distance', 10)
-            self.seg_image_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/distance', 10)
+            self.det_image_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/det_image', 10)
+            self.seg_image_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/seg_image', 10)
+            self.object_sub = self.create_publisher(string, f'/cv/{camera}_usb/{name}/object', 10)
 
         else:
             self.det_image_pub = []
             self.seg_image_pub = []
+            self.object_sub = []
 
             for pub in pubs:
-                self.det_image_pub.append = [self.create_publisher(Image, f'/cv/{camera}_usb/{name}/{pub}/distance', 10)]
-                self.seg_image_pub.append = [self.create_publisher(Image, f'/cv/{camera}_usb/{name}/{pub}distance', 10)]
+                self.det_image_pub.append(self.create_publisher(Image, f'/cv/{camera}_usb/{name}/{pub}/det_image', 10))
+                self.seg_image_pub.append(self.create_publisher(Image, f'/cv/{camera}_usb/{name}/{pub}/seg_image', 10))
+                self.object_sub.append(self.create_publisher(string, f'/cv/{camera}_usb/{name}/{pub}/object', 10))
+
 
         self.create_additional_pubs_subs_vars()
 
-    def image_callback(self, data: CompressedImage) -> None:
+    def image_callback(self, data: Image) -> None:
         array = self.bridge.compressed_imgmsg_to_cv2(data)
         if self.det_image_pub.get_subscription_count():
             det_result = detection_model(array)
@@ -56,12 +60,13 @@ class Yolo(Node):
         if self.seg_image_pub.get_subscription_count():
             seg_result = segmentation_model(array)
             seg_annotated = seg_result[0].plot(show=False)
-            self.seg_image_pub.publish(self.bridge.cv2_to_imgmsg(det_annotated, encoding="rgb8"))
+            self.seg_image_pub.publish(self.bridge.cv2_to_imgmsg(seg_annotated, encoding="rgb8"))
 
         if self.latest_rgb is None:
             return  # haven't received an RGB frame yet, skip
         image = self.latest_rgb
-        depth = ros_numpy.numpify(data)
+        depth_1d = np.frombuffer(data.data, dtype=np.uint8)
+        depth = depth_1d.reshape(data.height, data.width, -1)
         result = segmentation_model(image)
 
         all_objects = []
@@ -74,7 +79,7 @@ class Yolo(Node):
             avg_distance = np.mean(obj) if len(obj) else np.inf
             all_objects.append(f"{name}: {avg_distance:.2f}m")
 
-        classes_pub.publish(String(data=str(all_objects)))
+        self.object_sub.publish(string(data=str(all_objects)))
 
     def rgb_callback(self, msg: Image) -> None:
         self.latest_rgb = self.bridge.imgmsg_to_cv2(msg, desired_encoding='rgb8')
