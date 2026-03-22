@@ -45,24 +45,6 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
             parent=self)
         logger.info(f'{log_msg_prefix} {math.degrees(angle)} degrees')
 
-    async def move_with_directions(directions: list[tuple[float, float, float]], depth_level: float | None = None) -> \
-        Coroutine[None, None, None]:
-        """
-        Move the robot in the specified directions.
-
-        Args:
-            directions (list[tuple[float, float, float]]): The directions to move the robot in. Each tuple contains
-                the distance to move the robot in the X, Y, and Z directions respectively.
-            depth_level (float | None): The depth level to move the robot to. If this is not None, the Z value in the
-                directions will be ignored and the robot will be kept at that depth level. Defaults to None.
-        """
-        for direction in directions:
-            await move_tasks.move_to_pose_local(
-                geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
-                depth_level=depth_level,
-                parent=self)
-            logger.info(f'Moved to {direction}')
-
     async def track_lane_marker(distance: float, forward: bool, step_size: float = 1.0) -> \
         Coroutine[None, None, None]:
         """
@@ -119,6 +101,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
                 # If the robot is moving forward, this means the yaw has drifted to the right, so rotate left.
                 # If the robot is moving backward, this means the yaw has drifted to the left, so rotate right.
                 if prev_touching_top and not prev_touching_bottom:
+                    logger.info('Rotating 20 degrees based on previous step lane detection.')
                     await rotate_deg(math.radians(20) * direction_sign, depth_level=DEPTH_LEVEL)
 
             # If the lane marker is touching the bottom but not the top,
@@ -135,6 +118,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
                 # If the robot is moving forward, this means the yaw has drifted to the left, so rotate right.
                 # If the robot is moving backward, this means the yaw has drifted to the right, so rotate left.
                 if not prev_touching_top and prev_touching_bottom:
+                    logger.info('Rotating 20 degrees based on previous step lane detection.')
                     await rotate_deg(math.radians(-20) * direction_sign, depth_level=DEPTH_LEVEL)
 
             # Y correction so the robot is centered on the lane marker
@@ -170,51 +154,58 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
                 parent=self)
 
             total_dist += step
-            logger.info(f'Moved {direction_term} {total_dist}')
+            logger.info(f'Moved {direction_term} {total_dist} in total')
 
     # Move up to gate
     await track_lane_marker(2, True)
 
     # Submerge below gate
-    await move_with_directions([(0, 0, -0.5)])
+    logger.info('Submerging beneath the gate.')
+    await move_tasks.move_with_directions([(0, 0, -0.4)], parent=self)
     DEPTH_LEVEL = State().depth
 
     # Move through gate
-    await move_with_directions([(2.5, 0, 0)], depth_level=DEPTH_LEVEL)
+    logger.info('Moving through the gate.')
+    await track_lane_marker(2.5, True)
 
     # Come back up
-    await move_with_directions([(0, 0, 0.2)])
+    logger.info('Coming back up from the gate')
+    await move_tasks.move_with_directions([(0, 0, 0.2)], parent=self)
     DEPTH_LEVEL = State().depth
 
     # Move to buoy
-    await track_lane_marker(7, True)
+    await track_lane_marker(10, True)
 
     # Dead reckon around buoy
+    logger.info('Moving around the buoy')
     directions = [
-        (2, 0, 0),
         (0, 2, 0),
     ]
-    await move_with_directions(directions, depth_level=DEPTH_LEVEL)
+    await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_yaw=True, correct_depth=True, parent=self)
 
     # Follow lane marker in adjacent lane backwards
-    await track_lane_marker(-1, False)
+    await track_lane_marker(3, False)
 
     # Move back to the original lane
-    await move_with_directions([(0, -2.5, 0)], depth_level=DEPTH_LEVEL)
+    logger.info('Switching back to the original lane.')
+    await move_tasks.move_with_directions([(0, -2.5, 0)], depth_level=DEPTH_LEVEL, correct_yaw=True, correct_depth=True, parent=self)
 
     # Come back to gate
-    await track_lane_marker(6, False)
+    await track_lane_marker(7, False)
 
     # Move down to go through gate
-    await move_with_directions([(0, 0, -0.1)])
+    logger.info('Submerging beneath the gate.')
+    await move_tasks.move_with_directions([(0, 0, -0.4)], parent=self)
     DEPTH_LEVEL = State().depth
 
     # Move back through gate
-    await move_with_directions([(-2.5, 0, 0)], depth_level=DEPTH_LEVEL)
+    logger.info('Moving through the gate.')
+    await track_lane_marker(2.5, False)
 
     # Come back up
-    await move_with_directions([(0, 0, 0.2)])
+    logger.info('Coming back up from the gate')
+    await move_tasks.move_with_directions([(0, 0, 0.2)], parent=self)
     DEPTH_LEVEL = State().depth
 
     # Return to start
-    await track_lane_marker(1, False)
+    await track_lane_marker(2, False)

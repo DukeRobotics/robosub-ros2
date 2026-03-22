@@ -21,7 +21,7 @@ async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     # Constants
     DIRECTION_OF_TORPEDO_BANNER = 1
-    DEPTH = 0.7
+    DEPTH = 0.5
     # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
     FIRST_TARGET = CVObjectType.TORPEDO_REEF_SHARK_TARGET
     tasks = [
@@ -63,7 +63,7 @@ async def main(self: Task) -> Task[None, None, None]:
         # comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self),
 
         ## Movement/CV tasks
-        # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
+        # move_tasks.move_with_directions([(1, 0, 0)], parent=self),
         # move_tasks.move_to_pose_local(
         #     geometry_utils.create_pose(0, 0, 0, 0, 0, 1.6),
         #     parent=self,

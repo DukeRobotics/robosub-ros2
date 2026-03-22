@@ -83,7 +83,7 @@ class LaneMarkerDetector(Node):
         # Define range for blue color of lane marker and create mask
         mask = cv2.inRange(hsv, self.actual_to_opencv_hsv(LaneMarker.LANE_MARKER_BOT),
                              self.actual_to_opencv_hsv(LaneMarker.LANE_MARKER_TOP))
-
+        mask = mask[:, :-35]
         compressed_image_msg = self.bridge.cv2_to_compressed_imgmsg(mask)
         self.hsv_filtered_pub.publish(compressed_image_msg)
 
