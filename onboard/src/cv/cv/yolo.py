@@ -14,8 +14,8 @@ from cv.utils import calculate_relative_pose, compute_center_distance, compute_y
 
 from ultralytics import YOLO
 
-detection_model = YOLO("yolo26m.pt")
-segmentation_model = YOLO("yolo26m-seg.pt")
+detection_model = YOLO("yolo26n.pt")
+segmentation_model = YOLO("yolo26n-seg.pt")
 
 # https://docs.ultralytics.com/guides/ros-quickstart/ this is used as a basis for everything
 
