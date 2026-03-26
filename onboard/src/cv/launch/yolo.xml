@@ -1,0 +1,3 @@
+<launch>
+	<node name="hsv_red_bin" pkg="cv" exec="yolo" output="screen"/>
+</launch>

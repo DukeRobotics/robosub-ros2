@@ -41,5 +41,8 @@ def generate_launch_description() -> LaunchDescription:
         ld.add_action(IncludeLaunchDescription(
             XMLLaunchDescriptionSource(str(pkg_cv / 'launch' / 'hsv_pink_bin_bottom.xml')),
         ))
+        ld.add_action(IncludeLaunchDescription(
+            XMLLaunchDescriptionSource(str(pkg_cv / 'launch' / 'yolo.xml')),
+        ))
 
     return ld
