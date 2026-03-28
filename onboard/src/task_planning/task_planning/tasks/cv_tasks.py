@@ -202,6 +202,8 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
     """
 
     yaw_threshold = math.radians(10)
+    yaw_stop_threshold = math.radians(25)
+    biggest_forward_step = 2
 
 
     @task
@@ -210,7 +212,7 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
 
     cv_object_yaw = CV().angles[cv_object]
     current_dist = CV().bounding_boxes[cv_object].coords.x + CV().bounding_boxes[cv_object].coords.y
-    current_goal_distance = min(2, current_dist - target_distance)
+    current_goal_distance = min(biggest_forward_step, current_dist - target_distance)
     move_task = move_tasks.move_to_pose_local(geometry_utils.create_pose(current_goal_distance, 0, 0, 0, 0, cv_object_yaw),
                             depth_level=depth_level,
                             pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
@@ -223,15 +225,15 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
         if abs(State().depth - depth_level) > depth_threshold:
             await correct_depth(parent=self)
 
-        if not CV().is_receiving_recent_cv_data(cv_object, 10):
+        cv_object_yaw = CV().angles[cv_object]
+        current_dist = CV().bounding_boxes[cv_object].coords.x + CV().bounding_boxes[cv_object].coords.y
+        current_goal_distance = min(2, current_dist - target_distance)
+
+        if not CV().is_receiving_recent_cv_data(cv_object, 10) or abs(cv_object_yaw) > yaw_stop_threshold:
             yaw_task = await yaw_to_cv_obj(cv_object, search_direction, yaw_threshold, depth_threshold, depth_level)
             if not yaw_task:
                 logger.info('[cv_tasks.move_to_cv_obj] Failure. Object never found, finishing move_to_cv_obj')  
                 return False  
-
-        cv_object_yaw = CV().angles[cv_object]
-        current_dist = CV().bounding_boxes[cv_object].coords.x + CV().bounding_boxes[cv_object].coords.y
-        current_goal_distance = min(2, current_dist - target_distance)
 
         new_pose = geometry_utils.create_pose(current_goal_distance, 0, 0, 0, 0, cv_object_yaw)
         move_task.send(new_pose)
