@@ -40,8 +40,11 @@ alias test-thrusters="ros2 run offboard_comms test_thrusters"
 # Alias to run arduino CLI in offboard comms
 alias arduino="ros2 run offboard_comms arduino"
 
-# Alias for foxglove.py CLI
-alias fox="python3 /home/ubuntu/robosub-ros2/foxglove/foxglove.py"
+# Function for foxglove.py CLI
+fox() {
+    python3 /home/ubuntu/robosub-ros2/foxglove/foxglove.py "$@"
+}
+eval "$(register-python-argcomplete fox)"
 
 # Alias to run lint.py
 alias lint="python3 /home/ubuntu/robosub-ros2/lint.py"
