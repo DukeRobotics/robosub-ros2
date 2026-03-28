@@ -41,6 +41,14 @@ class Torpedo:
     HIGH_BOT = np.array([330, 50, 45])
     HIGH_TOP = np.array([360, 95, 95])
 
+    TORPEDO_BANNER_X_SCALE = 1.2
+    TORPEDO_BANNER_Y_SCALE = 0.5
+
+class BlueRect:
+    """BlueRect color constants."""
+    BLUE_BOT = np.array([100, 150, 50])
+    BLUE_TOP = np.array([140, 255, 255])
+
 class PathMarker:
     """Path marker color bounds and contour parameters."""
     ORANGE_BOT = np.array([0, 130, 100])

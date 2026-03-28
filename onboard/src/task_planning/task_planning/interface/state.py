@@ -45,7 +45,7 @@ class State:
             tf_buffer: The transform buffer for the robot. Defaults to None.
         """
         self.bypass = bypass
-        self._tf_buffer = tf_buffer if tf_buffer else Buffer()
+        self._tf_buffer = tf_buffer or Buffer()
 
         self._received_state = False
         self._received_depth = False

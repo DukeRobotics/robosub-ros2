@@ -78,7 +78,8 @@ def compute_angle_from_x_offset(x_offset: float, camera_pixel_width: float) -> f
 
 def calculate_relative_pose(bbox_bounds: tuple[int | float, ...], input_size: tuple[float, float],
                             label_shape: tuple[float, float], focal_length: float,
-                            sensor_size: tuple[float, float], adjustment_factor: int) -> list[float]:
+                            sensor_size: tuple[float, float], adjustment_factor: int,
+                            scale_x: float = 1.0, scale_y: float = 1.0, scale_z: float = 1.0) -> list[float]:
     """
     Return relative pose, to be used as a part of the CVObject.
 
@@ -89,6 +90,9 @@ def calculate_relative_pose(bbox_bounds: tuple[int | float, ...], input_size: tu
         focal_length (float): The distance between the lens and the image sensor when the lens is focused on a subject.
         sensor_size (tuple[float, float]): The physical size of the camera's image sensor.
         adjustment_factor (int): 1 if mono, 2 if depthai.
+        scale_x (float): Multiplicative scalar for the x position.
+        scale_y (float): Multiplicative scalar for the y position.
+        scale_z (float): Multiplicative scalar for the z position.
 
     Returns:
         list[float]: The relative pose of the object.
@@ -107,6 +111,10 @@ def calculate_relative_pose(bbox_bounds: tuple[int | float, ...], input_size: tu
 
     x_meters = cam_dist_with_obj_height(bbox_height, label_shape[1], focal_length, input_size, sensor_size,
                                         adjustment_factor)
+
+    x_meters *= scale_x
+    y_meters *= scale_y
+    z_meters *= scale_z
 
     return [x_meters, y_meters, z_meters]
 

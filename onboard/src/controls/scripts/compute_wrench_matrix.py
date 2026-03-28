@@ -39,7 +39,7 @@ def get_robot_name() -> str:
     user_robot_name = input(f"Enter the robot name (press enter for default '{default_robot_name}'): ")
 
     # Use the default value if the user input is empty
-    return user_robot_name.strip() if user_robot_name.strip() else default_robot_name
+    return user_robot_name.strip() or default_robot_name
 
 def get_transform(node: Node, tf_buffer: Buffer) -> TransformStamped:
     """
