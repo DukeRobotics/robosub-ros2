@@ -310,14 +310,11 @@ class DepthAISpatialDetector(Node):
             confidence = detection.confidence
 
             # Calculate relative pose, and pull scalings from config dependent on model
+            scale_x, scale_y, scale_z = None, None, None
             match label:
                 case 'torpedo_banner':
                     scale_x = Torpedo.TORPEDO_BANNER_X_SCALE
                     scale_y = Torpedo.TORPEDO_BANNER_Y_SCALE
-                case _:
-                    scale_x = 1
-                    scale_y = 1
-                    scale_z = 1
 
             det_coords_robot_mm = calculate_relative_pose(bbox, tuple(model['input_size']),
                                                         tuple(model['sizes'][label]),
