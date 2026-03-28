@@ -1,5 +1,4 @@
 from collections.abc import Callable, Coroutine
-from typing import TypeVar
 
 from task_planning.task import Task, Yield
 
