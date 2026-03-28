@@ -14,9 +14,9 @@ from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String
 
 from cv import depthai_camera_connect
+from cv.config import Torpedo
 from cv.image_tools import ImageTools
 from cv.utils import DetectionVisualizer, calculate_relative_pose
-from cv.config import Torpedo
 
 MM_IN_METER = 1000
 CV_CONFIG_PATH = f'package://cv/config/{os.getenv('ROBOT_NAME')}.yaml'
@@ -311,7 +311,7 @@ class DepthAISpatialDetector(Node):
 
             # Calculate relative pose, and pull scalings from config dependent on model
             match label:
-                case "torpedo_banner":
+                case 'torpedo_banner':
                     scale_x = Torpedo.TORPEDO_BANNER_X_SCALE
                     scale_y = Torpedo.TORPEDO_BANNER_Y_SCALE
                 case _:
@@ -321,7 +321,7 @@ class DepthAISpatialDetector(Node):
 
             det_coords_robot_mm = calculate_relative_pose(bbox, tuple(model['input_size']),
                                                         tuple(model['sizes'][label]),
-                                                        self.focal_length, self.sensor_size, 2, 
+                                                        self.focal_length, self.sensor_size, 2,
                                                         scale_x=scale_x, scale_y=scale_y, scale_z=scale_z)
 
             # Find yaw angle offset

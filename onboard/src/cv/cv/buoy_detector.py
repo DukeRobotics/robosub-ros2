@@ -97,7 +97,7 @@ class BuoyDetector(Node):
 
         # takes contour w/ greatest y-distance
         if similar_size_contours:
-            similar_size_contours.sort(key=lambda x: cv2.contourArea(x))
+            similar_size_contours.sort(key=cv2.contourArea)
             best_cnt = similar_size_contours[0]
             for cnt in similar_size_contours:
                 x, y, w, h = cv2.boundingRect(cnt)

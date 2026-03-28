@@ -90,6 +90,9 @@ def calculate_relative_pose(bbox_bounds: list[int | float], input_size: tuple[fl
         focal_length (float): The distance between the lens and the image sensor when the lens is focused on a subject.
         sensor_size (tuple[float, float]): The physical size of the camera's image sensor.
         adjustment_factor (int): 1 if mono, 2 if depthai.
+        scale_x (float): Multiplicative scalar for the x position.
+        scale_y (float): Multiplicative scalar for the y position.
+        scale_z (float): Multiplicative scalar for the z position.
 
     Returns:
         list[float]: The relative pose of the object.

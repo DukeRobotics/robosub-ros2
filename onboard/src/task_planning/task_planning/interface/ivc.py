@@ -86,7 +86,7 @@ class IVC:
     MESSAGES_TOPIC = '/sensors/modem/messages'
     SEND_MESSAGE_SERVICE = '/sensors/modem/send_message'
 
-    def __new__(cls, node: Node | None = None, bypass: bool = False) -> 'IVC':  # noqa: ARG004
+    def __new__(cls, node: Node | None = None, bypass: bool = False) -> self:  # noqa: ARG004
         """Create a new instance of the IVC class or return the existing instance."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
