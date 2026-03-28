@@ -7,7 +7,6 @@ from task_planning.interface.cv import CV, CVObjectType
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield, task
 from task_planning.tasks import move_tasks, util_tasks
-from task_planning.tasks.move_tasks import move_to_pose_local
 from task_planning.utils import geometry_utils
 
 logger = get_logger('cv_tasks')
@@ -46,7 +45,8 @@ async def yaw_until_object_detection(self: Task, cv_object: CVObjectType, search
     async def object_search_pattern(self: Task) -> bool:
         step = 0
         logger.info(f'[cv_tasks.yaw_until_object_detection] Depth level for search: {depth_level}')
-        move_task = move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_pid_step_size * search_direction),
+        move_task = move_tasks.move_to_pose_local(
+                        geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_pid_step_size * search_direction),
                         depth_level=depth_level,
                         pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
                                               angular=Vector3(x=0.2, y=0.3, z=0.3)),
@@ -195,12 +195,15 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
 
     Args:
         self: Task instance.
-        name: CV class name of the object to move to
-
+        cv_object: CV class name of the object to move to
+        target_distance: The goal distance to be from the CV object when finished
+        search_direction: If no CV object in view, which direction should it search in.
+                                1 for positive yaw, -1 for negative yaw.
+        depth_threshold: The error in depth that will cause a depth-correct call
+        depth_level: Desire depth level to hold throughout the task. Must be positive.
     Send:
         CV class name of new object to move to
     """
-
     yaw_threshold = math.radians(10)
     yaw_stop_threshold = math.radians(25)
     biggest_forward_step = 2
@@ -213,7 +216,8 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
     cv_object_yaw = CV().angles[cv_object]
     current_dist = CV().bounding_boxes[cv_object].coords.x + CV().bounding_boxes[cv_object].coords.y
     current_goal_distance = min(biggest_forward_step, current_dist - target_distance)
-    move_task = move_tasks.move_to_pose_local(geometry_utils.create_pose(current_goal_distance, 0, 0, 0, 0, cv_object_yaw),
+    move_task = move_tasks.move_to_pose_local(
+                            geometry_utils.create_pose(current_goal_distance, 0, 0, 0, 0, cv_object_yaw),
                             depth_level=depth_level,
                             pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
                                                     angular=Vector3(x=0.2, y=0.3, z=yaw_threshold)),
@@ -232,8 +236,8 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
         if not CV().is_receiving_recent_cv_data(cv_object, 10) or abs(cv_object_yaw) > yaw_stop_threshold:
             yaw_task = await yaw_to_cv_obj(cv_object, search_direction, yaw_threshold, depth_threshold, depth_level)
             if not yaw_task:
-                logger.info('[cv_tasks.move_to_cv_obj] Failure. Object never found, finishing move_to_cv_obj')  
-                return False  
+                logger.info('[cv_tasks.move_to_cv_obj] Failure. Object never found, finishing move_to_cv_obj')
+                return False
 
         new_pose = geometry_utils.create_pose(current_goal_distance, 0, 0, 0, 0, cv_object_yaw)
         move_task.send(new_pose)
