@@ -106,6 +106,7 @@ fox publish [extensions ...]
 - `extensions`: A list of extensions to publish. If no extensions are given, all extensions are published.
 - `-v, --version`: Version to publish extensions under. If no version is given, the short (length 7) HEAD commit hash is used. A version is required if the `robosub-ros2` git reposititory is dirty.
 - `-f, --force`: Publish extensions even if the repository is dirty.
+- `--github-action`: Append `-prod` to the publish version (to avoid version collisions).
 
 #### Clean
 To clean up the Foxglove monorepo, run:
@@ -144,21 +145,22 @@ This command will exit with a non-zero status if any potential problems are foun
 
 ## Monorepo Structure
 ### Extensions
-- [`call-service-panel`](extensions/call-service-panel/README.md) - Example panel to call services
-- [`publish-topic-panel`](extensions/publish-topic-panel/README.md) - Example panel to publish topics
-- [`subscribe-topic-panel`](extensions/subscribe-topic-panel/README.md) - Example panel to subscribe to topics
+- [`publish-topic-panel`](extensions/publish-topic-panel/README.md) - Panel to publish topics
 - [`toggle-controls-panel`](extensions/toggle-controls-panel/README.md) - Panel to toggle controls on/off
 - [`system-status-panel`](extensions/system-status-panel/README.md) - Panel that displays system usage of the onboard computer
 - [`sensors-status-panel`](extensions/sensors-status-panel/README.md) - Panel that displays the connected/disconnected status of sensors
 - [`thruster-allocs-panel`](extensions/thruster-allocs-panel/README.md) - Panel that displays the current thruster allocs and publishes desired thruster allocs
 - [`toggle-joystick-panel`](extensions/toggle-joystick-panel/README.md) - Panel to toggle joystick control on/off, as well as publish transformed joystick inputs as a desired power
+- [`toggle-keyboard-panel`](extensions/toggle-keyboard-panel/README.md) - Panel to toggle keyboard control on/off, as well as publish transformed keyboard inputs as a desired power
 - [`pid-panel`](extensions/pid-panel/README.md) - Panel to read/set PID gains
 - [`discrete-servos-panel`](extensions/discrete-servos-panel/README.md) - Panel to control discrete servos
 
 ### Local Dependencies
 Local dependencies are located in the `shared/` directory.
 - [`defs`](shared/defs/README.md) - Exports Foxglove datatype maps and TypeScript interfaces/enums for both ROS 2 and Duke Robotics message definitions
-- [`theme`](shared/theme/README.md) Exports the Duke Robotics MUI Theme
+- [`theme`](shared/theme/README.md) - Exports the Duke Robotics MUI Theme
+- [`robot-name`](shared/robot-name/README.md) - Exports the `Robot` enum and related utilities used for implementing robot-specific behavior
+- [`utils`](shared/utils/README.md) - Exports shared utility functions used across Foxglove extensions
 
 ### Patches
 Patches to external node modules are located in the `patches/` directory.
@@ -178,7 +180,7 @@ Running `fox build` will automatically apply these patches.
 
 ## Contributing
 ### Adding a New Extension
-Copy an existing Duke Robotics example extension (`call-service-panel`, `publish-topic-panel`, or `subscribe-topic-panel`) as a starting point. This ensures that all of our extensions have the same code structure and use the same core set of dependencies.
+Copy an existing Duke Robotics extension as a starting point. This ensures that all of our extensions have the same code structure and use the same core set of dependencies.
 
 ### Adding a New Local Dependency
 All local dependencies must expose an `npm run build` command in `package.json`. During build, `foxglove.py` will compile each local dependency to `node_modules` where they can be consumed by an extension.

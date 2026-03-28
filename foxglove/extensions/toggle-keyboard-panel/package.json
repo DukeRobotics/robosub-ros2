@@ -1,7 +1,7 @@
 {
-  "name": "@duke-robotics/ros-jazzy-subscribe-topic-panel",
-  "displayName": "Subscribe Topic Panel (Jazzy)",
-  "description": "Subscribe to ROS topics",
+  "name": "@duke-robotics/ros-jazzy-toggle-keyboard-panel",
+  "displayName": "Toggle Keyboard Panel (Jazzy)",
+  "description": "Toggle to publish keyboard inputs as a desired power",
   "publisher": "Duke Robotics",
   "version": "0.0.0",
   "main": "./dist/extension.js",

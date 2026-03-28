@@ -232,6 +232,7 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
         cv_object_yaw = CV().angles[cv_object]
         current_dist = CV().bounding_boxes[cv_object].coords.x + CV().bounding_boxes[cv_object].coords.y
         current_goal_distance = min(2, current_dist - target_distance)
+2a
         logger.info(f'[cv_tasks.move_to_cv_obj] Current CV Distance is {current_goal_distance}')
 
         if not CV().is_receiving_recent_cv_data(cv_object, 10) or abs(cv_object_yaw) > yaw_stop_threshold:
