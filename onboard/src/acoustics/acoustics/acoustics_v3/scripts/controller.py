@@ -1,11 +1,10 @@
 """Controller module for hydrophone data acquisition and analysis."""
 import os
 import time
-from logic import logic
-from logic.logic2 import Logic2
-from hydrophones import hydrophone_array
-from analyzers import TOAEnvelopeAnalyzer, NearbyAnalyzer
-
+from .logic import logic
+from .logic.logic2 import Logic2
+from .hydrophones import hydrophone_array
+from .analyzers import TOAEnvelopeAnalyzer, NearbyAnalyzer
 
 def run_controller(
         hydrophone_array,
