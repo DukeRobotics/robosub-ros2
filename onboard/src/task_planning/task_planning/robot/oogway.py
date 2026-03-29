@@ -27,7 +27,7 @@ async def main(self: Task) -> Task[None, None, None]:
     tasks = [
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
-        # comp_tasks.initial_submerge(DEPTH, parent=self),
+        comp_tasks.initial_submerge(DEPTH, parent=self),
         # move_tasks.move_with_directions([(1, 0, 0), (0, 0.5, 0), (-1, 0, 0), (0, -0.5, 0)], parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
         # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,

@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from enum import Enum
 
 import numpy as np
@@ -8,6 +7,7 @@ from skimage.measure import label
 from skimage.segmentation import watershed
 
 NUM_DIMENSIONS_FOR_REPEAT = 3
+
 
 class SonarDenoiser:
     """Class to denoise sonar scans to prepare them for segmentation and pose estimation."""
@@ -272,25 +272,8 @@ class SonarSegment:
 
         return (np.round(coordinates[0]), np.round(coordinates[1]))
 
-class SonarSegmentationBase(ABC):
-    """SonarSegmentation Base Class for implementations of segmenting sonar images."""
-    @abstractmethod
-    def __init__(
-        self,
-        image: np.ndarray,
-        wall_object_threshold: float = 0.0,
-        segment_size_threshold: float = 0.0,
-        segment_brightness_threshold: float = 0.0,
-        merge_threshold: float = 1.1,
-        merge_angle_limit: float = 5.0,
-    ) -> None:
-        pass
 
-    @abstractmethod
-    def get_nearest_segment(self) -> 'SonarSegment':
-        """Get the nearest segment in the image."""
-
-class SonarSegmentation(SonarSegmentationBase):
+class SonarSegmentation:
     """A class which segments an sonar image, and applies regressions to each segment."""
 
     def __init__(
@@ -302,8 +285,6 @@ class SonarSegmentation(SonarSegmentationBase):
         merge_threshold: float = 1.1,
         merge_angle_limit: float = 5.0,
     ) -> None:
-        super().__init__(image)
-
         self.segment_size_threshold = segment_size_threshold
         self.segment_brightness_threshold = segment_brightness_threshold
         self.merge_threshold = merge_threshold
@@ -430,14 +411,18 @@ class SonarSegmentation(SonarSegmentationBase):
 
         return nearest_segment
 
-class SimpleSonarSegmentation(SonarSegmentationBase):
+class SonarSegmentation2:
     """A class which treats all non-zero sonar data as a single segment."""
 
     def __init__(
         self,
         image: np.ndarray,
+        wall_object_threshold: float = 0.0,
+        segment_size_threshold: float = 0.0,
+        segment_brightness_threshold: float = 0.0,
+        merge_threshold: float = 1.1,
+        merge_angle_limit: float = 5.0,
     ) -> None:
-        super().__init__(image)
 
         # Store image
         self.image = image
