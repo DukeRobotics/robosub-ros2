@@ -4,6 +4,7 @@ from scipy.signal import hilbert
 from scipy.fft import fft, fftfreq
 
 from .base_analyzer import BaseAnalyzer
+from .garbage_detector import GarbageDetector
 
 
 class TOAEnvelopeAnalyzer(BaseAnalyzer):
@@ -13,15 +14,30 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
     and finding the first point where it exceeds a threshold based on signal statistics.
     """
 
-    def __init__(self, threshold_sigma=5, **kwargs):
+    def __init__(
+        self,
+        threshold_sigma=5,
+        raw_signal_threshold=3,
+        margin_front=0.1,
+        margin_end=0.1,
+        **kwargs
+    ):
         """Initialize TOA envelope analyzer.
         
         Args:
             threshold_sigma: Number of standard deviations above mean for TOA threshold
+            raw_signal_threshold: Minimum absolute amplitude in raw signal for validation
+            margin_front: Minimum time (seconds) from recording start for valid TOA
+            margin_end: Minimum time (seconds) from recording end for valid TOA
             **kwargs: Additional arguments passed to BaseAnalyzer
         """
         super().__init__(**kwargs)
         self.threshold_sigma = threshold_sigma
+        self.garbage_detector = GarbageDetector(
+            raw_signal_threshold=raw_signal_threshold,
+            margin_front=margin_front,
+            margin_end=margin_end
+        )
 
     def get_name(self):
         """Return analyzer name.
@@ -40,7 +56,8 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
         super().print_results(analysis_results)
         print(f"\nTOA Estimates:")
         for result in analysis_results['results']:
-            print(f"  Hydrophone {result['hydrophone_idx']}: {result['toa_time']:.6f} s (sample {result['toa_idx']})")
+            is_valid = result.get('is_valid', '?')
+            print(f"  Hydrophone {result['hydrophone_idx']}: {result['toa_time']:.6f} s (sample {result['toa_idx']}) [Valid: {is_valid}]")
 
     def _analyze_single(self, hydrophone, sampling_freq):
         """Analyze single hydrophone using envelope detection.
@@ -60,6 +77,7 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
                 - threshold: Detection threshold value
                 - band_min: Lower frequency bound used (Hz)
                 - band_max: Upper frequency bound used (Hz)
+                - is_valid: Whether sample passes garbage detection (bool)
         """
         # Apply bandpass filter
         filtered_signal = self.apply_bandpass(
@@ -80,12 +98,22 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
         else:
             toa_idx = np.argmax(envelope)  # Fallback to peak
 
+        toa_time = hydrophone.times[toa_idx]
+
         # Compute filtered frequency spectrum
         filtered_frequency = fft(filtered_signal)
         filtered_freqs = fftfreq(len(filtered_signal), 1/sampling_freq)
 
+        # Validate sample using garbage detector
+        is_valid = self.garbage_detector.validate_hydrophone_toa(
+            signal_value=np.max(hydrophone.signal),
+            toa_time=toa_time,
+            recording_start=hydrophone.times[0],
+            recording_end=hydrophone.times[-1]
+        )
+
         return {
-            'toa_time': hydrophone.times[toa_idx],
+            'toa_time': toa_time,
             'toa_idx': toa_idx,
             'filtered_signal': filtered_signal,
             'processed_signal': envelope,
@@ -93,7 +121,8 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
             'filtered_freqs': filtered_freqs,
             'threshold': threshold,
             'band_min': self.search_band_min,
-            'band_max': self.search_band_max
+            'band_max': self.search_band_max,
+            'is_valid': is_valid
         }
 
     def _plot_single_signal(self, ax_time, ax_freq, hydrophone, result, idx):

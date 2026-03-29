@@ -1,9 +1,10 @@
 """Controller module for hydrophone data acquisition and analysis."""
 import os
 import time
-from .logic import logic
-from .hydrophones import hydrophone_array
-from .analyzers import TOAEnvelopeAnalyzer, NearbyAnalyzer
+from logic import logic
+from logic.logic2 import Logic2
+from hydrophones import hydrophone_array
+from analyzers import TOAEnvelopeAnalyzer, NearbyAnalyzer
 
 
 def run_controller(
@@ -37,6 +38,8 @@ def capture_data(
         capture_time,
         capture_format,
         output_dir,
+        is_logic_2=False,
+        is_mock=False,
         close_logic_after=True
         ):
     """Capture new data from Logic hardware.
@@ -46,39 +49,55 @@ def capture_data(
         capture_time: Duration of capture in seconds
         capture_format: '.bin', '.csv', or 'both'
         output_dir: Directory to save capture files
-        close_logic_after: Whether to close Logic software after capture
+        is_logic_2: Whether to use Logic 2 (True) or Logic 1 (False)
+        is_mock: Whether to use mock device for Logic 2 (True) or real device (False)
+        close_logic_after: Whether to close Logic after capture
 
     Returns:
-        Path to captured data file
+        Path to captured data directory/file
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    logic_interface = logic.Logic(sampling_freq=sampling_freq)
-    logic_interface.print_saleae_status()
-
-    if capture_format == "both":
-        capture_path, _ = logic_interface.export_binary_and_csv_capture(
-            capture_time, output_dir
+    if is_logic_2:
+        logic_interface = Logic2(is_mock=is_mock)
+        timestamp = time.strftime('%Y-%m-%d--%H-%M-%S')
+        
+        format_map = {".bin": ["bin"], ".csv": ["csv"], "both": ["csv", "bin"]}
+        
+        logic_interface.capture(
+            seconds=capture_time,
+            prefix=timestamp,
+            base_dir=output_dir,
+            sample_rate=int(sampling_freq),
+            formats=format_map[capture_format]
         )
-    elif capture_format == ".csv":
-        capture_path = logic_interface.start_csv_capture(
-            capture_time, output_dir
-        )
+        
+        if close_logic_after:
+            logic_interface.close()
+        
+        return os.path.join(output_dir, timestamp)
     else:
-        capture_path = logic_interface.export_binary_capture(
-            capture_time, output_dir
-        )
+        logic_interface = logic.Logic(sampling_freq=sampling_freq)
+        logic_interface.print_saleae_status()
 
-    if close_logic_after:
-        logic_interface.kill_logic()
+        if capture_format == "both":
+            capture_path = logic_interface.export_binary_and_csv_capture(capture_time, output_dir)[0]
+        elif capture_format == ".csv":
+            capture_path = logic_interface.start_csv_capture(capture_time, output_dir)
+        else:
+            capture_path = logic_interface.export_binary_capture(capture_time, output_dir)
 
-    return capture_path
+        if close_logic_after:
+            logic_interface.kill_logic()
+
+        return capture_path
 
 
 def load_hydrophone_data(
         data_path,
         sampling_freq,
         selected_hydrophones,
+        is_logic_2,
         plot_data
         ):
     """Load hydrophone data from file.
@@ -95,39 +114,58 @@ def load_hydrophone_data(
         sampling_freq=sampling_freq,
         selected=selected_hydrophones
     )
-    array.load_from_path(data_path)
+    array.load_from_path(data_path, is_logic_2)
     
     if plot_data:
         array.plot_hydrophones()
     return array
 
 
-def find_closest_hydrophone(analysis_results):
+def check_all_valid(toa_results, selected):
+    """Check if all selected hydrophones are valid.
+    
+    Args:
+        toa_results: List of TOA analysis results
+        selected: List of 4 bools indicating which hydrophones are selected
+        
+    Returns:
+        True only if all selected hydrophones have is_valid=True
+    """
+    for idx, is_selected in enumerate(selected):
+        if is_selected:
+            result = next((r for r in toa_results if r['hydrophone_idx'] == idx), None)
+            if result is None or not result.get('is_valid', False):
+                return False
+    return True
+
+
+def find_closest_hydrophone(analysis_results, selected=None):
     """Find the closest hydrophone based on TOA analysis and nearby status.
     
     Args:
         analysis_results: List of analysis results from run_controller
+        selected: List of 4 bools indicating which hydrophones are selected
         
     Returns:
-        tuple: (closest_hydrophone_index, is_nearby) where index is 0-3 or None,
-               and is_nearby is True if average nearby status indicates proximity
+        tuple: (closest_hydrophone_index, is_nearby, all_valid) where 
+               all_valid is True only if all selected hydrophones are valid
     """
     if not analysis_results or len(analysis_results) == 0:
-        return (None, False)
+        return (None, False, False)
     
     # Get TOA results (assumes first analyzer is TOA-based)
     toa_results = analysis_results[0]['results']
     
     # Find hydrophone with earliest TOA time
-    latest_time = 0
+    earliest_time = float('inf')
     closest_hydrophone = None
     
     for result in toa_results:
         idx = result['hydrophone_idx']
         toa_time = result.get('toa_time')
         
-        if toa_time is not None and toa_time < latest_time:
-            latest_time = toa_time
+        if toa_time is not None and toa_time < earliest_time:
+            earliest_time = toa_time
             closest_hydrophone = idx
     
     # Get nearby status (assumes second analyzer is nearby analyzer)
@@ -138,15 +176,24 @@ def find_closest_hydrophone(analysis_results):
         # Consider "nearby" if majority of hydrophones detect it nearby
         is_nearby = nearby_count >= len(nearby_results) / 2
     
-    return (closest_hydrophone, is_nearby)
+    # Check if all selected hydrophones are valid
+    all_valid = check_all_valid(toa_results, selected) if selected is not None else True
+    
+    return (closest_hydrophone, is_nearby, all_valid)
 
 
 def main():
+    # Whether to use Logic 2 or Logic 1
+    IS_LOGIC_2 = True
+
+    # Whether to use mock device for Logic 2 (True) or real device (False)
+    USE_MOCK_DEVICE = False
+
     # Whether to capture new data from Logic hardware (True) or use existing file (False)
     CAPTURE_NEW_DATA = True
 
     # Path to existing data file (used when CAPTURE_NEW_DATA = False)
-    DATA_FILE = "data/2.8.2026/0_2026-02-07--15-24-04/0_epoch_001_2026-02-07--15-24-04.bin"
+    DATA_FILE = "data/2.28.2026/0_2026-02-28--14-50-32/0_epoch_0.bin"
 
     # Duration of capture in seconds (only used if CAPTURE_NEW_DATA = True)
     CAPTURE_TIME = 2
@@ -170,13 +217,16 @@ def main():
     ANALYZERS = [
         TOAEnvelopeAnalyzer(
             threshold_sigma=5,
-            filter_order=16,
+            raw_signal_threshold=1,
+            margin_front=0.1,
+            margin_end=0.1,
+            filter_order=0,
             search_band_min=25000,
             search_band_max=40000,
             plot_results=False
         ),
         NearbyAnalyzer(
-            threshold=1.0,
+            threshold=0.5,
             filter_order=0,
             search_band_min=25000,
             search_band_max=40000,
@@ -192,7 +242,9 @@ def main():
             sampling_freq=SAMPLING_FREQ,
             capture_time=CAPTURE_TIME,
             capture_format=CAPTURE_FORMAT,
-            output_dir=output_dir
+            output_dir=CAPTURE_OUTPUT,
+            is_logic_2=IS_LOGIC_2,
+            is_mock=USE_MOCK_DEVICE
         )
     else:
         DATA_PATH = DATA_FILE
@@ -202,6 +254,7 @@ def main():
         data_path=DATA_PATH,
         sampling_freq=SAMPLING_FREQ,
         selected_hydrophones=SELECTED,
+        is_logic_2=IS_LOGIC_2,
         plot_data=PLOT_DATA
     )
 
@@ -212,14 +265,15 @@ def main():
     )
     
     # Step 4: Find closest hydrophone and nearby status
-    closest, is_nearby = find_closest_hydrophone(analysis_results)
+    closest, is_nearby, all_valid = find_closest_hydrophone(analysis_results, SELECTED)
     
     print(f"\n{'='*60}")
     print(f"CLOSEST HYDROPHONE: {closest}")
     print(f"IS NEARBY: {is_nearby}")
+    print(f"ALL VALID: {all_valid}")
     print(f"{'='*60}")
     
-    return (closest, is_nearby)
+    return (closest, is_nearby, all_valid)
 
 if __name__ == "__main__":
     main()

@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import butter, sosfilt
+from scipy.signal import butter, sosfiltfilt
 
 
 class BaseAnalyzer(ABC):
@@ -97,9 +97,9 @@ class BaseAnalyzer(ABC):
             zip(hydrophone_array.hydrophones, selected)
         ):
             if is_selected:
-                result = self._analyze_single(
-                    hydro, hydrophone_array.sampling_freq
-                )
+                # Use hydrophone-specific sampling frequency
+                sampling_freq = 1 / hydro.sampling_period
+                result = self._analyze_single(hydro, sampling_freq)
                 result['hydrophone_idx'] = idx
                 results.append(result)
 
@@ -192,6 +192,6 @@ class BaseAnalyzer(ABC):
             btype='band',
             output='sos'
         )
-        return sosfilt(sos, signal)
+        return sosfiltfilt(sos, signal)
 
 

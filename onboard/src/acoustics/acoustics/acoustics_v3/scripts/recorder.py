@@ -9,7 +9,9 @@ def collect_batch_data(
         epochs,
         capture_time,
         output_base_path,
-        test_name
+        test_name,
+        is_logic_2=False,
+        is_mock=False
         ):
     """Collect multiple epochs of hydrophone data.
 
@@ -19,7 +21,8 @@ def collect_batch_data(
         capture_time: Duration of each capture in seconds
         output_base_path: Base directory for saving data
         test_name: Name for this test session
-        close_logic_after: Whether to close Logic after collection
+        is_logic_2: Whether to use Logic 2 (True) or Logic 1 (False)
+        is_mock: Whether to use mock device for Logic 2 (True) or real device (False)
 
     Returns:
         Path to test directory containing all epochs
@@ -31,16 +34,30 @@ def collect_batch_data(
     os.makedirs(test_path, exist_ok=True)
 
     # Initialize Logic interface
-    logic_interface = logic.Logic(sampling_freq=sampling_freq)
-    logic_interface.print_saleae_status()
+    if is_logic_2:
+        from logic.logic2 import Logic2
+        logic_interface = Logic2(is_mock=is_mock)
+    else:
+        logic_interface = logic.Logic(sampling_freq=sampling_freq)
+        logic_interface.print_saleae_status()
 
     # Collect data for each epoch
     for epoch in range(epochs):
         print(f"\nEpoch {epoch}/{epochs}")
         capture_name = f"{test_name}_epoch_{epoch}" if test_name else f"epoch_{epoch}"
-        logic_interface.export_binary_capture(capture_time, test_path, capture_name)
+        
+        if is_logic_2:
+            logic_interface.capture(
+                seconds=capture_time,
+                prefix=capture_name,
+                base_dir=test_path,
+                sample_rate=int(sampling_freq),
+                formats=["bin"]
+            )
+        else:
+            logic_interface.export_binary_capture(capture_time, test_path, capture_name)
 
-    logic_interface.kill_logic()
+    logic_interface.close() if is_logic_2 else logic_interface.kill_logic()
 
     print("\n" + "=" * 60)
     print(f"Collection complete! Total epochs: {epochs}")
@@ -52,6 +69,12 @@ def collect_batch_data(
 
 if __name__ == "__main__":
     # ==================== CONFIGURATION ====================
+
+    # Whether to use Logic 2 or Logic 1
+    IS_LOGIC_2 = False
+
+    # Whether to use mock device for Logic 2 (True) or real device (False)
+    USE_MOCK_DEVICE = True
 
     # Name for this test (0,1,2,3)
     TEST_NAME = "0"
@@ -75,5 +98,7 @@ if __name__ == "__main__":
         epochs=EPOCHS,
         capture_time=CAPTURE_TIME,
         output_base_path=OUTPUT_PATH,
-        test_name=TEST_NAME
+        test_name=TEST_NAME,
+        is_logic_2=IS_LOGIC_2,
+        is_mock=USE_MOCK_DEVICE
     )
