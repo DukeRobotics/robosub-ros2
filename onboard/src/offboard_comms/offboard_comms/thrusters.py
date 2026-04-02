@@ -153,10 +153,10 @@ class Thrusters(SerialNode):
             msg (Float64): Voltage message containing the current system voltage.
         """
         self.voltage = min(max(msg.data, self.voltage_min), self.voltage_max)
-        # if self.voltage != msg.data:
-        #     self.get_logger().warn(
-        #         f'Voltage {msg.data} out of bounds. Clamped to [{self.voltage_min}, {self.voltage_max}]',
-        #     )
+        if self.voltage != msg.data:
+            self.get_logger().warn(
+                f'Voltage {msg.data} out of bounds. Clamped to [{self.voltage_min}, {self.voltage_max}]',
+            )
 
     def thruster_allocs_callback(self, msg: ThrusterAllocs) -> None:
         """
