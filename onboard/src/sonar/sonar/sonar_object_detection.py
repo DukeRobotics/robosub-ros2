@@ -417,11 +417,6 @@ class SonarSegmentation2:
     def __init__(
         self,
         image: np.ndarray,
-        wall_object_threshold: float = 0.0,
-        segment_size_threshold: float = 0.0,
-        segment_brightness_threshold: float = 0.0,
-        merge_threshold: float = 1.1,
-        merge_angle_limit: float = 5.0,
     ) -> None:
 
         # Store image

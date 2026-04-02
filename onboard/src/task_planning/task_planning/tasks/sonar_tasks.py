@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 import numpy as np
 from custom_msgs.srv import SonarSweepRequest
@@ -7,10 +7,6 @@ from task_planning.interface.sonar import Sonar
 from task_planning.task import Task, task
 from task_planning.tasks.move_tasks import create_twist_tolerance, move_to_pose_local
 from task_planning.utils import geometry_utils
-
-if TYPE_CHECKING:
-    from custom_msgs.srv import SonarSweepRequest
-
 
 logger = get_logger('sonar_tasks')
 
@@ -45,10 +41,10 @@ async def rotate_to_normal(self: Task,
     future = Sonar().sweep(
         start_angle=start_angle,
         end_angle=end_angle,
-        scan_distance=scan_distance
+        scan_distance=scan_distance,
     )
     normal_angle = get_normal_angle(
-        await future
+        await future,
     )
     logger.info(f'Initial Normal Angle:  {normal_angle}')
     if np.isnan(normal_angle):
@@ -66,8 +62,8 @@ async def rotate_to_normal(self: Task,
         await Sonar().sweep(
             start_angle=start_angle,
             end_angle=end_angle,
-            scan_distance=scan_distance
-        )
+            scan_distance=scan_distance,
+        ),
     )
     steps = 0
     while normal_angle > yaw_threshold and steps < MAX_STEPS:
@@ -81,8 +77,8 @@ async def rotate_to_normal(self: Task,
             await Sonar().sweep(
                 start_angle=start_angle,
                 end_angle=end_angle,
-                scan_distance=scan_distance
-            )
+                scan_distance=scan_distance,
+            ),
         )
         steps += 1
         logger.info(f'Normal Angle {normal_angle} at step {steps}')
@@ -101,8 +97,8 @@ async def rotate_to_angle_from_normal(self: Task,
         await Sonar().sweep(
             start_angle=start_angle,
             end_angle=end_angle,
-            scan_distance=scan_distance
-        )
+            scan_distance=scan_distance,
+        ),
     )
     if np.isnan(angle):
         logger.error('Normal angle does not exist, exiting task.')
@@ -121,8 +117,8 @@ async def rotate_to_angle_from_normal(self: Task,
         await Sonar().sweep(
             start_angle=start_angle,
             end_angle=end_angle,
-            scan_distance=scan_distance
-        )
+            scan_distance=scan_distance,
+        ),
     )
     angle = rotated_angle + angle
     steps = 0
@@ -137,8 +133,8 @@ async def rotate_to_angle_from_normal(self: Task,
             await Sonar().sweep(
                 start_angle=start_angle,
                 end_angle=end_angle,
-                scan_distance=scan_distance
-            )
+                scan_distance=scan_distance,
+            ),
         )
         angle = rotated_angle + angle
         steps += 1
