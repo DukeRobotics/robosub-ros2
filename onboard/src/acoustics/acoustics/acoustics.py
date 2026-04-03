@@ -1,10 +1,13 @@
 import rclpy
-from rclpy.node import Node
 from custom_msgs.srv import AcousticsRequest
+from rclpy.node import Node
+
 from acoustics.acoustics_v3.scripts import controller
 
+
 class Acoustics(Node):
-    def __init__(self):
+    """Acoustics node to interface with the Logic2 software."""
+    def __init__(self) -> None:
         super().__init__('acoustics')
         self.get_logger().info('Acoustics node initialized')
 
@@ -13,7 +16,7 @@ class Acoustics(Node):
         # TODO: add additional setup code
 
     def perform_acoustics_request(
-            self, request: AcousticsRequest.Request, response: AcousticsRequest.Response
+            self, request: AcousticsRequest.Request, response: AcousticsRequest.Response,
     ) -> AcousticsRequest.Response:
         """
         Perform an acoustics request.
@@ -25,7 +28,7 @@ class Acoustics(Node):
         2. Call whatever method in Acoustics needs to be called, and get the answer
         3. Populate the response, and return the response.
         """
-        self.get_logger().info(f'Receieved acoustics request')
+        self.get_logger().info('Receieved acoustics request')
 
         # Parse request details, if any
 
@@ -39,7 +42,8 @@ class Acoustics(Node):
         return response
 
 
-def main(args=None):
+def main(args: list[str] | None = None) -> None:
+    """Initialize and run the acoustics node."""
     rclpy.init(args=args)
     node = Acoustics()
     try:
