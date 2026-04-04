@@ -123,6 +123,7 @@ RUN /home/ubuntu/venv/bin/pip install ruff
 RUN /home/ubuntu/venv/bin/pip install scikit-learn
 RUN /home/ubuntu/venv/bin/pip install sympy
 RUN /home/ubuntu/venv/bin/pip install transforms3d
+RUN /home/ubuntu/venv/bin/pip install ultralytics
 
 # Install Node.js (Jod)
 ENV NVM_DIR=/home/ubuntu/.nvm
