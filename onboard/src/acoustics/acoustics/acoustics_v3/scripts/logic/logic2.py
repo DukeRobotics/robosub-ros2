@@ -9,7 +9,7 @@ class Logic2:
 
     def __init__(self, is_mock=False):
         try:
-            self._manager = Manager.launch(application_path="/home/ubuntu/robosub-ros2/onboard/src/acoustics/acoustics/acoustics_v3/squashfs-root/AppRun")  # Use default path to Logic 2
+            self._manager = Manager.launch(application_path="/home/ubuntu/robosub-ros2/onboard/src/acoustics/acoustics/acoustics_v3/Logic-2.4.40-linux-x64.AppImage")  # Use default path to Logic 2
         except Logic2AlreadyRunningError:
             # Manager already running, connect to existing instance
             self._manager = Manager.connect()
@@ -79,6 +79,6 @@ class Logic2:
         return results
 
 if __name__ == "__main__":
-    logic = Logic2(is_mock=True)
-    print(logic.capture(2,"TEST_2","./Temp_Data"))
+    logic = Logic2(is_mock=False)
+    print(logic.capture(2,"TEST_2","/home/ubuntu/robosub-ros2/onboard/src/acoustics/acoustics/acoustics_v3/Temp_Data/TEST_2"))
     logic.close()
