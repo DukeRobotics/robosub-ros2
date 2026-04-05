@@ -219,7 +219,7 @@ class Sonar(Node):
         color_image = sonar_image_processing.build_color_sonar_image_from_int_array(denoiser.cartesian)
         self.get_logger().info('Color image built')
 
-        segmentation = sonar_object_detection.SonarSegmentation2(
+        segmentation = sonar_object_detection.GlobalSonarSegmentation(
             denoiser.cartesian,
             wall_object_threshold=0,
             segment_size_threshold=0.5 * 2000 / 90 * denoiser.shape_theta,

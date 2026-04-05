@@ -209,7 +209,7 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
     DEPTH_LEVEL = State().depth
 
     # Move back through gate
-    await move_with_directions([(2.5, 0, 0)])
+    await move_with_directions([(-2.5, 0, 0)], depth_level=DEPTH_LEVEL)
 
     # Come back up
     await move_with_directions([(0, 0, 0.2)])

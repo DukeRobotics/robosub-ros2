@@ -411,7 +411,7 @@ class SonarSegmentation:
 
         return nearest_segment
 
-class SonarSegmentation2:
+class GlobalSonarSegmentation:
     """A class which treats all non-zero sonar data as a single segment."""
 
     def __init__(
