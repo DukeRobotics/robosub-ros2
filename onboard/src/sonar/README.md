@@ -19,9 +19,9 @@ The following are the folders and files in the sonar package:
 ## Config
 The `config` directory contains robot-specific `.yaml` files. The format is as follows:
 ```yaml
-ftdi: FTDI device serial number of the USB-to-serial adapter used by the Ping360
-center_gradians: Referencing heading for center direction of the sonar
-increase_ccw: Whether angle values increases counterclockwise or not
+ftdi: <string> FTDI device serial number of the USB-to-serial adapter used by the Ping360
+center_gradians: <float> Referencing heading for center direction of the sonar
+increase_ccw: <bool> Whether angle values increases counterclockwise or not
 ```
 
 ## Topics
