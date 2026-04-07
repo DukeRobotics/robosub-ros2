@@ -37,6 +37,9 @@ RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends tini
 RUN apt install -y --no-install-recommends udev
 RUN apt install -y --no-install-recommends valgrind
+RUN apt install -y --no-install-recommends fuse
+RUN apt install -y --no-install-recommends libfuse2
+RUN apt install -y --no-install-recommends libgtk-3-0
 
 # Build and install OSQP from source
 RUN git clone --branch release-0.6.3 --recursive https://github.com/osqp/osqp.git && \
@@ -127,6 +130,7 @@ RUN /home/ubuntu/venv/bin/pip install saleae
 RUN /home/ubuntu/venv/bin/pip install numpy
 RUN /home/ubuntu/venv/bin/pip install scipy
 RUN /home/ubuntu/venv/bin/pip install pylint
+RUN /home/ubuntu/venv/bin/pip install logic2-automation
 RUN /home/ubuntu/venv/bin/pip install contourpy==1.3.3
 RUN /home/ubuntu/venv/bin/pip install cycler==0.12.1
 RUN /home/ubuntu/venv/bin/pip install filelock==3.20.0
