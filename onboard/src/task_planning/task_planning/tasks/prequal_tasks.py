@@ -181,14 +181,16 @@ async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
     directions = [
         (0, 2, 0),
     ]
-    await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_yaw=True, correct_depth=True, parent=self)
+    await move_tasks.move_with_directions(directions, depth_level=DEPTH_LEVEL, correct_yaw=True, correct_depth=True,
+        parent=self)
 
     # Follow lane marker in adjacent lane backwards
     await track_lane_marker(3, False)
 
     # Move back to the original lane
     logger.info('Switching back to the original lane.')
-    await move_tasks.move_with_directions([(0, -2.5, 0)], depth_level=DEPTH_LEVEL, correct_yaw=True, correct_depth=True, parent=self)
+    await move_tasks.move_with_directions([(0, -2.5, 0)], depth_level=DEPTH_LEVEL, correct_yaw=True, correct_depth=True,
+        parent=self)
 
     # Come back to gate
     await track_lane_marker(7, False)
