@@ -29,3 +29,6 @@ node_modules
 dist
 *.foxe
 ivc_log.txt
+
+# Acoustics app image
+onboard/src/acoustics/acoustics/acoustics_v3/Logic-2.4.40-linux-x64.AppImage
