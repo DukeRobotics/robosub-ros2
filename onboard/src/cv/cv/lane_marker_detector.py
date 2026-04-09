@@ -7,7 +7,7 @@ from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point
 from rclpy.node import Node
-from sensor_msgs.msg import CompressedImage, Image
+from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float64
 
 from cv.config import LaneMarker
