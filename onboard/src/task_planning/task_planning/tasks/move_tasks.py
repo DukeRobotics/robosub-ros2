@@ -90,13 +90,14 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = Fa
         if local_pose is None:
             return None
 
+        global_pose = geometry_utils.local_pose_to_global(State().tf_buffer, local_pose)
+
         if depth_level is not None:
             if local_pose.position.z != 0:
                 logger.warning(f'Depth level of {depth_level} provided but Z value of pose is not zero: '
                                f'{local_pose.position.z}')
             depth_delta = depth_level - State().depth
-            local_pose.position.z = depth_delta
-        global_pose = geometry_utils.local_pose_to_global(State().tf_buffer, pose)
+            global_pose.position.z += depth_delta
 
         if keep_orientation:
             orig_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(
@@ -192,7 +193,8 @@ async def depth_correction(self: Task, desired_depth: float) -> Task[None, None,
 
     logger.info(f'Started depth correction {depth_delta}')
     await move_to_pose_local(
-        geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0),
+        geometry_utils.create_pose(0, 0, 0, 0, 0, 0),
+        depth_level=desired_depth,
         pose_tolerances=create_twist_tolerance(linear_z=0.1),
         timeout=15,
         parent=self)
