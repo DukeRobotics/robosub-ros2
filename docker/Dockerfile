@@ -61,16 +61,7 @@ RUN git clone https://github.com/robotology/osqp-eigen.git && \
     cd ../.. && \
     rm -rf osqp-eigen
 
-RUN ARCH=$(uname -m) && \
-    if [ "$ARCH" = "aarch64" ]; then \
-        wget https://developer.download.nvidia.com/compute/cudss/0.7.1/local_installers/cudss-local-tegra-repo-ubuntu2204-0.7.1_0.7.1-1_arm64.deb && \
-        dpkg -i cudss-local-tegra-repo-ubuntu2204-0.7.1_0.7.1-1_arm64.deb && \
-        cp /var/cudss-local-tegra-repo-ubuntu2204-0.7.1/cudss-*-keyring.gpg /usr/share/keyrings/ && \
-        apt-get update && \
-        apt-get -y install cudss \
-    else \
-        echo "Unsupported architecture for CUDSS: $ARCH" && exit 1; \
-    fi
+
 
 # Install Foxglove CLI from pre-built binaries based on architecture
 RUN ARCH=$(uname -m) && \
@@ -138,10 +129,12 @@ RUN /home/ubuntu/venv/bin/pip install transforms3d
 RUN /home/ubuntu/venv/bin/pip install ultralytics
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "aarch64" ]; then \
-        /home/ubuntu/venv/bin/pip uninstall -y torch torchvision \
-        /home/ubuntu/venv/bin/pip install https://github.com/ultralytics/assets/releases/download/v0.0.0/torch-2.10.0-cp310-cp310-linux_aarch64.whl \
-        /home/ubuntu/venv/bin/pip install https://github.com/ultralytics/assets/releases/download/v0.0.0/torchvision-0.25.0-cp310-cp310-linux_aarch64.whl \
+        /home/ubuntu/venv/bin/pip uninstall -y torch torchvision && \
+        /home/ubuntu/venv/bin/pip install https://github.com/ultralytics/assets/releases/download/v0.0.0/torch-2.10.0-cp310-cp310-linux_aarch64.whl && \
+        /home/ubuntu/venv/bin/pip install https://github.com/ultralytics/assets/releases/download/v0.0.0/torchvision-0.25.0-cp310-cp310-linux_aarch64.whl && \
         /home/ubuntu/venv/bin/pip install https://github.com/ultralytics/assets/releases/download/v0.0.0/onnxruntime_gpu-1.23.0-cp310-cp310-linux_aarch64.whl \
+    else \
+        echo "Unsupported architecture for Jetson Torch: $ARCH" && exit 1; \
     fi
 
 # Install Node.js (Jod)
