@@ -289,7 +289,7 @@ async def move_with_directions(self: Task,
             geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
             keep_orientation=keep_orientation,
             depth_level=depth_level,
-            pose_tolerances=create_twist_tolerance(linear_x=0.1, linear_y=0.07, linear_z=0.07),
+            pose_tolerances=create_twist_tolerance(linear_x=0.1, linear_y=0.07, linear_z=0.07, angular_yaw=0.05),
             timeout=timeout,
             parent=self)
         logger.info(f'Moved to {direction}')

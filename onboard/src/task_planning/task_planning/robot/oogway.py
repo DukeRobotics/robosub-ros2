@@ -2,13 +2,13 @@
 from math import radians
 
 from task_planning.interface.cv import CVObjectType
-from task_planning.interface.ivc import IVCMessageType
+# from task_planning.interface.ivc import IVCMessageType
 from task_planning.interface.servos import TorpedoStates
 from task_planning.task import Task, task
 from task_planning.tasks import (
     buoyancy_tasks,
     comp_tasks,
-    ivc_tasks,
+    # ivc_tasks,
     move_tasks,
     prequal_tasks,
     servos_tasks,
@@ -30,8 +30,8 @@ async def main(self: Task) -> Task[None, None, None]:
         # ivc_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(DEPTH, parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
-        comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
-                                direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
+        #                         direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
         # TODO: task not found???
         # comp_tasks.send_torpedo_ivc(parent=self),
         # comp_tasks.octagon_task(direction=1, parent=self),
@@ -64,7 +64,7 @@ async def main(self: Task) -> Task[None, None, None]:
         # comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self),
 
         ## Movement/CV tasks
-        # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
+        move_tasks.move_with_directions([(10, 0, 0)], keep_orientation=True, parent=self),
         # move_tasks.move_to_pose_local(
         #     geometry_utils.create_pose(0, 0, 0, 0, 0, 1.6),
         #     parent=self,
