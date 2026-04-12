@@ -52,8 +52,8 @@ pid:
       error_ramp_rate: 1000
     yaw:
       Kp: 0.09
-      Ki: 0.003
-      Kd: 0
+      Ki: 0
+      Kd: 0.02
       Ff: 0
       control_effort:
         min: -1
