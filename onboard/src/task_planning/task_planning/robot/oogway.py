@@ -31,7 +31,7 @@ async def main(self: Task) -> Task[None, None, None]:
         # ivc_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(DEPTH, parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
-        cv_tasks.yaw_to_cv_obj(FIRST_TARGET, parent=self),
+        cv_tasks.move_to_cv_obj(FIRST_TARGET, target_distance=1, parent=self, search_direction=-1),
         # TODO: task not found???
         # comp_tasks.send_torpedo_ivc(parent=self),
         # comp_tasks.octagon_task(direction=1, parent=self),
@@ -65,7 +65,7 @@ async def main(self: Task) -> Task[None, None, None]:
 
         ## Movement/CV tasks
         # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
-        move_tasks.move_with_directions([(4, 0, 0), [-4, 0, 0]], parent=self),
+        # move_tasks.move_with_directions([(4, 0, 0), [-4, 0, 0]], parent=self),
         # move_tasks.move_to_pose_local(
         #     geometry_utils.create_pose(0, 0, 0, 0, 0, 1.6),
         #     parent=self,

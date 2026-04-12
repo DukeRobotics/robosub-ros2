@@ -8,6 +8,7 @@ from task_planning.interface.state import State
 from task_planning.task import Task, Yield, task
 from task_planning.tasks import move_tasks, util_tasks
 from task_planning.utils import geometry_utils
+from task_planning.interface.controls import Controls
 
 logger = get_logger('cv_tasks')
 
@@ -179,7 +180,7 @@ async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction: 
 
         if (clock.now() - starting_time).nanoseconds * 1e-9 > pid_timeout:
             logger.info('[cv_tasks.yaw_to_cv_obj] Timeout elapsed, finishing yaw_to_cv_obj')
-            return False
+            return True
 
     logger.info('[cv_tasks.yaw_to_cv_obj] PID loop complete, finishing yaw_to_cv_obj')
     return True
@@ -208,6 +209,8 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
     yaw_stop_threshold = math.radians(25)
     biggest_forward_step = 2
 
+    depth_level_to_pass = depth_level # STUPID STUPID STUPID, PLEASE FIX DEPTH STUFF NEXT YEAR
+    depth_level = State().orig_depth - depth_level
 
     @task
     async def correct_depth(self: Task) -> None:
@@ -221,9 +224,14 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
                             depth_level=depth_level,
                             pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
                                                     angular=Vector3(x=0.2, y=0.3, z=yaw_threshold)),
-                            timeout=30,
+                            timeout=240,
                             parent=self)
     move_task.step()
+
+    logger.info(f'[cv_tasks.move_to_cv_obj] Beginning move to cv object.')
+
+    touching_x_boundary = [0,0,0,0,0]
+    touching_y_boundary = [0,0,0,0,0]
 
     while not move_task.done:
         if abs(State().depth - depth_level) > depth_threshold:
@@ -231,22 +239,67 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
 
         cv_object_yaw = CV().angles[cv_object]
         current_dist = CV().bounding_boxes[cv_object].coords.x + CV().bounding_boxes[cv_object].coords.y
-        current_goal_distance = min(2, current_dist - target_distance)
+        current_goal_distance = min(biggest_forward_step, current_dist - target_distance)
 
-        logger.info(f'[cv_tasks.move_to_cv_obj] Current CV Distance is {current_goal_distance}')
+        touching_x_boundary.append(1 if (CV().bounding_boxes[cv_object].xmin < 0.01 or CV().bounding_boxes[cv_object].xmax > 0.99) else 0)
+        touching_y_boundary.append(1 if (CV().bounding_boxes[cv_object].ymin < 0.01 or CV().bounding_boxes[cv_object].ymax > 0.99) else 0)
+        touching_x_boundary.pop(0)
+        touching_y_boundary.pop(0)
 
-        if not CV().is_receiving_recent_cv_data(cv_object, 10) or abs(cv_object_yaw) > yaw_stop_threshold:
-            yaw_task = await yaw_to_cv_obj(cv_object, search_direction, yaw_threshold, depth_threshold, depth_level)
+        if sum(touching_x_boundary) >= 4:
+            touching_x_boundary = [0,0,0,0,0]
+            logger.info(f'[cv_tasks.move_to_cv_obj] Object approached x bounds. Calling yaw to cv object.')
+            yaw_task = await yaw_to_cv_obj(cv_object, search_direction, yaw_threshold, depth_threshold,
+                                            depth_level_to_pass, parent=self)
             if not yaw_task:
                 logger.info('[cv_tasks.move_to_cv_obj] Failure. Object never found, finishing move_to_cv_obj')
                 return False
 
+            if CV().bounding_boxes[cv_object].xmin < 0.01 or CV().bounding_boxes[cv_object].xmax > 0.99:
+                logger.info('[cv_tasks.move_to_cv_obj] Object still in x bounds, backing up.')
+                await move_tasks.move_to_pose_local(
+                            geometry_utils.create_pose(-0.5, 0, 0, 0, 0, cv_object_yaw),
+                            depth_level=depth_level,
+                            pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
+                                                    angular=Vector3(x=0.2, y=0.3, z=yaw_threshold)),
+                            timeout=30,
+                            parent=self)
+
+        if  sum(touching_y_boundary) >= 4:
+            touching_y_boundary = [0,0,0,0,0]
+            logger.info(f'[cv_tasks.move_to_cv_obj] Object approached y bounds. Correcting Yaw.')
+
+            yaw_task = await yaw_to_cv_obj(cv_object, search_direction, yaw_threshold, depth_threshold,
+                                            depth_level_to_pass, parent=self)
+            if not yaw_task:
+                logger.info('[cv_tasks.move_to_cv_obj] Failure. Object never found, finishing move_to_cv_obj')
+                return False
+
+            if CV().bounding_boxes[cv_object].ymin < 0.01 or CV().bounding_boxes[cv_object].ymax > 0.99:
+                logger.info('[cv_tasks.move_to_cv_obj] Object still in y bounds, backing up.')
+                await move_tasks.move_to_pose_local(
+                            geometry_utils.create_pose(-0.5, 0, 0, 0, 0, cv_object_yaw),
+                            depth_level=depth_level,
+                            pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
+                                                    angular=Vector3(x=0.2, y=0.3, z=yaw_threshold)),
+                            timeout=30,
+                            parent=self)
+
+        if not CV().is_receiving_recent_cv_data(cv_object, 10) or abs(cv_object_yaw) > yaw_stop_threshold:
+            logger.info(f'[cv_tasks.move_to_cv_obj] Object yawed too far. Calling yaw to cv object.')
+            yaw_task = await yaw_to_cv_obj(cv_object, search_direction, yaw_threshold, depth_threshold,
+                                            depth_level_to_pass, parent=self)
+            if not yaw_task:
+                logger.info('[cv_tasks.move_to_cv_obj] Failure. Object never found, finishing move_to_cv_obj')
+                return False
+
+        logger.info(f'[cv_tasks.move_to_cv_obj] Current Goal Distance: {current_goal_distance}')
         new_pose = geometry_utils.create_pose(current_goal_distance, 0, 0, 0, 0, cv_object_yaw)
         move_task.send(new_pose)
-
-        await util_tasks.sleep(0.1, parent=self)
+        await util_tasks.sleep(0.05, parent=self)
 
     logger.info('[cv_tasks.move_to_cv_obj] PID loop complete, finishing move_to_cv_obj')
+    Controls().publish_desired_power(Twist())
     return True
 
 
