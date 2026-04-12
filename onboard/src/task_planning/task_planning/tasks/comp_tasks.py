@@ -107,18 +107,18 @@ async def coin_flip(self: CompTask, depth_level: float = 0.7,
 
             if yaw_correction > np.pi:
                 yaw_correction -= np.pi
-                await self.correct_yaw(np.pi, timeout=timeout)
+                await self.correct_yaw(np.pi, yaw_tolerance=0.1, timeout=timeout)
                 logger.info('[coin_flip] Yaw correct 180')
 
             logger.info(f'[coin_flip] Yaw correct remainder: {yaw_correction}')
-            await self.correct_yaw(yaw_correction, timeout=timeout)
+            await self.correct_yaw(yaw_correction, yaw_tolerance=0.1, timeout=timeout)
 
     else:
         while abs(State().get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
             yaw_correction = State().get_gyro_yaw_correction(return_raw=False, maximum_yaw=2*np.pi)
             logger.info(f'[coin_flip] Yaw correction: {yaw_correction}')
 
-            await self.correct_yaw(yaw_correction, timeout=timeout)
+            await self.correct_yaw(yaw_correction, yaw_tolerance=0.1, timeout=timeout)
 
     logger.info(f'[coin_flip] Final yaw offset: {State().get_gyro_yaw_correction(return_raw=True)}')
 
@@ -188,7 +188,7 @@ async def gate_style_task(self: CompTask, depth_level: float = 0.9) -> Task[None
         if get_robot_name() == RobotName.OOGWAY:
             await util_tasks.sleep(2.25, parent=self)
         else:
-            await util_tasks.sleep(1.40, parent=self)
+            await util_tasks.sleep(3, parent=self)
 
         logger.info('[gate_style_task] Completed roll')
 
@@ -200,19 +200,19 @@ async def gate_style_task(self: CompTask, depth_level: float = 0.9) -> Task[None
 
     await self.correct_depth(DEPTH_LEVEL)
     await roll()
-    State().reset_pose()
-    await util_tasks.sleep(2.5, parent=self)
+    # State().reset_pose()
+    await util_tasks.sleep(1.8, parent=self)
 
-    await self.correct_depth(DEPTH_LEVEL)
-    await roll()
-    State().reset_pose()
-    await util_tasks.sleep(2.5, parent=self)
+    # await self.correct_depth(DEPTH_LEVEL)
+    # await roll()
+    # State().reset_pose()
+    # await util_tasks.sleep(2.5, parent=self)
 
-    await self.correct_depth(DEPTH_LEVEL)
-    await util_tasks.sleep(2.5, parent=self)
+    # await self.correct_depth(DEPTH_LEVEL)
+    # await util_tasks.sleep(2.5, parent=self)
 
-    await self.correct_roll_and_pitch()
-    logger.info('[gate_style_task] Reset orientation')
+    # await self.correct_roll_and_pitch()
+    # logger.info('[gate_style_task] Reset orientation')
 
 
 @comp_task
