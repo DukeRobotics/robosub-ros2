@@ -68,7 +68,7 @@ transforms:
     z: -0.2552065
     roll: 0.0
     pitch: 0.0
-    yaw: -1.57079632679
+    yaw: -1.5707963267948966
     frame_id: corner_link
     child_frame_id: dvl
   marker_dropper:
