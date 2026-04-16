@@ -190,8 +190,10 @@ def to_robot_position(x_index: int, y_index: int, sample_period: float, negate: 
         y_index,
     )
 
-    adjusted_x = (x_pos * np.cos(TRANSFORMATION_ANGLE) + y_pos * np.sin(TRANSFORMATION_ANGLE)) * (-1.0 if negate else 1.0)
-    adjusted_y = (-x_pos * np.sin(TRANSFORMATION_ANGLE) + y_pos * np.cos(TRANSFORMATION_ANGLE)) * (-1.0 if negate else 1.0)
+    adjusted_x = (x_pos * np.cos(TRANSFORMATION_ANGLE) + y_pos * np.sin(TRANSFORMATION_ANGLE)) \
+        * (-1.0 if negate else 1.0)
+    adjusted_y = (-x_pos * np.sin(TRANSFORMATION_ANGLE) + y_pos * np.cos(TRANSFORMATION_ANGLE)) \
+        * (-1.0 if negate else 1.0)
 
     yaw = np.arctan2(adjusted_y, adjusted_x)
 

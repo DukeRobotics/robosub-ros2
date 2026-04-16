@@ -40,10 +40,7 @@ def build_color_sonar_image_from_int_array(int_array: np.ndarray, npy_save_path:
 
     sonar_img = sonar_img - np.min(sonar_img)
     max_val = np.max(sonar_img)
-    if max_val == 0:
-        sonar_img = np.zeros_like(sonar_img)
-    else:
-        sonar_img = (sonar_img / max_val) * 255
+    sonar_img = np.zeros_like(sonar_img) if max_val == 0 else sonar_img / max_val * 255
 
     return sonar_img.astype(np.uint8)
 
