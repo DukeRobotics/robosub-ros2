@@ -66,7 +66,7 @@ async def rotate_to_normal(self: Task,
         ),
     )
     steps = 0
-    while normal_angle > yaw_threshold and steps < MAX_STEPS:
+    while abs(normal_angle) > yaw_threshold and steps < MAX_STEPS:
         await move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, -normal_angle),
             keep_orientation=True,
@@ -122,7 +122,7 @@ async def rotate_to_angle_from_normal(self: Task,
     )
     angle = rotated_angle + angle
     steps = 0
-    while angle > yaw_threshold + angle and steps < MAX_STEPS:
+    while abs(angle) > yaw_threshold and steps < MAX_STEPS:
         await move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, -angle),
             keep_orientation=True,
@@ -145,8 +145,8 @@ def get_normal_angle(response: SonarSweepRequest.Response) -> float:
     if not response.is_object:
         logger.error('No object detected — cannot rotate')
         return np.nan
-    if response.normal_angle is None:
-        logger.error('[Sonar] normal_angle was None — cannot rotate')
+    if np.isnan(response.normal_angle):
+        logger.error('[Sonar] normal_angle was NaN — cannot rotate')
         return np.nan
 
     if response.normal_angle < -np.pi/2.:

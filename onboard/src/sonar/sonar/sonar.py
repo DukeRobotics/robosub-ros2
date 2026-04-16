@@ -21,7 +21,7 @@ from sonar import sonar_image_processing, sonar_object_detection, sonar_utils
 class Sonar(Node):
     """Class to interface with the Sonar device."""
 
-    CONFIG_FILE_PATH = f'package://sonar/config/{os.getenv('ROBOT_NAME')}.yaml'
+    CONFIG_FILE_PATH = f"package://sonar/config/{os.getenv('ROBOT_NAME')}.yaml"
 
     BAUD_RATE = 2000000  # hz
     SAMPLE_PERIOD_TICK_DURATION = 25e-9  # s
@@ -134,7 +134,7 @@ class Sonar(Node):
             sonar_range (int): max range in meters of the sonar scan.
         """
         self.prev_range = sonar_range
-        self.sample_period = sonar_utils.range_to_period(self.DEFAULT_RANGE, self.DEFAULT_NUMER_OF_SAMPLES)
+        self.sample_period = sonar_utils.range_to_period(sonar_range, self.DEFAULT_NUMER_OF_SAMPLES)
         self.ping360.set_sample_period(self.sample_period)
 
         self.transmit_duration = sonar_utils.range_to_transmit(sonar_range, self.DEFAULT_NUMER_OF_SAMPLES)

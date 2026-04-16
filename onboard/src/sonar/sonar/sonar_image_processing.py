@@ -39,7 +39,11 @@ def build_color_sonar_image_from_int_array(int_array: np.ndarray, npy_save_path:
         np.save(npy_save_path, sonar_img)
 
     sonar_img = sonar_img - np.min(sonar_img)
-    sonar_img = (sonar_img / np.max(sonar_img)) * 255
+    max_val = np.max(sonar_img)
+    if max_val == 0:
+        sonar_img = np.zeros_like(sonar_img)
+    else:
+        sonar_img = (sonar_img / max_val) * 255
 
     return sonar_img.astype(np.uint8)
 
@@ -212,7 +216,7 @@ def sonar_gaussian_mixture_model_cluster(sonar_data: np.ndarray) -> np.ndarray:
     Returns:
         ndarray: ndarray of sonar_data segmented into three categories: nothing, walls, and buoys
     """
-    finalcopygrid = sonar_data
+    finalcopygrid = sonar_data.copy()
     finalcopygrid[finalcopygrid != 0] = 255
     h, w = finalcopygrid.shape
     x = np.column_stack((finalcopygrid.reshape(-1), np.repeat(np.arange(h), w), np.tile(np.arange(w), h)))
