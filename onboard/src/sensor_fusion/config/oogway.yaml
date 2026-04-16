@@ -10,11 +10,11 @@ ekf_localization_node:
     odom0: sensors/dvl/odom
     odom0_config: [false, false, false, # x, y, z
                   false, false, false, # roll, pitch, yaw
-                  true,  true,  false, # linear velocity
+                  true,  true,  true,  # linear velocity
                   false, false, false, # angular velocity
                   false, false, false] # linear acceleration
     odom0_nodelay: true
-    odom0_differential: true
+    odom0_differential: false
 
     imu0: vectornav/imu
     imu0_config: [false, false, false,
