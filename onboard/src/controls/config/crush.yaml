@@ -207,6 +207,7 @@ static_power_global:
   z: -0.206
 power_scale_factor: 1
 # all x positions assume the corner link is 10.41527MM +x than it actually is
+# see README.md for more details
 thrusters:
   - name: front_right
     type: T200
