@@ -221,11 +221,6 @@ class Sonar(Node):
 
         segmentation = sonar_object_detection.GlobalSonarSegmentation(
             denoiser.cartesian,
-            wall_object_threshold=0,
-            segment_size_threshold=0.5 * 2000 / 90 * denoiser.shape_theta,
-            segment_brightness_threshold=25,
-            merge_threshold=10,
-            merge_angle_limit=45,
         )
         self.get_logger().info('Segmented')
 
