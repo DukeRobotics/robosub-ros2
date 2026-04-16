@@ -64,7 +64,11 @@ class SonarDenoiser:
         Returns:
             SonarDenoiser: returns itself to allow for method chaining.
         """
-        threshold = float(np.percentile(np.percentile(self.data[self.data > 0], threshold), threshold))
+        nonzero_data = self.data[self.data > 0]
+        if nonzero_data.size == 0:
+            return self
+
+        threshold = float(np.percentile(np.percentile(nonzero_data, threshold), threshold))
         self.data[self.data < threshold] = 0
 
         return self
