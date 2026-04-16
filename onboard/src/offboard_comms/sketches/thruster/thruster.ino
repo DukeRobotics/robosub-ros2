@@ -8,7 +8,7 @@
 
 // #define CRUSH_MUX_OSCILLATOR_FREQ 26150000
 #define CRUSH_MUX_OSCILLATOR_FREQ 25100000
-#define OOGWAY_MUX_OSCILLATOR_FREQ 27800000 // todo
+#define OOGWAY_MUX_OSCILLATOR_FREQ 0 // TODO: Tune Oogway Mux
 
 #define BAUD_RATE 57600
 #define THRUSTER_TIMEOUT_MS 1000
@@ -74,9 +74,10 @@ void setup() {
 
     if (ROBOT_NAME == CRUSH) {
         pwm_multiplexer.setOscillatorFrequency(CRUSH_MUX_OSCILLATOR_FREQ);
-    } else {
-        pwm_multiplexer.setOscillatorFrequency(OOGWAY_MUX_OSCILLATOR_FREQ);
     }
+    // else {
+    //     pwm_multiplexer.setOscillatorFrequency(OOGWAY_MUX_OSCILLATOR_FREQ);
+    // }
 
     for (uint8_t i = 0; i < NUM_THRUSTERS; i++) {
         thrusters[i].initialize(&pwm_multiplexer);

@@ -1,6 +1,6 @@
 usb_cameras:
   front:
-    device_path: /dev/video0
+    device_path: /dev/video_front
     topic: /camera/usb/front/compressed
     horizontal_fov: 82
     focal_length: 2.65
@@ -13,7 +13,7 @@ usb_cameras:
     frame_id: camera_usb_front
 
   bottom:
-    device_path: /dev/video4
+    device_path: /dev/video_bottom
     topic: /camera/usb/bottom/compressed
     horizontal_fov: 82
     focal_length: 2.65
