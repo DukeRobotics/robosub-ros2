@@ -138,7 +138,10 @@ class SonarDenoiser:
             SonarDenoiser: returns itself to allow for method chaining.
         """
         self.cartesian = self.cartesian - np.min(self.cartesian)
-        self.cartesian = self.cartesian / np.max(self.cartesian)
+        max_value = np.max(self.cartesian)
+        if np.isclose(max_value, 0):
+            return self
+        self.cartesian = self.cartesian / max_value
 
         return self
 
@@ -153,7 +156,7 @@ class SonarDenoiser:
             SonarDenoiser: returns itself to allow for method chaining.
         """
         blur_kernel = np.ones((factor, factor), np.float32) / (factor**2)
-        self.cartesian = convolve2d(self.cartesian, blur_kernel)
+        self.cartesian = convolve2d(self.cartesian, blur_kernel, mode='same', boundary='symm')
 
         self.normalize()
 
@@ -274,7 +277,7 @@ class SonarSegment:
 
         coordinates = coordinates / self.points.shape[0]
 
-        return (np.round(coordinates[0]), np.round(coordinates[1]))
+        return (int(np.round(coordinates[0])), int(np.round(coordinates[1])))
 
 
 class SonarSegmentation:

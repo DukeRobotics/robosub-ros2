@@ -36,4 +36,4 @@ increase_ccw: <bool> Whether angle values increases counterclockwise or not
 - `/sonar/wall/angle`
   - When the sonar pipeline runs, it publishes the relative angle of a wall (if found) to the robot
   - When it faces directly at a wall: 0 radians, if it is parallel with the wall on the right side: pi/2 radians, if it is parallel with the wall on the left side: -pi/2 radians.
-  - Type: `sensor_msgs/Float32`
+  - Type: `std_msgs/msg/Float32`
