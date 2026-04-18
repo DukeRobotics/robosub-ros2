@@ -2,9 +2,6 @@ from enum import Enum
 
 import numpy as np
 from scipy.signal import convolve2d
-from skimage.filters import sobel
-from skimage.measure import label
-from skimage.segmentation import watershed
 
 NUM_DIMENSIONS_FOR_REPEAT = 3
 
