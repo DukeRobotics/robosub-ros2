@@ -21,6 +21,7 @@ RUN apt install -y --no-install-recommends gdbserver
 RUN apt install -y --no-install-recommends iputils-ping
 RUN apt install -y --no-install-recommends libeigen3-dev
 RUN apt install -y --no-install-recommends libyaml-cpp-dev
+RUN apt install -y --no-install-recommends libopenblas-dev
 RUN apt install -y --no-install-recommends nano
 RUN apt install -y --no-install-recommends nmap
 RUN apt install -y --no-install-recommends openssh-client
@@ -61,7 +62,25 @@ RUN git clone https://github.com/robotology/osqp-eigen.git && \
     cd ../.. && \
     rm -rf osqp-eigen
 
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "aarch64" ]; then \
+        wget https://raw.githubusercontent.com/pytorch/pytorch/5c6af2b583709f6176898c017424dc9981023c28/.ci/docker/common/install_cusparselt.sh && \
+        export CUDA_VERSION=12.6 && \
+        bash ./install_cusparselt.sh
+    else \
+        echo "Unsupported architecture for cusparselt: $ARCH" && exit 1; \
+    fi
 
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "aarch64" ]; then \
+        wget https://developer.download.nvidia.com/compute/cudss/0.7.1/local_installers/cudss-local-tegra-repo-ubuntu2204-0.7.1_0.7.1-1_arm64.deb && \
+        dpkg -i cudss-local-tegra-repo-ubuntu2204-0.7.1_0.7.1-1_arm64.deb && \
+        cp /var/cudss-local-tegra-repo-ubuntu2204-0.7.1/cudss-*-keyring.gpg /usr/share/keyrings/ && \
+        apt-get update && \
+        apt-get -y install cudss \
+    else \
+        echo "Unsupported architecture for CUDSS: $ARCH" && exit 1; \
+    fi
 
 # Install Foxglove CLI from pre-built binaries based on architecture
 RUN ARCH=$(uname -m) && \
@@ -119,6 +138,7 @@ RUN /home/ubuntu/venv/bin/pip install gputil
 RUN /home/ubuntu/venv/bin/pip install jsonpickle
 RUN /home/ubuntu/venv/bin/pip install matplotlib
 RUN /home/ubuntu/venv/bin/pip install mypy
+RUN /home/ubuntu/venv/bin/pip install numpy==1.26.1
 RUN /home/ubuntu/venv/bin/pip install pandas
 RUN /home/ubuntu/venv/bin/pip install pyserial
 RUN /home/ubuntu/venv/bin/pip install python-nmap
@@ -130,11 +150,11 @@ RUN /home/ubuntu/venv/bin/pip install ultralytics
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "aarch64" ]; then \
         /home/ubuntu/venv/bin/pip uninstall -y torch torchvision && \
-        /home/ubuntu/venv/bin/pip install https://github.com/ultralytics/assets/releases/download/v0.0.0/torch-2.10.0-cp310-cp310-linux_aarch64.whl && \
-        /home/ubuntu/venv/bin/pip install https://github.com/ultralytics/assets/releases/download/v0.0.0/torchvision-0.25.0-cp310-cp310-linux_aarch64.whl && \
-        /home/ubuntu/venv/bin/pip install https://github.com/ultralytics/assets/releases/download/v0.0.0/onnxruntime_gpu-1.23.0-cp310-cp310-linux_aarch64.whl \
+        /home/ubuntu/venv/bin/pip install https://developer.download.nvidia.com/compute/redist/jp/v62/pytorch/torch-2.8.0a0+5228986c39+nv25.05-cp311-cp311-linux_aarch64.whl && \
+        /home/ubuntu/venv/bin/pip install https://github.com/ultralytics/assets/releases/download/v0.0.0/torchvision-0.25.0-cp311-cp311-linux_aarch64.whl && \
+        /home/ubuntu/venv/bin/pip install https://github.com/ultralytics/assets/releases/download/v0.0.0/onnxruntime_gpu-1.23.0-cp311-cp311-linux_aarch64.whl \
     else \
-        echo "Unsupported architecture for Jetson Torch: $ARCH" && exit 1; \
+        echo "Unsupported architecture for PyTorch and ONNX Runtime GPU: $ARCH" && exit 1; \
     fi
 
 # Install Node.js (Jod)
