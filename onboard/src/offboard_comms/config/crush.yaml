@@ -25,6 +25,16 @@ arduino:
       - type: humidity
         tag: HB
         topic: /sensors/humidity/battery
+    servos:
+      - name: marker dropper
+        tag: M
+        service_name: /servos/marker_dropper
+        type: discrete
+        states:
+          one: 1300
+          two: 1700
+          reset: 1500
+        min_delay: 3.0
   thruster:
     ftdi: AQ02V0UK
     fqbn: arduino:avr:nano
