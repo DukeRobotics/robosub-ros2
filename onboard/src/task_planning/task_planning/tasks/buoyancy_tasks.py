@@ -18,9 +18,9 @@ async def tune_static_power(self: Task) -> Task[None, None, None]:
     DELTA_SCALE_FACTOR = 0.65
     MAX_ERROR = 0.05
     curr_depth = State().depth
-    TARGET_DEPTH = State().orig_depth - 1.0
+    TARGET_DEPTH = State().orig_depth - 0.5
     delta = curr_depth - TARGET_DEPTH
-    move_to_depth = -1.0
+    move_to_depth = TARGET_DEPTH
 
     while (abs(delta) > MAX_ERROR):
         logger.info(f'Move to depth: {move_to_depth}')
