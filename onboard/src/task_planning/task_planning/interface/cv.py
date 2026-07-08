@@ -383,4 +383,3 @@ class CV:
 
         data = self._bounding_boxes[name]
         return (data.sonar_start_angle, data.sonar_end_angle, data.sonar_scan_distance)
-

@@ -13,6 +13,7 @@ from custom_msgs.msg import TaskUpdate
 if TYPE_CHECKING:
     from rclpy.node import Node
 from rclpy.qos import HistoryPolicy, QoSProfile
+from rclpy.task import Future
 from std_msgs.msg import Header
 
 from task_planning.message_conversion.jsonpickle_custom_handlers import register_custom_jsonpickle_handlers
@@ -349,10 +350,12 @@ class Task[YieldType, SendType, ReturnType]:
         input_ = None
         output = None
         while not self._done:
-            # Yield output and accept input only if the coroutine has been started
             if self._started:
                 input_ = (yield output)
             output = self.send(input_)
+            while isinstance(output, Future) and not output.done() and not self._done:
+                yield output  # keep yielding the same future until rclpy resolves it
+            input_ = None  # after future resolves, send None to continue
         return output
 
 
