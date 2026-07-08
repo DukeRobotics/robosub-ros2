@@ -90,13 +90,14 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = Fa
         if local_pose is None:
             return None
 
+        global_pose = geometry_utils.local_pose_to_global(State().tf_buffer, local_pose)
+
         if depth_level is not None:
             if local_pose.position.z != 0:
                 logger.warning(f'Depth level of {depth_level} provided but Z value of pose is not zero: '
                                f'{local_pose.position.z}')
             depth_delta = depth_level - State().depth
-            local_pose.position.z = depth_delta
-        global_pose = geometry_utils.local_pose_to_global(State().tf_buffer, local_pose)
+            global_pose.position.z += depth_delta
 
         # logger.info(f'Global Pose: {global_pose}')
 
@@ -194,7 +195,8 @@ async def depth_correction(self: Task, desired_depth: float) -> Task[None, None,
 
     logger.info(f'Started depth correction {depth_delta}')
     await move_to_pose_local(
-        geometry_utils.create_pose(0, 0, depth_delta, 0, 0, 0),
+        geometry_utils.create_pose(0, 0, 0, 0, 0, 0),
+        depth_level=desired_depth,
         pose_tolerances=create_twist_tolerance(linear_z=0.1),
         timeout=15,
         parent=self)
@@ -289,7 +291,7 @@ async def move_with_directions(self: Task,
             geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
             keep_orientation=keep_orientation,
             depth_level=depth_level,
-            pose_tolerances=create_twist_tolerance(linear_x=0.1, linear_y=0.07, linear_z=0.07),
+            pose_tolerances=create_twist_tolerance(linear_x=0.1, linear_y=0.07, linear_z=0.07, angular_yaw=0.05),
             timeout=timeout,
             parent=self)
         logger.info(f'Moved to {direction}')
