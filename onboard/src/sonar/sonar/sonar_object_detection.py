@@ -1,0 +1,317 @@
+from enum import Enum
+
+import numpy as np
+from scipy.signal import convolve2d
+
+NUM_DIMENSIONS_FOR_REPEAT = 3
+
+
+class SonarDenoiser:
+    """Class to denoise sonar scans to prepare them for segmentation and pose estimation."""
+
+    def __init__(self, data: np.ndarray) -> None:
+        """
+        Construct a SonarDenoising object.
+
+        Args:
+            data (ndarray): data in gradian space
+        """
+        self.data = data
+        self.shape_theta = min(100, self.data.shape[0])
+        self.shape_radius = self.data.shape[1]
+
+        # Reshape data
+        processed_data = np.zeros(
+            shape=(100, np.floor(self.shape_radius * 1.41421356).astype(int)),
+        )
+        processed_data[: self.shape_theta, : self.shape_radius] = self.data[: self.shape_theta]
+
+        self.data = processed_data
+        self.cartesian: np.ndarray
+
+    def wall_block(self, threshold: float = 0.95) -> 'SonarDenoiser':
+        """
+        Remove signal behind a known wall.
+
+        This follows the justification that any signal behind a known object
+        is noise.
+
+        Args:
+            threshold (float): the threshold to consider some signal as a "known object".
+
+        Returns:
+            SonarDenoiser: returns itself to allow for method chaining.
+        """
+        for theta in range(self.shape_theta):
+            max_along_theta = 0
+            for r in range(self.shape_radius):
+                if self.data[theta][r] > max_along_theta * threshold:
+                    max_along_theta = self.data[theta][r]
+                else:
+                    self.data[theta][r] = 0
+        return self
+
+    def percentile_filter(self, threshold: float = 0.7) -> 'SonarDenoiser':
+        """
+        Apply percentile filtering to reduce noise.
+
+        Args:
+            threshold (float): the threshold for percentile filtering.
+
+        Returns:
+            SonarDenoiser: returns itself to allow for method chaining.
+        """
+        nonzero_data = self.data[self.data > 0]
+        if nonzero_data.size == 0:
+            return self
+
+        threshold = float(np.percentile(np.percentile(nonzero_data, threshold), threshold))
+        self.data[self.data < threshold] = 0
+
+        return self
+
+    def fourier_signal_processing(
+        self,
+        inner_radius: float = 0.001,
+        outer_radius: float = 0.25,
+        threshold: float = 40,
+    ) -> 'SonarDenoiser':
+        """
+        Denoise a sonar scan using the Fast Fourier Transform. Adapted from Pranav Bijith's Fourier analysis.
+
+        Args:
+            data (ndarray): an ndarray representing the sonar data
+            inner_radius (float): the radius of a circle in the frequency domain, all signal within will be removed
+            outer_radius (float): the radius of a circle in the frequency domain, all signal without will be removed
+            threshold (float): the threshhold
+
+        Returns:
+            SonarDenoiser: returns itself to allow for method chaining.
+        """
+        xv, yv = np.meshgrid(np.fft.fftfreq(self.data.shape[1]), np.fft.fftfreq(self.data.shape[0]))
+        xv = np.fft.fftshift(xv)
+        yv = np.fft.fftshift(yv)
+
+        # Applies the Radial Mask
+        radius = np.sqrt(xv**2 + yv**2)
+        mask = (radius < outer_radius) & (radius >= inner_radius)
+        mask = mask.astype(np.float32)
+        if self.data.ndim == NUM_DIMENSIONS_FOR_REPEAT and self.data.shape[2] == NUM_DIMENSIONS_FOR_REPEAT:
+            mask = np.repeat(mask[:, :, np.newaxis], 3, axis=2)
+        fimg = np.fft.fftshift(np.fft.fft2(self.data, axes=(0, 1))) * mask
+
+        # Filter
+        self.data = np.fft.ifft2(np.fft.ifftshift(fimg))
+        self.data = np.abs(self.data)
+        self.data[self.data < threshold] = 0
+
+        # Return self
+        return self
+
+    def init_cartesian(self) -> 'SonarDenoiser':
+        """
+        Update cartesian data based on gradian data.
+
+        Returns:
+            SonarDenoiser: returns itself to allow for method chaining.
+        """
+        shape_array = np.arange(self.shape_radius)
+        x, y = np.meshgrid(shape_array, shape_array)
+
+        theta = np.zeros(shape=(self.shape_radius, self.shape_radius), dtype=x.dtype)
+        theta[:, 0] = 89  # x=0
+        theta[:, 1:] = np.arctan(y[:, 1:] / x[:, 1:]) / np.pi * 180
+        theta_gradians = (theta / 90 * 100).astype(int)
+        r = (np.floor(np.sqrt(x**2 + y**2))).astype(int)
+
+        self.cartesian = self.data[theta_gradians, r]
+        return self
+
+    def normalize(self) -> 'SonarDenoiser':
+        """
+        Normalize the cartesian image.
+
+        Returns:
+            SonarDenoiser: returns itself to allow for method chaining.
+        """
+        self.cartesian = self.cartesian - np.min(self.cartesian)
+        max_value = np.max(self.cartesian)
+        if np.isclose(max_value, 0):
+            return self
+        self.cartesian = self.cartesian / max_value
+
+        return self
+
+    def blur(self, factor: int = 16) -> 'SonarDenoiser':
+        """
+        Apply box blur onto cartesian image.
+
+        Args:
+            factor (int): the size of the box for the box blur.
+
+        Returns:
+            SonarDenoiser: returns itself to allow for method chaining.
+        """
+        blur_kernel = np.ones((factor, factor), np.float32) / (factor**2)
+        self.cartesian = convolve2d(self.cartesian, blur_kernel, mode='same', boundary='symm')
+
+        self.normalize()
+
+        self.cartesian = np.where(self.cartesian > 1 / 5, self.cartesian, 0)
+
+        return self
+
+
+class OrthogonalRegression:
+    """A class representing the Orthogonal Regression of a group of points."""
+
+    def __init__(self, points: np.ndarray) -> None:
+        """
+        Construct a OrthogonalRegression object given a group of points.
+
+        Args:
+            points (ndarray): the points within this orthogonal regression. Points should be (y, x)
+        """
+        self.points = points
+
+        e_val, e_vect = np.linalg.eig(np.cov(self.points, rowvar=False))
+
+        self.unit_tangent = e_vect[:, np.argmin(e_val)]
+        self.unit_tangent[1] *= -1
+        self.unit_normal = np.array([-self.unit_tangent[1], self.unit_tangent[0]])
+
+        if self.unit_tangent[0] == 0:
+            self.slope = (2**31) - 1
+        else:
+            self.slope = self.unit_tangent[1] / self.unit_tangent[0]
+
+        self.intercept = self.points[:, 0].mean() - self.slope * self.points[:, 1].mean()
+
+        self.orthogonal_projections = np.matmul(
+            np.dot(self.points - np.array([self.intercept, 0]), self.unit_tangent[::-1])[:, np.newaxis],
+            self.unit_tangent[np.newaxis, ::-1],
+        )
+        self.residual_vectors = self.points - np.array([self.intercept, 0]) - self.orthogonal_projections
+
+        residuals = np.linalg.norm(self.residual_vectors, axis=1)
+
+        self.mse = np.sum(np.square(residuals)) / residuals.shape[0]
+        self.r2 = 1 - np.sum(np.square(residuals)) / (np.sum(np.square(self.points[:, 0] - np.mean(self.points[:, 0]))))
+
+    def y_given_x(self, x: float) -> float:
+        """
+        Get a value of y for some input of x.
+
+        Args:
+            x (float): The input for x.
+
+        Returns:
+            float: The value of y in this regression given a value of x.
+        """
+        return self.slope * x + self.intercept
+
+    def x_given_y(self, y: float) -> float:
+        """
+        Get a value of x for some input of y.
+
+        Args:
+            y (float): The input for y.
+
+        Returns:
+            float: The value of x in this regression given a value of y.
+        """
+        return (y - self.intercept) / self.slope
+
+    def set_slope(self, value: float) -> None:
+        """
+        Set the slope of this orthogonal regression.
+
+        Args:
+            value (float): the new slope for the regression.
+        """
+        if value == 0:
+            self._slope = np.finfo(type(value)).tiny
+        else:
+            self._slope = value
+
+
+class SonarSegmentType(Enum):
+    """Enum for Sonar Segment types."""
+
+    NONE = 0
+    WALL = 1
+    OBJECT = 2
+
+
+class SonarSegment:
+    """Class to define a sonar segment segment."""
+
+    def __init__(self, points: np.ndarray) -> None:
+        """
+        Construct a SonarSegment object.
+
+        Args:
+            points (ndarray): the points which make up this segment.
+        """
+        self.number = -1
+        self.points = points
+        self.ortho_regression: OrthogonalRegression
+        self.wall_distance = -1
+        self.nearest_object = None
+        self.nearest_object_distance = max(points.shape[0], points.shape[1]) * 2
+        self.type = SonarSegmentType.NONE
+
+    def get_average_coordinate_of_points(self) -> tuple[int, int]:
+        """
+        Get the average (row, col) of the points in this SonarSegment.
+
+        Returns:
+            tuple(int, int): the coordinates of the average point.
+        """
+        coordinates = np.zeros(2)
+        for point in self.points:
+            coordinates = coordinates + point
+
+        coordinates = coordinates / self.points.shape[0]
+
+        return (int(np.round(coordinates[0])), int(np.round(coordinates[1])))
+
+class GlobalSonarSegmentation:
+    """A class which treats all non-zero sonar data as a single segment."""
+
+    def __init__(
+        self,
+        image: np.ndarray,
+    ) -> None:
+
+        # Store image
+        self.image = image
+        self.side_length = image.shape[0]
+
+        # Get ALL non-zero pixels
+        points = np.argwhere(image > 0)
+
+        if points.shape[0] == 0:
+            self.raw_segments = []
+            self.segments = []
+            self.walls = []
+            self.objects = []
+            return
+
+        # Create single segment
+        segment = SonarSegment(points)
+        segment.number = 1
+        segment.ortho_regression = OrthogonalRegression(segment.points)
+
+        # Everything is now one segment
+        self.raw_segments = [segment]
+        self.segments = [segment]
+
+    def get_nearest_segment(self) -> 'SonarSegment':
+        """
+        Get the nearest segment.
+
+        Returns:
+            SonarSegment: the nearest segment.
+        """
+        return self.segments[0]

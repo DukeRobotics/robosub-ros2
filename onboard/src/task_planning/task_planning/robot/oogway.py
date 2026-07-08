@@ -1,4 +1,4 @@
-# ruff: noqa: ERA001, F401, N806
+# ruff: noqa: ERA001, F401, N806, F841
 from math import radians
 
 from task_planning.interface.cv import CVObjectType
@@ -31,10 +31,13 @@ async def main(self: Task) -> Task[None, None, None]:
         # ivc_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(DEPTH, parent=self),
         move_tasks.move_with_directions([(4, 0, 0), (-4, 0, 0)], parent=self),
+        # move_tasks.move_with_directions([(1, 0, 0), (0, 0.5, 0), (-1, 0, 0), (0, -0.5, 0)], parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
         # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
         #                         direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
         cv_tasks.move_to_cv_obj(FIRST_TARGET, target_distance=1, parent=self, search_direction=-1),
+        # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
+        #                         direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
         # TODO: task not found???
         # comp_tasks.send_torpedo_ivc(parent=self),
         # comp_tasks.octagon_task(direction=1, parent=self),
@@ -83,6 +86,11 @@ async def main(self: Task) -> Task[None, None, None]:
 
         ######## Prequal tasks ########
         # prequal_tasks.prequal_task(parent=self),
+
+        ######## Sonar tasks ########
+        # sonar_tasks.sonar_test(-45., 45., 10., parent=self)
+        sonar_tasks.rotate_to_normal(-45., 45., 10., 0.01, parent=self),
+        # sonar_tasks.rotate_to_angle_from_normal(-45., 45., 5., 5., 3.1415/6., parent=self),
     ]
 
     for task_to_run in tasks:
