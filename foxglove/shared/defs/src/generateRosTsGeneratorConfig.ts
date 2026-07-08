@@ -21,9 +21,10 @@ export function generateRosTsGeneratorConfig(
     .map((name) => join(rosSharePath, name))
     .filter((path) => statSync(path).isDirectory());
 
-  // Include every package that actually defines messages or services, i.e. one with a 'msg' or 'srv' directory.
   const filteredDirectories = allDirectories.filter(
-    (dir) => existsSync(join(dir, "msg")) || existsSync(join(dir, "srv")),
+    (dir) =>
+      (dir.endsWith("_srvs") || dir.endsWith("_msgs") || dir.endsWith("_interfaces")) &&
+      (existsSync(join(dir, "msg")) || existsSync(join(dir, "srv"))),
   );
 
   // Create the JSON configuration object
