@@ -1,4 +1,4 @@
-import { readdirSync, statSync, writeFileSync } from "fs";
+import { existsSync, readdirSync, statSync, writeFileSync } from "fs";
 import { join } from "path";
 
 /**
@@ -21,8 +21,10 @@ export function generateRosTsGeneratorConfig(
     .map((name) => join(rosSharePath, name))
     .filter((path) => statSync(path).isDirectory());
 
-  // Filter directories to only include those ending in '_srvs' or '_msgs'
-  const filteredDirectories = allDirectories.filter((dir) => dir.endsWith("_srvs") || dir.endsWith("_msgs"));
+  // Include every package that actually defines messages or services, i.e. one with a 'msg' or 'srv' directory.
+  const filteredDirectories = allDirectories.filter(
+    (dir) => existsSync(join(dir, "msg")) || existsSync(join(dir, "srv")),
+  );
 
   // Create the JSON configuration object
   const outputData = {
