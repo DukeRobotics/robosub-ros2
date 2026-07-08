@@ -8,6 +8,7 @@ from task_planning.task import Task, task
 from task_planning.tasks import (
     buoyancy_tasks,
     comp_tasks,
+    cv_tasks,
     # ivc_tasks,
     move_tasks,
     prequal_tasks,
@@ -24,7 +25,7 @@ async def main(self: Task) -> Task[None, None, None]:
     DIRECTION_OF_TORPEDO_BANNER = 1
     DEPTH = 0.5
     # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
-    FIRST_TARGET = CVObjectType.TORPEDO_REEF_SHARK_TARGET
+    FIRST_TARGET = CVObjectType.TORPEDO_BANNER
     tasks = [
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
@@ -33,6 +34,7 @@ async def main(self: Task) -> Task[None, None, None]:
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
         # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
         #                         direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        cv_tasks.move_to_cv_obj(FIRST_TARGET, target_distance=1, parent=self, search_direction=-1),
         # TODO: task not found???
         # comp_tasks.send_torpedo_ivc(parent=self),
         # comp_tasks.octagon_task(direction=1, parent=self),
@@ -66,6 +68,7 @@ async def main(self: Task) -> Task[None, None, None]:
 
         ## Movement/CV tasks
         # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
+        # move_tasks.move_with_directions([(4, 0, 0), [-4, 0, 0]], parent=self),
         # move_tasks.move_to_pose_local(
         #     geometry_utils.create_pose(0, 0, 0, 0, 0, 1.6),
         #     parent=self,

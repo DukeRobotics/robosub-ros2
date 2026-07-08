@@ -149,8 +149,9 @@ class CV:
             )
 
         # Subscribe to angle topics
-        self._angles: dict[CVObjectType, float] = dict.fromkeys(self.ANGLE_TOPICS, 0)
-        self._angle_queues: dict[CVObjectType, list[float]] = {object_type: [] for object_type in self.ANGLE_TOPICS}
+        self._angles: dict[CVObjectType, float] = dict.fromkeys(self.ANGLE_TOPICS | self.BOUNDING_BOX_TOPICS, 0)
+        self._angle_queues: dict[CVObjectType, list[float]] = {
+            object_type: [] for object_type in self.ANGLE_TOPICS | self.BOUNDING_BOX_TOPICS}
         for object_type, object_topic in self.ANGLE_TOPICS.items():
             node.create_subscription(
                 Float64,
@@ -183,16 +184,13 @@ class CV:
         """The dictionary containing lane marker-specific data."""
         return self._lane_marker_data
 
-    def _on_receive_bounding_box_data(self, cv_data: CVObject, object_type: CVObjectType, filter_len: int = 10) -> None:
+    def _on_receive_bounding_box_data(self, cv_data: CVObject, object_type: CVObjectType) -> None:
         """
         Store the received CV bounding box.
 
         Args:
             cv_data (CVObject): The received CV data.
             object_type (CVObjectType): The name/type of the object.
-            filter_len (int, optional): The maximum number of distance data points to retain
-                for the moving average filter. Defaults to 10.
-
         """
         # Special filtering for TORPEDO_BANNER
         if object_type == CVObjectType.TORPEDO_BANNER:
@@ -221,9 +219,12 @@ class CV:
             self._lane_marker_data['touching_top'] = cv_data.coords.y - cv_data.height / 2 <= 0
             self._lane_marker_data['touching_bottom'] = cv_data.coords.y + cv_data.height / 2 >= self.FRAME_HEIGHT
 
-        if object_type == CVObjectType.PATH_MARKER:
-            self._angles[object_type] = self.update_moving_average(self._angle_queues[object_type],
-                                                                   cv_data.yaw, filter_len)
+        # self._angles[object_type] = self.update_moving_average(self._angle_queues[object_type],
+        #                                                        cv_data.yaw, filter_len)
+        if object_type not in self._angles:
+            self._angles[object_type] = cv_data.yaw
+        else:
+            self._angles[object_type] = self.update_exponential_moving_average(self._angles[object_type], cv_data.yaw)
 
     def _on_receive_distance_data(self, distance_data: Point, object_type: CVObjectType, filter_len: int = 10) -> None:
         """
@@ -301,6 +302,20 @@ class CV:
             queue.pop(0)
 
         return sum(queue) / len(queue)
+
+    def update_exponential_moving_average(self, old_value: float, new_value: float, smoothing_k: float = 0.2) -> float:
+        """
+        Update the exponential moving average filter with a new value.
+
+        Args:
+            old_value (lifloatst): The most recent value output.
+            new_value (float): The new data point.
+            smoothing_k (float, optional): The smoothing factor. Higher prioritizes newer values
+
+        Returns:
+            float: The new moving average.
+        """
+        return old_value * (1 - smoothing_k) + new_value * smoothing_k if old_value != 0.0 else new_value
 
     def get_pose(self, name: CVObjectType) -> Pose:
         """
@@ -383,4 +398,3 @@ class CV:
 
         data = self._bounding_boxes[name]
         return (data.sonar_start_angle, data.sonar_end_angle, data.sonar_scan_distance)
-
