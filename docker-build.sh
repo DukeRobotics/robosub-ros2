@@ -58,7 +58,8 @@ GIT_USER_EMAIL=$(git config --global user.email)
 year_week=$(date +%Y-%U)
 
 # Command used to build the Docker image
-docker_build_cmd="docker build --build-arg CACHE_BUSTER='$year_week' --build-arg ENABLE_GIT='$ENABLE_GIT'"
+# docker_build_cmd="docker build --build-arg CACHE_BUSTER='$year_week' --build-arg ENABLE_GIT='$ENABLE_GIT'"
+docker_build_cmd="docker build --build-arg --build-arg ENABLE_GIT='$ENABLE_GIT'"
 
 # If the first or second argument is --no-cache, build the image without cache
 if [ "$1" == "--no-cache" ] || [ "$2" == "--no-cache" ]; then
