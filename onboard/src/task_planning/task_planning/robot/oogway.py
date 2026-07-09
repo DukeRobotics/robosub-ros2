@@ -2,17 +2,17 @@
 from math import radians
 
 from task_planning.interface.cv import CVObjectType
-# from task_planning.interface.ivc import IVCMessageType
-from task_planning.interface.servos import TorpedoStates
+from task_planning.interface.ivc import IVCMessageType
+# from task_planning.interface.servos import TorpedoStates
 from task_planning.task import Task, task
 from task_planning.tasks import (
     buoyancy_tasks,
     comp_tasks,
     cv_tasks,
-    # ivc_tasks,
+    ivc_tasks,
     move_tasks,
     prequal_tasks,
-    servos_tasks,
+    # servos_tasks,
     sonar_tasks,
 )
 from task_planning.utils import geometry_utils
@@ -28,14 +28,14 @@ async def main(self: Task) -> Task[None, None, None]:
     FIRST_TARGET = CVObjectType.TORPEDO_BANNER
     tasks = [
         ######## Main competition tasks ########
-        # ivc_tasks.delineate_ivc_log(parent=self),
-        comp_tasks.initial_submerge(DEPTH, parent=self),
-        move_tasks.move_with_directions([(4, 0, 0), (-4, 0, 0)], parent=self),
+        ivc_tasks.delineate_ivc_log(parent=self),
+        # comp_tasks.initial_submerge(DEPTH, parent=self),
+        # move_tasks.move_with_directions([(2.5, 0, 0), (0, 2.5, 0), (-2.5, 0, 0), (0, -2.5, 0)], parent=self),
         # move_tasks.move_with_directions([(1, 0, 0), (0, 0.5, 0), (-1, 0, 0), (0, -0.5, 0)], parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
         # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
         #                         direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
-        cv_tasks.move_to_cv_obj(FIRST_TARGET, target_distance=1, parent=self, search_direction=-1),
+        # cv_tasks.move_to_cv_obj(FIRST_TARGET, target_distance=1, parent=self, search_direction=-1),
         # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
         #                         direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
         # TODO: task not found???
@@ -68,6 +68,7 @@ async def main(self: Task) -> Task[None, None, None]:
         ## IVC
         # TODO: task not found???
         # comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self),
+        ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TEST, parent=self),
 
         ## Movement/CV tasks
         # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
@@ -89,7 +90,7 @@ async def main(self: Task) -> Task[None, None, None]:
 
         ######## Sonar tasks ########
         # sonar_tasks.sonar_test(-45., 45., 10., parent=self)
-        sonar_tasks.rotate_to_normal(-45., 45., 10., 0.01, parent=self),
+        # sonar_tasks.rotate_to_normal(-45., 45., 10., 0.01, parent=self),
         # sonar_tasks.rotate_to_angle_from_normal(-45., 45., 5., 5., 3.1415/6., parent=self),
     ]
 

@@ -4,7 +4,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Self
 
-# import pytz
+import pytz
 from custom_msgs.msg import ModemStatus, StringWithHeader
 from custom_msgs.srv import SendModemMessage
 from rclpy.logging import get_logger
@@ -107,8 +107,10 @@ class IVC:
 
         self._initialized = True
 
+        self.node = node
+
         if node is None:
-            error_msg = 'IVC interface must be initialized with a Node the first time.'
+            error_msg = 'IVC sinterface must be initialized with a Node the first time.'
             raise ValueError(error_msg)
 
         self.bypass = bypass

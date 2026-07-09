@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-# import pytz
+import pytz
 from rclpy.duration import Duration
 from rclpy.logging import get_logger
 from task_planning.interface.ivc import IVC, IVCMessageType
@@ -31,7 +31,7 @@ def ros_timestamp_to_pacific_time(sec: int, nanosec: int) -> str:
         str: Human-readable timestamp in Pacific timezone
     """
     # Convert to datetime object
-   #  pacific_tz = pytz.timezone('US/Pacific')
+    pacific_tz = pytz.timezone('US/Pacific')
     timestamp = datetime.fromtimestamp(sec + nanosec / 1e9, tz=pacific_tz)
 
     # Convert to Pacific timezone
