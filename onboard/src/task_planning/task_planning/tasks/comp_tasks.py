@@ -16,7 +16,6 @@ from task_planning.interface.sonar import Sonar
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield
 from task_planning.tasks import move_tasks, servos_tasks, util_tasks, acoustics_tasks
-# from task_planning.tasks import move_tasks, util_tasks, acoustics_tasks
 from task_planning.tasks.base_comp_task import CompTask, comp_task
 from task_planning.utils import geometry_utils
 from task_planning.utils.other_utils import RobotName, get_robot_name
