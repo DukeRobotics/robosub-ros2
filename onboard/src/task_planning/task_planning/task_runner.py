@@ -10,7 +10,7 @@ from rclpy.time import Time
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.ivc import IVC
-#from task_planning.interface.servos import Servos
+from task_planning.interface.servos import Servos
 from task_planning.interface.sonar import Sonar
 from task_planning.interface.state import State
 from task_planning.robot import crush, oogway, oogway_shell
@@ -46,7 +46,7 @@ class TaskPlanning(Node):
         Controls(self, bypass=self.bypass)
         CV(self, bypass=self.bypass)
         IVC(node=self, bypass=self.bypass)
-        # Servos(self, bypass=self.bypass)
+        Servos(self, bypass=self.bypass)
         Sonar(self, bypass=self.bypass)
         State(self, tf_buffer=tf_buffer, bypass=self.bypass)
 

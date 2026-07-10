@@ -3,7 +3,7 @@ from math import radians
 
 from task_planning.interface.cv import CVObjectType
 from task_planning.interface.ivc import IVCMessageType
-# from task_planning.interface.servos import TorpedoStates
+from task_planning.interface.servos import TorpedoStates
 from task_planning.task import Task, task
 from task_planning.tasks import (
     buoyancy_tasks,
@@ -12,7 +12,7 @@ from task_planning.tasks import (
     ivc_tasks,
     move_tasks,
     prequal_tasks,
-    # servos_tasks,
+    servos_tasks,
     sonar_tasks,
 )
 from task_planning.utils import geometry_utils
@@ -25,11 +25,12 @@ async def main(self: Task) -> Task[None, None, None]:
     DIRECTION_OF_TORPEDO_BANNER = 1
     DEPTH = 0.5
     # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
-    FIRST_TARGET = CVObjectType.TORPEDO_BANNER
+    # FIRST_TARGET = CVObjectType.TORPEDO_BANNER
+    FIRST_TARGET = CVObjectType.TORPEDO_SAWFISH_TARGET
     tasks = [
         ######## Main competition tasks ########
-        ivc_tasks.delineate_ivc_log(parent=self),
-        # comp_tasks.initial_submerge(DEPTH, parent=self),
+        #ivc_tasks.delineate_ivc_log(parent=self),
+        comp_tasks.initial_submerge(DEPTH, parent=self),
         # move_tasks.move_with_directions([(2.5, 0, 0), (0, 2.5, 0), (-2.5, 0, 0), (0, -2.5, 0)], parent=self),
         # move_tasks.move_with_directions([(1, 0, 0), (0, 0.5, 0), (-1, 0, 0), (0, -0.5, 0)], parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
@@ -44,7 +45,7 @@ async def main(self: Task) -> Task[None, None, None]:
 
         ######## Unused competition tasks ########
         ## Coin flip
-        # comp_tasks.coin_flip(parent=self),
+        comp_tasks.coin_flip(parent=self),
 
         ## Gate
         # comp_tasks.gate_task(offset=-0.1, direction=-1, parent=self),
@@ -68,7 +69,7 @@ async def main(self: Task) -> Task[None, None, None]:
         ## IVC
         # TODO: task not found???
         # comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self),
-        ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TEST, parent=self),
+        # ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TEST, parent=self),
 
         ## Movement/CV tasks
         # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
