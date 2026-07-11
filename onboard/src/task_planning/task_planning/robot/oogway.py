@@ -45,7 +45,7 @@ async def main(self: Task) -> Task[None, None, None]:
 
         ######## Unused competition tasks ########
         ## Coin flip
-        comp_tasks.coin_flip(parent=self),
+        #comp_tasks.coin_flip(parent=self),
 
         ## Gate
         # comp_tasks.gate_task(offset=-0.1, direction=-1, parent=self),

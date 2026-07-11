@@ -1,9 +1,10 @@
+
 # Base Docker image for ROS2 Jazzy that supports linux/amd64 and linux/arm64
 FROM ros:jazzy
 
 # Dummy argument to force Docker to rebuild the image by invalidating the cache when the argument value changes
 # Cache invalidation forces Docker to rerun the `apt update` command, ensuring that the latest `apt` package index is used when building the image
-ARG CACHE_BUSTER
+# ARG CACHE_BUSTER
 
 # *********************************************************************************************************************************************************************************
 # All commands below are run as root
@@ -27,9 +28,8 @@ RUN apt install -y --no-install-recommends openssh-client
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-opencv
 RUN apt install -y --no-install-recommends python3-pip
-RUN apt install -y --no-install-recommends python3-aiofiles
 RUN apt install -y --no-install-recommends python3-venv
-RUN apt install -y --no-install-recommends python3-pytz
+RUN apt install -y --no-install-recommends python3-aiofiles
 RUN apt install -y --no-install-recommends ros-jazzy-cv-bridge
 RUN apt install -y --no-install-recommends ros-jazzy-foxglove-bridge
 RUN apt install -y --no-install-recommends ros-jazzy-robot-localization

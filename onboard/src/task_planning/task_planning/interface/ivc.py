@@ -163,7 +163,7 @@ class IVC:
             seconds,
             nanoseconds,
         )
-        msg = f'Received IVC message: {ivc_message.msg.name} at {timestamp}\n'
+        msg = f'Received IVC message: {ivc_message.msg.name} at {timestamp}. Raw data is {msg}.\n'
 
         # Log to text file
         logger.info(msg)
