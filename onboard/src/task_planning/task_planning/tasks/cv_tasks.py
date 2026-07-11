@@ -139,17 +139,18 @@ async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction: 
             logger.info('[cv_tasks.yaw_to_cv_obj] Never found CV Object. Ending yaw_to_cv_object.')
             return False
 
-    # From this point on, all remaining code expects negative depth level
-    depth_level = State().orig_depth - depth_level
+    # yaw_until_object_detection expects a positive offset; move/correct_depth use absolute depth
+    depth_level_offset = depth_level
+    absolute_depth = State().orig_depth - depth_level_offset
 
     @task
     async def correct_depth(self: Task) -> None:
-        await move_tasks.depth_correction(desired_depth=depth_level, parent=self)
+        await move_tasks.depth_correction(desired_depth=absolute_depth, parent=self)
 
 
     cv_object_yaw = CV().angles[cv_object]
     move_to_pose_task = move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, cv_object_yaw),
-                            depth_level=depth_level,
+                            depth_level=absolute_depth,
                             pose_tolerances=Twist(linear=Vector3(x=0.05, y=0.05, z=0.05),
                                                     angular=Vector3(x=0.2, y=0.3, z=yaw_threshold)),
                             timeout=30,
@@ -161,13 +162,13 @@ async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction: 
     starting_time = clock.now()
 
     while not move_to_pose_task.done:
-        if abs(State().depth - depth_level) > depth_threshold:
+        if abs(State().depth - absolute_depth) > depth_threshold:
             await correct_depth(parent=self)
 
         if not CV().is_receiving_recent_cv_data(cv_object, 10):
             logger.info('[cv_tasks.yaw_to_cv_obj] Lost sight of cv object. Yawing until object detection...')
             found_object = await yaw_until_object_detection(cv_object, search_direction,
-                                                        depth_threshold, depth_level, parent=self)
+                                                        depth_threshold, depth_level_offset, parent=self)
             if not found_object:
                 logger.info('[cv_tasks.yaw_to_cv_obj] Could not regain sight of cv object. Ending yaw_to_cv_object.')
                 return False
