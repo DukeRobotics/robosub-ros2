@@ -287,6 +287,12 @@ class DepthAISpatialDetector(Node):
             if (prev_conf is not None and detection.confidence > prev_conf) or prev_conf is None:
                 detections_dict[detection.label] = detection.confidence, detection
 
+        # If this is a torpedo model, and it only detects the torpedo_banner without any glyphs,
+        # disregard this detection altogether
+        if "2026_torpedo" in self.current_model_name:
+            if "torpedo_banner" in detections_dict and len(detections_dict) == 1:
+                return
+
         detections = [detection for _, detection in detections_dict.values()]
         model = self.models[self.current_model_name]
 
