@@ -32,7 +32,7 @@ class ThrusterTester(Node):
 
     CONFIG_PATH = f'package://controls/config/{os.getenv("ROBOT_NAME")}.yaml'
 
-    def __init__(self, speed: float, rate: float, log_allocs: bool) -> None:
+    def __init__(self, speed: float, rate: float, log_allocs: bool, tTestNum: int) -> None:
         """
         Initialize the thruster tester node.
 
@@ -46,7 +46,13 @@ class ThrusterTester(Node):
         self.publisher_ = self.create_publisher(ThrusterAllocs, '/controls/thruster_allocs', 10)
         self.num_thrusters = self.get_thruster_count()
         self.thrust_speed = speed
-        self.allocs = [self.thrust_speed] * self.num_thrusters
+        if (tTestNum == 0):
+            self.allocs = [self.thrust_speed] * self.num_thrusters
+        else:
+            sArr = [0.0]*self.num_thrusters
+            sArr[tTestNum - 1] = speed
+            self.allocs = sArr
+
         self.msg = ThrusterAllocs()
         self.msg.allocs = self.allocs
         self.log_allocs = log_allocs
@@ -86,10 +92,11 @@ def main(args: list[str] | None = None) -> None:
     parser.add_argument('-r', '--rate', type=float, default=DEFAULT_RATE,
                         help=f'Publishing rate in Hz (default: {DEFAULT_RATE}).')
     parser.add_argument('--log-allocs', action='store_true', help='Log each thruster allocs message published.')
+    parser.add_argument('-t', '--test-num', type=int, default=0, help='Thruster number to test (default: 0 for all thrusters).')
     parsed_args = parser.parse_args()
 
     rclpy.init(args=args)
-    node = ThrusterTester(parsed_args.speed, parsed_args.rate, parsed_args.log_allocs)
+    node = ThrusterTester(parsed_args.speed, parsed_args.rate, parsed_args.log_allocs, parsed_args.test_num)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

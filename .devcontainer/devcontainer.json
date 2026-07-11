@@ -4,6 +4,7 @@
     "service": "robosub-ros2",
     "workspaceFolder": "/home/ubuntu/robosub-ros2",
     "initializeCommand": "bash ./docker-build.sh skip-wsl",
+    "runArgs": ["--privileged"],
     "customizations": {
         "vscode": {
             "extensions": [

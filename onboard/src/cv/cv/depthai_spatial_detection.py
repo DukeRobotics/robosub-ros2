@@ -14,6 +14,7 @@ from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String
 
 from cv import depthai_camera_connect
+from cv.config import Torpedo
 from cv.image_tools import ImageTools
 from cv.utils import DetectionVisualizer, calculate_relative_pose
 
@@ -308,10 +309,17 @@ class DepthAISpatialDetector(Node):
 
             confidence = detection.confidence
 
-            # Calculate relative pose
+            # Calculate relative pose, and pull scalings from config dependent on model
+            scale_x, scale_y, scale_z = 1.0, 1.0, 1.0
+            match label:
+                case 'torpedo_banner':
+                    scale_x = Torpedo.TORPEDO_BANNER_X_SCALE
+                    scale_y = Torpedo.TORPEDO_BANNER_Y_SCALE
+
             det_coords_robot_mm = calculate_relative_pose(bbox, tuple(model['input_size']),
-                                                          tuple(model['sizes'][label]),
-                                                          self.focal_length, self.sensor_size, 2)
+                                                        tuple(model['sizes'][label]),
+                                                        self.focal_length, self.sensor_size, 2,
+                                                        scale_x=scale_x, scale_y=scale_y, scale_z=scale_z)
 
             # Find yaw angle offset
             left_end_compute = self.compute_angle_from_x_offset(detection.xmin * self.camera_pixel_width)
@@ -341,7 +349,7 @@ class DepthAISpatialDetector(Node):
                                            det_coords_robot_mm[2])  # Maintain original z
 
             self.publish_prediction(
-                bbox, det_coords_robot_mm, yaw_offset, label, confidence,
+                bbox, det_coords_robot_mm, -yaw_offset, label, confidence,
                 (self.camera_pixel_height, self.camera_pixel_width), self.using_sonar)
 
     def publish_prediction(self, bbox: tuple, det_coords: tuple, yaw: float, label: str, confidence: float,
@@ -367,21 +375,16 @@ class DepthAISpatialDetector(Node):
         object_msg.label = label
         object_msg.score = confidence
 
-        if label == 'torpedo_banner':
-            object_msg.coords.x = 1.2 * det_coords[0]
-            object_msg.coords.y = 0.5 * det_coords[1]
-            object_msg.coords.z = det_coords[2]
-        else:
-            object_msg.coords.x = det_coords[0]
-            object_msg.coords.y = det_coords[1]
-            object_msg.coords.z = det_coords[2]
+        object_msg.coords.x = det_coords[0]
+        object_msg.coords.y = det_coords[1]
+        object_msg.coords.z = det_coords[2]
 
         object_msg.xmin = bbox[0]
         object_msg.ymin = bbox[1]
         object_msg.xmax = bbox[2]
         object_msg.ymax = bbox[3]
 
-        object_msg.yaw = -yaw
+        object_msg.yaw = yaw
 
         object_msg.height = shape[0]
         object_msg.width = shape[1]

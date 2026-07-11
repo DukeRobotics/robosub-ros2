@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from datetime import datetime
+from typing import Self
+
 import pytz
 from custom_msgs.msg import ModemStatus, StringWithHeader
 from custom_msgs.srv import SendModemMessage
@@ -61,7 +63,7 @@ class IVC:
     MESSAGES_TOPIC = '/sensors/modem/messages'
     SEND_MESSAGE_SERVICE = '/sensors/modem/send_message'
 
-    def __new__(cls, node: Node | None = None, bypass: bool = False) -> 'IVC':  # noqa: ARG004
+    def __new__(cls, node: Node | None = None, bypass: bool = False) -> Self:  # noqa: ARG004
         """Create a new instance of the IVC class or return the existing instance."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -81,8 +83,10 @@ class IVC:
 
         self._initialized = True
 
+        self.node = node
+
         if node is None:
-            error_msg = 'IVC interface must be initialized with a Node the first time.'
+            error_msg = 'IVC sinterface must be initialized with a Node the first time.'
             raise ValueError(error_msg)
 
         self.bypass = bypass

@@ -25,34 +25,52 @@ arduino:
       - type: humidity
         tag: HB
         topic: /sensors/humidity/battery
+    servos:
+      - name: marker dropper
+        tag: M
+        service_name: /servos/marker_dropper
+        type: discrete
+        states:
+          one: 1300
+          two: 1700
+          reset: 1500
+        min_delay: 3.0
   thruster:
-    ftdi: A10LT2EI
+    ftdi: AQ02V0UK
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketches/thruster
+    libraries:
+      - "'Adafruit BusIO'"
 gyro:
   ftdi: FT81SUWZ
-  zero_bias: 0.0023800993
+  zero_bias: 0.0024940463
   scale_factor: 15497811.0
   negate: true
 modem:
   ftdi: CP2102
 thrusters:
-  - name: middle_right
-    cw: false
-    standard_esc: false
   - name: front_right
     cw: false
+    standard_esc: true
+  - name: middle_right_first
+    cw: false
+    standard_esc: true
+  - name: middle_right_second
+    cw: true
     standard_esc: false
   - name: back_right
     cw: false
-    standard_esc: true
+    standard_esc: false
   - name: back_left
     cw: true
     standard_esc: false
-  - name: middle_left
-    cw: true
+  - name: middle_left_first
+    cw: false
     standard_esc: true
-  - name: front_left
+  - name: middle_left_second
     cw: true
     standard_esc: false
+  - name: front_left
+    cw: true
+    standard_esc: true

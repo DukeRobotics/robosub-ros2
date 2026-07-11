@@ -10,3 +10,4 @@ bool is_object
 
 geometry_msgs/PoseStamped pose
 float64 normal_angle
+float64 angle_of_wall

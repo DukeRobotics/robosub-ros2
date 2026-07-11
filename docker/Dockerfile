@@ -39,6 +39,9 @@ RUN apt install -y --no-install-recommends shellcheck
 RUN apt install -y --no-install-recommends tini
 RUN apt install -y --no-install-recommends udev
 RUN apt install -y --no-install-recommends valgrind
+RUN apt install -y --no-install-recommends fuse
+RUN apt install -y --no-install-recommends libfuse2
+RUN apt install -y --no-install-recommends libgtk-3-0
 
 # Build and install OSQP from source
 RUN git clone --branch release-0.6.3 --recursive https://github.com/osqp/osqp.git && \
@@ -125,6 +128,32 @@ RUN /home/ubuntu/venv/bin/pip install ruff
 RUN /home/ubuntu/venv/bin/pip install scikit-learn
 RUN /home/ubuntu/venv/bin/pip install sympy
 RUN /home/ubuntu/venv/bin/pip install transforms3d
+RUN /home/ubuntu/venv/bin/pip install saleae
+RUN /home/ubuntu/venv/bin/pip install scipy==1.14.*
+RUN /home/ubuntu/venv/bin/pip install numpy==1.26.0
+RUN /home/ubuntu/venv/bin/pip install pylint
+RUN /home/ubuntu/venv/bin/pip install logic2-automation
+RUN /home/ubuntu/venv/bin/pip install contourpy==1.3.3
+RUN /home/ubuntu/venv/bin/pip install cycler==0.12.1
+RUN /home/ubuntu/venv/bin/pip install filelock==3.20.0
+RUN /home/ubuntu/venv/bin/pip install fonttools==4.60.0
+RUN /home/ubuntu/venv/bin/pip install fsspec==2025.9.0
+RUN /home/ubuntu/venv/bin/pip install future==1.0.0
+RUN /home/ubuntu/venv/bin/pip install Jinja2==3.1.6
+RUN /home/ubuntu/venv/bin/pip install kiwisolver==1.4.9
+RUN /home/ubuntu/venv/bin/pip install MarkupSafe==3.0.3
+RUN /home/ubuntu/venv/bin/pip install mpmath==1.3.0
+RUN /home/ubuntu/venv/bin/pip install networkx==3.5
+RUN /home/ubuntu/venv/bin/pip install packaging==25.0
+RUN /home/ubuntu/venv/bin/pip install pillow==11.3.0
+RUN /home/ubuntu/venv/bin/pip install psutil==7.1.0
+RUN /home/ubuntu/venv/bin/pip install pyparsing==3.2.5
+RUN /home/ubuntu/venv/bin/pip install python-dateutil==2.9.0.post0
+RUN /home/ubuntu/venv/bin/pip install pytz==2025.2
+RUN /home/ubuntu/venv/bin/pip install six==1.17.0
+RUN /home/ubuntu/venv/bin/pip install torch==2.9.0
+RUN /home/ubuntu/venv/bin/pip install typing_extensions==4.15.0
+RUN /home/ubuntu/venv/bin/pip install tzdata==2025.2
 
 # Install Node.js (Jod)
 ENV NVM_DIR=/home/ubuntu/.nvm

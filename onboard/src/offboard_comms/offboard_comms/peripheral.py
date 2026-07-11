@@ -202,7 +202,7 @@ class PeripheralPublisher(SerialNode):
 
         if time.time() - servo.last_called_time < servo.min_delay:
             error_msg = (f'Minimum delay of {servo.min_delay} seconds not met since last call to '
-                         f'{self.servos[tag].name} servo.')
+                f'{self.servos[tag].name} servo at tag {self.servos[tag]}')
 
             response.success = False
             response.message = error_msg
@@ -222,7 +222,8 @@ class PeripheralPublisher(SerialNode):
         else:
             # Create a string of possible states for the error message; format: ["state1", "state2", ...]
             possible_states = '[' + ', '.join(f'"{possible_state}"' for possible_state in servo.states) + ']'
-            error_msg = f'Invalid state "{state}" for {servo.name} servo. Must be one of {possible_states}.'
+            pwm_signals = '[' + ','.join(f'"{servo.states[possible_state]}"' for possible_state in servo.states) + ']'
+            error_msg = f'Invalid state "{state}" for {servo.name} servo. Must be one of {possible_states}. These are mapped to PWM signals {pwm_signals}.'
 
             response.success = False
             response.message = error_msg
