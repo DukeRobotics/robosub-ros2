@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
-import aiofiles
+# import aiofiles
 import pytz
 from rclpy.duration import Duration
 from rclpy.logging import get_logger
@@ -110,13 +110,13 @@ async def ivc_send(self: Task[None, None, None], msg: IVCMessageType) -> None:
         if service_response.success:
             logger.info(f'Sent IVC message: {msg.name}')
 
-            # Log to text file
-            async with aiofiles.open('ivc_log.txt', 'a') as f:  # noqa: ASYNC230
-                timestamp = ros_timestamp_to_pacific_time(
-                    IVC().modem_status.header.stamp.sec,
-                    IVC().modem_status.header.stamp.nanosec,
-                )
-                await f.write(f'Sent IVC message: {msg.name} at {timestamp}\n')
+            # # Log to text file
+            # async with aiofiles.open('ivc_log.txt', 'a') as f:  # noqa: ASYNC230
+            #     timestamp = ros_timestamp_to_pacific_time(
+            #         IVC().modem_status.header.stamp.sec,
+            #         IVC().modem_status.header.stamp.nanosec,
+            #     )
+            #     await f.write(f'Sent IVC message: {msg.name} at {timestamp}\n')
         else:
             logger.error(f'Modem failed to send message. Response: {service_response.message}')
 
@@ -173,15 +173,15 @@ async def ivc_receive_then_send(self: Task[None, None, None], check_msg: IVCMess
     await ivc_send(send_msg, parent=self)
 
 
-@task
-async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:  # noqa: ARG001
-    """Append a header to the IVC log file."""
-    async with aiofiles.open('ivc_log.txt', 'a') as f:
-        await f.write('----- NEW RUN STARTED -----\n')
+# @task
+# async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:  # noqa: ARG001
+#     """Append a header to the IVC log file."""
+#     async with aiofiles.open('ivc_log.txt', 'a') as f:
+#         await f.write('----- NEW RUN STARTED -----\n')
 
 
-@task
-async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[None, None, None]:  # noqa: ARG001
-    """Add a message to the IVC log file."""
-    async with aiofiles.open('ivc_log.txt', 'a') as f:
-        await f.write(f'{message}\n')
+# @task
+# async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[None, None, None]:  # noqa: ARG001
+#     """Add a message to the IVC log file."""
+#     async with aiofiles.open('ivc_log.txt', 'a') as f:
+#         await f.write(f'{message}\n')
