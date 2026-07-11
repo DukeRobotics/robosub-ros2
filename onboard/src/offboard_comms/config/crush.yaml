@@ -44,7 +44,7 @@ arduino:
       - "'Adafruit BusIO'"
 gyro:
   ftdi: FT81SUWZ
-  zero_bias: 0.0024940463
+  zero_bias: 0.0024887453
   scale_factor: 15497811.0
   negate: true
 modem:
