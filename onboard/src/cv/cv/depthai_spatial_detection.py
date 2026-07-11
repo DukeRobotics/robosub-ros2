@@ -289,8 +289,9 @@ class DepthAISpatialDetector(Node):
 
         # If this is a torpedo model, and it only detects the torpedo_banner without any glyphs,
         # disregard this detection altogether
+        # Index for the banner is 4 so not a magic number :)
         if "2026_torpedo" in self.current_model_name:
-            if "torpedo_banner" in detections_dict and len(detections_dict) == 1:
+            if 4 in detections_dict and len(detections_dict) == 1:
                 return
 
         detections = [detection for _, detection in detections_dict.values()]
