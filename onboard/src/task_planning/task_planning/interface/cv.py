@@ -38,14 +38,6 @@ class CVObjectType(Enum):
     TORPEDO_LARGEST_TARGET = 'torpedo_largest_target'
     TORPEDO_LOWER_TARGET = 'h'
     TORPEDO_UPPER_TARGET = 'g'
-    TORPEDO_AMBULANCE = 'ambulance_front'
-    TORPEDO_BLOOD = 'blood_front'
-    TORPEDO_FIRETRUCK = 'firetruck_front'
-    TORPEDO_FIRE = 'fire_front'
-    TORPEDO_AMBULANCE_TARGET = 'torpedo_ambulance_target'
-    TORPEDO_BLOOD_TARGET = 'torpedo_blood_target'
-    TORPEDO_FIRETRUCK_TARGET = 'torpedo_firetruck_target'
-    TORPEDO_FIRE_TARGET = 'torpedo_fire_target'
 
 
 @singleton
@@ -70,7 +62,7 @@ class CV:
 
     MODELS_PATH = 'package://cv/models/depthai_models.yaml'
     CV_CAMERA = 'front'
-    CV_MODELS: ClassVar[list[str]] = ['2026_torpedo_gray']
+    CV_MODELS: ClassVar[list[str]] = ['2025_torpedo']
 
     # Need to see more than TORPEDO_BANNER_RATE_THRESHOLD messages per second
     TORPEDO_BANNER_RATE_THRESHOLD = 5
@@ -89,14 +81,6 @@ class CV:
         CVObjectType.TORPEDO_REEF_SHARK_TARGET: '/cv/front_usb/torpedo_reef_shark_target/bounding_box',
         CVObjectType.TORPEDO_SAWFISH_TARGET: '/cv/front_usb/torpedo_sawfish_target/bounding_box',
         CVObjectType.TORPEDO_LARGEST_TARGET: '/cv/front_usb/torpedo_largest_target/bounding_box',
-        CVObjectType.TORPEDO_AMBULANCE: '/cv/front/ambulance_front',
-        CVObjectType.TORPEDO_BLOOD: '/cv/front/blood_front',
-        CVObjectType.TORPEDO_FIRETRUCK: '/cv/front/firetruck_front',
-        CVObjectType.TORPEDO_FIRE: '/cv/front/fire_front',
-        CVObjectType.TORPEDO_AMBULANCE_TARGET: '/cv/front_usb/torpedo_ambulance_target/bounding_box',
-        CVObjectType.TORPEDO_BLOOD_TARGET: '/cv/front_usb/torpedo_blood_target/bounding_box',
-        CVObjectType.TORPEDO_FIRETRUCK_TARGET: '/cv/front_usb/torpedo_firetruck_target/bounding_box',
-        CVObjectType.TORPEDO_FIRE_TARGET: '/cv/front_usb/torpedo_fire_target/bounding_box',
     }
 
     DISTANCE_TOPICS: ClassVar[dict[CVObjectType, str]] = {
@@ -138,9 +122,7 @@ class CV:
                     node.create_subscription(
                         CVObject,
                         topic,
-                        lambda msg, model_class=model_class: self._on_receive_bounding_box_data(
-                            msg, self._resolve_object_type(model_class),
-                        ),
+                        lambda msg, model_class=model_class: self._on_receive_bounding_box_data(msg, model_class),
                         10,
                     )
 
@@ -181,14 +163,6 @@ class CV:
         # Lane marker-specific data
         self._lane_marker_data = {}
         self._lane_marker_heights = []
-
-    @staticmethod
-    def _resolve_object_type(model_class: str) -> CVObjectType | str:
-        """Map a DepthAI model class name to CVObjectType when one exists."""
-        for object_type in CVObjectType:
-            if object_type.value == model_class:
-                return object_type
-        return model_class
 
     @property
     def bounding_boxes(self) -> dict[CVObjectType, CVObject]:
@@ -395,15 +369,9 @@ class CV:
             logger.info(f'{name} not in bounding boxes')
             return False
 
-        data = self._bounding_boxes[name]
-        detection_time = data.header.stamp.sec
-
-        # Default placeholder CVObject() has stamp (0, 0) and looks "recent" early in sim time
-        # because current_time - 0 < latency for the first ~latency seconds.
-        if detection_time == 0 and data.header.stamp.nanosec == 0:
-            return False
-
         current_time = Clock().now().seconds_nanoseconds()[0]
+        detection_time = self._bounding_boxes[name].header.stamp.sec
+
         recent = current_time - detection_time < latency
 
         if last_detection_time is not None:

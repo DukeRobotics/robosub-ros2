@@ -24,8 +24,9 @@ async def main(self: Task) -> Task[None, None, None]:
     # Constants
     DIRECTION_OF_TORPEDO_BANNER = 1
     DEPTH = 0.5
-    FIRST_TARGET = CVObjectType.TORPEDO_AMBULANCE_TARGET
-    SECOND_TARGET = CVObjectType.TORPEDO_BLOOD_TARGET
+    # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
+    # FIRST_TARGET = CVObjectType.TORPEDO_BANNER
+    FIRST_TARGET = CVObjectType.TORPEDO_SAWFISH_TARGET
     tasks = [
         ######## Main competition tasks ########
         #ivc_tasks.delineate_ivc_log(parent=self),
@@ -33,10 +34,8 @@ async def main(self: Task) -> Task[None, None, None]:
         # move_tasks.move_with_directions([(2.5, 0, 0), (0, 2.5, 0), (-2.5, 0, 0), (0, -2.5, 0)], parent=self),
         # move_tasks.move_with_directions([(1, 0, 0), (0, 0.5, 0), (-1, 0, 0), (0, -0.5, 0)], parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
-        comp_tasks.torpedo_task_2026(
-            first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH,
-            direction=DIRECTION_OF_TORPEDO_BANNER, parent=self,
-        ),
+        # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
+        #                         direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
         # cv_tasks.move_to_cv_obj(FIRST_TARGET, target_distance=1, parent=self, search_direction=-1),
         # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
         #                         direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
