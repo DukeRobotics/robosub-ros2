@@ -18,7 +18,7 @@ logger = get_logger('torpedo_target_detector_2026')
 
 # DepthAI coarse class name -> USB fine-target topic suffix
 TARGETS = {
-    'abulance_front': 'ambulance',
+    'ambulance_front': 'ambulance',
     'blood_front': 'blood',
     'firetruck_front': 'firetruck',
     'fire_front': 'fire',

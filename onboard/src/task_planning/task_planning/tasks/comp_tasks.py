@@ -1038,6 +1038,116 @@ async def torpedo_task(self: CompTask, first_target: CVObjectType,
     logger.info('[torpedo_task] Torpedo task completed')
 
 
+TORPEDO_2026_TARGETS: tuple[CVObjectType, ...] = (
+    CVObjectType.TORPEDO_AMBULANCE_TARGET,
+    CVObjectType.TORPEDO_BLOOD_TARGET,
+    CVObjectType.TORPEDO_FIRETRUCK_TARGET,
+    CVObjectType.TORPEDO_FIRE_TARGET,
+)
+
+
+@comp_task
+async def torpedo_task_2026(
+    self: CompTask,
+    first_target: CVObjectType,
+    second_target: CVObjectType,
+    depth_level: float = 0.5,
+    direction: int = 1,
+) -> Task[None, None, None]:
+    assert first_target in TORPEDO_2026_TARGETS, \
+        f'Invalid first_target: {first_target}. Must be one of {TORPEDO_2026_TARGETS}'
+    assert second_target in TORPEDO_2026_TARGETS, \
+        f'Invalid second_target: {second_target}. Must be one of {TORPEDO_2026_TARGETS}'
+    assert first_target != second_target, 'first_target and second_target must be different'
+
+    logger.info('[torpedo_task_2026] Starting torpedo task')
+
+    DEPTH_LEVEL = State().orig_depth - depth_level
+
+    def get_step_size(dist: float, dist_threshold: float) -> float:
+        if dist > 10:
+            goal_step = 4
+        elif dist > 6:
+            goal_step = 3
+        elif dist > 4:
+            goal_step = 1
+        elif dist > 1.5:
+            goal_step = 0.5
+        else:
+            goal_step = 0.25
+        return min(dist - dist_threshold + 0.1, goal_step)
+
+    async def move_to_torpedo(torpedo_dist_threshold: float = 2) -> None:
+        await yaw_to_cv_object(
+            CVObjectType.TORPEDO_BANNER, direction=direction, yaw_threshold=math.radians(15),
+            depth_level=depth_level, parent=self,
+        )
+
+        torpedo_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
+
+        await self.correct_y_to_cv_obj(CVObjectType.TORPEDO_BANNER)
+        await self.correct_depth(DEPTH_LEVEL)
+
+        while torpedo_dist > torpedo_dist_threshold:
+            logger.info(
+                f'[torpedo_task_2026] Torpedo dist x: '
+                f'{CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x}',
+            )
+            logger.info(
+                f'[torpedo_task_2026] Torpedo dist y: '
+                f'{CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.y}',
+            )
+            await self.move_x(step=get_step_size(torpedo_dist, torpedo_dist_threshold))
+
+            await yaw_to_cv_object(
+                CVObjectType.TORPEDO_BANNER, direction=-1, yaw_threshold=math.radians(15),
+                depth_level=depth_level, parent=self,
+            )
+
+            await self.correct_y_to_cv_obj(CVObjectType.TORPEDO_BANNER)
+
+            if torpedo_dist < 3:
+                await self.correct_z_to_cv_obj(CVObjectType.TORPEDO_BANNER)
+            else:
+                await self.correct_depth(DEPTH_LEVEL)
+
+            await Yield()
+            torpedo_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
+
+        await self.correct_z_to_cv_obj(CVObjectType.TORPEDO_BANNER)
+
+    async def fire_at_target(target: CVObjectType, torpedo: TorpedoStates, y_offset: float = 0) -> None:
+        target_y = CV().bounding_boxes[target].coords.y + y_offset
+        target_z = CV().bounding_boxes[target].coords.z + 0.1
+        logger.info(f'[torpedo_task_2026] Aligning to {target} at y={target_y} and z={target_z}')
+        await move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0), parent=self,
+        )
+        await servos_tasks.fire_torpedo(torpedo, parent=self)
+
+    await move_to_torpedo()
+    logger.info('[torpedo_task_2026] Finished moving forwards to torpedo')
+
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(0, -0.5, 0.2, 0, 0, 0), parent=self,
+    )
+
+    await fire_at_target(first_target, TorpedoStates.RIGHT)
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(
+            0,
+            -CV().bounding_boxes[first_target].coords.y,
+            -(CV().bounding_boxes[first_target].coords.z + 0.1),
+            0, 0, 0,
+        ),
+        parent=self,
+    )
+
+    await fire_at_target(second_target, TorpedoStates.LEFT, y_offset=-0.1)
+
+    logger.info('[torpedo_task_2026] Torpedo task completed')
+
+
 @comp_task
 async def octagon_task(self: CompTask, direction: int = 1) -> Task[None, None, None]:
     """
