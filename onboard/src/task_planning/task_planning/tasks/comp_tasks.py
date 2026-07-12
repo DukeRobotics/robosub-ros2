@@ -580,11 +580,12 @@ async def gate_to_octagon(self: CompTask, depth_level: float = 1, timeout: int =
 async def slalom_task_dead_reckoning(self: CompTask, depth_level: float = 1.1) -> Task[None, None, None]:
     DEPTH_LEVEL = State().orig_depth - depth_level
 
-    logger.info('[slalom_task_dead_reckoning] Started slalom task')
-
     if get_robot_name() == RobotName.OOGWAY:
+        logger.info('[slalom_task_dead_reckoning] Slalom task called on Oogway, ignoring the task')
         pass
+
     elif get_robot_name() == RobotName.CRUSH:
+        logger.info('[slalom_task_dead_reckoning] Starting slalom task...')
         directions = [
             (2, 0, 0),
             (2, 0, 0),
@@ -592,7 +593,47 @@ async def slalom_task_dead_reckoning(self: CompTask, depth_level: float = 1.1) -
         ]
         await self.move_with_directions(directions, depth_level=DEPTH_LEVEL, timeout=20)
 
-    logger.info('[slalom_task_dead_reckoning] Finished slalom task')
+        logger.info('[slalom_task_dead_reckoning] Finished slalom task')
+
+
+@comp_task
+async def gate_to_slalom(self: CompTask, yaw_before_slalom: float, right_turn_after_gate,
+                         depth_level: float = 1.1) -> Task[None, None, None] | None:
+    """Perform the slalom task on Crush.
+    
+    At the start of this task, Crush should have just crossed the gate and performed 2 barrel rolls.
+    During the task, Crush detects and aligns itself with the path marker, then 
+    follows along that direction to the start of the slalom task by dead reckoning a set amount.
+    Crush then attempts the slalom task by dead reckoning.
+
+    Args:
+        - right_turn_after_gate (bool): True if the start of the slalom task is somewhere to the right (positive-y)
+        of the gate, False otherwise.
+        - yaw_before slalom (float): the signed angle (in radians) between the heading of the path marker
+        to the angle at which Crush should attempt the slalom task. Positive for anti-clockwise yaw.
+    """
+    DEPTH_LEVEL = State().orig_depth - depth_level
+    YAW_BEFORE_SLALOM = yaw_before_slalom
+
+    if get_robot_name() == RobotName.OOGWAY:
+        logger.info('[gate_to_slalom] Gate to slalom was called on Oogway, ignoring the task')
+        pass
+
+    elif get_robot_name() == RobotName.CRUSH:
+        logger.info('[gate_to_slalom] Starting gate to slalom task...')
+        
+        await align_path_marker(right_turn=right_turn_after_gate, depth_level=DEPTH_LEVEL, parent=self)
+        directions = [
+            (2, 0, 0),
+            (2, 0, 0),
+            (2, 0, 0),
+        ]
+        await self.move_with_directions(directions, depth_level=DEPTH_LEVEL, timeout=20)
+
+        await self.correct_yaw(YAW_BEFORE_SLALOM)
+        await self.correct_depth(DEPTH_LEVEL)
+
+        logger.info('[gate_to_slalom] Finished gate to slalom task')
 
 
 @comp_task
@@ -674,18 +715,20 @@ async def center_path_marker(self: CompTask, depth_level: float = 0.5) -> Task[N
 
 
 @comp_task
-async def align_path_marker(self: CompTask, depth_level: float = 0.5) -> Task[None, None, None]:
-    """Corrects the yaw relative to the CV object. Follows the yaw and center loop."""
+async def align_path_marker(self: CompTask, right_turn: bool, depth_level: float = 0.5) -> Task[None, None, None]:
+    """Corrects the yaw relative to the CV object. Follows the yaw and center loop.
+    
+    right_turn should be True if the next task is somewhere to the right (positive-y) of the robot, False otherwise."""
     DEPTH_LEVEL = State().orig_depth - depth_level
-    MAXIMUM_YAW = math.radians(30)
+    # MAXIMUM_YAW = math.radians(180)
     YAW_THRESHOLD = math.radians(5)
     PIXEL_THRESHOLD = 70
 
     logger.info('[align_path_marker] Starting align path marker')
 
-    def get_step_size(desired_yaw: float) -> float:
-        # desired yaw in radians
-        return min(abs(desired_yaw), MAXIMUM_YAW)
+    # def get_step_size(desired_yaw: float) -> float:
+    #     # desired yaw in radians
+    #     return min(abs(desired_yaw), MAXIMUM_YAW)
 
     await self.correct_depth(DEPTH_LEVEL)
 
@@ -696,9 +739,12 @@ async def align_path_marker(self: CompTask, depth_level: float = 0.5) -> Task[No
     logger.info(f'[align_path_marker] yaw_threshold = {YAW_THRESHOLD}')
 
     while abs(path_marker_yaw) > YAW_THRESHOLD:
-        sign_path_marker_yaw = np.sign(path_marker_yaw)
-        correction = get_step_size(path_marker_yaw)
-        desired_yaw = sign_path_marker_yaw * correction
+        # sign_path_marker_yaw = np.sign(path_marker_yaw)
+        # correction = get_step_size(path_marker_yaw)
+        # desired_yaw = sign_path_marker_yaw * correction
+        desired_yaw = path_marker_yaw
+        if not right_turn:
+            desired_yaw = -1 * (math.pi - abs(desired_yaw))
 
         # Yaw to align with path marker
         logger.info(f'[align_path_marker] Detected yaw {path_marker_yaw} is greater than threshold {YAW_THRESHOLD}. '
