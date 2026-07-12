@@ -25,9 +25,6 @@ class CVObjectType(Enum):
     BIN_PINK_FRONT = 'bin_pink_front'
     BIN_PINK_BOTTOM = 'bin_pink_bottom'
     BUOY = 'buoy'
-    GATE_REEF_SHARK = 'b'
-    GATE_SAWFISH = 'c'
-    GATE_WHOLE = 'a'
     LANE_MARKER = 'lane_marker'
     PATH_MARKER = 'path_marker'
     TORPEDO_BANNER = 'torpedo_banner'
@@ -36,8 +33,6 @@ class CVObjectType(Enum):
     TORPEDO_REEF_SHARK_TARGET = 'torpedo_reef_shark_target'
     TORPEDO_SAWFISH_TARGET = 'torpedo_sawfish_target'
     TORPEDO_LARGEST_TARGET = 'torpedo_largest_target'
-    TORPEDO_LOWER_TARGET = 'h'
-    TORPEDO_UPPER_TARGET = 'g'
     TORPEDO_AMBULANCE = 'ambulance_front'
     TORPEDO_BLOOD = 'blood_front'
     TORPEDO_FIRETRUCK = 'firetruck_front'
@@ -70,7 +65,7 @@ class CV:
 
     MODELS_PATH = 'package://cv/models/depthai_models.yaml'
     CV_CAMERA = 'front'
-    CV_MODELS: ClassVar[list[str]] = ['2026_torpedo_gray_n1000e11']
+    CV_MODELS: ClassVar[list[str]] = ['2026_torpedo_gray_n1000e6']
 
     # Need to see more than TORPEDO_BANNER_RATE_THRESHOLD messages per second
     TORPEDO_BANNER_RATE_THRESHOLD = 5

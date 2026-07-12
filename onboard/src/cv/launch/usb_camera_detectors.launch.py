@@ -32,9 +32,9 @@ def generate_launch_description() -> LaunchDescription:
 
     if robot_name in ['oogway', 'oogway_shell']:
         pass
-        # ld.add_action(IncludeLaunchDescription(
-        #     XMLLaunchDescriptionSource(str(pkg_cv / 'launch' / 'torpedo_target_detector.xml')),
-        # ))
+        ld.add_action(IncludeLaunchDescription(
+            XMLLaunchDescriptionSource(str(pkg_cv / 'launch' / 'torpedo_target_detector_2026.xml')),
+        ))
     elif robot_name == 'crush':
         pass
 

@@ -145,8 +145,9 @@ class TaskPlanning(Node):
 
         except BaseException as e:
             # Main has errored
-            TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.ERRORED, e)
-            raise
+            # TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.ERRORED, e)
+            pass
+            # raise
 
 def main(args: list[str] | None = None) -> None:
     """Spin up the task planning node."""

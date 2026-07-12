@@ -109,7 +109,7 @@ async def yaw_until_object_detection(self: Task, cv_object: CVObjectType, search
     return True
 
 @task
-async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction: int = 1,
+async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType, search_direction: int = 1,
                         yaw_threshold: float = math.radians(10), depth_threshold: float = 0.2,
                         depth_level: float = 0.5, pid_timeout: float = 20) -> Task[None, str | None, None] | bool:
     """
@@ -196,7 +196,7 @@ async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType , search_direction: 
 
 @task
 async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: float = 1, search_direction: int = 1,
-                        depth_threshold: float = 0.2, depth_level: float = 0.5,) -> Task[None, str | None, None] | bool:
+                         depth_threshold: float = 0.2, depth_level: float = 0.5) -> Task[None, str | None, None] | bool:
     """
     Continuously move toward a CV object in robot X/Y/Z while tracking yaw.
 
@@ -274,8 +274,8 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
 
     logger.info('[cv_tasks.move_to_cv_obj] Beginning continuous move to cv object.')
 
-    touching_x_boundary = [0, 0, 0, 0, 0]
-    touching_y_boundary = [0, 0, 0, 0, 0]
+    # touching_x_boundary = [0, 0, 0, 0, 0]
+    # touching_y_boundary = [0, 0, 0, 0, 0]
     move_task = None
 
     def stop_tracking_move() -> None:

@@ -1137,12 +1137,14 @@ async def torpedo_task_2026(
         )
         await servos_tasks.fire_torpedo(torpedo, parent=self)
 
-    await move_to_torpedo()
+    # await move_to_torpedo()
+    await cv_tasks.move_to_cv_obj(CVObjectType.TORPEDO_BANNER, target_distance=1, depth_level=0.5,
+                                  search_direction=1, parent=self)
     logger.info('[torpedo_task_2026] Finished moving forwards to torpedo')
 
-    await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, -0.5, 0.2, 0, 0, 0), parent=self,
-    )
+    # await move_tasks.move_to_pose_local(
+    #     geometry_utils.create_pose(0, -0.5, 0.2, 0, 0, 0), parent=self,
+    # )
 
     await fire_at_target(first_target, TorpedoStates.RIGHT)
     await move_tasks.move_to_pose_local(
