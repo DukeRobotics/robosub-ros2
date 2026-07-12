@@ -62,3 +62,6 @@ source /home/ubuntu/robosub-ros2/venv.sh activate
 
 # Get seconds since epoch
 alias secs="date +%s"
+hat is not random garbage—that is the standard ASCII ACK (Acknowledge) control character.
+
+In serial communication, hardware devices often send an ACK (\x06) to confirm they successfully received and processed a comm
