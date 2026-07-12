@@ -15,7 +15,7 @@ from task_planning.interface.servos import MarkerDropperStates, TorpedoStates
 from task_planning.interface.sonar import Sonar
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield
-from task_planning.tasks import move_tasks, servos_tasks, util_tasks, acoustics_tasks
+from task_planning.tasks import cv_tasks, move_tasks, servos_tasks, util_tasks, acoustics_tasks
 from task_planning.tasks.base_comp_task import CompTask, comp_task
 from task_planning.utils import geometry_utils
 from task_planning.utils.other_utils import RobotName, get_robot_name
@@ -1062,6 +1062,8 @@ async def torpedo_task_2026(
 
     logger.info('[torpedo_task_2026] Starting torpedo task')
 
+    COARSE_APPROACH_DISTANCE = 2.5
+    FINE_STOP_DISTANCE = 2
     DEPTH_LEVEL = State().orig_depth - depth_level
 
     def get_step_size(dist: float, dist_threshold: float) -> float:
@@ -1077,27 +1079,22 @@ async def torpedo_task_2026(
             goal_step = 0.25
         return min(dist - dist_threshold + 0.1, goal_step)
 
-    async def move_to_torpedo(torpedo_dist_threshold: float = 2) -> None:
-        await yaw_to_cv_object(
-            CVObjectType.TORPEDO_BANNER, direction=direction, yaw_threshold=math.radians(15),
-            depth_level=depth_level, parent=self,
-        )
-
+    async def fine_approach_to_torpedo() -> None:
         torpedo_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
 
         await self.correct_y_to_cv_obj(CVObjectType.TORPEDO_BANNER)
         await self.correct_depth(DEPTH_LEVEL)
 
-        while torpedo_dist > torpedo_dist_threshold:
+        while torpedo_dist > FINE_STOP_DISTANCE:
             logger.info(
-                f'[torpedo_task_2026] Torpedo dist x: '
+                f'[torpedo_task_2026] Fine approach dist x: '
                 f'{CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x}',
             )
             logger.info(
-                f'[torpedo_task_2026] Torpedo dist y: '
+                f'[torpedo_task_2026] Fine approach dist y: '
                 f'{CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.y}',
             )
-            await self.move_x(step=get_step_size(torpedo_dist, torpedo_dist_threshold))
+            await self.move_x(step=get_step_size(torpedo_dist, FINE_STOP_DISTANCE))
 
             await yaw_to_cv_object(
                 CVObjectType.TORPEDO_BANNER, direction=-1, yaw_threshold=math.radians(15),
@@ -1115,6 +1112,21 @@ async def torpedo_task_2026(
             torpedo_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
 
         await self.correct_z_to_cv_obj(CVObjectType.TORPEDO_BANNER)
+
+    async def move_to_torpedo() -> None:
+        approached = await cv_tasks.move_to_cv_obj(
+            CVObjectType.TORPEDO_BANNER,
+            target_distance=COARSE_APPROACH_DISTANCE,
+            search_direction=direction,
+            depth_level=depth_level,
+            parent=self,
+        )
+        if not approached:
+            logger.warning('[torpedo_task_2026] Failed to approach torpedo banner')
+            return
+
+        logger.info('[torpedo_task_2026] Coarse approach complete, starting fine correction')
+        await fine_approach_to_torpedo()
 
     async def fire_at_target(target: CVObjectType, torpedo: TorpedoStates, y_offset: float = 0) -> None:
         target_y = CV().bounding_boxes[target].coords.y + y_offset
