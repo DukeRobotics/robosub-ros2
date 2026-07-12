@@ -291,7 +291,7 @@ class DepthAISpatialDetector(Node):
         # disregard this detection altogether
         # Index for the banner is 4 so not a magic number :)
         if "2026_torpedo" in self.current_model_name:
-            if 4 in detections_dict and len(detections_dict) == 1:
+            if 4 in detections_dict and len(detections_dict) <= 3:
                 return
 
         detections = [detection for _, detection in detections_dict.values()]

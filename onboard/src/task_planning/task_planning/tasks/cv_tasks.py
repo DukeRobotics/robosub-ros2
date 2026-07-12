@@ -219,9 +219,9 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
     """
     yaw_threshold = math.radians(10)
     yaw_stop_threshold = math.radians(25)
-    biggest_forward_step = 0.5
-    max_lateral_step = 1.0
-    max_vertical_step = 1.0
+    biggest_forward_step = 0.3
+    max_lateral_step = 0.5
+    max_vertical_step = 0.5
     y_gain = 0.4
     close_threshold = 100
     arrival_y_tol = 0.15

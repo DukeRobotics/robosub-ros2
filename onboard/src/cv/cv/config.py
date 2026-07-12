@@ -38,7 +38,7 @@ class Torpedo:
 
     # No sun flickering values
     LOW_BOT = np.array([0, 50, 45])
-    LOW_TOP = np.array([20, 75, 95])
+    LOW_TOP = np.array([20, 80, 100])
     HIGH_BOT = np.array([360, 50, 45])
     HIGH_TOP = np.array([360, 50, 45])
 

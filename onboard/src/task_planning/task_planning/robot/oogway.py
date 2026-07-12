@@ -76,7 +76,8 @@ async def main(self: Task) -> Task[None, None, None]:
         ## IVC
         # TODO: task not found???
         # comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self),
-        ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TEST, parent=self),
+        #ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TEST, parent=self),
+        # ivc_tasks.test_ivc(IVCMessageType.OOGWAY_TEST, parent=self),
 
         ## Movement/CV tasks
         # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
