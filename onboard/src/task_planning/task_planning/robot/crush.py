@@ -3,9 +3,9 @@ from math import radians
 
 import numpy as np
 from task_planning.interface.cv import CVObjectType
-# from task_planning.interface.ivc import IVCMessageType
+from task_planning.interface.ivc import IVCMessageType
 from task_planning.task import Task, task
-from task_planning.tasks import buoyancy_tasks, comp_tasks, move_tasks, prequal_tasks, sonar_tasks
+from task_planning.tasks import buoyancy_tasks, comp_tasks, move_tasks, prequal_tasks, sonar_tasks, ivc_tasks
 from task_planning.utils import geometry_utils
 
 
@@ -15,7 +15,8 @@ async def main(self: Task) -> Task[None, None, None]:
     tasks = [
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
-        comp_tasks.initial_submerge(0.5, parent=self),
+        #comp_tasks.initial_submerge(0.5, parent=self),
+        # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
         # comp_tasks.initial_submerge(0.5, z_tolerance=0.15, enable_controls_flag=False, timeout=10, parent=self),
         # comp_tasks.coin_flip(parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=0.7, parent=self),  # Move through gate via 2,2; right strafe via 1.5  # noqa: E501
@@ -65,7 +66,7 @@ async def main(self: Task) -> Task[None, None, None]:
 
         ######## Setup/Testing tasks ########
         # sonar_tasks.sonar_test(-60, 60, 5, parent=self),
-        # ivc_tasks.test_ivc(IVCMessageType.CRUSH_TEST, parent=self),
+        ivc_tasks.test_ivc(IVCMessageType.CRUSH_TEST, parent=self),
         # buoyancy_tasks.tune_static_power(parent=self),
 
         ######## Prequal tasks ########

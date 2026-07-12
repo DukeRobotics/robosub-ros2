@@ -52,7 +52,7 @@ modem:
 thrusters:
   - name: front_right
     cw: false
-    standard_esc: false
+    standard_esc: true
   - name: middle_right_first
     cw: false
     standard_esc: true
@@ -61,10 +61,10 @@ thrusters:
     standard_esc: true
   - name: back_right
     cw: false
-    standard_esc: false
+    standard_esc: true
   - name: back_left
     cw: true
-    standard_esc: false
+    standard_esc: true
   - name: middle_left_first
     cw: false
     standard_esc: true
@@ -73,4 +73,4 @@ thrusters:
     standard_esc: true
   - name: front_left
     cw: true
-    standard_esc: false
+    standard_esc: true
