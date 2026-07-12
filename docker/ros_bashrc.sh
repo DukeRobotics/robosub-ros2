@@ -31,6 +31,12 @@ fi
 
 export _colcon_cd_root=/opt/ros/jazzy
 
+alias launch-robot="ros2 launch execute robot.launch.py"
+
+alias tp-run="ros2 run task_planning task_runner"
+
+alias tp-run-auto="ros2 run task_planning task_runner --ros-args autonomous:=True"
+
 # Alias to start foxglove bridge
 alias fg-ws="ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=28765"
 
@@ -62,6 +68,3 @@ source /home/ubuntu/robosub-ros2/venv.sh activate
 
 # Get seconds since epoch
 alias secs="date +%s"
-hat is not random garbage—that is the standard ASCII ACK (Acknowledge) control character.
-
-In serial communication, hardware devices often send an ACK (\x06) to confirm they successfully received and processed a comm
