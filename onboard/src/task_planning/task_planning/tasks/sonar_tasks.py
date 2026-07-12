@@ -140,6 +140,40 @@ async def rotate_to_angle_from_normal(self: Task,
         steps += 1
         logger.info(f'Angle {angle} at step {steps}')
 
+@task
+async def get_sonar_distance(
+    _self: Task,
+    start_angle: float,
+    end_angle: float,
+    scan_distance: float,
+) -> float:
+    """Perform a sonar sweep and return the distance to the detected object in meters."""
+    logger.info(f'Sonar scan from {start_angle} to {end_angle} degrees, distance: {scan_distance} m')
+    future = Sonar().sweep(
+        start_angle=start_angle,
+        end_angle=end_angle,
+        scan_distance=scan_distance,
+    )
+    if future is None:
+        logger.error('Could not call sonar request service.')
+        return np.nan
+
+    service_response = cast('SonarSweepRequest.Response', await future)
+    distance = get_object_distance(service_response)
+    logger.info(f'Sonar object distance: {distance} m')
+    return distance
+
+
+def get_object_distance(response: SonarSweepRequest.Response) -> float:
+    """Get the distance to the detected object from a sonar scan response."""
+    if not response.success or not response.is_object:
+        logger.error('No object detected — cannot compute distance')
+        return np.nan
+
+    pose = response.pose.pose
+    return float(np.hypot(pose.position.x, pose.position.y))
+
+
 def get_normal_angle(response: SonarSweepRequest.Response) -> float:
     """Get a normal angle from the sonar scan."""
     if not response.is_object:
