@@ -58,11 +58,11 @@ class TorpedoTargetDetector2026(Node):
                 Image, f'/cv/front_usb/torpedo/{target_name}_target', 1,
             )
 
-        self.hsv_filtered_pub = self.create_publisher(Image, '/cv/front_usb/torpedo/hsv_filtered', 1)
-        self.contour_image_pub = self.create_publisher(Image, '/cv/front_usb/torpedo/contour_image', 1)
-        self.contour_image_with_bbox_pub = self.create_publisher(Image, '/cv/front_usb/torpedo/detections', 1)
+        self.hsv_filtered_pub = self.create_publisher(Image, '/cv/front_usb/torpedo1/hsv_filtered', 1)
+        self.contour_image_pub = self.create_publisher(Image, '/cv/front_usb/torpedo1/contour_image', 1)
+        self.contour_image_with_bbox_pub = self.create_publisher(Image, '/cv/front_usb/torpedo1/detections', 1)
         self.largest_bbox_pub = self.create_publisher(
-            CVObject, '/cv/front_usb/torpedo_largest_target/bounding_box', 1,
+            CVObject, '/cv/front_usb/torpedo1/largest_target/bounding_box', 1,
         )
 
         self.coarse_detections: dict[str, dict] = {

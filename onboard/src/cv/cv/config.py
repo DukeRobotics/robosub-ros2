@@ -38,9 +38,9 @@ class Torpedo:
 
     # No sun flickering values
     LOW_BOT = np.array([0, 50, 45])
-    LOW_TOP = np.array([5, 95, 95])
-    HIGH_BOT = np.array([330, 50, 45])
-    HIGH_TOP = np.array([360, 95, 95])
+    LOW_TOP = np.array([20, 75, 95])
+    HIGH_BOT = np.array([360, 50, 45])
+    HIGH_TOP = np.array([360, 50, 45])
 
     TORPEDO_BANNER_X_SCALE = 1.2
     TORPEDO_BANNER_Y_SCALE = 0.5

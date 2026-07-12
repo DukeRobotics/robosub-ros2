@@ -1062,73 +1062,24 @@ async def torpedo_task_2026(
 
     logger.info('[torpedo_task_2026] Starting torpedo task')
 
-    COARSE_APPROACH_DISTANCE = 2.5
-    FINE_STOP_DISTANCE = 2
-    DEPTH_LEVEL = State().orig_depth - depth_level
+    FINAL_STOP_DISTANCE = 1
+    TARGET_DETECTION_TIMEOUT = 5
+    TARGET_DETECTION_LATENCY = 2
 
-    def get_step_size(dist: float, dist_threshold: float) -> float:
-        if dist > 10:
-            goal_step = 4
-        elif dist > 6:
-            goal_step = 3
-        elif dist > 4:
-            goal_step = 1
-        elif dist > 1.5:
-            goal_step = 0.5
-        else:
-            goal_step = 0.25
-        return min(dist - dist_threshold + 0.1, goal_step)
+    async def wait_for_target_detection(target: CVObjectType) -> bool:
+        """Wait for a fresh HSV-matched detection of target before trusting its coords."""
+        start_time = Clock().now()
+        while not CV().is_receiving_recent_cv_data(target, TARGET_DETECTION_LATENCY):
+            if (Clock().now() - start_time).nanoseconds * 1e-9 > TARGET_DETECTION_TIMEOUT:
+                logger.warning(f'[torpedo_task_2026] Timed out waiting for fresh {target} detection')
+                return False
+            await util_tasks.sleep(0.1, parent=self)
+        return True
 
-    async def fine_approach_to_torpedo() -> None:
-        torpedo_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
+    async def fire_at_target(target: CVObjectType, torpedo: TorpedoStates,
+                             y_offset: float = 0) -> tuple[float, float]:
+        await wait_for_target_detection(target)
 
-        await self.correct_y_to_cv_obj(CVObjectType.TORPEDO_BANNER)
-        await self.correct_depth(DEPTH_LEVEL)
-
-        while torpedo_dist > FINE_STOP_DISTANCE:
-            logger.info(
-                f'[torpedo_task_2026] Fine approach dist x: '
-                f'{CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x}',
-            )
-            logger.info(
-                f'[torpedo_task_2026] Fine approach dist y: '
-                f'{CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.y}',
-            )
-            await self.move_x(step=get_step_size(torpedo_dist, FINE_STOP_DISTANCE))
-
-            await yaw_to_cv_object(
-                CVObjectType.TORPEDO_BANNER, direction=-1, yaw_threshold=math.radians(15),
-                depth_level=depth_level, parent=self,
-            )
-
-            await self.correct_y_to_cv_obj(CVObjectType.TORPEDO_BANNER)
-
-            if torpedo_dist < 3:
-                await self.correct_z_to_cv_obj(CVObjectType.TORPEDO_BANNER)
-            else:
-                await self.correct_depth(DEPTH_LEVEL)
-
-            await Yield()
-            torpedo_dist = CV().bounding_boxes[CVObjectType.TORPEDO_BANNER].coords.x
-
-        await self.correct_z_to_cv_obj(CVObjectType.TORPEDO_BANNER)
-
-    async def move_to_torpedo() -> None:
-        approached = await cv_tasks.move_to_cv_obj(
-            CVObjectType.TORPEDO_BANNER,
-            target_distance=COARSE_APPROACH_DISTANCE,
-            search_direction=direction,
-            depth_level=depth_level,
-            parent=self,
-        )
-        if not approached:
-            logger.warning('[torpedo_task_2026] Failed to approach torpedo banner')
-            return
-
-        logger.info('[torpedo_task_2026] Coarse approach complete, starting fine correction')
-        await fine_approach_to_torpedo()
-
-    async def fire_at_target(target: CVObjectType, torpedo: TorpedoStates, y_offset: float = 0) -> None:
         target_y = CV().bounding_boxes[target].coords.y + y_offset
         target_z = CV().bounding_boxes[target].coords.z + 0.1
         logger.info(f'[torpedo_task_2026] Aligning to {target} at y={target_y} and z={target_z}')
@@ -1136,24 +1087,19 @@ async def torpedo_task_2026(
             geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0), parent=self,
         )
         await servos_tasks.fire_torpedo(torpedo, parent=self)
+        return target_y, target_z
 
-    # await move_to_torpedo()
-    await cv_tasks.move_to_cv_obj(CVObjectType.TORPEDO_BANNER, target_distance=1, depth_level=0.5,
-                                  search_direction=1, parent=self)
+    # Coarse approach and centering on the torpedo_banner (DepthAI front camera detection).
+    await cv_tasks.move_to_cv_obj(CVObjectType.TORPEDO_BANNER, target_distance=FINAL_STOP_DISTANCE,
+                                  depth_level=depth_level, search_direction=direction, parent=self)
     logger.info('[torpedo_task_2026] Finished moving forwards to torpedo')
 
-    # await move_tasks.move_to_pose_local(
-    #     geometry_utils.create_pose(0, -0.5, 0.2, 0, 0, 0), parent=self,
-    # )
+    # Fine targeting: swap to the HSV-matched USB-camera detections for each glyph.
+    first_target_y, first_target_z = await fire_at_target(first_target, TorpedoStates.RIGHT)
 
-    await fire_at_target(first_target, TorpedoStates.RIGHT)
+    # Undo the exact alignment move made for first_target to get back to a banner-centered pose.
     await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(
-            0,
-            -CV().bounding_boxes[first_target].coords.y,
-            -(CV().bounding_boxes[first_target].coords.z + 0.1),
-            0, 0, 0,
-        ),
+        geometry_utils.create_pose(0, -first_target_y, -first_target_z, 0, 0, 0),
         parent=self,
     )
 
