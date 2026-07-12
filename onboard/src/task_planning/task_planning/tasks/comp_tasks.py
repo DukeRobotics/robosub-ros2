@@ -1062,7 +1062,7 @@ async def torpedo_task_2026(
 
     logger.info('[torpedo_task_2026] Starting torpedo task')
 
-    FINAL_STOP_DISTANCE = 1
+    FINAL_STOP_DISTANCE = 2.5
     TARGET_DETECTION_TIMEOUT = 5
     TARGET_DETECTION_LATENCY = 2
 
@@ -1094,14 +1094,18 @@ async def torpedo_task_2026(
                                   depth_level=depth_level, search_direction=direction, parent=self)
     logger.info('[torpedo_task_2026] Finished moving forwards to torpedo')
 
+    # Might want to add a small move forward if needed
+
     # Fine targeting: swap to the HSV-matched USB-camera detections for each glyph.
     first_target_y, first_target_z = await fire_at_target(first_target, TorpedoStates.RIGHT, z_offset=0.1)
 
-    # Undo the exact alignment move made for first_target to get back to a banner-centered pose.
-    await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, -first_target_y, -first_target_z, 0, 0, 0),
-        parent=self,
-    )
+    # Only for a new target, if same target should just re-align and shoot again
+    if first_target != second_target:
+        # Undo the exact alignment move made for first_target to get back to a banner-centered pose.
+        await move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, -first_target_y, -first_target_z, 0, 0, 0),
+            parent=self,
+        )
 
     await fire_at_target(second_target, TorpedoStates.LEFT, y_offset=-0.1, z_offset=0.1)
 
