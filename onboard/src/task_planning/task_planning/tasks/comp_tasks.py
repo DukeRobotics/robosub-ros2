@@ -1062,7 +1062,7 @@ async def torpedo_task_2026(
 
     logger.info('[torpedo_task_2026] Starting torpedo task')
 
-    FINAL_STOP_DISTANCE = 2.5
+    FINAL_STOP_DISTANCE = 2.0
     TARGET_DETECTION_TIMEOUT = 5
     TARGET_DETECTION_LATENCY = 2
 
