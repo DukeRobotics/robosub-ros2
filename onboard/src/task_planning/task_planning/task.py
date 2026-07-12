@@ -328,9 +328,9 @@ class Task[YieldType, SendType, ReturnType]:
             try:
                 self._publish_update(TaskStatus.DELETED, None)
                 self._coroutine.close()
-            except BaseException as e:
-                self._publish_update(TaskStatus.ERRORED, e)
-                raise
+            except BaseException:
+                # Publisher/node may already be destroyed during shutdown; never raise from __del__.
+                pass
             finally:
                 self._done = True
 

@@ -1,3 +1,4 @@
+import copy
 import math
 
 from geometry_msgs.msg import Twist, Vector3
@@ -202,7 +203,8 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
     Searches/yaws until the object is detected and centered first, then each control loop
     sends a local pose (forward, lateral, vertical, yaw) from DepthAI robot-frame coords.
     Far away, vertical motion holds the commanded depth_level; when close enough, vertical
-    tracks coords.z. Lateral always tracks coords.y.
+    tracks coords.z. Lateral always tracks coords.y. After reaching target_distance, yaws
+    once more to recenter the object in frame, then holds pose.
 
     Args:
         self: Task instance.
@@ -276,13 +278,24 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
     touching_y_boundary = [0, 0, 0, 0, 0]
     move_task = None
 
+    def stop_tracking_move() -> None:
+        """Close any in-progress move and hold the current pose (avoids coast/drift)."""
+        nonlocal move_task
+        if move_task is not None and not move_task.done:
+            move_task.close()
+        move_task = None
+        Controls().publish_desired_position(copy.deepcopy(State().state.pose.pose))
+
     while True:
         if not has_valid_detection() or abs(CV().angles[cv_object]) > yaw_stop_threshold:
             logger.info('[cv_tasks.move_to_cv_obj] Lost sight or yawed too far. Re-searching...')
+            if move_task is not None and not move_task.done:
+                move_task.close()
+            move_task = None
             if not await search_for_object():
                 logger.info('[cv_tasks.move_to_cv_obj] Could not regain sight. Ending move_to_cv_obj.')
+                stop_tracking_move()
                 return False
-            move_task = None
             continue
 
         forward_step, y_step, z_step, cv_object_yaw = compute_tracking_steps()
@@ -338,7 +351,7 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
         #         )
         #     continue
 
-        # Do not pass depth_level here  1�7 that would override pose Z and break continuous tracking.
+        # Do not pass depth_level here — that would override pose Z and break continuous tracking.
         if move_task is None or move_task.done:
             # Zero local pose completes immediately; only start a move with a real command.
             if forward_step == 0.0 and abs(y_step) < 1e-3 and abs(z_step) < 1e-3:
@@ -362,8 +375,20 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
         move_task.send(new_pose)
         await util_tasks.sleep(0.05, parent=self)
 
-    logger.info('[cv_tasks.move_to_cv_obj] Continuous move complete, finishing move_to_cv_obj')
-    Controls().publish_desired_power(Twist())
+    logger.info('[cv_tasks.move_to_cv_obj] Continuous move complete, recentering on object...')
+    if move_task is not None and not move_task.done:
+        move_task.close()
+    move_task = None
+
+    # Hold depth at arrival (may differ from commanded depth_level after Z tracking).
+    hold_depth = State().orig_depth - State().depth
+    if not await yaw_to_cv_obj(
+        cv_object, search_direction, yaw_threshold, depth_threshold,
+        hold_depth, parent=self,
+    ):
+        logger.info('[cv_tasks.move_to_cv_obj] Final recenter failed; holding current pose.')
+
+    stop_tracking_move()
     return True
 
 

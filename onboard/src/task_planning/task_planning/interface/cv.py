@@ -70,7 +70,7 @@ class CV:
 
     MODELS_PATH = 'package://cv/models/depthai_models.yaml'
     CV_CAMERA = 'front'
-    CV_MODELS: ClassVar[list[str]] = ['2026_torpedo_gray']
+    CV_MODELS: ClassVar[list[str]] = ['2026_torpedo_gray_n1000e11']
 
     # Need to see more than TORPEDO_BANNER_RATE_THRESHOLD messages per second
     TORPEDO_BANNER_RATE_THRESHOLD = 5
