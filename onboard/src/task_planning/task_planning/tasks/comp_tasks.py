@@ -1077,11 +1077,11 @@ async def torpedo_task_2026(
         return True
 
     async def fire_at_target(target: CVObjectType, torpedo: TorpedoStates,
-                             y_offset: float = 0) -> tuple[float, float]:
+                             y_offset: float = 0, z_offset: float = 0) -> tuple[float, float]:
         await wait_for_target_detection(target)
 
         target_y = CV().bounding_boxes[target].coords.y + y_offset
-        target_z = CV().bounding_boxes[target].coords.z + 0.1
+        target_z = CV().bounding_boxes[target].coords.z + z_offset
         logger.info(f'[torpedo_task_2026] Aligning to {target} at y={target_y} and z={target_z}')
         await move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0), parent=self,
@@ -1095,7 +1095,7 @@ async def torpedo_task_2026(
     logger.info('[torpedo_task_2026] Finished moving forwards to torpedo')
 
     # Fine targeting: swap to the HSV-matched USB-camera detections for each glyph.
-    first_target_y, first_target_z = await fire_at_target(first_target, TorpedoStates.RIGHT)
+    first_target_y, first_target_z = await fire_at_target(first_target, TorpedoStates.RIGHT, z_offset=0.1)
 
     # Undo the exact alignment move made for first_target to get back to a banner-centered pose.
     await move_tasks.move_to_pose_local(
@@ -1103,7 +1103,7 @@ async def torpedo_task_2026(
         parent=self,
     )
 
-    await fire_at_target(second_target, TorpedoStates.LEFT, y_offset=-0.1)
+    await fire_at_target(second_target, TorpedoStates.LEFT, y_offset=-0.1, z_offset=0.1)
 
     logger.info('[torpedo_task_2026] Torpedo task completed')
 
