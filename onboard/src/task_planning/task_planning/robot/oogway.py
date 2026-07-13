@@ -23,7 +23,7 @@ async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     # Constants
     DIRECTION_OF_TORPEDO_BANNER = 1
-    DEPTH = 0.95
+    DEPTH = 0.925
     FIRST_TARGET = CVObjectType.TORPEDO_LARGEST_TARGET
     SECOND_TARGET = CVObjectType.TORPEDO_LARGEST_TARGET
     tasks = [
@@ -76,7 +76,7 @@ async def main(self: Task) -> Task[None, None, None]:
         ## IVC
         # TODO: task not found???
         # comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self),
-        #ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TEST, parent=self),
+        # ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TEST, parent=self),
         # ivc_tasks.test_ivc(IVCMessageType.OOGWAY_TEST, parent=self),
 
         ## Movement/CV tasks

@@ -1068,16 +1068,11 @@ async def torpedo_task_2026(
 
     async def wait_for_target_detection(target: CVObjectType) -> bool:
         """Wait for a fresh HSV-matched detection of target before trusting its coords."""
-        logger.info("Wait for target detection")
+        logger.info("[torpedo_task_2026.wait_for_target_detection] Waiting for target detection...")
         start_time = Clock().now()
         while not CV().is_receiving_recent_cv_data(target, TARGET_DETECTION_LATENCY):
-            if CVObjectType.TORPEDO_LARGEST_TARGET not in CV().bounding_boxes:
-                logger.warning('[torpedo_task_2026.wait_for_target_detection] Torpedo largest target not found in CV().bounding_boxes dict')
-            else:
-                logger.info(f'[torpedo_task_2026.wait_for_target_detection] {CV().bounding_boxes[CVObjectType.TORPEDO_LARGEST_TARGET].header.stamp.sec}')
-
             if (Clock().now() - start_time).nanoseconds * 1e-9 > TARGET_DETECTION_TIMEOUT:
-                logger.warning(f'[torpedo_task_2026] Timed out waiting for fresh {target} detection')
+                logger.warning(f'[torpedo_task_2026.wait_for_target_detection] Timed out waiting for fresh {target} detection')
                 return False
             await util_tasks.sleep(0.1, parent=self)
         return True
@@ -1085,26 +1080,26 @@ async def torpedo_task_2026(
     async def fire_at_target(target: CVObjectType, torpedo: TorpedoStates,
                              y_offset: float = 0, z_offset: float = 0) -> tuple[float, float]:
         logger.info('[torpedo_task_2026.fire_at_target] Starting fire_at_target')
-        # logger.info('[torpedo_task_2026.fire_at_target] Moving forward 0.5m')
-        # await self.move_x(step=0.5)
+        logger.info('[torpedo_task_2026.fire_at_target] Moving forward 0.5m')
+        await self.move_x(step=0.5)
 
         for _ in range(1):
             await wait_for_target_detection(target)
 
-            target_y = CV().bounding_boxes[target].coords.y
-            target_z = CV().bounding_boxes[target].coords.z
+            target_y = CV().bounding_boxes[target].coords.y + y_offset
+            target_z = CV().bounding_boxes[target].coords.z + z_offset
             logger.info(f'[torpedo_task_2026.fire_at_target] Aligning to {target} at y={target_y} and z={target_z}')
             await move_tasks.move_to_pose_local(
                 geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0), parent=self,
             )
 
-            logger.info(f'[torpedo_task_2026.fire_at_target] Moving forward 0.5 meters')
-            await self.move_x(step=0.5)
+            # logger.info(f'[torpedo_task_2026.fire_at_target] Moving forward 0.5 meters')
+            # await self.move_x(step=0.25)
 
-        logger.info(f'[torpedo_task_2026.fire_at_target] Final alignment to {target} at y={y_offset} and z={z_offset}')
-        await move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, y_offset, z_offset, 0, 0, 0), parent=self
-        )
+        # logger.info(f'[torpedo_task_2026.fire_at_target] Final alignment to {target} at y={y_offset} and z={z_offset}')
+        # await move_tasks.move_to_pose_local(
+        #     geometry_utils.create_pose(0, y_offset, z_offset, 0, 0, 0), parent=self
+        # )
         await servos_tasks.fire_torpedo(torpedo, parent=self)
         return y_offset, z_offset
 
@@ -1121,6 +1116,7 @@ async def torpedo_task_2026(
 
     # NOTE: THESE VALUES ARE MAGIC NUMBERS
     # For the version of torpedo banner that we usually test on our own pool:
+    # depth_level=0.925 for our pool, will need to be retuned at the courses (probably around 1.2)
     # To shoot the left torpedo on target:
     # - The left target: self.move_y(step=-0.2)
     # - The top target: self.move_y(step=-0.6) followed by self.correct_depth(desired_depth=State().depth + 0.2)
@@ -1128,18 +1124,17 @@ async def torpedo_task_2026(
     # Right torpedo TBD
     # Other banner design TBD
 
-    await self.move_y(step=-0.6)
-    await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, 0, 0.2, 0, 0, 0),
-        parent=self,
-    )
-    await servos_tasks.fire_torpedo(TorpedoStates.LEFT, parent=self)
+    # DEAD RECKONING CODE
+    # await self.move_y(step=-0.6)
+    # await move_tasks.move_to_pose_local(
+    #     geometry_utils.create_pose(0, 0, 0.2, 0, 0, 0),
+    #     parent=self,
+    # )
+    # await servos_tasks.fire_torpedo(TorpedoStates.LEFT, parent=self)
 
-
-    # Might want to add a small move forward if needed
-
+    # ACTUAL CV CODE
     # Fine targeting: swap to the HSV-matched USB-camera detections for each glyph.
-    # first_target_y, first_target_z = await fire_at_target(first_target, TorpedoStates.RIGHT, z_offset=0.1)
+    first_target_y, first_target_z = await fire_at_target(first_target, TorpedoStates.LEFT, y_offset=-0.1, z_offset=0.1)
 
     # Only for a new target, if same target should just re-align and shoot again
     # if first_target != second_target:
@@ -1149,13 +1144,13 @@ async def torpedo_task_2026(
     #         parent=self,
     #     )
 
-    # logger.info('[torpedo_task_2026] Moving back 0.5m')
-    # await self.move_x(step=-0.5)
-    # # Center torpedo banner again
-    # await cv_tasks.yaw_to_cv_obj(CVObjectType.TORPEDO_BANNER, yaw_threshold=math.radians(5),
-    #                              search_direction=direction, depth_threshold=0.1, depth_level=depth_level, parent=self)
+    logger.info('[torpedo_task_2026] Moving back 0.5m')
+    await self.move_x(step=-0.5)
+    # Center torpedo banner again
+    await cv_tasks.yaw_to_cv_obj(CVObjectType.TORPEDO_BANNER, yaw_threshold=math.radians(5),
+                                 search_direction=direction, depth_threshold=0.1, depth_level=depth_level, parent=self)
 
-    # await fire_at_target(second_target, TorpedoStates.LEFT, y_offset=-0.1, z_offset=0.1)
+    await fire_at_target(second_target, TorpedoStates.RIGHT, z_offset=0.1)
 
     logger.info('[torpedo_task_2026] Torpedo task completed')
 
