@@ -27,12 +27,25 @@ async def main(self: Task) -> Task[None, None, None]:
     FIRST_TARGET = CVObjectType.TORPEDO_LARGEST_TARGET
     SECOND_TARGET = CVObjectType.TORPEDO_LARGEST_TARGET
     tasks = [
+        ######### DO NOT TOUCH OR BIG SAAG WILL SPOON YOU #########
+
+        ## SF Course D tested @ 7:30am Mon 13 Jul 2026, LEFT SIDE OF GATE
+        # SEQUENCE: Gate --> torpedoes
+        comp_tasks.initial_submerge(DEPTH, parent=self),
+        move_tasks.move_with_directions([(4, 0, 0), (0, 2, 0), (6, 0, 0)], parent=self),
+        comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+
+        ## SF Course A
+
+        #########     End sensitive taskplanning code.     #########
+
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(DEPTH, parent=self),
+        move_tasks.move_with_directions([(4, 0, 0), (0, 2, 0), (6, 0, 0)], parent=self),
+        # comp_tasks.gate_task(offset=-0.1, direction=-1, parent=self),
         comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
         # move_tasks.move_with_directions([(2.0, 0, 0), (0, 2.0, 0), (-2.0, 0, 0), (0, -2.0, 0)], parent=self),
-        # move_tasks.move_with_directions([(3, 0, 0), (3, 0, 0), (3, 0, 0)], parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
         # cv_tasks.yaw_to_cv_obj(CVObjectType.TORPEDO_BANNER, depth_level=DEPTH, parent=self),
         # cv_tasks.move_to_cv_obj(CVObjectType.TORPEDO_BANNER, target_distance=2.5, depth_level=DEPTH, parent=self, search_direction=-1),
