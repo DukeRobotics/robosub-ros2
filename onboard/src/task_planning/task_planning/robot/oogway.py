@@ -23,16 +23,16 @@ async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     # Constants
     DIRECTION_OF_TORPEDO_BANNER = 1
-    DEPTH = 0.9
+    DEPTH = 0.95
     FIRST_TARGET = CVObjectType.TORPEDO_LARGEST_TARGET
     SECOND_TARGET = CVObjectType.TORPEDO_LARGEST_TARGET
     tasks = [
         ######## Main competition tasks ########
-        #ivc_tasks.delineate_ivc_log(parent=self),
+        # ivc_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(DEPTH, parent=self),
         comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
-        # move_tasks.move_with_directions([(2.5, 0, 0), (0, 2.5, 0), (-2.5, 0, 0), (0, -2.5, 0)], parent=self),
-        # move_tasks.move_with_directions([(1, 0, 0), (0, 0.5, 0), (-1, 0, 0), (0, -0.5, 0)], parent=self),
+        # move_tasks.move_with_directions([(2.0, 0, 0), (0, 2.0, 0), (-2.0, 0, 0), (0, -2.0, 0)], parent=self),
+        # move_tasks.move_with_directions([(3, 0, 0), (3, 0, 0), (3, 0, 0)], parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
         # cv_tasks.yaw_to_cv_obj(CVObjectType.TORPEDO_BANNER, depth_level=DEPTH, parent=self),
         # cv_tasks.move_to_cv_obj(CVObjectType.TORPEDO_BANNER, target_distance=2.5, depth_level=DEPTH, parent=self, search_direction=-1),
