@@ -137,3 +137,16 @@ yolov7_tiny_2023_main:
   iou_threshold: 0.5
   confidence_threshold: 0.5
   colors: ["C0C0C0", "8B0000", "FF0000", "FF4500", "00FFFF"]
+
+2026_torpedo_gray_n1000e30:
+  classes: ["ambulance_front", "blood_front", "firetruck_front", "fire_front", "torpedo_banner"]
+  sizes: {"ambulance_front": [1, 1], "blood_front": [1, 1], "firetruck_front": [1, 1], "fire_front": [1, 1], "torpedo_banner": [1, 1]} # TODO: add real measured values
+  topic: cv
+  weights: 2026_torpedos_gray_n1000e30.blob
+  input_size: [416, 416]
+  coordinate_size: 4
+  anchors: [12.0, 16.0, 19.0, 36.0, 40.0, 28.0, 36.0, 75.0, 76.0, 55.0, 72.0, 146.0, 142.0, 110.0, 192.0, 243.0, 459.0, 401.0]
+  anchor_masks: {"side52": [0,1,2], "side26": [3,4,5], "side13": [6,7,8]}
+  iou_threshold: 0.5
+  confidence_threshold: 0.5
+  colors: ["C0C0C0", "8B0000", "FF0000", "FF4500", "00FFFF"]
