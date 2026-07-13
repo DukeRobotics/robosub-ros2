@@ -4,6 +4,7 @@ from math import radians
 import numpy as np
 from task_planning.interface.cv import CVObjectType
 from task_planning.interface.ivc import IVCMessageType
+from task_planning.interface.state import State
 from task_planning.task import Task, task
 from task_planning.tasks import buoyancy_tasks, comp_tasks, move_tasks, prequal_tasks, sonar_tasks, ivc_tasks
 from task_planning.utils import geometry_utils
@@ -13,21 +14,48 @@ import time
 @task
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Crush."""
+    # EXPERIMENTAL: keep_depth - depth to hold during long forward moves (matches the 0.8 m initial submerge)
+    DEPTH_LEVEL = State().orig_depth - 0.8
     tasks = [
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
-        comp_tasks.initial_submerge(0.35, parent=self),
+        comp_tasks.initial_submerge(0.8, parent=self),
         # move_tasks.move_with_directions([(1, 0, 0)], parent=self),
-        move_tasks.move_to_pose_local(geometry_utils.create_pose(2, 0, 0, 0, 0, 0),
-                                      pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.3),
+        move_tasks.move_to_pose_local(geometry_utils.create_pose(6, 0, 0, 0, 0, 0),
+                                      pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.2),
+                                      keep_orientation=True,
+                                      depth_level=DEPTH_LEVEL,
+                                      keep_depth=True,
                                       parent=self),
-        move_tasks.move_to_pose_local(geometry_utils.create_pose(2, 0, 0, 0, 0, 0),
-                                      pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.3),
-                                      parent=self),                                      
+        # move_tasks.move_to_pose_local(geometry_utils.create_pose(3, 0, 0, 0, 0, 0),
+        #                               pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.2),
+        #                               keep_orientation=True,
+        #                               parent=self),
+        # move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, -0.15, 0, 0, 0),
+        #                     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.2),
+        #                     keep_orientation=True,
+        #                     parent=self),
+        move_tasks.move_to_pose_local(geometry_utils.create_pose(8, 0, 0, 0, 0, 0),
+                                      pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.2),
+                                      keep_orientation=True,
+                                      depth_level=DEPTH_LEVEL,
+                                      keep_depth=True,
+                                      parent=self),
+        # move_tasks.move_to_pose_local(geometry_utils.create_pose(3, 0, 0, 0, 0, 0),
+        #                               pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.2),
+        #                               keep_orientation=True,
+        #                               parent=self),
+        # move_tasks.move_to_pose_local(geometry_utils.create_pose(3, 0, 0, 0, 0, 0),
+        #                               pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.2),
+        #                               keep_orientation=True,
+        #                               parent=self),
+        # move_tasks.move_to_pose_local(geometry_utils.create_pose(2, 0, 0, 0, 0, 0),
+        #                               pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.3),
+        #                               parent=self),                                      
         # comp_tasks.initial_submerge(0.5, z_tolerance=0.15, enable_controls_flag=False, timeout=10, parent=self),
         # comp_tasks.coin_flip(parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=0.7, parent=self),  # Move through gate via 2,2; right strafe via 1.5  # noqa: E501
-        # comp_tasks.gate_style_task(depth_level=0.7, parent=self),  # Spin
+        # comp_tasks.gate_style_task(depth_level=0.5, parent=self),  # Spin
         # comp_tasks.slalom_task_dead_reckoning(depth_level=0.975, parent=self),  # Move through slalom via 2,2,2
         # Move to octagon front via 2,2; left strafe via 0.75
         # comp_tasks.slalom_to_octagon_dead_reckoning(depth_level=0.975, parent=self),
@@ -74,6 +102,7 @@ async def main(self: Task) -> Task[None, None, None]:
         ######## Setup/Testing tasks ########
         # sonar_tasks.sonar_test(-60, 60, 5, parent=self),
         # ivc_tasks.test_ivc(IVCMessageType.CRUSH_TEST, parent=self),
+        # ivc_tasks.ivc_receive(parent = self, timeout=45)
         # buoyancy_tasks.tune_static_power(parent=self),
 
         ######## Prequal tasks ########

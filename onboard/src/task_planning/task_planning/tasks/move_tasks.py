@@ -1,4 +1,5 @@
 import copy
+from collections.abc import Callable
 
 from geometry_msgs.msg import Pose, Twist
 from rclpy.clock import Clock
@@ -13,8 +14,48 @@ from transforms3d.euler import euler2quat, quat2euler
 logger = get_logger('move_tasks')
 
 
+# EXPERIMENTAL: keep_depth
+def _local_move_to_global_pose(local_pose: Pose, keep_orientation: bool = False,
+                               depth_level: float | None = None) -> Pose:
+    """
+    Convert a local ("base_link") pose to a global ("odom") pose, applying depth and orientation overrides.
+
+    This mirrors the transform previously inlined in move_to_pose_local's send_transformer. It is a module-level
+    function so it can be reused as a per-tick recompute callback for the keep_depth feature.
+
+    Args:
+        local_pose (Pose): The local pose to convert, in "base_link" frame.
+        keep_orientation (bool, optional): If True, override the orientation to keep the robot's original roll and pitch
+            (level) while preserving the target yaw. Defaults to False.
+        depth_level (float, optional): The depth, as provided by the pressure sensor, the robot should move to. If this
+            is not None, the Z value of the resulting global pose is adjusted so the robot reaches this depth. Defaults
+            to None.
+
+    Returns:
+        Pose: The converted global pose in "odom" frame.
+    """
+    global_pose = geometry_utils.local_pose_to_global(State().tf_buffer, local_pose)
+
+    if depth_level is not None:
+        if local_pose.position.z != 0:
+            logger.warning(f'Depth level of {depth_level} provided but Z value of pose is not zero: '
+                           f'{local_pose.position.z}')
+        depth_delta = depth_level - State().depth
+        global_pose.position.z += depth_delta
+
+    if keep_orientation:
+        orig_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(
+            State().orig_state.pose.pose.orientation))
+        euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(global_pose.orientation))
+        global_pose.orientation = geometry_utils.transforms3d_quat_to_geometry_quat(
+            euler2quat(orig_euler_angles[0], orig_euler_angles[1], euler_angles[2]))
+
+    return global_pose
+
+
 @task
-async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | None = None, timeout: int = 20) -> \
+async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | None = None, timeout: int = 20,
+                              recompute_pose: Callable[[], Pose] | None = None) -> \
         Task[None, Pose | None, None]:
     """
     Move to a global pose in the "odom" frame.
@@ -30,6 +71,9 @@ async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | 
             desired pose within these tolerances.
         timeout (int, optional): The maximum number of seconds to attempt reaching the pose
                                  before timing out. Defaults to 20.
+        recompute_pose (Callable[[], Pose], optional): EXPERIMENTAL (keep_depth). If provided, this callback is invoked
+            each loop iteration (when no new pose is sent) to recompute the desired global pose. Used to continuously
+            refresh the depth setpoint from live pressure readings. Defaults to None.
 
     Returns:
         Task[None, Pose | None, None]: Returns a task that sends the new global pose and
@@ -47,6 +91,9 @@ async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | 
         new_pose = await Yield()
         if new_pose is not None:
             pose = new_pose
+        # EXPERIMENTAL: keep_depth - refresh the desired pose (e.g. depth setpoint) from live state each tick
+        elif recompute_pose is not None:
+            pose = recompute_pose()
 
         Controls().publish_desired_position(pose)
 
@@ -58,7 +105,8 @@ async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | 
 
 @task
 async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = False, depth_level: float | None = None,
-                             pose_tolerances: Twist | None = None, timeout: int = 30) -> \
+                             pose_tolerances: Twist | None = None, timeout: int = 30,
+                             keep_depth: bool = False) -> \
                                 Task[None, Pose | None, None]:
     """
     Move to a local pose in the "base_link" frame.
@@ -78,6 +126,10 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = Fa
             desired pose within these tolerances.
         timeout (int, optional): The maximum number of seconds to attempt reaching the pose
             before timing out. Defaults to 30.
+        keep_depth (bool, optional): EXPERIMENTAL. If True (and depth_level is set), the desired global Z is recomputed
+            from the live pressure reading each control tick, so the robot holds depth_level throughout the move rather
+            than only compensating at the start. Requires depth_level; falls back to static behavior with a warning if
+            depth_level is None. Defaults to False.
 
     Returns:
         Task[None, Pose | None, None]: A coroutine that completes when the robot reaches the target pose or the timeout
@@ -90,25 +142,26 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = Fa
         if local_pose is None:
             return None
 
-        global_pose = geometry_utils.local_pose_to_global(State().tf_buffer, local_pose)
+        return _local_move_to_global_pose(local_pose, keep_orientation=keep_orientation, depth_level=depth_level)
 
-        if depth_level is not None:
-            if local_pose.position.z != 0:
-                logger.warning(f'Depth level of {depth_level} provided but Z value of pose is not zero: '
-                               f'{local_pose.position.z}')
-            depth_delta = depth_level - State().depth
-            global_pose.position.z += depth_delta
+    # EXPERIMENTAL: keep_depth - hold the horizontal target fixed while continuously refreshing the depth setpoint
+    if keep_depth:
+        if depth_level is None:
+            logger.warning('keep_depth is True but depth_level is None; falling back to static depth behavior')
+        else:
+            # Compute the horizontal/orientation target once, fixed in odom (same as a normal move). Only the depth
+            # (Z) is refreshed each tick so the robot converges on depth_level without the x/y target sliding forward.
+            base_global_pose = send_transformer(pose)
 
-        # logger.info(f'Global Pose: {global_pose}')
+            def recompute_pose() -> Pose:
+                # Command the robot's current odom Z plus the live pressure error, so the Z setpoint tracks depth_level
+                # while x/y and orientation stay pinned to base_global_pose.
+                updated_pose = copy.deepcopy(base_global_pose)
+                updated_pose.position.z = State().state.pose.pose.position.z + (depth_level - State().depth)
+                return updated_pose
 
-        if keep_orientation:
-            orig_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(
-                State().orig_state.pose.pose.orientation))
-            euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(global_pose.orientation))
-            global_pose.orientation = geometry_utils.transforms3d_quat_to_geometry_quat(
-                euler2quat(orig_euler_angles[0], orig_euler_angles[1], euler_angles[2]))
-
-        return global_pose
+            return await move_to_pose_global(base_global_pose, pose_tolerances=pose_tolerances, timeout=timeout,
+                                             recompute_pose=recompute_pose, parent=self)
 
     global_pose = send_transformer(pose)
 
@@ -204,7 +257,7 @@ async def depth_correction(self: Task, desired_depth: float) -> Task[None, None,
 
 
 @task
-async def move_x(self: Task, step: float = 1.0) -> None:
+async def move_x(self: Task, step: float = 1.0, depth_level: float | None = None, keep_depth: bool = False) -> None:
     """
     Move the system along the X-axis.
 
@@ -213,12 +266,18 @@ async def move_x(self: Task, step: float = 1.0) -> None:
     Args:
         self: Task instance.
         step (float, optional): The distance to move along the X-axis. Defaults to 1.0.
+        depth_level (float, optional): The depth, as provided by the pressure sensor, the robot should hold during the
+            move. If this is not None, the Z value of the pose is overridden. Defaults to None.
+        keep_depth (bool, optional): EXPERIMENTAL. If True (and depth_level is set), hold depth_level continuously
+            throughout the move. Defaults to False.
 
     Returns:
         None
     """
     await move_to_pose_local(geometry_utils.create_pose(step, 0, 0, 0, 0, 0),
         keep_orientation=True,
+        depth_level=depth_level,
+        keep_depth=keep_depth,
         timeout=10,
         pose_tolerances=create_twist_tolerance(linear_x=0.15),
         parent=self)
@@ -255,6 +314,7 @@ async def move_with_directions(self: Task,
                                correct_depth: bool = False,
                                keep_orientation: bool = False,
                                timeout: int = 30,
+                               keep_depth: bool = False,
                                ) -> None:
     """
     Move the robot to multiple poses defined by the provided directions.
@@ -275,6 +335,8 @@ async def move_with_directions(self: Task,
         keep_orientation (bool, optional): If True, corrects orientation after moving to a pose. Defaults to False.
         timeout (int, optional): The maximum number of seconds to attempt reaching the pose
             before timing out. Defaults to 30.
+        keep_depth (bool, optional): EXPERIMENTAL. If True (and depth_level is set), hold depth_level continuously
+            throughout each leg of the move. Defaults to False.
 
     Raises:
         ValueError: If a direction tuple in the list is not of length 3 or 6.
@@ -291,6 +353,7 @@ async def move_with_directions(self: Task,
             geometry_utils.create_pose(direction[0], direction[1], direction[2], 0, 0, 0),
             keep_orientation=keep_orientation,
             depth_level=depth_level,
+            keep_depth=keep_depth,
             pose_tolerances=create_twist_tolerance(linear_x=0.1, linear_y=0.07, linear_z=0.07, angular_yaw=0.05),
             timeout=timeout,
             parent=self)
