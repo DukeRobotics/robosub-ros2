@@ -16,7 +16,14 @@ async def main(self: Task) -> Task[None, None, None]:
     tasks = [
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
-        comp_tasks.initial_submerge(0.5, parent=self),
+        comp_tasks.initial_submerge(0.35, parent=self),
+        # move_tasks.move_with_directions([(1, 0, 0)], parent=self),
+        move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, np.pi/2),
+                                      pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.3),
+                                      parent=self),
+        move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, 0, 0, 0, -np.pi),
+                                      pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.3),
+                                      parent=self),
         # comp_tasks.initial_submerge(0.5, z_tolerance=0.15, enable_controls_flag=False, timeout=10, parent=self),
         # comp_tasks.coin_flip(parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=0.7, parent=self),  # Move through gate via 2,2; right strafe via 1.5  # noqa: E501
