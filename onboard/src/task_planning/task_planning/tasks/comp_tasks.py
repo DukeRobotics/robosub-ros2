@@ -1125,12 +1125,12 @@ async def torpedo_task_2026(
     # Other banner design TBD
 
     # DEAD RECKONING CODE
-    # await self.move_y(step=-0.6)
-    # await move_tasks.move_to_pose_local(
-    #     geometry_utils.create_pose(0, 0, 0.2, 0, 0, 0),
-    #     parent=self,
-    # )
-    # await servos_tasks.fire_torpedo(TorpedoStates.LEFT, parent=self)
+    await self.move_y(step=-0.6)
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(0, 0, 0.2, 0, 0, 0),
+        parent=self,
+    )
+    await servos_tasks.fire_torpedo(TorpedoStates.LEFT, parent=self)
 
     # ACTUAL CV CODE
     # Fine targeting: swap to the HSV-matched USB-camera detections for each glyph.
@@ -1144,13 +1144,13 @@ async def torpedo_task_2026(
     #         parent=self,
     #     )
 
-    logger.info('[torpedo_task_2026] Moving back 0.5m')
-    await self.move_x(step=-0.5)
-    # Center torpedo banner again
-    await cv_tasks.yaw_to_cv_obj(CVObjectType.TORPEDO_BANNER, yaw_threshold=math.radians(5),
-                                 search_direction=direction, depth_threshold=0.1, depth_level=depth_level, parent=self)
+    # logger.info('[torpedo_task_2026] Moving back 0.5m')
+    # await self.move_x(step=-0.5)
+    # # Center torpedo banner again
+    # await cv_tasks.yaw_to_cv_obj(CVObjectType.TORPEDO_BANNER, yaw_threshold=math.radians(5),
+    #                              search_direction=direction, depth_threshold=0.1, depth_level=depth_level, parent=self)
 
-    await fire_at_target(second_target, TorpedoStates.RIGHT, z_offset=0.1)
+    # await fire_at_target(second_target, TorpedoStates.RIGHT, z_offset=0.1)
 
     logger.info('[torpedo_task_2026] Torpedo task completed')
 

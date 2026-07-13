@@ -114,25 +114,39 @@ class TorpedoTargetDetector(Node):
         # Find contours in the image
         contours, _ = cv2.findContours(red_hsv, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        
+        # Contours that have a similarity value >5 and area >50
+        contours = [contour for contour in contours if cv2.matchShapes(self.reference_image, contour,
+                                                                       cv2.CONTOURS_MATCH_I1, 0.0) < 0.9]
 
         # Sort contours by area and shape similarity to the reference image
         contours = sorted(contours, key=lambda cnt: (cv2.contourArea(cnt) / cv2.minEnclosingCircle(cnt)[1]),
                           reverse=True)
-        contours = contours[:3]
-
+        
         # Group contours by distance
         contours = group_contours_by_distance(contours, 20)
 
+        contours = [contour for contour in contours if cv2.contourArea(contour) > 100]
+
+        # contours = contours[:4]
+
         # Sort contours by radius of min. enclosing circle
         contours = sorted(contours, key=lambda cnt: cv2.boundingRect(cnt)[3], reverse=True)
-        contours = contours[:2]
+        # contours = contours[:4]
 
         contours = sorted(contours, key=lambda cnt: cv2.matchShapes(self.reference_image, cnt,
                                                                     cv2.CONTOURS_MATCH_I1, 0.0), reverse=False)
 
-        # Get the top 2 contours with the closest match to the shape of the reference image
-        contours = contours[:2]
+        if len(contours) == 4:
+            # match_1 = cv2.matchShapes(self.reference_image, contours[0], cv2.CONTOURS_MATCH_I1, 0.0)
+            # match_2 = cv2.matchShapes(self.reference_image, contours[1], cv2.CONTOURS_MATCH_I1, 0.0)
+            # match_3 = cv2.matchShapes(self.reference_image, contours[2], cv2.CONTOURS_MATCH_I1, 0.0)
+            # match_4 = cv2.matchShapes(self.reference_image, contours[3], cv2.CONTOURS_MATCH_I1, 0.0)
+            match_1 = cv2.contourArea(contours[0])
+            match_2 = cv2.contourArea(contours[1])
+            match_3 = cv2.contourArea(contours[2])
+            match_4 = cv2.contourArea(contours[3])
+            logger.info(f'SHAPE FIRST: {match_1:.3f}, SECOND: {match_2:.3f}, THIRD: {match_3:.3f}, FOURTH: {match_4:.3f}')
+
 
         # Draw contours onto image, and publish the image
         image_with_contours = image.copy()
@@ -156,6 +170,14 @@ class TorpedoTargetDetector(Node):
             largest_cnt = similar_size_contours[0]
 
         bbox_img = image.copy()
+
+        # z is width (so we are getting leftmost)
+        lowest_z = 416
+        for cnt in contours:
+            _, _, z, _ = cv2.boundingRect(cnt)
+            if z < lowest_z:
+                largest_cnt = cnt
+            lowest_z = z
 
         if largest_cnt is not None:
             # print("Largest contour found")
