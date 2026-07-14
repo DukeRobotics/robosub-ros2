@@ -105,7 +105,7 @@ async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | 
 
 @task
 async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = False, depth_level: float | None = None,
-                             pose_tolerances: Twist | None = None, timeout: int = 30,
+                             pose_tolerances: Twist | None = None, timeout: int = 15,
                              keep_depth: bool = False) -> \
                                 Task[None, Pose | None, None]:
     """
@@ -138,6 +138,7 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = Fa
     Send:
         Pose: A new local pose to move to.
     """
+    logger.info(f'Moving to pose local: {pose}')
     def send_transformer(local_pose: Pose | None) -> Pose | None:
         if local_pose is None:
             return None
@@ -162,7 +163,6 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = Fa
 
             return await move_to_pose_global(base_global_pose, pose_tolerances=pose_tolerances, timeout=timeout,
                                              recompute_pose=recompute_pose, parent=self)
-
     global_pose = send_transformer(pose)
 
     return await coroutine_utils.transform(

@@ -9,29 +9,131 @@ from task_planning.task import Task, task
 from task_planning.tasks import buoyancy_tasks, comp_tasks, move_tasks, prequal_tasks, sonar_tasks, ivc_tasks
 from task_planning.utils import geometry_utils
 import time
+import math
 
 
 @task
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Crush."""
-    # EXPERIMENTAL: keep_depth - depth to hold during long forward moves (matches the 0.8 m initial submerge)
-    DEPTH_LEVEL = State().orig_depth - 0.8
+    # keep_depth target during long moves (matches coin_flip default depth)
+    DEPTH_LEVEL = State().orig_depth - 0.7
     tasks = [
+        ######## True competition plan ########
+        comp_tasks.initial_submerge(0.4, enable_controls_flag=True, timeout=15, parent=self),
+        comp_tasks.coin_flip(enable_same_direction=True, parent=self),
+        # Go through gate + style (confirmed Monday, works)
+        move_tasks.move_with_directions([(2, 0, 0), (2.5, 0, 0)],
+                                        depth_level=DEPTH_LEVEL,
+                                        correct_yaw=True,
+                                        correct_depth=True,
+                                        keep_orientation=True,
+                                        keep_depth=True,
+                                        timeout=15,
+                                        pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+                                        parent=self),
+        comp_tasks.gate_style_task(depth_level=1.0, parent=self),
+        # Turn 60 degrees CW
+        move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 3),
+            keep_orientation=True, 
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        sonar_tasks.rotate_to_normal(start_angle=-20, end_angle=20, scan_distance=6, yaw_threshold= math.pi/6, parent=self),
+        sonar_tasks.rotate_to_normal(start_angle=-45, end_angle=45, scan_distance=6, yaw_threshold= math.pi/12, parent=self),
+        # Turn 90 degrees CCW
+        move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi / 2),
+            keep_orientation=True, 
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        # Gate to Slalom to Octagon
+        move_tasks.move_with_directions(
+            [(0, 1.6, 0), (3.1, 0, 0)] + [(2, 0, 0), (0, 0.5, 0), (2, 0, 0)] + [(2.5, 0, 0), (0, 0.75, 0), (2, 0, 0), (1.75, 0, 0)],
+            depth_level=DEPTH_LEVEL,
+            correct_yaw=True,
+            correct_depth=True,
+            keep_orientation=True,
+            keep_depth=True,
+            timeout=15,
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        sonar_tasks.rotate_to_normal(start_angle=-20, end_angle=20, scan_distance=6, yaw_threshold= math.pi/6, parent=self),
+        sonar_tasks.rotate_to_normal(start_angle=-45, end_angle=45, scan_distance=6, yaw_threshold= math.pi/12, parent=self),
+        # Turn for image in octagon 45 degrees CW
+        move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 4),
+            keep_orientation=True, 
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        comp_tasks.surface_task(parent=self),
+
+        ### END COMP TASKS ###
+
+        ### Sonar stuffings
+        # comp_tasks.initial_submerge(0.4, parent=self),
+        # # move_tasks.move_with_directions([(0.5, 0, 0)], parent=self),
+        # # comp_tasks.gate_style_task(depth_level=0.9, parent=self),
+        # # Turn 60 degrees CW
+        # move_tasks.move_to_pose_local(
+        #     geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 3),
+        #     keep_orientation=True, 
+        #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+        #     parent=self,
+        # ),
+        # sonar_tasks.rotate_to_normal(start_angle=-20, end_angle=20, scan_distance=4, yaw_threshold= math.pi/6, parent=self),
+        # sonar_tasks.rotate_to_normal(start_angle=-45, end_angle=45, scan_distance=4, yaw_threshold= math.pi/12, parent=self),
+        # # Turn 90 degrees CCW
+        # move_tasks.move_to_pose_local(
+        #     geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi / 2),
+        #     keep_orientation=True, 
+        #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+        #     parent=self,
+        # ),
+
+
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
-        # comp_tasks.initial_submerge(0.5, parent=self),
+        # comp_tasks.initial_submerge(0.8, parent=self),
         # comp_tasks.gate_style_task(depth_level=0.9, parent=self),
         # move_tasks.move_with_directions([(1, 0, 0)], parent=self),
+        # move_tasks.move_to_pose_local(geometry_utils.create_pose(12, 0, 0, 0, 0, 0),
+        #                               depth_level=DEPTH_LEVEL,
+        #                               keep_orientation=True,
+        #                               keep_depth=True,
+        #                               pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+        #                               parent=self),
+        # move_tasks.move_to_pose_local(geometry_utils.create_pose(6, 0, 0, 0, 0, 0),
+        #                               depth_level=DEPTH_LEVEL,
+        #                               keep_orientation=True,
+        #                               keep_depth=True,
+        #                               pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+        #                               parent=self),
+        # move_tasks.move_to_pose_local(geometry_utils.create_pose(8, 0, 0, 0, 0, 0),
+        #                               depth_level=DEPTH_LEVEL,
+        #                               keep_orientation=True,
+        #                               keep_depth=True,
+        #                               pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+        #                               parent=self),
+        # move_tasks.move_to_pose_local(geometry_utils.create_pose(3, 0, 0, 0, 0, 0),
+        #                               depth_level=DEPTH_LEVEL,
+        #                               keep_orientation=True,
+        #                               keep_depth=True,
+        #                               pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+        #                               parent=self),
         # move_tasks.move_with_directions([(6, 0, 0), (8, 0, 0)],
-        #                                 depth_level=DEPTH_LEVEL,
-        #                                 correct_yaw=True,
-        #                                 keep_orientation=False,
-        #                                 keep_depth=True,
-        #                                 pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
-        #                                 parent=self),
+        #                             depth_level=DEPTH_LEVEL,
+        #                             correct_yaw=True,
+        #                             keep_orientation=False,
+        #                             keep_depth=True,
+        #                             pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+        #                             parent=self),
 
-        comp_tasks.initial_submerge(0.5, enable_controls_flag=True, timeout=10, parent=self),
-        comp_tasks.coin_flip(parent=self),
+        # comp_tasks.initial_submerge(0.5, enable_controls_flag=True, timeout=10, parent=self),
+        # comp_tasks.coin_flip(parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=0.7, parent=self),  # Move through gate via 2,2; right strafe via 1.5  # noqa: E501
         # comp_tasks.slalom_task_dead_reckoning(depth_level=0.975, parent=self),  # Move through slalom via 2,2,2
         # Move to octagon front via 2,2; left strafe via 0.75

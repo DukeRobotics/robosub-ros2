@@ -151,5 +151,7 @@ def get_normal_angle(response: SonarSweepRequest.Response) -> float:
 
     if response.normal_angle < -np.pi/2.:
         return response.normal_angle + np.pi
+    if response.normal_angle > np.pi/2.:
+        return response.normal_angle - np.pi
 
     return response.normal_angle

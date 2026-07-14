@@ -183,7 +183,7 @@ async def gate_style_task(self: CompTask, depth_level: float = 0.9) -> Task[None
         if get_robot_name() == RobotName.OOGWAY:
             await util_tasks.sleep(2.25, parent=self)
         else:
-            await util_tasks.sleep(3, parent=self)
+            await util_tasks.sleep(2.6, parent=self)
 
         logger.info('[gate_style_task] Completed roll')
 
@@ -205,8 +205,9 @@ async def gate_style_task(self: CompTask, depth_level: float = 0.9) -> Task[None
     await util_tasks.sleep(2.5, parent=self)
     await self.correct_depth(DEPTH_LEVEL)
 
-    await util_tasks.sleep(2, parent=self)
+    await util_tasks.sleep(5, parent=self)
 
+    logger.info('[gate_style_task] Correcting roll and pitch')
     await self.correct_roll_and_pitch()
     logger.info('[gate_style_task] Reset orientation')
 
@@ -1157,9 +1158,20 @@ async def octagon_task(self: CompTask, direction: int = 1) -> Task[None, None, N
     await face_fish(yaw_left=True, closer_banner=True)
 
     logger.info('[octagon_task] Surfacing...')
-    await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
-                                        timeout=10, parent=self)
+    await surface_task(parent=self)
     logger.info('[octagon_task] Finished surfacing')
+
+
+@comp_task
+async def surface_task(self: CompTask, timeout: int = 10) -> Task[None, None, None]:
+    """Surface the robot to the original depth (e.g. inside the octagon)."""
+    logger.info('[surface_task] Surfacing...')
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
+        timeout=timeout,
+        parent=self,
+    )
+    logger.info('[surface_task] Finished surfacing')
 
 
 @comp_task
