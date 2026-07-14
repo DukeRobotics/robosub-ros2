@@ -36,7 +36,7 @@ arduino:
           reset: 1500
         min_delay: 3.0
   thruster:
-    ftdi: AQ02S88G
+    ftdi: B004838DA
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketches/thruster
