@@ -16,10 +16,10 @@ import math
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Crush."""
     # keep_depth target during long moves (matches coin_flip default depth)
-    DEPTH_LEVEL = State().orig_depth - 0.7
+    DEPTH_LEVEL = State().orig_depth - 0.8
     tasks = [
         ######## True competition plan ########
-        comp_tasks.initial_submerge(0.4, enable_controls_flag=True, timeout=15, parent=self),
+        comp_tasks.initial_submerge(0.8, enable_controls_flag=True, timeout=15, parent=self),
         comp_tasks.coin_flip(enable_same_direction=True, parent=self),
         # Go through gate + style (confirmed Monday, works)
         move_tasks.move_with_directions([(2, 0, 0), (2.5, 0, 0)],
@@ -32,9 +32,9 @@ async def main(self: Task) -> Task[None, None, None]:
                                         pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
                                         parent=self),
         comp_tasks.gate_style_task(depth_level=1.0, parent=self),
-        # Turn 60 degrees CW
+        # Turn 45 degrees CW
         move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 3),
+            geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 4),
             keep_orientation=True, 
             pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
             parent=self,
