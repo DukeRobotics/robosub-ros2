@@ -11,6 +11,8 @@ from task_planning.utils import geometry_utils
 logger = get_logger('sonar_tasks')
 
 MAX_STEPS = 3
+CORRECTION_GAIN = 0.6  # Fraction of the measured angle to correct per step; damps noise/overshoot to avoid diverging
+ROTATION_YAW_TOLERANCE = 0.03  # rad; must be small relative to typical correction sizes or moves finish before arriving
 
 
 @task
@@ -71,8 +73,14 @@ async def rotate_to_normal(self: Task,
         logger.error(f'Normal angle does not exist after {tries_until_detection} attempts.')
         return
 
-    logger.info(f'Starting confirmation scan')
-    logger.info(f'Sonar scan from {start_angle} to {end_angle} degrees, distance: {scan_distance} m')
+    await move_to_pose_local(
+        geometry_utils.create_pose(0, 0, 0, 0, 0, -CORRECTION_GAIN * normal_angle),
+        keep_orientation=True,
+        timeout=10,
+        pose_tolerances=create_twist_tolerance(angular_yaw=ROTATION_YAW_TOLERANCE),
+        parent=self,
+    )
+
     normal_angle = get_normal_angle(
         await Sonar().sweep(
             start_angle=start_angle,
@@ -84,9 +92,10 @@ async def rotate_to_normal(self: Task,
     while abs(normal_angle) > yaw_threshold and steps < MAX_STEPS:
         logger.info(f'Normal angle {normal_angle} at step {steps} is above threshold, rotating')
         await move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, -normal_angle),
+            geometry_utils.create_pose(0, 0, 0, 0, 0, -CORRECTION_GAIN * normal_angle),
             keep_orientation=True,
-            pose_tolerances=create_twist_tolerance(angular_yaw=0.1),
+            timeout=10,
+            pose_tolerances=create_twist_tolerance(angular_yaw=ROTATION_YAW_TOLERANCE),
             parent=self,
         )
         logger.info(f'Sonar scan from {start_angle} to {end_angle} degrees, distance: {scan_distance} m')
@@ -97,6 +106,9 @@ async def rotate_to_normal(self: Task,
                 scan_distance=scan_distance,
             ),
         )
+        if np.isnan(normal_angle):
+            logger.error('Lost the wall mid-correction, exiting task.')
+            return
         steps += 1
         logger.info(f'Normal Angle {normal_angle} at step {steps}')
 
@@ -125,11 +137,14 @@ async def rotate_to_angle_from_normal(self: Task,
     logger.info(f'Initial Angle: {angle}')
 
     await move_to_pose_local(
-        geometry_utils.create_pose(0, 0, 0, 0, 0, -angle),
+        geometry_utils.create_pose(0, 0, 0, 0, 0, -CORRECTION_GAIN * angle),
         keep_orientation=True,
-        pose_tolerances=create_twist_tolerance(angular_yaw=0.1),
+        timeout=10,
+        pose_tolerances=create_twist_tolerance(angular_yaw=ROTATION_YAW_TOLERANCE),
         parent=self,
     )
+
+    logger.info(f'Sonar scan from {start_angle} to {end_angle} degrees, distance: {scan_distance} m')
     angle = get_normal_angle(
         await Sonar().sweep(
             start_angle=start_angle,
@@ -137,13 +152,17 @@ async def rotate_to_angle_from_normal(self: Task,
             scan_distance=scan_distance,
         ),
     )
+    if np.isnan(angle):
+        logger.error('Normal angle does not exist, exiting task.')
+        return
     angle = rotated_angle + angle
     steps = 0
     while abs(angle) > yaw_threshold and steps < MAX_STEPS:
         await move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, -angle),
+            geometry_utils.create_pose(0, 0, 0, 0, 0, -CORRECTION_GAIN * angle),
             keep_orientation=True,
-            pose_tolerances=create_twist_tolerance(angular_yaw=0.1),
+            timeout=10,
+            pose_tolerances=create_twist_tolerance(angular_yaw=ROTATION_YAW_TOLERANCE),
             parent=self,
         )
         logger.info(f'Sonar scan from {start_angle} to {end_angle} degrees, distance: {scan_distance} m')
@@ -154,6 +173,9 @@ async def rotate_to_angle_from_normal(self: Task,
                 scan_distance=scan_distance,
             ),
         )
+        if np.isnan(angle):
+            logger.error('Lost the wall mid-correction, exiting task.')
+            return
         angle = rotated_angle + angle
         steps += 1
         logger.info(f'Angle {angle} at step {steps}')
