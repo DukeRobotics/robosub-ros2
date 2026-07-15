@@ -33,13 +33,13 @@ class IVCMessageType(Enum):
     UNKNOWN = ''
     OOGWAY_TEST = 'to'
     OOGWAY_GATE = 'og'
-    OOGWAY_TORPEDOES = 'fu'
     OOGWAY_ACKNOWLEDGE = 'oa'
+    OOGWAY_TORPEDOES = 'fu'
     CRUSH_TEST = 'tc'
     CRUSH_GATE = 'cg'
     CRUSH_SLALOM = 'cs'
-    CRUSH_OCTAGON = 'ky'
     CRUSH_ACKNOWLEDGE = 'ca'
+    CRUSH_OCTAGON = 'ky'
 
 
 
