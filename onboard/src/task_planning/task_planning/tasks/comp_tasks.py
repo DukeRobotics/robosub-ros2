@@ -1052,7 +1052,7 @@ async def torpedo_task_2026(
     self: CompTask,
     first_target: CVObjectType,
     second_target: CVObjectType,
-    depth_level: float = 0.5,
+    depth_level: float = 0.7,
     direction: int = 1,
 ) -> Task[None, None, None] | None:
     logger.info('[torpedo_task_2026] Starting torpedo task')
@@ -1062,7 +1062,7 @@ async def torpedo_task_2026(
         return
     # assert first_target != second_target, 'first_target and second_target must be different'
 
-    FINAL_STOP_DISTANCE = 2.0
+    FINAL_STOP_DISTANCE = 2.5 # TODO change to 2.0
     TARGET_DETECTION_TIMEOUT = 5
     TARGET_DETECTION_LATENCY = 2
 
@@ -1130,14 +1130,14 @@ async def torpedo_task_2026(
         # ),
 
 
-    await self.correct_depth(desired_depth=State().depth - 0.20)
-    await self.move_y(step=-0.6)
+    await self.correct_depth(desired_depth=State().depth - 0.3)
+    await self.move_y(step=-0.65)
     await self.move_x(step=0.5)
 
-    await servos_tasks.fire_torpedo(TorpedoStates.LEFT, parent=self)
     # await self.move_y(step=0.06)
-    await util_tasks.sleep(duration=3.0, parent=self)
     await servos_tasks.fire_torpedo(TorpedoStates.RIGHT, parent=self)
+    await util_tasks.sleep(duration=3.0, parent=self)
+    await servos_tasks.fire_torpedo(TorpedoStates.LEFT, parent=self)
 
     # await move_tasks.move_to_pose_local(
     #     geometry_utils.create_pose(0, 0, 0.2, 0, 0, 0),

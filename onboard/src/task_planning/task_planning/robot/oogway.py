@@ -31,9 +31,9 @@ async def main(self: Task) -> Task[None, None, None]:
         ######### DO NOT TOUCH OR BIG SAAG WILL SPOON YOU #########
 
         ## SF Course D tested @ 7:30am Mon 13 Jul 2026, LEFT SIDE OF GATE
-        # SEQUENCE: Gate --> torpedoes
+        # # SEQUENCE: Gate --> torpedoes
         comp_tasks.initial_submerge(DEPTH, parent=self),
-        # move_tasks.move_with_directions([(5, 0, 0), (0, 2, 0), (6, 0, 0)], parent=self),
+        # # move_tasks.move_with_directions([(5, 0, 0), (0, 2, 0), (6, 0, 0)], parent=self),
         comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
 
         ## SF Course A
@@ -47,6 +47,14 @@ async def main(self: Task) -> Task[None, None, None]:
         # comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
 
         #########     End sensitive taskplanning code.     #########
+
+        ### Semis 2 Task Planning:
+        # ivc_tasks.delineate_ivc_log(parent=self),
+        # comp_tasks.initial_submerge(0.3, parent=self),
+        # ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TEST, parent=self),
+        # comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+
+
 
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
