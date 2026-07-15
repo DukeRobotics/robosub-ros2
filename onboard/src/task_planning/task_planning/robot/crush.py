@@ -108,7 +108,7 @@ async def main(self: Task) -> Task[None, None, None]:
                 (3.47, 0, 0),
                 (0, 0.65, 0),
                 (1.85, 0, 0),
-                (0, 0.75, 0),
+                (0, -0.75, 0),
                 (1.85, 0, 0),
             ],
             depth_level=DEPTH_LEVEL,
