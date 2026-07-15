@@ -26,7 +26,7 @@ async def main(self: Task) -> Task[None, None, None]:
         Strafe:
         0.5: ~5
     """
-    DEPTH_LEVEL = State().orig_depth - 0.5
+    DEPTH_LEVEL = State().orig_depth - 0.8
     tasks = [
 
         # ivc_tasks.delineate_ivc_log(parent=self),
