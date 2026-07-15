@@ -42,6 +42,7 @@ class Sonar(Node):
     SONAR_IMAGE_TOPIC = 'sonar/image/compressed'
     SONAR_RAW_IMAGE_TOPIC = 'sonar/image/raw'
     SONAR_WALL_ANGLE_PUBLISHER = 'sonar/wall/angle'
+    SONAR_WALL_IMAGE_TOPIC = 'sonar/image/wall'
 
     NODE_NAME = 'sonar'
 
@@ -51,7 +52,12 @@ class Sonar(Node):
     VALUE_THRESHOLD = 95  # Sonar intensity threshold
     DBSCAN_EPS = 3  # DBSCAN epsilon
     DBSCAN_MIN_SAMPLES = 10  # DBSCAN min samples
-    MIN_WALL_ELONGATION = 5.0  # Min ratio of along-line to across-line variance to count as a wall
+    MIN_WALL_ELONGATION = 2.0  # Min ratio of along-line to across-line variance; only rules out round/blob shapes
+    MIN_WALL_SPAN_METERS = 1.0  # Min length a segment must span to count as a wall rather than an object
+    BLUR_FACTOR = 16  # Box blur kernel size; larger dilutes thin/sparse reflections more
+    BLUR_CUTOFF = 1 / 5  # Post-blur normalized intensity cutoff; higher discards more
+    WALL_FIT_INLIER_THRESHOLD = 6.0  # Max px a point may be from a RANSAC line hypothesis to count as inlier
+    WALL_FIT_RANSAC_ITERATIONS = 50  # Number of random line hypotheses tried per segment
 
     NUM_RETRIES = 10
 
@@ -82,6 +88,7 @@ class Sonar(Node):
             self.sonar_image_publisher = self.create_publisher(CompressedImage, self.SONAR_IMAGE_TOPIC, 10)
             self.raw_image_publisher = self.create_publisher(CompressedImage, self.SONAR_RAW_IMAGE_TOPIC, 10)
             self.wall_angle_publisher = self.create_publisher(Float32, self.SONAR_WALL_ANGLE_PUBLISHER, 10)
+            self.wall_image_publisher = self.create_publisher(CompressedImage, self.SONAR_WALL_IMAGE_TOPIC, 10)
 
         self.current_scan = (-1, -1, -1)  # (start_angle, end_angle, distance_of_scan)
 
@@ -214,7 +221,9 @@ class Sonar(Node):
             )
 
         denoiser = sonar_object_detection.SonarDenoiser(sweep)
-        denoiser.wall_block().percentile_filter().fourier_signal_processing().init_cartesian().normalize().blur()
+        denoiser.wall_block().percentile_filter().fourier_signal_processing().init_cartesian().normalize().blur(
+            factor=self.BLUR_FACTOR, cutoff=self.BLUR_CUTOFF,
+        )
         self.get_logger().info('Finished Denoising')
 
         color_image = sonar_image_processing.build_color_sonar_image_from_int_array(denoiser.cartesian)
@@ -224,10 +233,13 @@ class Sonar(Node):
             denoiser.cartesian,
             eps=self.DBSCAN_EPS,
             min_samples=self.DBSCAN_MIN_SAMPLES,
+            wall_fit_inlier_threshold=self.WALL_FIT_INLIER_THRESHOLD,
+            wall_fit_ransac_iterations=self.WALL_FIT_RANSAC_ITERATIONS,
         )
         self.get_logger().info(f'Segmented into {len(segmentation.segments)} object(s)')
 
-        nearest_segment = segmentation.get_most_wall_like_segment(self.MIN_WALL_ELONGATION)
+        min_wall_span_pixels = self.MIN_WALL_SPAN_METERS / sonar_utils.meters_per_sample(self.sample_period)
+        nearest_segment = segmentation.get_most_wall_like_segment(self.MIN_WALL_ELONGATION, min_wall_span_pixels)
 
         if nearest_segment is None:
             self.get_logger().info('No wall-like segment found among detected objects')
@@ -238,6 +250,11 @@ class Sonar(Node):
         if self.stream:
             msg = Float32(data=float(np.arctan(nearest_segment.ortho_regression.slope)+np.pi / 4.))
             self.wall_angle_publisher.publish(msg)
+
+            wall_image = sonar_image_processing.draw_wall_segment_overlay(color_image, nearest_segment)
+            self.wall_image_publisher.publish(
+                sonar_utils.convert_to_ros_compressed_img(wall_image, self.cv_bridge, is_color=True),
+            )
 
         x_index, y_index = nearest_segment.get_average_coordinate_of_points()
         normal_angle = (
