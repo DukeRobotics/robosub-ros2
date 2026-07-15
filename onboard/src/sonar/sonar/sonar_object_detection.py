@@ -2,6 +2,7 @@ from enum import Enum
 
 import numpy as np
 from scipy.signal import convolve2d
+from sklearn.cluster import DBSCAN
 
 NUM_DIMENSIONS_FOR_REPEAT = 3
 
@@ -175,10 +176,20 @@ class OrthogonalRegression:
         self.points = points
 
         e_val, e_vect = np.linalg.eig(np.cov(self.points, rowvar=False))
+        e_val = e_val.real
+        e_vect = e_vect.real
 
-        self.unit_tangent = e_vect[:, np.argmin(e_val)]
+        # The eigenvector of the largest eigenvalue points along the direction of maximum
+        # variance, i.e. the tangent of the best-fit line. The eigenvector of the smallest
+        # eigenvalue is the direction of minimum variance, i.e. the normal to the line.
+        self.unit_tangent = e_vect[:, np.argmax(e_val)]
         self.unit_tangent[1] *= -1
         self.unit_normal = np.array([-self.unit_tangent[1], self.unit_tangent[0]])
+
+        # Ratio of variance along the line to variance across it. Close to 1 for a round/blob
+        # shaped cluster of points, much greater than 1 for a long, thin, wall-like cluster.
+        min_eig = max(float(np.min(e_val)), 1e-9)
+        self.elongation = float(np.max(e_val)) / min_eig
 
         if self.unit_tangent[0] == 0:
             self.slope = (2**31) - 1
@@ -276,6 +287,19 @@ class SonarSegment:
 
         return (int(np.round(coordinates[0])), int(np.round(coordinates[1])))
 
+    def get_average_distance_to_origin(self) -> float:
+        """
+        Get the average Euclidean distance of this segment's points to the sonar origin.
+
+        The sonar origin (0, 0) corresponds to the robot's own position in the denoised
+        cartesian image, so this is a proxy for how close this segment is to the robot.
+
+        Returns:
+            float: the average distance, in pixels, of this segment's points to the origin.
+        """
+        return float(np.mean(np.linalg.norm(self.points, axis=1)))
+
+
 class GlobalSonarSegmentation:
     """A class which treats all non-zero sonar data as a single segment."""
 
@@ -315,3 +339,99 @@ class GlobalSonarSegmentation:
             SonarSegment: the nearest segment.
         """
         return self.segments[0]
+
+
+class ClusteredSonarSegmentation:
+    """
+    Segments sonar data into distinct objects using density-based clustering.
+
+    Unlike GlobalSonarSegmentation, this treats spatially separate reflectors (e.g. a wall,
+    a diver, a pipe, another robot) as distinct segments rather than lumping every non-zero
+    pixel into a single point cloud and fitting one line through all of them.
+    """
+
+    MIN_POINTS_FOR_REGRESSION = 2
+
+    def __init__(
+        self,
+        image: np.ndarray,
+        eps: float,
+        min_samples: int,
+    ) -> None:
+        """
+        Construct a ClusteredSonarSegmentation object.
+
+        Args:
+            image (ndarray): the denoised cartesian sonar image to segment.
+            eps (float): DBSCAN neighborhood radius, in pixels, for two points to be
+                considered connected.
+            min_samples (int): DBSCAN minimum number of neighbors, within eps, for a point
+                to be treated as a core (non-noise) point.
+        """
+        self.image = image
+        self.side_length = image.shape[0]
+
+        self.raw_segments: list[SonarSegment] = []
+        self.segments: list[SonarSegment] = []
+
+        points = np.argwhere(image > 0)
+        if points.shape[0] == 0:
+            return
+
+        labels = DBSCAN(eps=eps, min_samples=min_samples).fit_predict(points)
+
+        for label in sorted(set(labels)):
+            if label == -1:
+                continue  # DBSCAN noise label; not dense enough to be a real object
+
+            cluster_points = points[labels == label]
+            if cluster_points.shape[0] < self.MIN_POINTS_FOR_REGRESSION:
+                continue
+
+            segment = SonarSegment(cluster_points)
+            segment.number = int(label)
+            try:
+                segment.ortho_regression = OrthogonalRegression(cluster_points)
+            except np.linalg.LinAlgError:
+                # Degenerate cluster (e.g. singular covariance matrix); skip it
+                continue
+
+            self.raw_segments.append(segment)
+            self.segments.append(segment)
+
+    def get_nearest_segment(self) -> 'SonarSegment | None':
+        """
+        Get the segment which is, on average, closest to the sonar origin (the robot).
+
+        Returns:
+            SonarSegment | None: the nearest segment, or None if no segments were found.
+        """
+        if not self.segments:
+            return None
+
+        return min(self.segments, key=lambda segment: segment.get_average_distance_to_origin())
+
+    def get_most_wall_like_segment(self, min_elongation: float) -> 'SonarSegment | None':
+        """
+        Get the nearest segment that is shaped like a flat wall rather than a compact object.
+
+        A segment is considered wall-like if its points are much more spread out along its
+        fitted line than across it (see OrthogonalRegression.elongation), which distinguishes
+        long flat surfaces (walls) from compact/round reflectors (divers, pipes, other robots).
+        Among wall-like segments, the one nearest to the sonar origin is returned, since that
+        is the most likely reflector to be usable for wall-relative navigation.
+
+        Args:
+            min_elongation (float): the minimum elongation ratio for a segment to be
+                considered wall-like.
+
+        Returns:
+            SonarSegment | None: the nearest wall-like segment, or None if no segment qualifies.
+        """
+        wall_like_segments = [
+            segment for segment in self.segments if segment.ortho_regression.elongation >= min_elongation
+        ]
+        if not wall_like_segments:
+            return None
+
+        return min(wall_like_segments, key=lambda segment: segment.get_average_distance_to_origin())

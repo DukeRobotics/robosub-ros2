@@ -51,6 +51,7 @@ class Sonar(Node):
     VALUE_THRESHOLD = 95  # Sonar intensity threshold
     DBSCAN_EPS = 3  # DBSCAN epsilon
     DBSCAN_MIN_SAMPLES = 10  # DBSCAN min samples
+    MIN_WALL_ELONGATION = 5.0  # Min ratio of along-line to across-line variance to count as a wall
 
     NUM_RETRIES = 10
 
@@ -219,14 +220,17 @@ class Sonar(Node):
         color_image = sonar_image_processing.build_color_sonar_image_from_int_array(denoiser.cartesian)
         self.get_logger().info('Color image built')
 
-        segmentation = sonar_object_detection.GlobalSonarSegmentation(
+        segmentation = sonar_object_detection.ClusteredSonarSegmentation(
             denoiser.cartesian,
+            eps=self.DBSCAN_EPS,
+            min_samples=self.DBSCAN_MIN_SAMPLES,
         )
-        self.get_logger().info('Segmented')
+        self.get_logger().info(f'Segmented into {len(segmentation.segments)} object(s)')
 
-        nearest_segment = segmentation.get_nearest_segment()
+        nearest_segment = segmentation.get_most_wall_like_segment(self.MIN_WALL_ELONGATION)
 
         if nearest_segment is None:
+            self.get_logger().info('No wall-like segment found among detected objects')
             return (None, color_image, None, None)
 
         self.get_logger().info('Got segment')
