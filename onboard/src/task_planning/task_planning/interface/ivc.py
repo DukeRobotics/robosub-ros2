@@ -37,9 +37,11 @@ class IVCMessageType(Enum):
     OOGWAY_TORPEDOES = 'fu'
     CRUSH_TEST = 'tc'
     CRUSH_GATE = 'cg'
+    CRUSH_STYLE = 'cr'
     CRUSH_SLALOM = 'cs'
     CRUSH_ACKNOWLEDGE = 'ca'
     CRUSH_OCTAGON = 'ky'
+    CRUSH_HOME = 'ez'
 
 
 
