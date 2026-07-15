@@ -6,7 +6,7 @@ from task_planning.interface.cv import CVObjectType
 from task_planning.interface.ivc import IVCMessageType
 from task_planning.interface.state import State
 from task_planning.task import Task, task
-from task_planning.tasks import buoyancy_tasks, comp_tasks, move_tasks, prequal_tasks, sonar_tasks, ivc_tasks
+from task_planning.tasks import buoyancy_tasks, comp_tasks, move_tasks, prequal_tasks, sonar_tasks, ivc_tasks, util_tasks
 from task_planning.utils import geometry_utils
 import time
 import math
@@ -288,7 +288,7 @@ async def main(self: Task) -> Task[None, None, None]:
         # ),
 
         #ivc_tasks.delineate_ivc_log(parent=self),
-        comp_tasks.initial_submerge(0.5, parent=self),
+        # comp_tasks.initial_submerge(0.5, parent=self),
         # util_tasks.sleep(15, parent=self)
 
         ######## Main competition tasks ########
