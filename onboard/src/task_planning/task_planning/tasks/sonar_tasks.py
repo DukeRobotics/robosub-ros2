@@ -129,6 +129,7 @@ async def rotate_to_angle_from_normal(self: Task,
             pose_tolerances=create_twist_tolerance(angular_yaw=0.1),
             parent=self,
         )
+        logger.info(f'Sonar scan from {start_angle} to {end_angle} degrees, distance: {scan_distance} m')
         angle = get_normal_angle(
             await Sonar().sweep(
                 start_angle=start_angle,

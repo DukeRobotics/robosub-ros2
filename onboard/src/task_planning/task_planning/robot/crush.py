@@ -19,57 +19,57 @@ async def main(self: Task) -> Task[None, None, None]:
     DEPTH_LEVEL = State().orig_depth - 0.8
     tasks = [
         ######## True competition plan ########
-        comp_tasks.initial_submerge(0.8, enable_controls_flag=True, timeout=15, parent=self),
-        comp_tasks.coin_flip(enable_same_direction=True, parent=self),
-        # Go through gate + style (confirmed Monday, works)
-        move_tasks.move_with_directions([(2, 0, 0), (2.5, 0, 0)],
-                                        depth_level=DEPTH_LEVEL,
-                                        correct_yaw=True,
-                                        correct_depth=True,
-                                        keep_orientation=True,
-                                        keep_depth=True,
-                                        timeout=15,
-                                        pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
-                                        parent=self),
-        comp_tasks.gate_style_task(depth_level=1.0, parent=self),
-        # Turn 45 degrees CW
-        move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 4),
-            keep_orientation=True, 
-            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
-            parent=self,
-        ),
-        sonar_tasks.rotate_to_normal(start_angle=-20, end_angle=20, scan_distance=6, yaw_threshold= math.pi/6, parent=self),
-        sonar_tasks.rotate_to_normal(start_angle=-45, end_angle=45, scan_distance=6, yaw_threshold= math.pi/12, parent=self),
-        # Turn 90 degrees CCW
-        move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi / 2),
-            keep_orientation=True, 
-            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
-            parent=self,
-        ),
-        # Gate to Slalom to Octagon
-        move_tasks.move_with_directions(
-            [(0, 1.6, 0), (3.1, 0, 0)] + [(2, 0, 0), (0, 0.5, 0), (2, 0, 0)] + [(2.5, 0, 0), (0, 0.75, 0), (2, 0, 0), (1.75, 0, 0)],
-            depth_level=DEPTH_LEVEL,
-            correct_yaw=True,
-            correct_depth=True,
-            keep_orientation=True,
-            keep_depth=True,
-            timeout=15,
-            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
-            parent=self,
-        ),
-        sonar_tasks.rotate_to_normal(start_angle=-20, end_angle=20, scan_distance=6, yaw_threshold= math.pi/6, parent=self),
-        sonar_tasks.rotate_to_normal(start_angle=-45, end_angle=45, scan_distance=6, yaw_threshold= math.pi/12, parent=self),
-        # Turn for image in octagon 45 degrees CW
-        move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 4),
-            keep_orientation=True, 
-            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
-            parent=self,
-        ),
-        comp_tasks.surface_task(parent=self),
+        # comp_tasks.initial_submerge(0.8, enable_controls_flag=True, timeout=15, parent=self),
+        # comp_tasks.coin_flip(enable_same_direction=True, parent=self),
+        # # Go through gate + style (confirmed Monday, works)
+        # move_tasks.move_with_directions([(2, 0, 0), (2.5, 0, 0)],
+        #                                 depth_level=DEPTH_LEVEL,
+        #                                 correct_yaw=True,
+        #                                 correct_depth=True,
+        #                                 keep_orientation=True,
+        #                                 keep_depth=True,
+        #                                 timeout=15,
+        #                                 pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+        #                                 parent=self),
+        # comp_tasks.gate_style_task(depth_level=1.0, parent=self),
+        # # Turn 45 degrees CW
+        # move_tasks.move_to_pose_local(
+        #     geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi/2),
+        #     keep_orientation=True, 
+        #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+        #     parent=self,
+        # ),
+        # sonar_tasks.rotate_to_normal(start_angle=-20, end_angle=20, scan_distance=18, yaw_threshold= math.pi/12, parent=self),
+        # sonar_tasks.rotate_to_normal(start_angle=-35, end_angle=35, scan_distance=15, yaw_threshold= math.pi/24, parent=self),
+        # # Turn 90 degrees CCW
+        # move_tasks.move_to_pose_local(
+        #     geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi),
+        #     keep_orientation=True, 
+        #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+        #     parent=self,
+        # ),
+        # # Gate to Slalom to Octagon
+        # move_tasks.move_with_directions(
+        #     [(0, 1.6, 0), (3.1, 0, 0)] + [(2, 0, 0), (0, 0.5, 0), (2, 0, 0)] + [(2.5, 0, 0), (0, 0.75, 0), (2, 0, 0), (1.75, 0, 0)],
+        #     depth_level=DEPTH_LEVEL,
+        #     correct_yaw=True,
+        #     correct_depth=True,
+        #     keep_orientation=True,
+        #     keep_depth=True,
+        #     timeout=15,
+        #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+        #     parent=self,
+        # ),
+        # sonar_tasks.rotate_to_normal(start_angle=-20, end_angle=20, scan_distance=6, yaw_threshold= math.pi/6, parent=self),
+        # sonar_tasks.rotate_to_normal(start_angle=-45, end_angle=45, scan_distance=6, yaw_threshold= math.pi/12, parent=self),
+        # # Turn for image in octagon 45 degrees CW
+        # move_tasks.move_to_pose_local(
+        #     geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 4),
+        #     keep_orientation=True, 
+        #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+        #     parent=self,
+        # ),
+        # comp_tasks.surface_task(parent=self),
 
         ### END COMP TASKS ###
 
@@ -94,6 +94,9 @@ async def main(self: Task) -> Task[None, None, None]:
         #     parent=self,
         # ),
 
+        #ivc_tasks.delineate_ivc_log(parent=self),
+        comp_tasks.initial_submerge(0.5, parent=self),
+        # util_tasks.sleep(15, parent=self)
 
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
