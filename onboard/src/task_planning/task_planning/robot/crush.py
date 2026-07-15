@@ -52,21 +52,21 @@ async def main(self: Task) -> Task[None, None, None]:
         comp_tasks.gate_style_task(depth_level=1.0, parent=self),
         # Turn 90 degrees CW toward the wall
         move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 2),
+            geometry_utils.create_pose(0, 0, 0, 0, 0, -2 * math.pi / 3),
             keep_orientation=True,
             pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.03),
             parent=self,
         ),
         sonar_tasks.rotate_to_normal(
-            start_angle=-20,
-            end_angle=20,
+            start_angle=-10,
+            end_angle=10,
             scan_distance=6,
             yaw_threshold=math.pi / 6,
             parent=self,
         ),
         sonar_tasks.rotate_to_normal(
-            start_angle=-30,
-            end_angle=30,
+            start_angle=-15,
+            end_angle=15,
             scan_distance=6,
             yaw_threshold=math.pi / 12,
             parent=self,
