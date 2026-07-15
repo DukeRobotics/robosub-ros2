@@ -18,7 +18,149 @@ async def main(self: Task) -> Task[None, None, None]:
     # keep_depth target during long moves (matches coin_flip default depth)
     DEPTH_LEVEL = State().orig_depth - 0.8
     tasks = [
-        ######## True competition plan ########
+        ######## True competition plan, Lane D ########
+        # Gate
+        comp_tasks.initial_submerge(0.8, enable_controls_flag=True, timeout=15, parent=self),
+        comp_tasks.coin_flip(enable_same_direction=True, parent=self),
+        move_tasks.move_with_directions(
+            [(2, 0, 0)],
+            depth_level=DEPTH_LEVEL,
+            correct_yaw=True,
+            correct_depth=True,
+            keep_orientation=True,
+            keep_depth=True,
+            timeout=15,
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        comp_tasks.gate_style_task(depth_level=1.0, parent=self),
+        # Turn 90 degrees CW toward the wall.
+        move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 2),
+            keep_orientation=True,
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        sonar_tasks.rotate_to_normal(
+            start_angle=-20,
+            end_angle=20,
+            scan_distance=6,
+            yaw_threshold=math.pi / 6,
+            parent=self,
+        ),
+        sonar_tasks.rotate_to_normal(
+            start_angle=-45,
+            end_angle=45,
+            scan_distance=6,
+            yaw_threshold=math.pi / 12,
+            parent=self,
+        ),
+        # Turn 180 degrees toward the slalom.
+        move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi),
+            keep_orientation=True,
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        # Continue through the gate, then move left.
+        move_tasks.move_with_directions(
+            [(2.5, 0, 0), (0, 0.25, 0)],
+            depth_level=DEPTH_LEVEL,
+            correct_yaw=True,
+            correct_depth=True,
+            keep_orientation=True,
+            keep_depth=True,
+            timeout=15,
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        # Slalom
+        move_tasks.move_with_directions(
+            [
+                (3.25, 0, 0),
+                (0, 0.45, 0),
+                (1.75, 0, 0),
+                (0, -0.6, 0),
+                (1.75, 0, 0),
+            ],
+            depth_level=DEPTH_LEVEL,
+            correct_yaw=True,
+            correct_depth=True,
+            keep_orientation=True,
+            keep_depth=True,
+            timeout=15,
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        # Gate to octagon
+        move_tasks.move_with_directions(
+            [(0, 0.45, 0), (2.25, 0, 0), (2.5, 0, 0)],
+            depth_level=DEPTH_LEVEL,
+            correct_yaw=True,
+            correct_depth=True,
+            keep_orientation=True,
+            keep_depth=True,
+            timeout=15,
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        sonar_tasks.rotate_to_normal(
+            start_angle=-20,
+            end_angle=20,
+            scan_distance=6,
+            yaw_threshold=math.pi / 6,
+            parent=self,
+        ),
+        sonar_tasks.rotate_to_normal(
+            start_angle=-45,
+            end_angle=45,
+            scan_distance=6,
+            yaw_threshold=math.pi / 12,
+            parent=self,
+        ),
+        # Entering on the right: turn 45 degrees CCW for the octagon image
+        move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi / 4),
+            keep_orientation=True,
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        comp_tasks.surface_task(parent=self),
+
+        # Return home: descend, undo the net 0.55 m left offset, turn around,
+        # and drive 17.5 m to slightly overshoot the starting position.
+        comp_tasks.initial_submerge(0.8, timeout=15, parent=self),
+        move_tasks.move_with_directions(
+            [(0, -0.55, 0)],
+            depth_level=DEPTH_LEVEL,
+            correct_yaw=True,
+            correct_depth=True,
+            keep_orientation=True,
+            keep_depth=True,
+            timeout=15,
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        move_tasks.move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi),
+            keep_orientation=True,
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        move_tasks.move_with_directions(
+            [(3, 0, 0), (3, 0, 0), (3, 0, 0), (3, 0, 0), (3, 0, 0), (2.5, 0, 0)],
+            depth_level=DEPTH_LEVEL,
+            correct_yaw=True,
+            correct_depth=True,
+            keep_orientation=True,
+            keep_depth=True,
+            timeout=15,
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        comp_tasks.surface_task(parent=self),
+
+        ######## True competition plan, Lane A ########
         # comp_tasks.initial_submerge(0.8, enable_controls_flag=True, timeout=15, parent=self),
         # comp_tasks.coin_flip(enable_same_direction=True, parent=self),
         # # Go through gate + style (confirmed Monday, works)
@@ -34,17 +176,17 @@ async def main(self: Task) -> Task[None, None, None]:
         # comp_tasks.gate_style_task(depth_level=1.0, parent=self),
         # # Turn 45 degrees CW
         # move_tasks.move_to_pose_local(
-        #     geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi/2),
-        #     keep_orientation=True, 
+        #     geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 4),
+        #     keep_orientation=True,
         #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
         #     parent=self,
         # ),
-        # sonar_tasks.rotate_to_normal(start_angle=-20, end_angle=20, scan_distance=18, yaw_threshold= math.pi/12, parent=self),
-        # sonar_tasks.rotate_to_normal(start_angle=-35, end_angle=35, scan_distance=15, yaw_threshold= math.pi/24, parent=self),
+        # sonar_tasks.rotate_to_normal(start_angle=-20, end_angle=20, scan_distance=6, yaw_threshold=math.pi/6, parent=self),
+        # sonar_tasks.rotate_to_normal(start_angle=-45, end_angle=45, scan_distance=6, yaw_threshold=math.pi/12, parent=self),
         # # Turn 90 degrees CCW
         # move_tasks.move_to_pose_local(
-        #     geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi),
-        #     keep_orientation=True, 
+        #     geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi / 2),
+        #     keep_orientation=True,
         #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
         #     parent=self,
         # ),
@@ -60,12 +202,12 @@ async def main(self: Task) -> Task[None, None, None]:
         #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
         #     parent=self,
         # ),
-        # sonar_tasks.rotate_to_normal(start_angle=-20, end_angle=20, scan_distance=6, yaw_threshold= math.pi/6, parent=self),
-        # sonar_tasks.rotate_to_normal(start_angle=-45, end_angle=45, scan_distance=6, yaw_threshold= math.pi/12, parent=self),
+        # sonar_tasks.rotate_to_normal(start_angle=-20, end_angle=20, scan_distance=6, yaw_threshold=math.pi/6, parent=self),
+        # sonar_tasks.rotate_to_normal(start_angle=-45, end_angle=45, scan_distance=6, yaw_threshold=math.pi/12, parent=self),
         # # Turn for image in octagon 45 degrees CW
         # move_tasks.move_to_pose_local(
         #     geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 4),
-        #     keep_orientation=True, 
+        #     keep_orientation=True,
         #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
         #     parent=self,
         # ),
