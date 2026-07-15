@@ -39,7 +39,7 @@ async def main(self: Task) -> Task[None, None, None]:
         comp_tasks.initial_submerge(0.8, enable_controls_flag=True, timeout=15, parent=self),
         comp_tasks.coin_flip(enable_same_direction=True, parent=self),
         move_tasks.move_with_directions(
-            [(2, 0, 0)],
+            [(2.5, 0, 0)],
             depth_level=DEPTH_LEVEL,
             correct_yaw=True,
             correct_depth=True,
@@ -80,7 +80,19 @@ async def main(self: Task) -> Task[None, None, None]:
         ),
         # Continue through the gate, then move left.
         move_tasks.move_with_directions(
-            [(2.5, 0, 0), (0, 0.65, 0)],
+            [(2, 0, 0)],
+            depth_level=DEPTH_LEVEL,
+            correct_yaw=True,
+            correct_depth=True,
+            keep_orientation=True,
+            keep_depth=True,
+            timeout=15,
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+            parent=self,
+        ),
+        ivc_tasks.ivc_send(IVCMessageType.CRUSH_GATE, timeout=7, parent=self),
+        move_tasks.move_with_directions(
+            [(0, 0.65, 0)],
             depth_level=DEPTH_LEVEL,
             correct_yaw=True,
             correct_depth=True,
@@ -108,6 +120,7 @@ async def main(self: Task) -> Task[None, None, None]:
             pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
             parent=self,
         ),
+        ivc_tasks.ivc_send(IVCMessageType.CRUSH_SLALOM, timeout=7, parent=self),
         # Slalom to octagon
         move_tasks.move_with_directions(
             [(0, 0.83, 0), (2.5, 0, 0), (2.5, 0, 0)],
@@ -141,6 +154,7 @@ async def main(self: Task) -> Task[None, None, None]:
             parent=self,
         ),
         comp_tasks.surface_task(parent=self),
+        ivc_tasks.ivc_send(IVCMessageType.CRUSH_OCTAGON, timeout=7, parent=self),
 
         # Return home: descend, undo the net 2.88 m left offset, turn around,
         # and drive 16.67 m (matching outbound forward: 2+2.5+3.47+1.85+1.85+2.5+2.5).
