@@ -1,5 +1,6 @@
 # ruff: noqa: ERA001, F401, N806, F841
 from math import radians
+import math
 
 from task_planning.interface.cv import CVObjectType
 from task_planning.interface.ivc import IVCMessageType
@@ -23,7 +24,7 @@ async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     # Constants
     DIRECTION_OF_TORPEDO_BANNER = 1
-    DEPTH = 0.925
+    DEPTH = 0.924
     FIRST_TARGET = CVObjectType.TORPEDO_LARGEST_TARGET
     SECOND_TARGET = CVObjectType.TORPEDO_LARGEST_TARGET
     tasks = [
@@ -31,20 +32,29 @@ async def main(self: Task) -> Task[None, None, None]:
 
         ## SF Course D tested @ 7:30am Mon 13 Jul 2026, LEFT SIDE OF GATE
         # SEQUENCE: Gate --> torpedoes
-        # comp_tasks.initial_submerge(DEPTH, parent=self),
-        # move_tasks.move_with_directions([(4, 0, 0), (0, 2, 0), (6, 0, 0)], parent=self),
-        # comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        comp_tasks.initial_submerge(DEPTH, parent=self),
+        # move_tasks.move_with_directions([(5, 0, 0), (0, 2, 0), (6, 0, 0)], parent=self),
+        comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
 
         ## SF Course A
+        # SEQUENCE: Gate --> torpedoes
+        # comp_tasks.initial_submerge(DEPTH, parent=self),
+        # move_tasks.move_with_directions([
+        #     (5, 0, 0),
+        #     (0, 3.5, 0),
+        #     (5, 0, 0),
+        # ], parent=self),
+        # comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
 
         #########     End sensitive taskplanning code.     #########
 
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
-        comp_tasks.initial_submerge(DEPTH, parent=self),
+        # comp_tasks.initial_submerge(DEPTH, parent=self),
         # move_tasks.move_with_directions([(4, 0, 0), (0, 2, 0), (6, 0, 0)], parent=self),
         # comp_tasks.gate_task(offset=-0.1, direction=-1, parent=self),
-        # comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        # comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET,
+        #                              depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
         # move_tasks.move_with_directions([(2.0, 0, 0), (0, 2.0, 0), (-2.0, 0, 0), (0, -2.0, 0)], parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
         # cv_tasks.yaw_to_cv_obj(CVObjectType.TORPEDO_BANNER, depth_level=DEPTH, parent=self),

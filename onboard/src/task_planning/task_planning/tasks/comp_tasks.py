@@ -1062,7 +1062,7 @@ async def torpedo_task_2026(
         return
     # assert first_target != second_target, 'first_target and second_target must be different'
 
-    FINAL_STOP_DISTANCE = 2.5
+    FINAL_STOP_DISTANCE = 2.0
     TARGET_DETECTION_TIMEOUT = 5
     TARGET_DETECTION_LATENCY = 2
 
@@ -1120,21 +1120,33 @@ async def torpedo_task_2026(
     # To shoot the left torpedo on target:
     # - The left target: self.move_y(step=-0.2)
     # - The top target: self.move_y(step=-0.6) followed by self.correct_depth(desired_depth=State().depth + 0.2)
-    # Other 2 targets TBD
     # Right torpedo TBD
-    # Other banner design TBD
 
     # DEAD RECKONING CODE
+    # await move_tasks.move_to_pose_local(
+        #     geometry_utils.create_pose(0, 0, 0, 0, 0, 0.261799),
+        #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+        #     parent=self,
+        # ),
+
+
+    await self.correct_depth(desired_depth=State().depth - 0.20)
     await self.move_y(step=-0.6)
-    await move_tasks.move_to_pose_local(
-        geometry_utils.create_pose(0, 0, 0.2, 0, 0, 0),
-        parent=self,
-    )
+    await self.move_x(step=0.5)
+
     await servos_tasks.fire_torpedo(TorpedoStates.LEFT, parent=self)
+    # await self.move_y(step=0.06)
+    await util_tasks.sleep(duration=3.0, parent=self)
+    await servos_tasks.fire_torpedo(TorpedoStates.RIGHT, parent=self)
+
+    # await move_tasks.move_to_pose_local(
+    #     geometry_utils.create_pose(0, 0, 0.2, 0, 0, 0),
+    #     parent=self,
+    # )
 
     # ACTUAL CV CODE
     # Fine targeting: swap to the HSV-matched USB-camera detections for each glyph.
-    first_target_y, first_target_z = await fire_at_target(first_target, TorpedoStates.LEFT, y_offset=-0.1, z_offset=0.1)
+    # first_target_y, first_target_z = await fire_at_target(first_target, TorpedoStates.LEFT, y_offset=-0.1, z_offset=0.1)
 
     # Only for a new target, if same target should just re-align and shoot again
     # if first_target != second_target:

@@ -121,7 +121,7 @@ class TorpedoTargetDetector(Node):
         # Sort contours by area and shape similarity to the reference image
         contours = sorted(contours, key=lambda cnt: (cv2.contourArea(cnt) / cv2.minEnclosingCircle(cnt)[1]),
                           reverse=True)
-        
+
         # Group contours by distance
         contours = group_contours_by_distance(contours, 20)
 
@@ -145,7 +145,7 @@ class TorpedoTargetDetector(Node):
             match_2 = cv2.contourArea(contours[1])
             match_3 = cv2.contourArea(contours[2])
             match_4 = cv2.contourArea(contours[3])
-            logger.info(f'SHAPE FIRST: {match_1:.3f}, SECOND: {match_2:.3f}, THIRD: {match_3:.3f}, FOURTH: {match_4:.3f}')
+            # logger.info(f'SHAPE FIRST: {match_1:.3f}, SECOND: {match_2:.3f}, THIRD: {match_3:.3f}, FOURTH: {match_4:.3f}')
 
 
         # Draw contours onto image, and publish the image
