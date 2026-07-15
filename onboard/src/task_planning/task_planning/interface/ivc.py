@@ -185,6 +185,10 @@ class IVC:
         ivc_message = self._convert_stringwithheader_to_ivcmessage(msg)
         self._messages.append(ivc_message)
 
+        if ivc_message.msg == IVCMessageType.UNKNOWN:
+            logger.info(f'Received unknown IVC message, ignoring...')
+            return
+
         seconds, nanoseconds = ivc_message.timestamp.seconds_nanoseconds()
         timestamp = ros_timestamp_to_pacific_time(
             seconds,

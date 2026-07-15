@@ -38,20 +38,20 @@ async def main(self: Task) -> Task[None, None, None]:
 
         # ######## True competition plan, Lane D ########
         # # Gate
-        # ivc_tasks.delineate_ivc_log(parent=self),
+        ivc_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(0.8, enable_controls_flag=True, timeout=15, parent=self),
-        # comp_tasks.coin_flip(enable_same_direction=True, parent=self),
-        # move_tasks.move_with_directions(
-        #     [(2.5, 0, 0)],
-        #     depth_level=DEPTH_LEVEL,
-        #     correct_yaw=True,
-        #     correct_depth=True,
-        #     keep_orientation=True,
-        #     keep_depth=True,
-        #     timeout=15,
-        #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.03),
-        #     parent=self,
-        # ),
+        comp_tasks.coin_flip(enable_same_direction=True, parent=self),
+        move_tasks.move_with_directions(
+            [(2.5, 0, 0)],
+            depth_level=DEPTH_LEVEL,
+            correct_yaw=True,
+            correct_depth=True,
+            keep_orientation=True,
+            keep_depth=True,
+            timeout=15,
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.03),
+            parent=self,
+        ),
         comp_tasks.gate_style_task(depth_level=1.0, parent=self),
         ivc_tasks.ivc_send(IVCMessageType.CRUSH_STYLE, timeout=7, parent=self),
         # Turn 105 degrees CW toward the wall
@@ -97,6 +97,8 @@ async def main(self: Task) -> Task[None, None, None]:
             parent=self,
         ),
         ivc_tasks.ivc_send(IVCMessageType.CRUSH_GATE, timeout=7, parent=self),
+
+        # Slalom
         move_tasks.move_with_directions(
             [(0, 0.65, 0)],
             depth_level=DEPTH_LEVEL,
@@ -108,14 +110,13 @@ async def main(self: Task) -> Task[None, None, None]:
             pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
             parent=self,
         ),
-        # Slalom
         move_tasks.move_with_directions(
             [
-                (3.47, 0, 0),
+                (3.3, 0, 0),
                 (0, 0.65, 0),
                 (1.85, 0, 0),
                 (0, -0.75, 0),
-                (1.85, 0, 0),
+                (2.1, 0, 0),
             ],
             depth_level=DEPTH_LEVEL,
             correct_yaw=True,
@@ -129,7 +130,7 @@ async def main(self: Task) -> Task[None, None, None]:
         ivc_tasks.ivc_send(IVCMessageType.CRUSH_SLALOM, timeout=7, parent=self),
         # Slalom to octagon
         move_tasks.move_with_directions(
-            [(0, 0.83, 0), (2.5, 0, 0), (2.5, 0, 0)],
+            [(0, 0.83, 0), (2.6, 0, 0), (2.6, 0, 0)],
             depth_level=DEPTH_LEVEL,
             correct_yaw=True,
             correct_depth=True,
@@ -153,8 +154,9 @@ async def main(self: Task) -> Task[None, None, None]:
             yaw_threshold=math.pi / 12,
             parent=self,
         ),
+        # Turn 45 degrees CCW for the octagon image
         move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 4),
+            geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi / 4),
             keep_orientation=True,
             timeout=10,
             pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
@@ -167,28 +169,14 @@ async def main(self: Task) -> Task[None, None, None]:
         # and drive 16.67 m (matching outbound forward: 2+2.5+3.47+1.85+1.85+2.5+2.5).
         comp_tasks.initial_submerge(0.8, timeout=15, parent=self),
         move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi / 4),
+            geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 4),
             keep_orientation=True,
             timeout=10,
             pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
             parent=self,
         ),
-        sonar_tasks.rotate_to_normal(
-            start_angle=-20,
-            end_angle=20,
-            scan_distance=6,
-            yaw_threshold=math.pi / 6,
-            parent=self,
-        ),
-        sonar_tasks.rotate_to_normal(
-            start_angle=-45,
-            end_angle=45,
-            scan_distance=6,
-            yaw_threshold=math.pi / 12,
-            parent=self,
-        ),
         move_tasks.move_with_directions(
-            [(0, -2.88, 0)],
+            [(0, -3.9, 0)],
             depth_level=DEPTH_LEVEL,
             correct_yaw=True,
             correct_depth=True,
@@ -205,7 +193,7 @@ async def main(self: Task) -> Task[None, None, None]:
             parent=self,
         ),
         move_tasks.move_with_directions(
-            [(2.5, 0, 0), (2.5, 0, 0), (2.5, 0, 0), (2.5, 0, 0), (2.5, 0, 0), (2.17, 0, 0), (2, 0, 0)],
+            [(2.5, 0, 0), (2.5, 0, 0), (2.5, 0, 0), (2.5, 0, 0), (1.7, 0, 0), (0, -2.75, 0), (2, 0, 0), (2, 0, 0)],
             depth_level=DEPTH_LEVEL,
             correct_yaw=True,
             correct_depth=True,
