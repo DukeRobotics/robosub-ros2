@@ -138,7 +138,11 @@ async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = Fa
     Send:
         Pose: A new local pose to move to.
     """
-    logger.info(f'Moving to pose local: {pose}')
+    euler = geometry_utils.geometry_quat_to_euler_angles(pose.orientation)
+    logger.info(
+        f'Moving to pose local: pos=({pose.position.x:.2f}, {pose.position.y:.2f}, {pose.position.z:.2f}), '
+        f'rpy=({euler.x:.2f}, {euler.y:.2f}, {euler.z:.2f})',
+    )
     def send_transformer(local_pose: Pose | None) -> Pose | None:
         if local_pose is None:
             return None
