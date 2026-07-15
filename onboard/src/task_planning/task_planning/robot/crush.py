@@ -142,8 +142,9 @@ async def main(self: Task) -> Task[None, None, None]:
         ),
         comp_tasks.surface_task(parent=self),
 
-        # Return home: descend, undo the net 0.55 m left offset, turn around,
-        # and drive 17.5 m to slightly overshoot the starting position.
+        # Return home: descend, undo the net 2.88 m left offset, turn around,
+        # and drive 16.67 m (matching outbound forward: 2+2.5+3.47+1.85+1.85+2.5+2.5).
+        comp_tasks.initial_submerge(0.8, timeout=15, parent=self),
         move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi / 4),
             keep_orientation=True,
@@ -164,9 +165,8 @@ async def main(self: Task) -> Task[None, None, None]:
             yaw_threshold=math.pi / 12,
             parent=self,
         ),
-        comp_tasks.initial_submerge(0.8, timeout=15, parent=self),
         move_tasks.move_with_directions(
-            [(0, -0.55, 0)],
+            [(0, -2.88, 0)],
             depth_level=DEPTH_LEVEL,
             correct_yaw=True,
             correct_depth=True,
@@ -183,7 +183,7 @@ async def main(self: Task) -> Task[None, None, None]:
             parent=self,
         ),
         move_tasks.move_with_directions(
-            [(3, 0, 0), (3, 0, 0), (3, 0, 0), (3, 0, 0), (3, 0, 0), (2.5, 0, 0)],
+            [(2.5, 0, 0), (2.5, 0, 0), (2.5, 0, 0), (2.5, 0, 0), (2.5, 0, 0), (2.17, 0, 0), (2, 0, 0)],
             depth_level=DEPTH_LEVEL,
             correct_yaw=True,
             correct_depth=True,
@@ -193,7 +193,6 @@ async def main(self: Task) -> Task[None, None, None]:
             pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
             parent=self,
         ),
-        comp_tasks.surface_task(parent=self),
 
 
 
