@@ -204,7 +204,7 @@ desired_power_limits:
 static_power_global:
   x: 0
   y: 0
-  z: -0.17000000000000001
+  z: -0.14499999999999999
 power_scale_factor: 1
 thrusters:
   - name: front_right
