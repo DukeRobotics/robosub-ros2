@@ -50,12 +50,16 @@ class Sonar(Node):
     CONSTANT_SWEEP_END = 150
 
     VALUE_THRESHOLD = 95  # Sonar intensity threshold
-    DBSCAN_EPS = 3  # DBSCAN epsilon
-    DBSCAN_MIN_SAMPLES = 10  # DBSCAN min samples
+    # Slightly looser clustering for thinner 3–5 m returns; keep RANSAC tight for angle precision
+    DBSCAN_EPS = 4  # DBSCAN epsilon
+    DBSCAN_MIN_SAMPLES = 7  # DBSCAN min samples
     MIN_WALL_ELONGATION = 2.0  # Min ratio of along-line to across-line variance; only rules out round/blob shapes
     MIN_WALL_SPAN_METERS = 1.0  # Min length a segment must span to count as a wall rather than an object
-    BLUR_FACTOR = 16  # Box blur kernel size; larger dilutes thin/sparse reflections more
-    BLUR_CUTOFF = 1 / 5  # Post-blur normalized intensity cutoff; higher discards more
+    WALL_RANGE_MIN_METERS = 2.5  # Reject wall-like segments closer than this (clutter / near reflectors)
+    WALL_RANGE_MAX_METERS = 5.5  # Reject wall-like segments farther than this (beyond intended standoff)
+    BLUR_FACTOR = 12  # Box blur kernel size; larger dilutes thin/sparse reflections more
+    BLUR_CUTOFF = 0.15  # Post-blur normalized intensity cutoff; higher discards more
+    FOURIER_THRESHOLD = 30  # Mag cutoff after FFT bandpass; lower keeps weaker far-wall returns
     WALL_FIT_INLIER_THRESHOLD = 6.0  # Max px a point may be from a RANSAC line hypothesis to count as inlier
     WALL_FIT_RANSAC_ITERATIONS = 50  # Number of random line hypotheses tried per segment
 
@@ -221,7 +225,9 @@ class Sonar(Node):
             )
 
         denoiser = sonar_object_detection.SonarDenoiser(sweep)
-        denoiser.wall_block().percentile_filter().fourier_signal_processing().init_cartesian().normalize().blur(
+        denoiser.wall_block().percentile_filter().fourier_signal_processing(
+            threshold=self.FOURIER_THRESHOLD,
+        ).init_cartesian().normalize().blur(
             factor=self.BLUR_FACTOR, cutoff=self.BLUR_CUTOFF,
         )
         self.get_logger().info('Finished Denoising')
@@ -238,8 +244,16 @@ class Sonar(Node):
         )
         self.get_logger().info(f'Segmented into {len(segmentation.segments)} object(s)')
 
-        min_wall_span_pixels = self.MIN_WALL_SPAN_METERS / sonar_utils.meters_per_sample(self.sample_period)
-        nearest_segment = segmentation.get_most_wall_like_segment(self.MIN_WALL_ELONGATION, min_wall_span_pixels)
+        meters_per_px = sonar_utils.meters_per_sample(self.sample_period)
+        min_wall_span_pixels = self.MIN_WALL_SPAN_METERS / meters_per_px
+        min_range_pixels = self.WALL_RANGE_MIN_METERS / meters_per_px
+        max_range_pixels = self.WALL_RANGE_MAX_METERS / meters_per_px
+        nearest_segment = segmentation.get_most_wall_like_segment(
+            self.MIN_WALL_ELONGATION,
+            min_wall_span_pixels,
+            min_range_pixels=min_range_pixels,
+            max_range_pixels=max_range_pixels,
+        )
 
         if nearest_segment is None:
             self.get_logger().info('No wall-like segment found among detected objects')
