@@ -11,7 +11,7 @@ from task_planning.utils import geometry_utils
 logger = get_logger('sonar_tasks')
 
 MAX_STEPS = 3
-CORRECTION_GAIN = 1.35  # Fraction of the measured angle to correct per step; damps noise/overshoot to avoid diverging
+CORRECTION_GAIN = 1.0  # Fraction of the measured angle to correct per step; damps noise/overshoot to avoid diverging
 ROTATION_YAW_TOLERANCE = 0.03  # rad; must be small relative to typical correction sizes or moves finish before arriving
 
 

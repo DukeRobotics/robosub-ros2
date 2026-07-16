@@ -50,23 +50,23 @@ async def main(self: Task) -> Task[None, None, None]:
         ivc_tasks.ivc_send(IVCMessageType.CRUSH_STYLE, timeout=7, parent=self),
         # Turn 120 degrees CCW toward the wall
         move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, 4 * math.pi / 6),
+            geometry_utils.create_pose(0, 0, 0, 0, 0, 11 * math.pi / 12),
             keep_orientation=True,
             timeout=10,
             pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.03),
             parent=self,
         ),
         sonar_tasks.rotate_to_normal(
-            start_angle=-35,
-            end_angle=35,
-            scan_distance=6,
+            start_angle=-25,
+            end_angle=25,
+            scan_distance=8,
             yaw_threshold=math.pi / 24,
             parent=self,
         ),
         sonar_tasks.rotate_to_normal(
             start_angle=-45,
             end_angle=45,
-            scan_distance=6,
+            scan_distance=7,
             yaw_threshold=math.pi / 36,
             parent=self,
         ),
@@ -160,7 +160,7 @@ async def main(self: Task) -> Task[None, None, None]:
         ivc_tasks.ivc_send(IVCMessageType.CRUSH_SLALOM, timeout=7, parent=self),
         # Slalom to octagon
         move_tasks.move_with_directions(
-            [(0, 0.83, 0)],
+            [(0, -0.75, 0)],
             depth_level=DEPTH_LEVEL,
             correct_yaw=True,
             correct_depth=True,
