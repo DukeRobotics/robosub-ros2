@@ -197,7 +197,7 @@ async def main(self: Task) -> Task[None, None, None]:
         ),
         # Turn 45 degrees CCW for the octagon image
         move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi / 4),
+            geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 4),
             keep_orientation=True,
             timeout=10,
             pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
