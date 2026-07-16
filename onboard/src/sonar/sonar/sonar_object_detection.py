@@ -532,8 +532,6 @@ class ClusteredSonarSegmentation:
         self,
         min_elongation: float,
         min_span: float = 0.0,
-        min_range_pixels: float | None = None,
-        max_range_pixels: float | None = None,
     ) -> 'SonarSegment | None':
         """
         Get the largest segment that is shaped like a flat wall rather than a compact object.
@@ -552,9 +550,6 @@ class ClusteredSonarSegmentation:
         clusters (elongation close to 1), and min_span is what should really be relied on to
         rule out small objects.
 
-        Optional min/max range (average distance to the sonar origin, in pixels) further
-        rejects wall-like clutter outside the expected standoff band.
-
         Among segments that pass the checks, the LARGEST one (by span) is returned rather
         than the nearest one: a true wall is almost always the biggest reflective structure in
         the scene by a wide margin, so preferring size over proximity is more robust against
@@ -565,23 +560,14 @@ class ClusteredSonarSegmentation:
                 considered wall-like.
             min_span (float): the minimum distance, in pixels, a segment must span along its
                 fitted line to be considered wall-like. Defaults to 0.0 (no minimum).
-            min_range_pixels (float | None): if set, require average range >= this (pixels).
-            max_range_pixels (float | None): if set, require average range <= this (pixels).
 
         Returns:
             SonarSegment | None: the largest wall-like segment, or None if no segment qualifies.
         """
-        wall_like_segments = []
-        for segment in self.segments:
-            if segment.ortho_regression.elongation < min_elongation or segment.get_span() < min_span:
-                continue
-            if min_range_pixels is not None or max_range_pixels is not None:
-                range_px = segment.get_average_distance_to_origin()
-                if min_range_pixels is not None and range_px < min_range_pixels:
-                    continue
-                if max_range_pixels is not None and range_px > max_range_pixels:
-                    continue
-            wall_like_segments.append(segment)
+        wall_like_segments = [
+            segment for segment in self.segments
+            if segment.ortho_regression.elongation >= min_elongation and segment.get_span() >= min_span
+        ]
 
         if not wall_like_segments:
             return None
