@@ -183,7 +183,7 @@ async def gate_style_task(self: CompTask, depth_level: float = 0.9) -> Task[None
         if get_robot_name() == RobotName.OOGWAY:
             await util_tasks.sleep(2.25, parent=self)
         else:
-            await util_tasks.sleep(2.6, parent=self)
+            await util_tasks.sleep(3.0, parent=self)
 
         logger.info('[gate_style_task] Completed roll')
 
