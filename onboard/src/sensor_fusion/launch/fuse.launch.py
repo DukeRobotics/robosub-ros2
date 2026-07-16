@@ -30,7 +30,9 @@ def generate_launch_description() -> LaunchDescription:
         parameters=[str(Path(get_package_share_directory('sensor_fusion')) / 'config' / f'{robot_name}.yaml')],
         remappings=[
             ('odometry/filtered', 'state'),
-        ])
+        ],
+        arguments=['--ros-args', '--log-level', 'rclcpp:=ERROR'],
+    )
 
     ld.add_action(robot_localization)
 
