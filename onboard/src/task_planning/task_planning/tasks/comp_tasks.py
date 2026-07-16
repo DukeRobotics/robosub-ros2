@@ -1130,9 +1130,12 @@ async def torpedo_task_2026(
         # ),
 
 
-    await self.correct_depth(desired_depth=State().depth - 0.3)
-    await self.move_y(step=-0.65)
-    await self.move_x(step=0.5)
+    await self.correct_depth(desired_depth=State().depth - 0.25)
+    # # If approach from the left
+    # await self.move_y(step=-0.6)
+    # If approach from the right
+    await self.move_y(step=-0.55)
+    await self.move_x(step=0.4)
 
     # await self.move_y(step=0.06)
     await servos_tasks.fire_torpedo(TorpedoStates.RIGHT, parent=self)

@@ -11,7 +11,7 @@ from rclpy.logging import get_logger
 from rclpy.node import Node
 from rclpy.task import Future
 from rclpy.time import Time
-from task_planning.utils.other_utils import singleton
+from task_planning.utils.other_utils import RobotName, get_robot_name, singleton
 
 logger = get_logger('ivc_interface')
 
@@ -30,15 +30,28 @@ class IVCMessageType(Enum):
         CRUSH_GATE (str): Confirm pass through gate by Crush
         CRUSH_ACKNOWLEDGE (str):  Acknowledgement message by Crush
     """
-    UNKNOWN = ''
-    OOGWAY_TEST = 'to'
-    OOGWAY_GATE = 'og'
-    OOGWAY_ACKNOWLEDGE = 'oa'
-    OOGWAY_TORPEDOES = 'fu'
-    CRUSH_TEST = 'tc'
+    UNKNOWN = 'xx'
+    OOGWAY_TEST = 'ot'
+    OOGWAY_GATE_DONE = 'og'
+    OOGWAY_ACKNOWLEDGE = 'fu'
+    OOGWAY_TORPEDOES_CV = 'tv'
+    OOGWAY_TORPEDOES_PINGER = 'tp'
+    OOGWAY_OCTAGON_PINGER = 'op'
+    OOGWAY_TORPEDOES_ARRIVED = 'ta'
+    OOGWAY_TORPEDOES_SHOOT_LEFT = 'sl'
+    OOGWAY_TORPEDOES_SHOOT_RIGHT = 'sr'
+    OOGWAY_TORPEDOES_DONE = 'tc'
+    OOGWAY_DONE = 'od'
+    CRUSH_TEST = 'ct'
+    CRUSH_COIN_FLIP = 'cf'
     CRUSH_GATE = 'cg'
-    CRUSH_ACKNOWLEDGE = 'ca'
-    CRUSH_OCTAGON = 'ky'
+    CRUSH_STYLE = 'cr'
+    CRUSH_SLALOM = 'cs'
+    CRUSH_ACKNOWLEDGE = 'ck'
+    CRUSH_OCTAGON_ARRIVED = 'ca'
+    CRUSH_OCTAGON_DONE = 'cd'
+    CRUSH_DONE = 'cc'
+    CRUSH_HOME = 'ch'
 
 
 
@@ -182,17 +195,49 @@ class IVC:
         ivc_message = self._convert_stringwithheader_to_ivcmessage(msg)
         self._messages.append(ivc_message)
 
+        if ivc_message.msg == IVCMessageType.UNKNOWN:
+            return
+
         seconds, nanoseconds = ivc_message.timestamp.seconds_nanoseconds()
         timestamp = ros_timestamp_to_pacific_time(
             seconds,
             nanoseconds,
         )
-        msg = f'Received IVC message: {ivc_message.msg.name} at {timestamp}\n'
+        log_msg = f'Received IVC message: {ivc_message.msg.name} at {timestamp}\n'
 
         # Log to text file
-        logger.info(msg)
+        logger.info(log_msg)
         with Path('ivc_log.txt').open('a') as f:
-            f.write(msg)
+            f.write(log_msg)
+
+        # Immediately send an acknowledgement for valid incoming messages, but do not ack ack messages.
+        if ivc_message.msg != IVCMessageType.UNKNOWN and not self._is_ack_message(ivc_message.msg):
+            acknowledgement = self._get_ack_message_for_self()
+            if acknowledgement is not None:
+                self.send_message(acknowledgement)
+                logger.info(f'Sent immediate ack: {acknowledgement.name}')
+                with Path('ivc_log.txt').open('a') as f:
+                    f.write(f'Sent IVC message: {acknowledgement.name} at {timestamp}\n')
+
+    def _is_ack_message(self, msg_type: IVCMessageType) -> bool:
+        """
+        Return True if the given message type is an acknowledgement message.
+        """
+        return msg_type in {
+            IVCMessageType.OOGWAY_ACKNOWLEDGE,
+            IVCMessageType.CRUSH_ACKNOWLEDGE,
+        }
+
+    def _get_ack_message_for_self(self) -> IVCMessageType | None:
+        """
+        Return the acknowledgement IVC message type for this robot.
+        """
+        robot_name = get_robot_name()
+        if robot_name in {RobotName.OOGWAY, RobotName.OOGWAY_SHELL}:
+            return IVCMessageType.OOGWAY_ACKNOWLEDGE
+        if robot_name == RobotName.CRUSH:
+            return IVCMessageType.CRUSH_ACKNOWLEDGE
+        return None
 
     def send_message(self, msg: IVCMessageType) -> Future | None:
         """

@@ -15,6 +15,7 @@ from task_planning.tasks import (
     prequal_tasks,
     servos_tasks,
     sonar_tasks,
+    util_tasks,
 )
 from task_planning.utils import geometry_utils
 
@@ -23,18 +24,36 @@ from task_planning.utils import geometry_utils
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     # Constants
-    DIRECTION_OF_TORPEDO_BANNER = 1
+    DIRECTION_OF_TORPEDO_BANNER = -1
     DEPTH = 0.924
     FIRST_TARGET = CVObjectType.TORPEDO_LARGEST_TARGET
     SECOND_TARGET = CVObjectType.TORPEDO_LARGEST_TARGET
     tasks = [
         ######### DO NOT TOUCH OR BIG SAAG WILL SPOON YOU #########
 
+
+        ## Third Chance Course D
+        comp_tasks.initial_submerge(DEPTH, parent=self),
+        ivc_tasks.delineate_ivc_log(parent=self),
+        ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TEST, parent=self),
+        move_tasks.move_with_directions([(5, 0, 0), (0, 2.3, 0), (6, 0, 0)], parent=self),
+        ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TORPEDOES_ARRIVED, parent=self),
+        util_tasks.sleep(2, parent=self),
+        ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TORPEDOES_PINGER, parent=self),
+        comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TORPEDOES_DONE, parent=self),
+        util_tasks.sleep(1000, parent=self),
+
         ## SF Course D tested @ 7:30am Mon 13 Jul 2026, LEFT SIDE OF GATE
         # # SEQUENCE: Gate --> torpedoes
-        comp_tasks.initial_submerge(DEPTH, parent=self),
-        # # move_tasks.move_with_directions([(5, 0, 0), (0, 2, 0), (6, 0, 0)], parent=self),
-        comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        # comp_tasks.initial_submerge(DEPTH, parent=self),
+        # ivc_tasks.delineate_ivc_log(parent=self),
+        # move_tasks.move_with_directions([(5, 0, 0), (0, 2, 0), (6, 0, 0)], parent=self),
+        # move_tasks.move_with_directions([(0, 2.3, 0), (6, 0, 0)], parent=self),
+        # ivc_tasks.ivc_send(IVCMessageType.OOGWAY_GATE, parent=self),
+        # comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        # ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TORPEDOES, parent=self),
+        # util_tasks.sleep(1000, parent=self),
 
         ## SF Course A
         # SEQUENCE: Gate --> torpedoes
