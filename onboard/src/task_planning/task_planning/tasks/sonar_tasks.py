@@ -35,29 +35,44 @@ async def rotate_to_normal(self: Task,
                            start_angle: float,
                            end_angle: float,
                            scan_distance: float,
-                           yaw_threshold: float) -> Task[None, None, None]:
-    """Rotates to face a normal angle."""
-    logger.info(f'Sonar scan from {start_angle} to {end_angle} degrees, distance: {scan_distance} m')
-    future = Sonar().sweep(
-        start_angle=start_angle,
-        end_angle=end_angle,
-        scan_distance=scan_distance,
-    )
-    normal_angle = get_normal_angle(
-        await future,
-    )
-    logger.info(f'Initial Normal Angle:  {normal_angle}')
-    if np.isnan(normal_angle):
-        logger.error('Normal angle does not exist, exiting task.')
+                           yaw_threshold: float,
+                           tries_until_detection: int = 2) -> Task[None, None, None]:
+    """Rotates to face a normal angle.""" 
+    attempts_made = 1
+    found = False
+
+    while attempts_made < tries_until_detection:
+        logger.info(f'Attempt {attempts_made} of {tries_until_detection} to scan for normal angle')
+        logger.info(f'Sonar scan from {start_angle} to {end_angle} degrees, distance: {scan_distance} m')
+        future = Sonar().sweep(
+            start_angle=start_angle,
+            end_angle=end_angle,
+            scan_distance=scan_distance,
+        )
+        normal_angle = get_normal_angle(
+            await future,
+        )
+        logger.info(f'Initial Normal Angle:  {normal_angle}')
+        if np.isnan(normal_angle):
+            logger.error(f'Normal angle does not exist.')
+            continue
+
+        found = True
+        await move_to_pose_local(
+            geometry_utils.create_pose(0, 0, 0, 0, 0, -normal_angle),
+            keep_orientation=True,
+            pose_tolerances=create_twist_tolerance(angular_yaw=0.1),
+            parent=self,
+        )
+
+        break
+
+    if not found:
+        logger.error(f'Normal angle does not exist after {tries_until_detection} attempts.')
         return
 
-    await move_to_pose_local(
-        geometry_utils.create_pose(0, 0, 0, 0, 0, -normal_angle),
-        keep_orientation=True,
-        pose_tolerances=create_twist_tolerance(angular_yaw=0.1),
-        parent=self,
-    )
-
+    logger.info(f'Starting confirmation scan')
+    logger.info(f'Sonar scan from {start_angle} to {end_angle} degrees, distance: {scan_distance} m')
     normal_angle = get_normal_angle(
         await Sonar().sweep(
             start_angle=start_angle,
@@ -67,6 +82,7 @@ async def rotate_to_normal(self: Task,
     )
     steps = 0
     while abs(normal_angle) > yaw_threshold and steps < MAX_STEPS:
+        logger.info(f'Normal angle {normal_angle} at step {steps} is above threshold, rotating')
         await move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, -normal_angle),
             keep_orientation=True,
