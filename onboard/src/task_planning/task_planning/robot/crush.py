@@ -181,6 +181,7 @@ async def main(self: Task) -> Task[None, None, None]:
             pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.03),
             parent=self,
         ),
+        ivc_tasks.ivc_send(IVCMessageType.CRUSH_OCTAGON_ARRIVED, timeout=7, parent=self),
         sonar_tasks.rotate_to_normal(
             start_angle=-20,
             end_angle=20,
@@ -204,13 +205,13 @@ async def main(self: Task) -> Task[None, None, None]:
             parent=self,
         ),
         comp_tasks.surface_task(parent=self),
-        ivc_tasks.ivc_send(IVCMessageType.CRUSH_OCTAGON, timeout=7, parent=self),
+        ivc_tasks.ivc_send(IVCMessageType.CRUSH_OCTAGON_DONE, timeout=7, parent=self),
 
         # Return home: descend, undo the net 2.88 m left offset, turn around,
         # and drive 16.67 m (matching outbound forward: 2+2.5+3.47+1.85+1.85+2.5+2.5).
         comp_tasks.initial_submerge(0.8, timeout=15, parent=self),
         move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 4),
+            geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi / 4),
             keep_orientation=True,
             timeout=10,
             pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.03),
