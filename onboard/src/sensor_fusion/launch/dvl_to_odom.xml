@@ -1,0 +1,3 @@
+<launch>
+	<node name="dvl_to_odom" pkg="sensor_fusion" exec="dvl_to_odom" output="screen" />
+</launch>

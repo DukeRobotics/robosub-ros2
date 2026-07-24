@@ -22,15 +22,15 @@ def generate_launch_description() -> LaunchDescription:
 
     if robot_name in ['oogway', 'oogway_shell']:
         ld.add_action(IncludeLaunchDescription(
-            XMLLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'dvl_pathfinder.xml')),
-        ))
-    elif robot_name == 'crush':
-        ld.add_action(IncludeLaunchDescription(
-            XMLLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'dvl_wayfinder.xml')),
+            XMLLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'dvl_pathfinder_raw.xml')),
         ))
 
     ld.add_action(IncludeLaunchDescription(
         XMLLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'gyro.xml')),
+    ))
+
+    ld.add_action(IncludeLaunchDescription(
+        XMLLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'modem.xml')),
     ))
 
     ld.add_action(IncludeLaunchDescription(

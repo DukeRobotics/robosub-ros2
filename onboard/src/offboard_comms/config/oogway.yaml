@@ -25,16 +25,16 @@ arduino:
         service_name: /servos/marker_dropper
         type: discrete
         states:
-          left: 1250
-          right: 1750
+          left: 1000
+          right: 2000
         min_delay: 3.0
       - name: torpedo
         tag: T
         service_name: /servos/torpedo
         type: discrete
         states:
-          left: 1650
-          right: 1350
+          left: 1600
+          right: 1425
         min_delay: 3.0
   thruster:
     ftdi: B0004VDI
@@ -43,11 +43,36 @@ arduino:
     sketch: sketches/thruster
 dvl:
   ftdi: D309SFWS
-  negate_x_vel: false
-  negate_y_vel: false
-  negate_z_vel: false
 gyro:
   ftdi: FT9DD97Q
-  zero_bias: 0.0023055327
+  zero_bias: 0.002162096 # CA -- 0.00207636 + 0.000059247 - 0.000736156 + (0.000748412/2) + 0.000381797 + 0.000006642
+  # zero_bias: 0.0023055327 # NC
   scale_factor: 15142595.0
   negate: false
+modem:
+  ftdi: CP2102
+thrusters:
+  - name: bottom_front_left
+    cw: false
+    standard_esc: true
+  - name: top_front_left
+    cw: false
+    standard_esc: true
+  - name: top_front_right
+    cw: true
+    standard_esc: true
+  - name: bottom_front_right
+    cw: true
+    standard_esc: false
+  - name: bottom_back_left
+    cw: true
+    standard_esc: true
+  - name: top_back_left
+    cw: false
+    standard_esc: true
+  - name: bottom_back_right
+    cw: false
+    standard_esc: true
+  - name: top_back_right
+    cw: true
+    standard_esc: true

@@ -39,7 +39,7 @@ def get_robot_name() -> str:
     user_robot_name = input(f"Enter the robot name (press enter for default '{default_robot_name}'): ")
 
     # Use the default value if the user input is empty
-    return user_robot_name.strip() if user_robot_name.strip() else default_robot_name
+    return user_robot_name.strip() or default_robot_name
 
 def get_transform(node: Node, tf_buffer: Buffer) -> TransformStamped:
     """
@@ -117,12 +117,9 @@ def compute_force_torque(thruster: dict, corner_to_base_link_transform: Transfor
     # Convert transformed orientation to Euler angles
     rpy_radians = quat2euler([pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z])
 
-    # Get flipped value of thrusters
-    flipped = -1 if thruster['flipped'] else 1
-
     # Compute force vector
     r_matrix = rotation_matrix(*rpy_radians)
-    force = r_matrix * Matrix([1, 0, 0]) * flipped
+    force = r_matrix * Matrix([1, 0, 0])
 
     # Compute torque vector
     torque = pos.cross(force)

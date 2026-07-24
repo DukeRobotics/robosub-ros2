@@ -14,6 +14,7 @@ from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String
 
 from cv import depthai_camera_connect
+from cv.config import Torpedo
 from cv.image_tools import ImageTools
 from cv.utils import DetectionVisualizer, calculate_relative_pose
 
@@ -308,10 +309,17 @@ class DepthAISpatialDetector(Node):
 
             confidence = detection.confidence
 
-            # Calculate relative pose
+            # Calculate relative pose, and pull scalings from config dependent on model
+            scale_x, scale_y, scale_z = 1.0, 1.0, 1.0
+            match label:
+                case 'torpedo_banner':
+                    scale_x = Torpedo.TORPEDO_BANNER_X_SCALE
+                    scale_y = Torpedo.TORPEDO_BANNER_Y_SCALE
+
             det_coords_robot_mm = calculate_relative_pose(bbox, tuple(model['input_size']),
-                                                          tuple(model['sizes'][label]),
-                                                          self.focal_length, self.sensor_size, 2)
+                                                        tuple(model['sizes'][label]),
+                                                        self.focal_length, self.sensor_size, 2,
+                                                        scale_x=scale_x, scale_y=scale_y, scale_z=scale_z)
 
             # Find yaw angle offset
             left_end_compute = self.compute_angle_from_x_offset(detection.xmin * self.camera_pixel_width)
@@ -341,7 +349,7 @@ class DepthAISpatialDetector(Node):
                                            det_coords_robot_mm[2])  # Maintain original z
 
             self.publish_prediction(
-                bbox, det_coords_robot_mm, yaw_offset, label, confidence,
+                bbox, det_coords_robot_mm, -yaw_offset, label, confidence,
                 (self.camera_pixel_height, self.camera_pixel_width), self.using_sonar)
 
     def publish_prediction(self, bbox: tuple, det_coords: tuple, yaw: float, label: str, confidence: float,
@@ -382,6 +390,14 @@ class DepthAISpatialDetector(Node):
         object_msg.width = shape[1]
 
         object_msg.sonar = using_sonar
+
+        # Calculate sonar sweep angles for this detection
+        left_angle = self.compute_angle_from_x_offset(bbox[0] * self.camera_pixel_width)
+        right_angle = self.compute_angle_from_x_offset(bbox[2] * self.camera_pixel_width)
+
+        object_msg.sonar_start_angle = float(left_angle)
+        object_msg.sonar_end_angle = float(right_angle)
+        object_msg.sonar_scan_distance = float(SONAR_DEPTH)
 
         if self.publishers_dict:
             self.get_logger().debug('Publishing')

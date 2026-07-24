@@ -110,7 +110,7 @@ RUN touch /home/ubuntu/.sudo_as_admin_successful
 # The commands are ordered alphabetically
 RUN python3 -m venv /home/ubuntu/venv --system-site-packages
 RUN /home/ubuntu/venv/bin/pip install bluerobotics-ping
-RUN /home/ubuntu/venv/bin/pip install depthai
+RUN /home/ubuntu/venv/bin/pip install depthai==2.30.0
 RUN /home/ubuntu/venv/bin/pip install GitPython
 RUN /home/ubuntu/venv/bin/pip install gputil
 RUN /home/ubuntu/venv/bin/pip install jsonpickle

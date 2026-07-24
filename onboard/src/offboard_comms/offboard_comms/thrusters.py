@@ -72,6 +72,9 @@ class Thrusters(SerialNode):
         self.voltage_max = max(v for v, _ in self.VOLTAGE_FILES)
         self.voltage_tables: list[VoltageTable] = []
 
+        # Get thruster orientations
+        self.thruster_orientation = self.get_thruster_orientation()
+
         # Load lookup tables
         self.load_lookup_tables()
 
@@ -91,6 +94,15 @@ class Thrusters(SerialNode):
             str: FTDI string for the Thruster Arduino.
         """
         return self._config['arduino'][self.ARDUINO_NAME]['ftdi']
+
+    def get_thruster_orientation(self) -> list:
+        """
+        Get the thruster orientation where not flipped is 1.
+
+        Returns:
+            list: List of thruster orientations for every thruster.
+        """
+        return [thruster['cw'] == thruster['standard_esc'] for thruster in self._config['thrusters']]
 
     def load_lookup_tables(self) -> None:
         """Load voltage-based PWM lookup tables from CSV files."""
@@ -160,7 +172,8 @@ class Thrusters(SerialNode):
             return
 
         # Convert allocations to PWM values
-        pwm_values = [self._lookup(alloc) for alloc in msg.allocs]
+        pwm_values = [self._convert_pwms(self._lookup(alloc), thruster_index) for thruster_index, alloc in
+                      enumerate(msg.allocs)]
 
         # Send to serial if connection is available
         self._write_pwms_to_serial(pwm_values)
@@ -170,6 +183,24 @@ class Thrusters(SerialNode):
         pwm_msg.header.stamp = self.get_clock().now().to_msg()
         pwm_msg.allocs = pwm_values
         self.pwm_publisher.publish(pwm_msg)
+
+    def _convert_pwms(self, pwm: int, thruster_index: int) -> int:
+        """
+        Convert PWM value of a non-flipped thruster to corrected PWM values based on thruster orientation.
+
+        Args:
+            pwm (int): Non-flipped thruster pwm value.
+            thruster_index (int): Index of the thruster to index into thruster_orientations list.
+
+        Returns:
+            int: Corrected thruster pwm value based on thruster orientation.
+        """
+        difference = pwm - 1500
+        if self.thruster_orientation[thruster_index]:
+            # thruster is not flipped, don't change pwm
+            return pwm
+        # thruster is flipped, invert pwm with respect to 1500
+        return 1500 - difference
 
     def _lookup(self, alloc: float) -> int:
         """

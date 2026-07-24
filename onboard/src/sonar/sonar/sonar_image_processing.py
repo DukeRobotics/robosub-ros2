@@ -5,15 +5,18 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from rclpy.logging import get_logger
 from sklearn.cluster import DBSCAN
 from sklearn.linear_model import LinearRegression
+from sklearn.mixture import GaussianMixture
 
 from sonar import decode_ping_python_360
 
 SONAR_IMAGE_WIDTH = 16
 SONAR_IMAGE_HEIGHT = 2
+MIN_DIMENSIONS_FOR_SEGMENTATION = 2
 
-def build_color_sonar_image_from_int_array(int_array: list, npy_save_path: str | None = None,
+def build_color_sonar_image_from_int_array(int_array: np.ndarray, npy_save_path: str | None = None,
                                            jpeg_save_path: str | None = None) -> np.ndarray:
     """
     Build a sonar image from a list of data messages.
@@ -29,14 +32,17 @@ def build_color_sonar_image_from_int_array(int_array: list, npy_save_path: str |
     Returns:
         ndarray: Sonar image from the scan.
     """
-    sonar_img = cv2.cvtColor(int_array.astype(np.uint8), cv2.COLOR_GRAY2BGR)
-    sonar_img = cv2.applyColorMap(sonar_img, cv2.COLORMAP_VIRIDIS)
+    sonar_img = np.stack([int_array, int_array, int_array], axis=-1)
     if jpeg_save_path:
         plt.imsave(jpeg_save_path, sonar_img)
     if npy_save_path:
         np.save(npy_save_path, sonar_img)
 
-    return sonar_img
+    sonar_img = sonar_img - np.min(sonar_img)
+    max_val = np.max(sonar_img)
+    sonar_img = np.zeros_like(sonar_img) if max_val == 0 else sonar_img / max_val * 255
+
+    return sonar_img.astype(np.uint8)
 
 def find_center_point_and_angle(array: np.ndarray, threshold: int, eps: float,
                                 min_samples: int, get_plot: bool = True) -> tuple:
@@ -62,9 +68,12 @@ def find_center_point_and_angle(array: np.ndarray, threshold: int, eps: float,
         plt.figure(figsize=(SONAR_IMAGE_WIDTH, SONAR_IMAGE_HEIGHT))
         plt.imshow(array, cmap='viridis', aspect='auto')
 
+    get_logger('sonar_interface').info('test')
+
     # Convert values > threshold to list of points
     points = np.argwhere(array > threshold)
     if points.size == 0:
+        get_logger('sonar_interface').info('No valid sonar points')
         return None, None, None
 
     # Perform DBSCAN clustering
@@ -76,6 +85,7 @@ def find_center_point_and_angle(array: np.ndarray, threshold: int, eps: float,
     cluster_counts = {k: np.sum(labels == k) for k in unique_labels if k != -1}
 
     if not cluster_counts:
+        get_logger('sonar_interface').info('No valid sonar clusters found')
         return None, None, None
 
     # Get the points of the largest cluster and calculate the average column index
@@ -192,3 +202,31 @@ def build_sonar_image(data_list: list, display_results: bool = False, npy_save_p
         cv2.waitKey(0)
 
     return sonar_img
+
+def sonar_gaussian_mixture_model_cluster(sonar_data: np.ndarray) -> np.ndarray:
+    """
+    Cluster a sonar scan into background, walls, and buoys using GMM clustering. Adapted from Pranav Bijith's GMM code.
+
+    Args:
+        sonar_data (ndarray): a sonar scan in cartesian coordinates which may contain nothing, walls, and buoys
+
+    Returns:
+        ndarray: ndarray of sonar_data segmented into three categories: nothing, walls, and buoys
+    """
+    finalcopygrid = sonar_data.copy()
+    finalcopygrid[finalcopygrid != 0] = 255
+    h, w = finalcopygrid.shape
+    x = np.column_stack((finalcopygrid.reshape(-1), np.repeat(np.arange(h), w), np.tile(np.arange(w), h)))
+    mask = finalcopygrid.reshape(-1) != 0
+    x_masked = x[mask]
+
+    if x_masked.shape[0] >= MIN_DIMENSIONS_FOR_SEGMENTATION:
+        gmm = GaussianMixture(n_components=2, random_state=42)
+        gmm.fit(x_masked)
+        cluster_labels = np.full(mask.shape, -1)
+        cluster_labels[mask] = gmm.predict(x_masked)
+    else:
+        print('No nonzero pixels found — skipping GMM')
+        cluster_labels = np.full(mask.shape, -1)
+
+    return cluster_labels.reshape(finalcopygrid.shape)

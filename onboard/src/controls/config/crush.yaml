@@ -1,9 +1,9 @@
 pid:
   position:
     x:
-      Kp: 0.1
+      Kp: 0.85
       Ki: 0
-      Kd: 0
+      Kd: 0.40
       Ff: 0
       control_effort:
         min: -1
@@ -11,9 +11,9 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     y:
-      Kp: 0.1
+      Kp: 0.80
       Ki: 0
-      Kd: 0
+      Kd: 0.05
       Ff: 0
       control_effort:
         min: -1
@@ -21,9 +21,9 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     z:
-      Kp: 0.1
+      Kp: 1.43
       Ki: 0
-      Kd: 0
+      Kd: 0.5
       Ff: 0
       control_effort:
         min: -1
@@ -31,7 +31,7 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     roll:
-      Kp: 0.1
+      Kp: 0.05
       Ki: 0
       Kd: 0
       Ff: 0
@@ -41,7 +41,7 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     pitch:
-      Kp: 0
+      Kp: 0.05
       Ki: 0
       Kd: 0
       Ff: 0
@@ -51,8 +51,8 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     yaw:
-      Kp: 0.1
-      Ki: 0
+      Kp: 0.09
+      Ki: 0.003
       Kd: 0
       Ff: 0
       control_effort:
@@ -204,38 +204,32 @@ desired_power_limits:
 static_power_global:
   x: 0
   y: 0
-  z: -0.03
+  z: -0.206
 power_scale_factor: 1
 thrusters:
   - name: middle_right
     type: T200
     pos: [-0.2404152701, -0.42425, -0.003175]
     rpy: [0, 90, 0]
-    flipped: true
   - name: front_right
     type: T200
     pos: [3.360246e-05, -0.3867988726, -0.003175]
     rpy: [0, 0, -135]
-    flipped: false
   - name: back_right
     type: T200
     pos: [-0.4808641427, -0.3867988726, -0.003175]
     rpy: [0, 0, 135]
-    flipped: true
   - name: back_left
     type: T200
     pos: [-0.4808641427, 0.09409887258, -0.003175]
     rpy: [0, 0, -135]
-    flipped: false
   - name: middle_left
     type: T200
     pos: [-0.2404152701, 0.13155, -0.003175]
     rpy: [0, 90, 0]
-    flipped: true
   - name: front_left
     type: T200
     pos: [3.360246e-05, 0.09409887258, -0.003175]
     rpy: [0, 0, 135]
-    flipped: true
 wrench_matrix_file_path: data/crush_wrench.csv
 wrench_matrix_pinv_file_path: data/crush_wrench_pinv.csv

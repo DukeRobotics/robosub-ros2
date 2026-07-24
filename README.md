@@ -120,7 +120,7 @@ See [SCRIPTS.md](SCRIPTS.md) for more information about how to use `build.sh` an
 2. Make sure you have built all packages by following the instructions in the [Build Packages](#build-packages) section.
 2. Run the following command:
     ```bash
-    ros2 launch execute robot.xml
+    ros2 launch execute robot.launch.py
     ```
     - This command launches all nodes required to run the robot.
     - It does not launch task planning, which must be run separately for the robot to complete tasks autonomously. See the [task planning README](onboard/src/task_planning/README.md) for instructions on launching the task planning node.

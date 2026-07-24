@@ -67,7 +67,6 @@ class BinDetector(Node):
 
         # Apply morphological operations to clean up the binary image
         mask_red = cv2.morphologyEx(mask_red, cv2.MORPH_OPEN, kernel)
-        mask_red = cv2.morphologyEx(mask_red, cv2.MORPH_OPEN, kernel)
 
         # Find contours in the mask
         contours_blue, _ = cv2.findContours(mask_blue, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
