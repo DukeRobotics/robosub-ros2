@@ -24,11 +24,26 @@ class IVCMessageType(Enum):
     Attributes:
         UNKNOWN (str): Unknown message type. Any message that is not one of the following will be set to this type.
         OOGWAY_TEST (str): Test message for Oogway.
-        OOGWAY_GATE (str): Confirm pass through gate by Oogway.
-        OOGWAY_ACKNOWLEDGE (str): Acknowledgement message by Oogway
+        OOGWAY_GATE_DONE (str): Confirm pass through gate by Oogway.
+        OOGWAY_ACKNOWLEDGE (str): Acknowledgement message by Oogway.
+        OOGWAY_TORPEDOES_CV (str): Confirm Oogway has found the torpedoes target using computer vision.
+        OOGWAY_TORPEDOES_PINGER (str): Confirm Oogway has found the torpedoes target using the pinger.
+        OOGWAY_OCTAGON_PINGER (str): Confirm Oogway has found the octagon using the pinger.
+        OOGWAY_TORPEDOES_ARRIVED (str): Confirm Oogway has arrived at the torpedoes task.
+        OOGWAY_TORPEDOES_SHOOT_LEFT (str): Confirm Oogway is shooting the left torpedo.
+        OOGWAY_TORPEDOES_SHOOT_RIGHT (str): Confirm Oogway is shooting the right torpedo.
+        OOGWAY_TORPEDOES_DONE (str): Confirm Oogway has completed the torpedoes task.
+        OOGWAY_DONE (str): Confirm Oogway has completed its run.
         CRUSH_TEST (str): Test message for Crush.
-        CRUSH_GATE (str): Confirm pass through gate by Crush
-        CRUSH_ACKNOWLEDGE (str):  Acknowledgement message by Crush
+        CRUSH_COIN_FLIP (str): Coin flip message for Crush.
+        CRUSH_GATE (str): Confirm pass through gate by Crush.
+        CRUSH_STYLE (str): Confirm Crush has completed the style task.
+        CRUSH_SLALOM (str): Confirm Crush has completed the slalom task.
+        CRUSH_ACKNOWLEDGE (str): Acknowledgement message by Crush.
+        CRUSH_OCTAGON_ARRIVED (str): Confirm Crush has arrived at the octagon task.
+        CRUSH_OCTAGON_DONE (str): Confirm Crush has completed the octagon task.
+        CRUSH_DONE (str): Confirm Crush has completed its run.
+        CRUSH_HOME (str): Confirm Crush has returned home.
     """
     UNKNOWN = 'xx'
     OOGWAY_TEST = 'ot'
@@ -43,6 +58,7 @@ class IVCMessageType(Enum):
     OOGWAY_TORPEDOES_DONE = 'tc'
     OOGWAY_DONE = 'od'
     CRUSH_TEST = 'ct'
+    CRUSH_COIN_FLIP = 'cf'
     CRUSH_GATE = 'cg'
     CRUSH_STYLE = 'cr'
     CRUSH_SLALOM = 'cs'
@@ -50,7 +66,7 @@ class IVCMessageType(Enum):
     CRUSH_OCTAGON_ARRIVED = 'ca'
     CRUSH_OCTAGON_DONE = 'cd'
     CRUSH_DONE = 'cc'
-    CRUSH_HOME = 'ez'
+    CRUSH_HOME = 'ch'
 
 
 
