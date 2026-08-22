@@ -577,11 +577,12 @@ async def gate_to_octagon(self: CompTask, depth_level: float = 1, timeout: int =
 async def slalom_task_dead_reckoning(self: CompTask, depth_level: float = 1.1) -> Task[None, None, None]:
     DEPTH_LEVEL = State().orig_depth - depth_level
 
-    logger.info('[slalom_task_dead_reckoning] Started slalom task')
-
     if get_robot_name() == RobotName.OOGWAY:
+        logger.info('[slalom_task_dead_reckoning] Slalom task called on Oogway, ignoring the task')
         pass
+
     elif get_robot_name() == RobotName.CRUSH:
+        logger.info('[slalom_task_dead_reckoning] Starting slalom task...')
         directions = [
             (2, 0, 0),
             (2, 0, 0),
@@ -589,7 +590,47 @@ async def slalom_task_dead_reckoning(self: CompTask, depth_level: float = 1.1) -
         ]
         await self.move_with_directions(directions, depth_level=DEPTH_LEVEL, timeout=20)
 
-    logger.info('[slalom_task_dead_reckoning] Finished slalom task')
+        logger.info('[slalom_task_dead_reckoning] Finished slalom task')
+
+
+@comp_task
+async def gate_to_slalom(self: CompTask, yaw_before_slalom: float, right_turn_after_gate,
+                         depth_level: float = 1.1) -> Task[None, None, None] | None:
+    """Perform the slalom task on Crush.
+    
+    At the start of this task, Crush should have just crossed the gate and performed 2 barrel rolls.
+    During the task, Crush detects and aligns itself with the path marker, then 
+    follows along that direction to the start of the slalom task by dead reckoning a set amount.
+    Crush then attempts the slalom task by dead reckoning.
+
+    Args:
+        - right_turn_after_gate (bool): True if the start of the slalom task is somewhere to the right (positive-y)
+        of the gate, False otherwise.
+        - yaw_before slalom (float): the signed angle (in radians) between the heading of the path marker
+        to the angle at which Crush should attempt the slalom task. Positive for anti-clockwise yaw.
+    """
+    DEPTH_LEVEL = State().orig_depth - depth_level
+    YAW_BEFORE_SLALOM = yaw_before_slalom
+
+    if get_robot_name() == RobotName.OOGWAY:
+        logger.info('[gate_to_slalom] Gate to slalom was called on Oogway, ignoring the task')
+        pass
+
+    elif get_robot_name() == RobotName.CRUSH:
+        logger.info('[gate_to_slalom] Starting gate to slalom task...')
+        
+        await align_path_marker(right_turn=right_turn_after_gate, depth_level=DEPTH_LEVEL, parent=self)
+        directions = [
+            (2, 0, 0),
+            (2, 0, 0),
+            (2, 0, 0),
+        ]
+        await self.move_with_directions(directions, depth_level=DEPTH_LEVEL, timeout=20)
+
+        await self.correct_yaw(YAW_BEFORE_SLALOM)
+        await self.correct_depth(DEPTH_LEVEL)
+
+        logger.info('[gate_to_slalom] Finished gate to slalom task')
 
 
 @comp_task
