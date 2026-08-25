@@ -33,6 +33,11 @@ class CVObjectType(Enum):
     TORPEDO_REEF_SHARK_TARGET = 'torpedo_reef_shark_target'
     TORPEDO_SAWFISH_TARGET = 'torpedo_sawfish_target'
     TORPEDO_LARGEST_TARGET = 'torpedo_largest_target'
+<<<<<<< HEAD
+=======
+    TORPEDO_LOWER_TARGET = 'h'
+    TORPEDO_UPPER_TARGET = 'g'
+>>>>>>> robosub-2026-crush
     TORPEDO_AMBULANCE = 'ambulance_front'
     TORPEDO_BLOOD = 'blood_front'
     TORPEDO_FIRETRUCK = 'firetruck_front'
@@ -41,6 +46,11 @@ class CVObjectType(Enum):
     TORPEDO_BLOOD_TARGET = 'torpedo_blood_target'
     TORPEDO_FIRETRUCK_TARGET = 'torpedo_firetruck_target'
     TORPEDO_FIRE_TARGET = 'torpedo_fire_target'
+<<<<<<< HEAD
+=======
+    COMPASS = 'compass'
+    SOS = 'sos'
+>>>>>>> robosub-2026-crush
 
 
 @singleton
@@ -83,6 +93,10 @@ class CV:
         CVObjectType.TORPEDO_SAWFISH: '/cv/front/swordfish_front',
         CVObjectType.TORPEDO_REEF_SHARK_TARGET: '/cv/front_usb/torpedo_reef_shark_target/bounding_box',
         CVObjectType.TORPEDO_SAWFISH_TARGET: '/cv/front_usb/torpedo_sawfish_target/bounding_box',
+<<<<<<< HEAD
+=======
+        CVObjectType.TORPEDO_LARGEST_TARGET: '/cv/front_usb/torpedo_largest_target/bounding_box',
+>>>>>>> robosub-2026-crush
         CVObjectType.TORPEDO_LARGEST_TARGET: '/cv/front_usb/torpedo/largest_target/bounding_box',
         CVObjectType.TORPEDO_AMBULANCE: '/cv/front/ambulance_front',
         CVObjectType.TORPEDO_BLOOD: '/cv/front/blood_front',
@@ -92,6 +106,11 @@ class CV:
         CVObjectType.TORPEDO_BLOOD_TARGET: '/cv/front_usb/torpedo_blood_target/bounding_box',
         CVObjectType.TORPEDO_FIRETRUCK_TARGET: '/cv/front_usb/torpedo_firetruck_target/bounding_box',
         CVObjectType.TORPEDO_FIRE_TARGET: '/cv/front_usb/torpedo_fire_target/bounding_box',
+<<<<<<< HEAD
+=======
+        CVObjectType.COMPASS: '/cv/front_usb/compass/bounding_box',
+        CVObjectType.SOS: '/cv/front_usb/sos/bounding_box',
+>>>>>>> robosub-2026-crush
     }
 
     DISTANCE_TOPICS: ClassVar[dict[CVObjectType, str]] = {
@@ -101,6 +120,8 @@ class CV:
         CVObjectType.PATH_MARKER: '/cv/bottom/path_marker/distance',
         CVObjectType.BIN_PINK_FRONT: '/cv/front_usb/bin_pink_front/distance',
         CVObjectType.BIN_PINK_BOTTOM: '/cv/front_usb/bin_pink_bottom/distance',
+        CVObjectType.COMPASS: '/cv/front_usb/compass/distance',
+        CVObjectType.SOS: '/cv/front_usb/sos/distance',
     }
 
     ANGLE_TOPICS: ClassVar[dict[CVObjectType, str]] = {

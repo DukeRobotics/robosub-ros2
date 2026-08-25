@@ -73,54 +73,49 @@ async def coin_flip(self: CompTask, depth_level: float = 0.7,
     a specified threshold. After correcting yaw, the robot adjusts its depth to reach the desired level.
 
     Args:
-        self (CompTask): The task instance managing the execution of the coin flip task.
-        depth_level (float): The depth adjustment level relative to the robot's original depth. Default is 0.7.
-
-    Returns:
-        Task[None, None, None]: The result of the task execution.
-
-    Detailed Process:
-        1. Calculate the desired yaw correction using the difference between the original and current IMU orientations.
-        2. Gradually adjust yaw in steps, ensuring the correction does not exceed the maximum allowed yaw change.
-        3. Once the yaw is corrected to within 5 degrees, adjust the robot's depth to the specified level.
-        4. Log each step of the process for debugging and traceability.
-
-    Logging:
-        - Logs the initial start of the coin flip task.
-        - Logs intermediate yaw corrections and desired yaw adjustments.
-        - Logs depth corrections and the final completion of the task.
-
-    Example:
-        >>> await coin_flip(task_instance, depth_level=0.5)
-
-    Notes:
-        - Uses `State` to access robot's current and original states, including depth and IMU orientation.
-        - Uses `geometry_utils` to create poses for yaw and depth corrections.
-        - The task continuously loops until the yaw correction is within the specified threshold (±5 degrees).
+        depth_level: Depth to reach relative to the original depth (meters submerged).
+        enable_same_direction: If True, lock the rotation direction from the initial error so
+            the robot does not reverse mid-correction; if False, each step uses the shortest path.
+        timeout: Seconds allowed per yaw step.
     """
     DEPTH_LEVEL = State().orig_depth - depth_level
+    YAW_TOLERANCE = math.radians(5)
+    # Stay strictly under π so a 180° setpoint is not treated as the opposite turn
+    MAX_YAW_STEP = math.radians(179)
 
-    if enable_same_direction:
-        while abs(State().get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
-            yaw_correction = State().get_gyro_yaw_correction(return_raw=False, maximum_yaw=2*np.pi)
-            logger.info(f'[coin_flip] Yaw correction: {yaw_correction}')
+    def yaw_error() -> float:
+        """Shortest-path yaw correction (orig - cur) in (-π, π]."""
+        return State().get_gyro_yaw_correction(return_raw=True)
 
-            if yaw_correction > np.pi:
-                yaw_correction -= np.pi
-                await self.correct_yaw(np.pi, yaw_tolerance=0.1, timeout=timeout)
-                logger.info('[coin_flip] Yaw correct 180')
+    logger.info('[coin_flip] Starting coin flip')
+    initial_error = yaw_error()
+    logger.info(
+        f'[coin_flip] Initial yaw error: {initial_error:.4f} rad '
+        f'({math.degrees(initial_error):.1f} deg)',
+    )
 
-            logger.info(f'[coin_flip] Yaw correct remainder: {yaw_correction}')
-            await self.correct_yaw(yaw_correction, yaw_tolerance=0.1, timeout=timeout)
+    if abs(initial_error) > YAW_TOLERANCE:
+        # Lock turn direction from the initial shortest-path error
+        direction = 1.0 if initial_error >= 0 else -1.0
 
-    else:
-        while abs(State().get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
-            yaw_correction = State().get_gyro_yaw_correction(return_raw=False, maximum_yaw=2*np.pi)
-            logger.info(f'[coin_flip] Yaw correction: {yaw_correction}')
+        while abs(yaw_error()) > YAW_TOLERANCE:
+            error = yaw_error()
 
-            await self.correct_yaw(yaw_correction, yaw_tolerance=0.1, timeout=timeout)
+            if enable_same_direction:
+                # Keep spinning the initially chosen way; stop if we overshoot
+                if error * direction <= 0:
+                    logger.info('[coin_flip] Overshot target heading; stopping yaw correction')
+                    break
+                step = direction * min(abs(error), MAX_YAW_STEP)
+            else:
+                step = math.copysign(min(abs(error), MAX_YAW_STEP), error)
 
-    logger.info(f'[coin_flip] Final yaw offset: {State().get_gyro_yaw_correction(return_raw=True)}')
+            logger.info(
+                f'[coin_flip] Yaw correction step: {step:.4f} rad ({math.degrees(step):.1f} deg)',
+            )
+            await self.correct_yaw(step, yaw_tolerance=0.1, timeout=timeout)
+
+    logger.info(f'[coin_flip] Final yaw offset: {yaw_error():.4f} rad')
 
     await self.correct_depth(DEPTH_LEVEL)
     logger.info('[coin_flip] Completed coin flip')
@@ -181,14 +176,14 @@ async def gate_style_task(self: CompTask, depth_level: float = 0.9) -> Task[None
 
     async def roll() -> None:
         power = Twist()
-        power.angular.x = 1.0
+        power.angular.x = 0.5
         Controls().publish_desired_power(power)
         logger.info('[gate_style_task] Published roll power')
 
         if get_robot_name() == RobotName.OOGWAY:
             await util_tasks.sleep(2.25, parent=self)
         else:
-            await util_tasks.sleep(3, parent=self)
+            await util_tasks.sleep(3.0, parent=self)
 
         logger.info('[gate_style_task] Completed roll')
 
@@ -199,20 +194,22 @@ async def gate_style_task(self: CompTask, depth_level: float = 0.9) -> Task[None
         logger.info('[gate_style_task] Completed zero')
 
     await self.correct_depth(DEPTH_LEVEL)
+
     await roll()
-    # State().reset_pose()
+    State().reset_pose()
     await util_tasks.sleep(1.8, parent=self)
+    await self.correct_depth(DEPTH_LEVEL)
 
-    # await self.correct_depth(DEPTH_LEVEL)
-    # await roll()
-    # State().reset_pose()
-    # await util_tasks.sleep(2.5, parent=self)
+    await roll()
+    State().reset_pose()
+    await util_tasks.sleep(2.5, parent=self)
+    await self.correct_depth(DEPTH_LEVEL)
 
-    # await self.correct_depth(DEPTH_LEVEL)
-    # await util_tasks.sleep(2.5, parent=self)
+    await util_tasks.sleep(5, parent=self)
 
-    # await self.correct_roll_and_pitch()
-    # logger.info('[gate_style_task] Reset orientation')
+    logger.info('[gate_style_task] Correcting roll and pitch')
+    await self.correct_roll_and_pitch()
+    logger.info('[gate_style_task] Reset orientation')
 
 
 @comp_task
@@ -580,11 +577,12 @@ async def gate_to_octagon(self: CompTask, depth_level: float = 1, timeout: int =
 async def slalom_task_dead_reckoning(self: CompTask, depth_level: float = 1.1) -> Task[None, None, None]:
     DEPTH_LEVEL = State().orig_depth - depth_level
 
-    logger.info('[slalom_task_dead_reckoning] Started slalom task')
-
     if get_robot_name() == RobotName.OOGWAY:
+        logger.info('[slalom_task_dead_reckoning] Slalom task called on Oogway, ignoring the task')
         pass
+
     elif get_robot_name() == RobotName.CRUSH:
+        logger.info('[slalom_task_dead_reckoning] Starting slalom task...')
         directions = [
             (2, 0, 0),
             (2, 0, 0),
@@ -592,7 +590,47 @@ async def slalom_task_dead_reckoning(self: CompTask, depth_level: float = 1.1) -
         ]
         await self.move_with_directions(directions, depth_level=DEPTH_LEVEL, timeout=20)
 
-    logger.info('[slalom_task_dead_reckoning] Finished slalom task')
+        logger.info('[slalom_task_dead_reckoning] Finished slalom task')
+
+
+@comp_task
+async def gate_to_slalom(self: CompTask, yaw_before_slalom: float, right_turn_after_gate,
+                         depth_level: float = 1.1) -> Task[None, None, None] | None:
+    """Perform the slalom task on Crush.
+    
+    At the start of this task, Crush should have just crossed the gate and performed 2 barrel rolls.
+    During the task, Crush detects and aligns itself with the path marker, then 
+    follows along that direction to the start of the slalom task by dead reckoning a set amount.
+    Crush then attempts the slalom task by dead reckoning.
+
+    Args:
+        - right_turn_after_gate (bool): True if the start of the slalom task is somewhere to the right (positive-y)
+        of the gate, False otherwise.
+        - yaw_before slalom (float): the signed angle (in radians) between the heading of the path marker
+        to the angle at which Crush should attempt the slalom task. Positive for anti-clockwise yaw.
+    """
+    DEPTH_LEVEL = State().orig_depth - depth_level
+    YAW_BEFORE_SLALOM = yaw_before_slalom
+
+    if get_robot_name() == RobotName.OOGWAY:
+        logger.info('[gate_to_slalom] Gate to slalom was called on Oogway, ignoring the task')
+        pass
+
+    elif get_robot_name() == RobotName.CRUSH:
+        logger.info('[gate_to_slalom] Starting gate to slalom task...')
+        
+        await align_path_marker(right_turn=right_turn_after_gate, depth_level=DEPTH_LEVEL, parent=self)
+        directions = [
+            (2, 0, 0),
+            (2, 0, 0),
+            (2, 0, 0),
+        ]
+        await self.move_with_directions(directions, depth_level=DEPTH_LEVEL, timeout=20)
+
+        await self.correct_yaw(YAW_BEFORE_SLALOM)
+        await self.correct_depth(DEPTH_LEVEL)
+
+        logger.info('[gate_to_slalom] Finished gate to slalom task')
 
 
 @comp_task
@@ -1293,9 +1331,20 @@ async def octagon_task(self: CompTask, direction: int = 1) -> Task[None, None, N
     await face_fish(yaw_left=True, closer_banner=True)
 
     logger.info('[octagon_task] Surfacing...')
-    await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
-                                        timeout=10, parent=self)
+    await surface_task(parent=self)
     logger.info('[octagon_task] Finished surfacing')
+
+
+@comp_task
+async def surface_task(self: CompTask, timeout: int = 10) -> Task[None, None, None]:
+    """Surface the robot to the original depth (e.g. inside the octagon)."""
+    logger.info('[surface_task] Surfacing...')
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
+        timeout=timeout,
+        parent=self,
+    )
+    logger.info('[surface_task] Finished surfacing')
 
 
 @comp_task

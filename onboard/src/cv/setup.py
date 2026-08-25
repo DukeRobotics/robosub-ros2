@@ -42,6 +42,8 @@ setup(
             'hsv_red_bin = cv.hsv_red_bin:main',
             'hsv_pink_bin_front = cv.hsv_pink_bin_front:main',
             'hsv_pink_bin_bottom = cv.hsv_pink_bin_bottom:main',
+            'hsv_compass = cv.hsv_compass:main',
+            'hsv_sos = cv.hsv_sos:main',
         ],
     },
 )

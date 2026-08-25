@@ -125,14 +125,24 @@ async def test_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
 
 
 @task
-async def ivc_send(self: Task[None, None, None], msg: IVCMessageType) -> None:
+async def ivc_send(self: Task[None, None, None], msg: IVCMessageType, timeout: float = 15) -> None:
     """Send IVC message."""
-    await wait_for_modem_ready(parent=self)
+    await wait_for_modem_ready(timeout=timeout, parent=self)
 
     future = IVC().send_message(msg)
     if future is None:
         logger.error('Could not call IVC send message service.')
     else:
+        sleep_task = util_tasks.sleep(timeout, parent=self)
+        while not future.done():
+            remaining_duration = sleep_task.step()
+            if not remaining_duration:
+                logger.error('Timeout waiting for IVC send.')
+                return
+
+            await util_tasks.sleep(min(remaining_duration, Duration(seconds=1)), parent=self)
+
+        sleep_task.close()
         service_response = cast('SendModemMessage.Response', await future)
         if service_response.success:
             logger.info(f'Sent IVC message: {msg.name}')
