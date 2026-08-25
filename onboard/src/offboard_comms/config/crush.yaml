@@ -57,11 +57,7 @@ thrusters:
     cw: true
     standard_esc: true
   - name: middle_right_second
-<<<<<<< HEAD
-    cw: true
-=======
     cw: false
->>>>>>> robosub-2026-crush
     standard_esc: true
   - name: back_right
     cw: false

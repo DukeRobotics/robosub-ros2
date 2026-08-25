@@ -35,11 +35,7 @@ alias launch-robot="ros2 launch execute robot.launch.py"
 
 alias tp-run="ros2 run task_planning task_runner"
 
-<<<<<<< HEAD
-alias tp-run-auto="ros2 run task_planning task_runner --ros-args -p autonomous:=False"
-=======
 alias tp-run-auto="ros2 run task_planning task_runner --ros-args autonomous:=True"
->>>>>>> robosub-2026-crush
 
 # Alias to start foxglove bridge
 alias fg-ws="ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=28765"
