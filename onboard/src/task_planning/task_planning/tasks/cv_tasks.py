@@ -4,12 +4,12 @@ import math
 from geometry_msgs.msg import Twist, Vector3
 from rclpy.clock import Clock
 from rclpy.logging import get_logger
+from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV, CVObjectType
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield, task
 from task_planning.tasks import move_tasks, util_tasks
 from task_planning.utils import geometry_utils
-from task_planning.interface.controls import Controls
 
 logger = get_logger('cv_tasks')
 

@@ -1,6 +1,7 @@
 """Data controller for batch hydrophone data collection."""
 import os
 import time
+
 from logic import logic
 
 
@@ -11,9 +12,10 @@ def collect_batch_data(
         output_base_path,
         test_name,
         is_logic_2=False,
-        is_mock=False
+        is_mock=False,
         ):
-    """Collect multiple epochs of hydrophone data.
+    """
+    Collect multiple epochs of hydrophone data.
 
     Args:
         sampling_freq: Sampling frequency in Hz
@@ -29,7 +31,7 @@ def collect_batch_data(
     """
     # Create test directory with timestamp
     timestamp = time.strftime('%Y-%m-%d--%H-%M-%S')
-    test_folder = f"{test_name}_{timestamp}" if test_name else timestamp
+    test_folder = f'{test_name}_{timestamp}' if test_name else timestamp
     test_path = os.path.join(output_base_path, test_folder)
     os.makedirs(test_path, exist_ok=True)
 
@@ -43,31 +45,31 @@ def collect_batch_data(
 
     # Collect data for each epoch
     for epoch in range(epochs):
-        print(f"\nEpoch {epoch}/{epochs}")
-        capture_name = f"{test_name}_epoch_{epoch}" if test_name else f"epoch_{epoch}"
-        
+        print(f'\nEpoch {epoch}/{epochs}')
+        capture_name = f'{test_name}_epoch_{epoch}' if test_name else f'epoch_{epoch}'
+
         if is_logic_2:
             logic_interface.capture(
                 seconds=capture_time,
                 prefix=capture_name,
                 base_dir=test_path,
                 sample_rate=int(sampling_freq),
-                formats=["bin"]
+                formats=['bin'],
             )
         else:
             logic_interface.export_binary_capture(capture_time, test_path, capture_name)
 
     logic_interface.close() if is_logic_2 else logic_interface.kill_logic()
 
-    print("\n" + "=" * 60)
-    print(f"Collection complete! Total epochs: {epochs}")
-    print(f"Data location: {test_path}")
-    print("=" * 60)
+    print('\n' + '=' * 60)
+    print(f'Collection complete! Total epochs: {epochs}')
+    print(f'Data location: {test_path}')
+    print('=' * 60)
 
     return test_path
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # ==================== CONFIGURATION ====================
 
     # Whether to use Logic 2 or Logic 1
@@ -77,7 +79,7 @@ if __name__ == "__main__":
     USE_MOCK_DEVICE = True
 
     # Name for this test (0,1,2,3)
-    TEST_NAME = "0"
+    TEST_NAME = '0'
 
     # Number of capture epochs to collect
     EPOCHS = 100
@@ -89,7 +91,7 @@ if __name__ == "__main__":
     CAPTURE_TIME = 2
 
     # Base directory for saving captured data
-    OUTPUT_PATH = "Temp_Data"
+    OUTPUT_PATH = 'Temp_Data'
 
     # ==================== EXECUTION ====================
 
@@ -100,5 +102,5 @@ if __name__ == "__main__":
         output_base_path=OUTPUT_PATH,
         test_name=TEST_NAME,
         is_logic_2=IS_LOGIC_2,
-        is_mock=USE_MOCK_DEVICE
+        is_mock=USE_MOCK_DEVICE,
     )

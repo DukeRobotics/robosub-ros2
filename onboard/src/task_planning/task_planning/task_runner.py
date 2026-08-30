@@ -11,7 +11,6 @@ from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.ivc import IVC
 from task_planning.interface.servos import Servos
-from task_planning.interface.sonar import Sonar
 from task_planning.interface.state import State
 from task_planning.robot import crush, oogway, oogway_shell
 from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
@@ -143,7 +142,7 @@ class TaskPlanning(Node):
             elif not self.task.done:
                 self.task.step()
 
-        except BaseException as e:
+        except BaseException:
             # Main has errored
             # TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.ERRORED, e)
             pass

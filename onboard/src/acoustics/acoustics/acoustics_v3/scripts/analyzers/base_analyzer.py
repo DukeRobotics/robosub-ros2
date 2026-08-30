@@ -1,12 +1,13 @@
 """Base analyzer module for hydrophone signal processing."""
 from abc import ABC, abstractmethod
-import numpy as np
+
 import matplotlib.pyplot as plt
 from scipy.signal import butter, sosfiltfilt
 
 
 class BaseAnalyzer(ABC):
-    """Base class for hydrophone signal analyzers.
+    """
+    Base class for hydrophone signal analyzers.
     
     This abstract class provides common filtering and analysis infrastructure
     for different hydrophone signal processing algorithms.
@@ -18,9 +19,10 @@ class BaseAnalyzer(ABC):
         search_band_max: float = 40000,
         filter_order: int = 8,
         plot_results: bool = False,
-        config: dict | None = None
+        config: dict | None = None,
     ):
-        """Initialize analyzer with signal processing parameters.
+        """
+        Initialize analyzer with signal processing parameters.
         
         Args:
             search_band_min: Lower frequency bound for analysis (Hz)
@@ -39,7 +41,8 @@ class BaseAnalyzer(ABC):
 
     @abstractmethod
     def _analyze_single(self, hydrophone, sampling_freq) -> dict:
-        """Analyze a single hydrophone signal.
+        """
+        Analyze a single hydrophone signal.
         
         Args:
             hydrophone: Hydrophone object with signal data
@@ -56,7 +59,8 @@ class BaseAnalyzer(ABC):
 
     @abstractmethod
     def _plot_single_signal(self, ax_time, ax_freq, hydrophone, result, idx):
-        """Plot analysis results for a single hydrophone.
+        """
+        Plot analysis results for a single hydrophone.
         
         Args:
             ax_time: Matplotlib axis for time domain plot
@@ -68,7 +72,8 @@ class BaseAnalyzer(ABC):
 
     @abstractmethod
     def get_name(self) -> str:
-        """Return the name of this analyzer.
+        """
+        Return the name of this analyzer.
         
         Returns:
             String identifier for the analyzer
@@ -77,7 +82,8 @@ class BaseAnalyzer(ABC):
     # ==================== PUBLIC ====================
 
     def analyze_array(self, hydrophone_array, selected: list[bool] | None = None):
-        """Analyze all selected hydrophones in the array.
+        """
+        Analyze all selected hydrophones in the array.
         
         Args:
             hydrophone_array: HydrophoneArray object containing sensor data
@@ -94,7 +100,7 @@ class BaseAnalyzer(ABC):
         # Analyze each hydrophone
         results = []
         for idx, (hydro, is_selected) in enumerate(
-            zip(hydrophone_array.hydrophones, selected)
+            zip(hydrophone_array.hydrophones, selected),
         ):
             if is_selected:
                 # Use hydrophone-specific sampling frequency
@@ -105,7 +111,7 @@ class BaseAnalyzer(ABC):
 
         analysis_results = {
             'results': results,
-            'analyzer': self.get_name()
+            'analyzer': self.get_name(),
         }
 
         if self.plot_results_flag:
@@ -114,7 +120,8 @@ class BaseAnalyzer(ABC):
         return analysis_results
 
     def print_results(self, analysis_results):
-        """Print analysis results to console.
+        """
+        Print analysis results to console.
         
         Args:
             analysis_results: Dictionary returned from analyze_array
@@ -122,7 +129,8 @@ class BaseAnalyzer(ABC):
         print(f"\n{analysis_results['analyzer']}")
 
     def plot_results(self, hydrophone_array, analysis_results, selected=None):
-        """Plot analysis results for all hydrophones.
+        """
+        Plot analysis results for all hydrophones.
         
         Args:
             hydrophone_array: HydrophoneArray object containing sensor data
@@ -137,7 +145,7 @@ class BaseAnalyzer(ABC):
 
         # Create 2 columns: time domain and frequency domain
         _, axes = plt.subplots(
-            num_plots, 2, figsize=(14, 3*num_plots), squeeze=False
+            num_plots, 2, figsize=(14, 3*num_plots), squeeze=False,
         )
 
         for plot_idx, result in enumerate(results):
@@ -147,7 +155,7 @@ class BaseAnalyzer(ABC):
             # Each analyzer defines how to plot ONE signal
             self._plot_single_signal(
                 axes[plot_idx, 0], axes[plot_idx, 1],
-                hydro, result, hydro_idx
+                hydro, result, hydro_idx,
             )
 
             # Common formatting
@@ -169,7 +177,8 @@ class BaseAnalyzer(ABC):
     # ==================== COMMON ====================
 
     def apply_bandpass(self, signal, sampling_freq, band_min=None, band_max=None):
-        """Apply Butterworth bandpass filter to signal.
+        """
+        Apply Butterworth bandpass filter to signal.
         
         Args:
             signal: Input signal array
@@ -190,7 +199,7 @@ class BaseAnalyzer(ABC):
             [band_min, band_max],
             fs=sampling_freq,
             btype='band',
-            output='sos'
+            output='sos',
         )
         return sosfiltfilt(sos, signal)
 

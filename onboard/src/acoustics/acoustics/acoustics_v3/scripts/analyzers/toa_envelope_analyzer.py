@@ -1,14 +1,15 @@
 """TOA estimation using Hilbert envelope detection."""
 import numpy as np
-from scipy.signal import hilbert
 from scipy.fft import fft, fftfreq
+from scipy.signal import hilbert
 
 from .base_analyzer import BaseAnalyzer
 from .garbage_detector import GarbageDetector
 
 
 class TOAEnvelopeAnalyzer(BaseAnalyzer):
-    """Time of Arrival (TOA) estimation using Hilbert envelope detection.
+    """
+    Time of Arrival (TOA) estimation using Hilbert envelope detection.
     
     This analyzer detects signal arrival times by computing the Hilbert envelope
     and finding the first point where it exceeds a threshold based on signal statistics.
@@ -20,9 +21,10 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
         raw_signal_threshold=3,
         margin_front=0.1,
         margin_end=0.1,
-        **kwargs
+        **kwargs,
     ):
-        """Initialize TOA envelope analyzer.
+        """
+        Initialize TOA envelope analyzer.
         
         Args:
             threshold_sigma: Number of standard deviations above mean for TOA threshold
@@ -36,31 +38,34 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
         self.garbage_detector = GarbageDetector(
             raw_signal_threshold=raw_signal_threshold,
             margin_front=margin_front,
-            margin_end=margin_end
+            margin_end=margin_end,
         )
 
     def get_name(self):
-        """Return analyzer name.
+        """
+        Return analyzer name.
         
         Returns:
             String identifier for this analyzer
         """
-        return "TOA Envelope Detection"
+        return 'TOA Envelope Detection'
 
     def print_results(self, analysis_results):
-        """Print TOA detection results.
+        """
+        Print TOA detection results.
         
         Args:
             analysis_results: Dictionary returned from analyze_array
         """
         super().print_results(analysis_results)
-        print(f"\nTOA Estimates:")
+        print('\nTOA Estimates:')
         for result in analysis_results['results']:
             is_valid = result.get('is_valid', '?')
             print(f"  Hydrophone {result['hydrophone_idx']}: {result['toa_time']:.6f} s (sample {result['toa_idx']}) [Valid: {is_valid}]")
 
     def _analyze_single(self, hydrophone, sampling_freq):
-        """Analyze single hydrophone using envelope detection.
+        """
+        Analyze single hydrophone using envelope detection.
         
         Args:
             hydrophone: Hydrophone object with signal data
@@ -81,7 +86,7 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
         """
         # Apply bandpass filter
         filtered_signal = self.apply_bandpass(
-            hydrophone.signal, sampling_freq
+            hydrophone.signal, sampling_freq,
         )
 
         # Compute envelope using Hilbert transform
@@ -109,7 +114,7 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
             signal_value=np.max(hydrophone.signal),
             toa_time=toa_time,
             recording_start=hydrophone.times[0],
-            recording_end=hydrophone.times[-1]
+            recording_end=hydrophone.times[-1],
         )
 
         return {
@@ -122,11 +127,12 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
             'threshold': threshold,
             'band_min': self.search_band_min,
             'band_max': self.search_band_max,
-            'is_valid': is_valid
+            'is_valid': is_valid,
         }
 
     def _plot_single_signal(self, ax_time, ax_freq, hydrophone, result, idx):
-        """Plot envelope analysis results for a single hydrophone.
+        """
+        Plot envelope analysis results for a single hydrophone.
         
         Args:
             ax_time: Matplotlib axis for time domain plot
@@ -138,20 +144,20 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
         # Time domain plot
         ax_time.plot(
             hydrophone.times, result['filtered_signal'],
-            alpha=0.5, label='Filtered Signal', color='blue'
+            alpha=0.5, label='Filtered Signal', color='blue',
         )
         ax_time.plot(
             hydrophone.times, result['processed_signal'],
-            label='Envelope', color='darkblue', linewidth=2
+            label='Envelope', color='darkblue', linewidth=2,
         )
         ax_time.axhline(
             result['threshold'], color='green',
-            linestyle=':', alpha=0.5, label='Threshold'
+            linestyle=':', alpha=0.5, label='Threshold',
         )
         ax_time.axvline(
             result['toa_time'], color='red',
             linestyle='--', linewidth=2,
-            label=f"TOA: {result['toa_time']:.6f}s"
+            label=f"TOA: {result['toa_time']:.6f}s",
         )
 
         # Frequency domain plot
@@ -162,10 +168,10 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
         ax_freq.plot(freqs, magnitude, label='Filtered Spectrum', color='blue')
         ax_freq.axvline(
             result['band_min'], color='red',
-            linestyle='--', alpha=0.5, label='Filter Range'
+            linestyle='--', alpha=0.5, label='Filter Range',
         )
         ax_freq.axvline(
             result['band_max'], color='red',
-            linestyle='--', alpha=0.5
+            linestyle='--', alpha=0.5,
         )
         ax_freq.set_xlim([0, 100000])  # Focus on relevant frequency range

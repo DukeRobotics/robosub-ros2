@@ -15,7 +15,7 @@ from task_planning.interface.servos import MarkerDropperStates, TorpedoStates
 from task_planning.interface.sonar import Sonar
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield
-from task_planning.tasks import cv_tasks, move_tasks, servos_tasks, util_tasks, acoustics_tasks
+from task_planning.tasks import acoustics_tasks, cv_tasks, move_tasks, servos_tasks, util_tasks
 from task_planning.tasks.base_comp_task import CompTask, comp_task
 from task_planning.utils import geometry_utils
 from task_planning.utils.other_utils import RobotName, get_robot_name
@@ -579,7 +579,6 @@ async def slalom_task_dead_reckoning(self: CompTask, depth_level: float = 1.1) -
 
     if get_robot_name() == RobotName.OOGWAY:
         logger.info('[slalom_task_dead_reckoning] Slalom task called on Oogway, ignoring the task')
-        pass
 
     elif get_robot_name() == RobotName.CRUSH:
         logger.info('[slalom_task_dead_reckoning] Starting slalom task...')
@@ -596,7 +595,8 @@ async def slalom_task_dead_reckoning(self: CompTask, depth_level: float = 1.1) -
 @comp_task
 async def gate_to_slalom(self: CompTask, yaw_before_slalom: float, right_turn_after_gate,
                          depth_level: float = 1.1) -> Task[None, None, None] | None:
-    """Perform the slalom task on Crush.
+    """
+    Perform the slalom task on Crush.
     
     At the start of this task, Crush should have just crossed the gate and performed 2 barrel rolls.
     During the task, Crush detects and aligns itself with the path marker, then 
@@ -614,11 +614,10 @@ async def gate_to_slalom(self: CompTask, yaw_before_slalom: float, right_turn_af
 
     if get_robot_name() == RobotName.OOGWAY:
         logger.info('[gate_to_slalom] Gate to slalom was called on Oogway, ignoring the task')
-        pass
 
     elif get_robot_name() == RobotName.CRUSH:
         logger.info('[gate_to_slalom] Starting gate to slalom task...')
-        
+
         await align_path_marker(right_turn=right_turn_after_gate, depth_level=DEPTH_LEVEL, parent=self)
         directions = [
             (2, 0, 0),
@@ -1081,7 +1080,7 @@ TORPEDO_2026_TARGETS: tuple[CVObjectType, ...] = (
     CVObjectType.TORPEDO_BLOOD_TARGET,
     CVObjectType.TORPEDO_FIRETRUCK_TARGET,
     CVObjectType.TORPEDO_FIRE_TARGET,
-    CVObjectType.TORPEDO_LARGEST_TARGET
+    CVObjectType.TORPEDO_LARGEST_TARGET,
 )
 
 
@@ -1106,7 +1105,7 @@ async def torpedo_task_2026(
 
     async def wait_for_target_detection(target: CVObjectType) -> bool:
         """Wait for a fresh HSV-matched detection of target before trusting its coords."""
-        logger.info("[torpedo_task_2026.wait_for_target_detection] Waiting for target detection...")
+        logger.info('[torpedo_task_2026.wait_for_target_detection] Waiting for target detection...')
         start_time = Clock().now()
         while not CV().is_receiving_recent_cv_data(target, TARGET_DETECTION_LATENCY):
             if (Clock().now() - start_time).nanoseconds * 1e-9 > TARGET_DETECTION_TIMEOUT:
@@ -1423,7 +1422,7 @@ async def return_task_dead_reckoning(self: CompTask, depth_level: float = 0.7) -
 
 @comp_task
 async def acoustics_blocking(self: CompTask, attempts: int = 5, timeout: int = 60) -> Task[None, None, None]:
-    for i in range(0,attempts):
+    for i in range(attempts):
         print(f'[acoustics_blocking]: making call {i+1} to acoustics task')
         closest, is_nearby, valid = await acoustics_tasks.request_acoustics(parent=self)
         if valid:

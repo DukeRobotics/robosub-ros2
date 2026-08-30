@@ -6,7 +6,6 @@ import rclpy
 import resource_retriever as rr
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
-from rclpy.clock import Clock
 from rclpy.logging import get_logger
 from rclpy.node import Node, Publisher
 from sensor_msgs.msg import CompressedImage, Image
@@ -86,8 +85,10 @@ class TorpedoTargetDetector(Node):
         """
         return cv2.matchShapes(self.reference_image, contour, cv2.CONTOURS_MATCH_I1, 0.0)
 
-    def image_callback(self, data: CompressedImage) -> None:  # noqa: PLR0915
+    def image_callback(self, data: CompressedImage) -> None:
         """Attempt to convert image and apply contours."""
+        shape_match_threshold = 0.9
+        min_contour_area = 100
         try:
             # Convert the image from the compressed format to OpenCV format
             np_arr = np.frombuffer(data.data, np.uint8)
@@ -115,8 +116,11 @@ class TorpedoTargetDetector(Node):
         contours, _ = cv2.findContours(red_hsv, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         # Contours that have a similarity value >5 and area >50
-        contours = [contour for contour in contours if cv2.matchShapes(self.reference_image, contour,
-                                                                       cv2.CONTOURS_MATCH_I1, 0.0) < 0.9]
+        contours = [
+            contour
+            for contour in contours
+            if cv2.matchShapes(self.reference_image, contour, cv2.CONTOURS_MATCH_I1, 0.0) < shape_match_threshold
+        ]
 
         # Sort contours by area and shape similarity to the reference image
         contours = sorted(contours, key=lambda cnt: (cv2.contourArea(cnt) / cv2.minEnclosingCircle(cnt)[1]),
@@ -125,28 +129,13 @@ class TorpedoTargetDetector(Node):
         # Group contours by distance
         contours = group_contours_by_distance(contours, 20)
 
-        contours = [contour for contour in contours if cv2.contourArea(contour) > 100]
-
-        # contours = contours[:4]
+        contours = [contour for contour in contours if cv2.contourArea(contour) > min_contour_area]
 
         # Sort contours by radius of min. enclosing circle
         contours = sorted(contours, key=lambda cnt: cv2.boundingRect(cnt)[3], reverse=True)
-        # contours = contours[:4]
 
         contours = sorted(contours, key=lambda cnt: cv2.matchShapes(self.reference_image, cnt,
                                                                     cv2.CONTOURS_MATCH_I1, 0.0), reverse=False)
-
-        if len(contours) == 4:
-            # match_1 = cv2.matchShapes(self.reference_image, contours[0], cv2.CONTOURS_MATCH_I1, 0.0)
-            # match_2 = cv2.matchShapes(self.reference_image, contours[1], cv2.CONTOURS_MATCH_I1, 0.0)
-            # match_3 = cv2.matchShapes(self.reference_image, contours[2], cv2.CONTOURS_MATCH_I1, 0.0)
-            # match_4 = cv2.matchShapes(self.reference_image, contours[3], cv2.CONTOURS_MATCH_I1, 0.0)
-            match_1 = cv2.contourArea(contours[0])
-            match_2 = cv2.contourArea(contours[1])
-            match_3 = cv2.contourArea(contours[2])
-            match_4 = cv2.contourArea(contours[3])
-            # logger.info(f'SHAPE FIRST: {match_1:.3f}, SECOND: {match_2:.3f}, THIRD: {match_3:.3f}, FOURTH: {match_4:.3f}')
-
 
         # Draw contours onto image, and publish the image
         image_with_contours = image.copy()
@@ -162,7 +151,6 @@ class TorpedoTargetDetector(Node):
 
         similar_size_contours = sorted(similar_size_contours, key=cv2.contourArea, reverse=True)
 
-        latency_sec = 2
         num_of_contours = 2
 
         # Find highest and lower contour, assuming that those two will represent the upper and lower holes
@@ -180,7 +168,6 @@ class TorpedoTargetDetector(Node):
             lowest_z = z
 
         if largest_cnt is not None:
-            # print("Largest contour found")
             x, y, w, h = cv2.boundingRect(largest_cnt)
             bbox = (x, y, w, h)
             self.publish_bbox(bbox, self.largest_bbox_pub)

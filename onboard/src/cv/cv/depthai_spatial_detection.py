@@ -288,11 +288,13 @@ class DepthAISpatialDetector(Node):
                 detections_dict[detection.label] = detection.confidence, detection
 
         # If this is a torpedo model, and it only detects the torpedo_banner without any glyphs,
-        # disregard this detection altogether
-        # Index for the banner is 4 so not a magic number :)
-        if "2026_torpedo" in self.current_model_name:
-            if 4 in detections_dict and len(detections_dict) <= 3:
-                return
+        # disregard this detection altogether.
+        torpedo_banner_index = 4
+        max_non_banner_detections = 3
+        if ('2026_torpedo' in self.current_model_name and
+                torpedo_banner_index in detections_dict and
+                len(detections_dict) <= max_non_banner_detections):
+            return
 
         detections = [detection for _, detection in detections_dict.values()]
         model = self.models[self.current_model_name]
@@ -359,8 +361,16 @@ class DepthAISpatialDetector(Node):
                 bbox, det_coords_robot_mm, -yaw_offset, label, confidence,
                 (self.camera_pixel_height, self.camera_pixel_width), self.using_sonar)
 
-    def publish_prediction(self, bbox: tuple, det_coords: tuple, yaw: float, label: str, confidence: float,
-                           shape: tuple, using_sonar: bool) -> None:
+    def publish_prediction(  # noqa: PLR0917
+        self,
+        bbox: tuple,
+        det_coords: tuple,
+        yaw: float,
+        label: str,
+        confidence: float,
+        shape: tuple,
+        using_sonar: bool,
+    ) -> None:
         """
         Publish predictions to label-specific topic. Publishes to /model['topic']/[camera]/[label].
 

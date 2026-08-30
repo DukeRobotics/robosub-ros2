@@ -25,6 +25,7 @@ lint.ignore = [
     "ANN002",
     "ANN003",
     "ASYNC109",
+    "CPY001", # new Ruff copyright-header rule; repo does not use file headers
     "D100",
     "D104",
     "D107",

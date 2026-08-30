@@ -1,4 +1,6 @@
 # ruff: noqa: ERA001, F401
+import math
+import time
 from math import radians
 
 import numpy as np
@@ -6,10 +8,16 @@ from task_planning.interface.cv import CVObjectType
 from task_planning.interface.ivc import IVCMessageType
 from task_planning.interface.state import State
 from task_planning.task import Task, task
-from task_planning.tasks import buoyancy_tasks, comp_tasks, move_tasks, prequal_tasks, sonar_tasks, ivc_tasks, util_tasks
+from task_planning.tasks import (
+    buoyancy_tasks,
+    comp_tasks,
+    ivc_tasks,
+    move_tasks,
+    prequal_tasks,
+    sonar_tasks,
+    util_tasks,
+)
 from task_planning.utils import geometry_utils
-import time
-import math
 
 
 @task
@@ -250,7 +258,7 @@ async def main(self: Task) -> Task[None, None, None]:
         ivc_tasks.ivc_send(IVCMessageType.CRUSH_HOME, timeout=7, parent=self),
         ivc_tasks.ivc_send(IVCMessageType.CRUSH_DONE, timeout=7, parent=self),
         util_tasks.sleep(1000, parent=self),
-        
+
 
 
         ######## True competition plan, Lane D ########
@@ -457,7 +465,7 @@ async def main(self: Task) -> Task[None, None, None]:
         # # Turn 60 degrees CW
         # move_tasks.move_to_pose_local(
         #     geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 3),
-        #     keep_orientation=True, 
+        #     keep_orientation=True,
         #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
         #     parent=self,
         # ),
@@ -466,7 +474,7 @@ async def main(self: Task) -> Task[None, None, None]:
         # # Turn 90 degrees CCW
         # move_tasks.move_to_pose_local(
         #     geometry_utils.create_pose(0, 0, 0, 0, 0, math.pi / 2),
-        #     keep_orientation=True, 
+        #     keep_orientation=True,
         #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
         #     parent=self,
         # ),

@@ -64,7 +64,7 @@ async def rotate_to_normal(self: Task,
                            scan_distance: float,
                            yaw_threshold: float,
                            tries_until_detection: int = 2) -> Task[None, None, None]:
-    """Rotates to face a normal angle.""" 
+    """Rotates to face a normal angle."""
     attempts_made = 1
     found = False
 
@@ -73,7 +73,7 @@ async def rotate_to_normal(self: Task,
         normal_angle = await scan_normal_angle(start_angle, end_angle, scan_distance)
         logger.info(f'Initial Normal Angle:  {normal_angle}')
         if np.isnan(normal_angle):
-            logger.error(f'Normal angle does not exist.')
+            logger.error('Normal angle does not exist.')
             attempts_made += 1
             continue
 

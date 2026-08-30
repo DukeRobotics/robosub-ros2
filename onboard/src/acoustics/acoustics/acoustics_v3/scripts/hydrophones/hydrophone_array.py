@@ -5,9 +5,9 @@ import os
 import struct
 from typing import BinaryIO
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from scipy.fft import fft, fftfreq
 
 from . import hydrophone as hydrophone_module
@@ -18,7 +18,7 @@ class HydrophoneArray:
     def __init__(
         self,
         sampling_freq: float = 781250,
-        selected: list[bool] | None = None
+        selected: list[bool] | None = None,
     ):
         self.sampling_freq = sampling_freq
         self.sampling_period = 1 / sampling_freq
@@ -29,11 +29,12 @@ class HydrophoneArray:
             hydrophone_module.Hydrophone(),
             hydrophone_module.Hydrophone(),
             hydrophone_module.Hydrophone(),
-            hydrophone_module.Hydrophone()
+            hydrophone_module.Hydrophone(),
         ]
 
     def load_from_path(self, path: str, is_logic_2: bool = False) -> None:
-        """Load hydrophone data from a file or directory.
+        """
+        Load hydrophone data from a file or directory.
         
         Args:
             path: Path to data file (.bin or .csv) or directory (for Logic 2)
@@ -45,18 +46,18 @@ class HydrophoneArray:
         else:
             # For Logic 1, expect a single file
             ext = os.path.splitext(path)[1].lower()
-            if ext == ".bin":
+            if ext == '.bin':
                 self._load_from_bin(path)
-            elif ext == ".csv":
+            elif ext == '.csv':
                 self._load_from_csv(path)
             else:
-                raise ValueError(f"Unsupported file type: {ext}. Expected .bin or .csv")
+                raise ValueError(f'Unsupported file type: {ext}. Expected .bin or .csv')
 
     def _load_from_csv(self, path: str) -> None:
         self._reset_hydrophones()
 
         skip_rows = 0
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, encoding='utf-8') as f:
             for i, line in enumerate(f):
                 parts = line.strip().split(',')
                 try:
@@ -69,34 +70,34 @@ class HydrophoneArray:
         data = pd.read_csv(path, skiprows=skip_rows, header=None)
 
         times = data.iloc[:, 0].to_numpy()
-        
+
         # Calculate sampling period from all time deltas
         if len(times) > 1:
             sampling_period = (times[-1] - times[0]) / (len(times) - 1)
         else:
             sampling_period = self.sampling_period
-        
+
         for idx, hydro in enumerate(self.hydrophones):
             hydro.sampling_period = sampling_period
             self._update_hydrophone(
-                hydro, times, data.iloc[:, idx + 1].to_numpy()
+                hydro, times, data.iloc[:, idx + 1].to_numpy(),
             )
 
     def _load_from_bin(self, path: str) -> None:
         self._reset_hydrophones()
 
-        with open(path, "rb") as f:
+        with open(path, 'rb') as f:
             # Read header: 8 bytes uint64, 4 bytes uint32, 8 bytes double
             header = f.read(8 + 4 + 8)
             num_samples, num_channels, sample_period = struct.unpack(
-                "<QId", header
+                '<QId', header,
             )
             if sample_period:
                 self.sampling_period = float(sample_period)
             # read all float32 samples
             total_floats = num_samples * num_channels
             float_bytes = f.read(total_floats * 4)
-            data = np.frombuffer(float_bytes, dtype="<f4")
+            data = np.frombuffer(float_bytes, dtype='<f4')
             data = data.reshape((num_channels, num_samples))
 
         times = np.arange(num_samples, dtype=np.float64) * self.sampling_period
@@ -107,7 +108,7 @@ class HydrophoneArray:
     def _update_hydrophone(self, hydro, times, signal):
         hydro.times = times
         hydro.signal = signal - np.mean(signal)
-        
+
         # Use hydrophone-specific sampling period for FFT
         hydro.freqs = fftfreq(len(hydro.signal), hydro.sampling_period)
         hydro.frequency = fft(hydro.signal)
@@ -117,23 +118,24 @@ class HydrophoneArray:
             hydro.reset()
 
     def _parse_analog_v1(self, f: BinaryIO) -> list:
-        """Parse Logic 2 analog binary format version 0 (Saleae format).
+        """
+        Parse Logic 2 analog binary format version 0 (Saleae format).
         
         Returns:
             List of waveform dictionaries with keys: begin_time, trigger_time, sample_rate, downsample, num_samples, samples
         """
         # Parse header
         identifier = f.read(8)
-        if identifier != b"<SALEAE>":
-            raise ValueError("Not a Saleae file")
+        if identifier != b'<SALEAE>':
+            raise ValueError('Not a Saleae file')
 
         version, datatype = struct.unpack('<ii', f.read(8))
 
         if datatype != 1:  # TYPE_ANALOG
-            raise ValueError(f"Expected analog data, got type {datatype}")
+            raise ValueError(f'Expected analog data, got type {datatype}')
 
         if version != 0:
-            raise ValueError(f"Expected version 0, got version {version}")
+            raise ValueError(f'Expected version 0, got version {version}')
 
         # Version 0 format - single waveform
         begin_time, sample_rate, downsample, num_samples = struct.unpack('<dQQQ', f.read(32))
@@ -147,13 +149,14 @@ class HydrophoneArray:
             'sample_rate': sample_rate,
             'downsample': downsample,
             'num_samples': num_samples,
-            'samples': samples
+            'samples': samples,
         }]
 
         return waveforms
 
     def _load_from_logic2_directory(self, directory: str) -> None:
-        """Load Logic 2 analog data from a directory (CSV or binary files).
+        """
+        Load Logic 2 analog data from a directory (CSV or binary files).
         
         For binary files, expects filenames with suffixes _0, _1, _2, _3 to identify hydrophone index.
         """
@@ -170,7 +173,7 @@ class HydrophoneArray:
         # If CSV found, load it (same format as Logic 1)
         if csv_file:
             self._load_from_csv(csv_file)
-            print(f"Loaded Logic 2 data from CSV: {os.path.basename(csv_file)}")
+            print(f'Loaded Logic 2 data from CSV: {os.path.basename(csv_file)}')
             return
 
         # Otherwise, look for analog bin files with pattern _0, _1, _2, _3
@@ -210,10 +213,10 @@ class HydrophoneArray:
                     hydro.sampling_period = actual_sample_period
                     self._update_hydrophone(hydro, times, signal)
 
-                    print(f"Loaded Logic 2 channel {hydro_idx} from {os.path.basename(analog_file)}")
+                    print(f'Loaded Logic 2 channel {hydro_idx} from {os.path.basename(analog_file)}')
 
                 except Exception as e:
-                    print(f"Error loading {analog_file}: {e}")
+                    print(f'Error loading {analog_file}: {e}')
 
 
     def plot_hydrophones(self):
@@ -224,7 +227,7 @@ class HydrophoneArray:
 
         plot_idx = 0
         for i, (hydro, is_selected) in enumerate(
-            zip(self.hydrophones, self.selected)
+            zip(self.hydrophones, self.selected),
         ):
             if is_selected:
                 # Time domain - signal
