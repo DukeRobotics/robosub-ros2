@@ -10,7 +10,7 @@ from .garbage_detector import GarbageDetector
 class TOAEnvelopeAnalyzer(BaseAnalyzer):
     """
     Time of Arrival (TOA) estimation using Hilbert envelope detection.
-    
+
     This analyzer detects signal arrival times by computing the Hilbert envelope
     and finding the first point where it exceeds a threshold based on signal statistics.
     """
@@ -22,10 +22,10 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
         margin_front=0.1,
         margin_end=0.1,
         **kwargs,
-    ):
+    ) -> None:
         """
         Initialize TOA envelope analyzer.
-        
+
         Args:
             threshold_sigma: Number of standard deviations above mean for TOA threshold
             raw_signal_threshold: Minimum absolute amplitude in raw signal for validation
@@ -41,19 +41,19 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
             margin_end=margin_end,
         )
 
-    def get_name(self):
+    def get_name(self) -> str:
         """
         Return analyzer name.
-        
+
         Returns:
             String identifier for this analyzer
         """
         return 'TOA Envelope Detection'
 
-    def print_results(self, analysis_results):
+    def print_results(self, analysis_results) -> None:
         """
         Print TOA detection results.
-        
+
         Args:
             analysis_results: Dictionary returned from analyze_array
         """
@@ -66,11 +66,11 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
     def _analyze_single(self, hydrophone, sampling_freq):
         """
         Analyze single hydrophone using envelope detection.
-        
+
         Args:
             hydrophone: Hydrophone object with signal data
             sampling_freq: Sampling frequency in Hz
-            
+
         Returns:
             Dictionary containing:
                 - toa_time: Detected time of arrival (seconds)
@@ -130,10 +130,10 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
             'is_valid': is_valid,
         }
 
-    def _plot_single_signal(self, ax_time, ax_freq, hydrophone, result, idx):
+    def _plot_single_signal(self, ax_time, ax_freq, hydrophone, result, idx) -> None:
         """
         Plot envelope analysis results for a single hydrophone.
-        
+
         Args:
             ax_time: Matplotlib axis for time domain plot
             ax_freq: Matplotlib axis for frequency domain plot

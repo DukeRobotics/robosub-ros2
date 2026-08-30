@@ -124,14 +124,14 @@ def load_hydrophone_data(
     return array
 
 
-def check_all_valid(toa_results, selected):
+def check_all_valid(toa_results, selected) -> bool:
     """
     Check if all selected hydrophones are valid.
-    
+
     Args:
         toa_results: List of TOA analysis results
         selected: List of 4 bools indicating which hydrophones are selected
-        
+
     Returns:
         True only if all selected hydrophones have is_valid=True
     """
@@ -146,13 +146,13 @@ def check_all_valid(toa_results, selected):
 def find_closest_hydrophone(analysis_results, selected=None):
     """
     Find the closest hydrophone based on TOA analysis and nearby status.
-    
+
     Args:
         analysis_results: List of analysis results from run_controller
         selected: List of 4 bools indicating which hydrophones are selected
-        
+
     Returns:
-        tuple: (closest_hydrophone_index, is_nearby, all_valid) where 
+        tuple: (closest_hydrophone_index, is_nearby, all_valid) where
                all_valid is True only if all selected hydrophones are valid
     """
     if not analysis_results or len(analysis_results) == 0:
@@ -242,7 +242,7 @@ def main():
     # Step 1: Get data (capture new or load existing)
     if CAPTURE_NEW_DATA:
         timestamp = time.strftime('%Y-%m-%d--%H-%M-%S')
-        output_dir = os.path.join(CAPTURE_OUTPUT, timestamp)
+        os.path.join(CAPTURE_OUTPUT, timestamp)
         DATA_PATH = capture_data(
             sampling_freq=SAMPLING_FREQ,
             capture_time=CAPTURE_TIME,

@@ -8,15 +8,15 @@ from .base_analyzer import BaseAnalyzer
 class NearbyAnalyzer(BaseAnalyzer):
     """
     Nearby presence detection using static threshold analysis.
-    
+
     This analyzer determines if a signal source is nearby by checking if the
     filtered signal exceeds a static amplitude threshold.
     """
 
-    def __init__(self, threshold, **kwargs):
+    def __init__(self, threshold, **kwargs) -> None:
         """
         Initialize nearby analyzer.
-        
+
         Args:
             threshold: Static amplitude threshold for nearby detection
             **kwargs: Additional arguments passed to BaseAnalyzer
@@ -24,19 +24,19 @@ class NearbyAnalyzer(BaseAnalyzer):
         super().__init__(**kwargs)
         self.threshold = threshold
 
-    def get_name(self):
+    def get_name(self) -> str:
         """
         Return analyzer name.
-        
+
         Returns:
             String identifier for this analyzer
         """
         return 'Static Nearby Analyzer'
 
-    def print_results(self, analysis_results):
+    def print_results(self, analysis_results) -> None:
         """
         Print nearby detection results.
-        
+
         Args:
             analysis_results: Dictionary returned from analyze_array
         """
@@ -49,11 +49,11 @@ class NearbyAnalyzer(BaseAnalyzer):
     def _analyze_single(self, hydrophone, sampling_freq):
         """
         Analyze single hydrophone using static threshold.
-        
+
         Args:
             hydrophone: Hydrophone object with signal data
             sampling_freq: Sampling frequency in Hz
-            
+
         Returns:
             Dictionary containing:
                 - nearby: Boolean indicating if signal exceeds threshold
@@ -87,10 +87,10 @@ class NearbyAnalyzer(BaseAnalyzer):
             'band_max': self.search_band_max,
         }
 
-    def _plot_single_signal(self, ax_time, ax_freq, hydrophone, result, idx):
+    def _plot_single_signal(self, ax_time, ax_freq, hydrophone, result, idx) -> None:
         """
         Plot nearby detection results for a single hydrophone.
-        
+
         Args:
             ax_time: Matplotlib axis for time domain plot
             ax_freq: Matplotlib axis for frequency domain plot

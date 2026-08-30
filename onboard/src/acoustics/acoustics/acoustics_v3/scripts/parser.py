@@ -41,7 +41,7 @@ def process_sample(array_obj, sample_name, truth, OUTPUT_PATH, SELECTED, confusi
         all_valid = check_all_valid(toa_results, SELECTED)
 
         # Write to CSV
-        row = [sample_name, truth, predicted] + toas + [all_valid] + valid_status + nearby_status
+        row = [sample_name, truth, predicted, *toas, all_valid, *valid_status, *nearby_status]
         with open(OUTPUT_PATH, mode='a', newline='', encoding='utf-8') as f:
             csv.writer(f).writerow(row)
 

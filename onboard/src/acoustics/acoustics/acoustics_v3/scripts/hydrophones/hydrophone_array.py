@@ -19,7 +19,7 @@ class HydrophoneArray:
         self,
         sampling_freq: float = 781250,
         selected: list[bool] | None = None,
-    ):
+    ) -> None:
         self.sampling_freq = sampling_freq
         self.sampling_period = 1 / sampling_freq
 
@@ -35,7 +35,7 @@ class HydrophoneArray:
     def load_from_path(self, path: str, is_logic_2: bool = False) -> None:
         """
         Load hydrophone data from a file or directory.
-        
+
         Args:
             path: Path to data file (.bin or .csv) or directory (for Logic 2)
             is_logic_2: If True, use Logic 2 parser for directory; if False, use Logic 1 parser
@@ -51,7 +51,8 @@ class HydrophoneArray:
             elif ext == '.csv':
                 self._load_from_csv(path)
             else:
-                raise ValueError(f'Unsupported file type: {ext}. Expected .bin or .csv')
+                msg = f'Unsupported file type: {ext}. Expected .bin or .csv'
+                raise ValueError(msg)
 
     def _load_from_csv(self, path: str) -> None:
         self._reset_hydrophones()
@@ -72,10 +73,7 @@ class HydrophoneArray:
         times = data.iloc[:, 0].to_numpy()
 
         # Calculate sampling period from all time deltas
-        if len(times) > 1:
-            sampling_period = (times[-1] - times[0]) / (len(times) - 1)
-        else:
-            sampling_period = self.sampling_period
+        sampling_period = (times[-1] - times[0]) / (len(times) - 1) if len(times) > 1 else self.sampling_period
 
         for idx, hydro in enumerate(self.hydrophones):
             hydro.sampling_period = sampling_period
@@ -105,7 +103,7 @@ class HydrophoneArray:
             hydro.sampling_period = float(self.sampling_period)
             self._update_hydrophone(hydro, times, data[idx])
 
-    def _update_hydrophone(self, hydro, times, signal):
+    def _update_hydrophone(self, hydro, times, signal) -> None:
         hydro.times = times
         hydro.signal = signal - np.mean(signal)
 
@@ -113,29 +111,32 @@ class HydrophoneArray:
         hydro.freqs = fftfreq(len(hydro.signal), hydro.sampling_period)
         hydro.frequency = fft(hydro.signal)
 
-    def _reset_hydrophones(self):
+    def _reset_hydrophones(self) -> None:
         for hydro in self.hydrophones:
             hydro.reset()
 
     def _parse_analog_v1(self, f: BinaryIO) -> list:
         """
         Parse Logic 2 analog binary format version 0 (Saleae format).
-        
+
         Returns:
             List of waveform dictionaries with keys: begin_time, trigger_time, sample_rate, downsample, num_samples, samples
         """
         # Parse header
         identifier = f.read(8)
         if identifier != b'<SALEAE>':
-            raise ValueError('Not a Saleae file')
+            msg = 'Not a Saleae file'
+            raise ValueError(msg)
 
         version, datatype = struct.unpack('<ii', f.read(8))
 
         if datatype != 1:  # TYPE_ANALOG
-            raise ValueError(f'Expected analog data, got type {datatype}')
+            msg = f'Expected analog data, got type {datatype}'
+            raise ValueError(msg)
 
         if version != 0:
-            raise ValueError(f'Expected version 0, got version {version}')
+            msg = f'Expected version 0, got version {version}'
+            raise ValueError(msg)
 
         # Version 0 format - single waveform
         begin_time, sample_rate, downsample, num_samples = struct.unpack('<dQQQ', f.read(32))
@@ -143,7 +144,7 @@ class HydrophoneArray:
 
         samples = [struct.unpack('<f', f.read(4))[0] for _ in range(num_samples)]
 
-        waveforms = [{
+        return [{
             'begin_time': begin_time,
             'trigger_time': trigger_time,
             'sample_rate': sample_rate,
@@ -152,12 +153,11 @@ class HydrophoneArray:
             'samples': samples,
         }]
 
-        return waveforms
 
     def _load_from_logic2_directory(self, directory: str) -> None:
         """
         Load Logic 2 analog data from a directory (CSV or binary files).
-        
+
         For binary files, expects filenames with suffixes _0, _1, _2, _3 to identify hydrophone index.
         """
         self._reset_hydrophones()
@@ -219,7 +219,7 @@ class HydrophoneArray:
                     print(f'Error loading {analog_file}: {e}')
 
 
-    def plot_hydrophones(self):
+    def plot_hydrophones(self) -> None:
         """Plot basic hydrophone data: signal and frequency."""
         num_plots = sum(self.selected)
 
@@ -227,7 +227,7 @@ class HydrophoneArray:
 
         plot_idx = 0
         for i, (hydro, is_selected) in enumerate(
-            zip(self.hydrophones, self.selected),
+            zip(self.hydrophones, self.selected, strict=False),
         ):
             if is_selected:
                 # Time domain - signal

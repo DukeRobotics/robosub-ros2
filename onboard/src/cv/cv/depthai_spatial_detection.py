@@ -251,7 +251,7 @@ class DepthAISpatialDetector(Node):
             self.detection_feed_publisher = self.create_publisher(
                 CompressedImage, f'cv/{self.camera}/detections/compressed', 10)
 
-    def init_queues(self, device: dai.Device) -> None:  # noqa: ARG002
+    def init_queues(self, device: dai.Device) -> None:
         """
         Assign queues from the pipeline to dictionary of queues.
 
@@ -361,7 +361,7 @@ class DepthAISpatialDetector(Node):
                 bbox, det_coords_robot_mm, -yaw_offset, label, confidence,
                 (self.camera_pixel_height, self.camera_pixel_width), self.using_sonar)
 
-    def publish_prediction(  # noqa: PLR0917
+    def publish_prediction(
         self,
         bbox: tuple,
         det_coords: tuple,

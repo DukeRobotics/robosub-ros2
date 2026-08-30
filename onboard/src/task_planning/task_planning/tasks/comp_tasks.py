@@ -1,4 +1,3 @@
-# ruff: noqa: ARG001, D103, D417, ERA001, N806, PLR2004, PLR0915
 
 import math
 from enum import Enum
@@ -597,9 +596,9 @@ async def gate_to_slalom(self: CompTask, yaw_before_slalom: float, right_turn_af
                          depth_level: float = 1.1) -> Task[None, None, None] | None:
     """
     Perform the slalom task on Crush.
-    
+
     At the start of this task, Crush should have just crossed the gate and performed 2 barrel rolls.
-    During the task, Crush detects and aligns itself with the path marker, then 
+    During the task, Crush detects and aligns itself with the path marker, then
     follows along that direction to the start of the slalom task by dead reckoning a set amount.
     Crush then attempts the slalom task by dead reckoning.
 

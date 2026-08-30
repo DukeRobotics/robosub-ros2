@@ -1,4 +1,4 @@
-# ruff: noqa: ERA001, F401, N806
+# ruff: noqa: F401
 import math
 from math import radians
 

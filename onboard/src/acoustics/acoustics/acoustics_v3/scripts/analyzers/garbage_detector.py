@@ -9,10 +9,10 @@ class GarbageDetector:
         raw_signal_threshold: float = 3,
         margin_front: float = 0.1,
         margin_end: float = 0.1,
-    ):
+    ) -> None:
         """
         Initialize garbage detector.
-        
+
         Args:
             raw_signal_threshold: Minimum absolute amplitude in raw signal
             margin_front: Minimum time (seconds) from recording start for valid TOA
@@ -31,13 +31,13 @@ class GarbageDetector:
     ) -> bool:
         """
         Validate a single hydrophone's TOA measurement.
-        
+
         Args:
             signal_value: Raw signal value at TOA index
             toa_time: Time of arrival (seconds)
             recording_start: Start time of recording (seconds)
             recording_end: End time of recording (seconds)
-            
+
         Returns:
             True if measurement is valid, False otherwise
         """
@@ -48,7 +48,4 @@ class GarbageDetector:
         # Check timing margins
         if toa_time < recording_start + self.margin_front:
             return False
-        if toa_time > recording_end - self.margin_end:
-            return False
-
-        return True
+        return not toa_time > recording_end - self.margin_end

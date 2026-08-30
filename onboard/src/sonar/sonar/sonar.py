@@ -349,7 +349,7 @@ class Sonar(Node):
         self.get_logger().info(f'Recieved Sonar request: {left_gradians}, {right_gradians}, {new_range}')
 
         # Angle must be between 0 and 400 and range must be positive
-        if left_gradians < 0 or right_gradians < 0 or right_gradians > 400 or new_range < 0:  # noqa: PLR2004
+        if left_gradians < 0 or right_gradians < 0 or right_gradians > 400 or new_range < 0:
             self.get_logger().error('Bad sonar request')
             return response
 

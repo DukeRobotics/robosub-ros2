@@ -8,7 +8,7 @@ from scipy.signal import butter, sosfiltfilt
 class BaseAnalyzer(ABC):
     """
     Base class for hydrophone signal analyzers.
-    
+
     This abstract class provides common filtering and analysis infrastructure
     for different hydrophone signal processing algorithms.
     """
@@ -20,10 +20,10 @@ class BaseAnalyzer(ABC):
         filter_order: int = 8,
         plot_results: bool = False,
         config: dict | None = None,
-    ):
+    ) -> None:
         """
         Initialize analyzer with signal processing parameters.
-        
+
         Args:
             search_band_min: Lower frequency bound for analysis (Hz)
             search_band_max: Upper frequency bound for analysis (Hz)
@@ -43,11 +43,11 @@ class BaseAnalyzer(ABC):
     def _analyze_single(self, hydrophone, sampling_freq) -> dict:
         """
         Analyze a single hydrophone signal.
-        
+
         Args:
             hydrophone: Hydrophone object with signal data
             sampling_freq: Sampling frequency in Hz
-            
+
         Returns:
             Dictionary containing analysis results with keys:
                 - toa_time: Time of arrival (float)
@@ -61,7 +61,7 @@ class BaseAnalyzer(ABC):
     def _plot_single_signal(self, ax_time, ax_freq, hydrophone, result, idx):
         """
         Plot analysis results for a single hydrophone.
-        
+
         Args:
             ax_time: Matplotlib axis for time domain plot
             ax_freq: Matplotlib axis for frequency domain plot
@@ -74,7 +74,7 @@ class BaseAnalyzer(ABC):
     def get_name(self) -> str:
         """
         Return the name of this analyzer.
-        
+
         Returns:
             String identifier for the analyzer
         """
@@ -84,11 +84,11 @@ class BaseAnalyzer(ABC):
     def analyze_array(self, hydrophone_array, selected: list[bool] | None = None):
         """
         Analyze all selected hydrophones in the array.
-        
+
         Args:
             hydrophone_array: HydrophoneArray object containing sensor data
             selected: List of booleans indicating which hydrophones to analyze
-            
+
         Returns:
             Dictionary with keys:
                 - results: List of individual hydrophone analysis results
@@ -100,7 +100,7 @@ class BaseAnalyzer(ABC):
         # Analyze each hydrophone
         results = []
         for idx, (hydro, is_selected) in enumerate(
-            zip(hydrophone_array.hydrophones, selected),
+            zip(hydrophone_array.hydrophones, selected, strict=False),
         ):
             if is_selected:
                 # Use hydrophone-specific sampling frequency
@@ -119,19 +119,19 @@ class BaseAnalyzer(ABC):
 
         return analysis_results
 
-    def print_results(self, analysis_results):
+    def print_results(self, analysis_results) -> None:
         """
         Print analysis results to console.
-        
+
         Args:
             analysis_results: Dictionary returned from analyze_array
         """
         print(f"\n{analysis_results['analyzer']}")
 
-    def plot_results(self, hydrophone_array, analysis_results, selected=None):
+    def plot_results(self, hydrophone_array, analysis_results, selected=None) -> None:
         """
         Plot analysis results for all hydrophones.
-        
+
         Args:
             hydrophone_array: HydrophoneArray object containing sensor data
             analysis_results: Dictionary returned from analyze_array
@@ -179,13 +179,13 @@ class BaseAnalyzer(ABC):
     def apply_bandpass(self, signal, sampling_freq, band_min=None, band_max=None):
         """
         Apply Butterworth bandpass filter to signal.
-        
+
         Args:
             signal: Input signal array
             sampling_freq: Sampling frequency in Hz
             band_min: Lower frequency bound (uses search_band_min if None)
             band_max: Upper frequency bound (uses search_band_max if None)
-            
+
         Returns:
             Filtered signal array
         """

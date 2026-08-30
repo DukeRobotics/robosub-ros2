@@ -1,4 +1,4 @@
-# ruff: noqa: ERA001, F401
+# ruff: noqa: F401
 import math
 import time
 from math import radians
@@ -522,7 +522,7 @@ async def main(self: Task) -> Task[None, None, None]:
 
         # comp_tasks.initial_submerge(0.5, enable_controls_flag=True, timeout=10, parent=self),
         # comp_tasks.coin_flip(parent=self),
-        # comp_tasks.gate_task_dead_reckoning(depth_level=0.7, parent=self),  # Move through gate via 2,2; right strafe via 1.5  # noqa: E501
+        # comp_tasks.gate_task_dead_reckoning(depth_level=0.7, parent=self),  # Move through gate via 2,2; right strafe via 1.5
         # comp_tasks.slalom_task_dead_reckoning(depth_level=0.975, parent=self),  # Move through slalom via 2,2,2
         # Move to octagon front via 2,2; left strafe via 0.75
         # comp_tasks.slalom_to_octagon_dead_reckoning(depth_level=0.975, parent=self),

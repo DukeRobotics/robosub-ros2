@@ -8,7 +8,7 @@ from saleae.automation.errors import Logic2AlreadyRunningError
 class Logic2:
     """Interface for Saleae Logic 2 data acquisition hardware."""
 
-    def __init__(self, is_mock=False):
+    def __init__(self, is_mock=False) -> None:
         try:
             self._manager = Manager.launch(application_path='/home/ubuntu/robosub-ros2/onboard/src/acoustics/acoustics/acoustics_v3/Logic-2.4.40-linux-x64.AppImage')  # Use default path to Logic 2
         except Logic2AlreadyRunningError:
@@ -19,18 +19,19 @@ class Logic2:
 
         if not devices:
             self.close()
-            raise RuntimeError('No Logic 2 devices found')
+            msg = 'No Logic 2 devices found'
+            raise RuntimeError(msg)
 
         if is_mock:
             self._device_id = 'F4244'
         else:
             self._device_id = devices[0].device_id
 
-    def close(self):
+    def close(self) -> None:
         """Close the Logic 2 manager."""
         self._manager.close()
 
-    def capture(self, seconds, prefix, base_dir, sample_rate=781250, formats=['csv', 'bin']):
+    def capture(self, seconds, prefix, base_dir, sample_rate=781250, formats=None):
         """
         Capture data and export to specified formats.
 
@@ -45,6 +46,8 @@ class Logic2:
             dict with paths to exported files
         """
         # Create output directory with absolute path
+        if formats is None:
+            formats = ['csv', 'bin']
         output_dir = os.path.abspath(os.path.join(base_dir, prefix))
         os.makedirs(output_dir, exist_ok=True)
 

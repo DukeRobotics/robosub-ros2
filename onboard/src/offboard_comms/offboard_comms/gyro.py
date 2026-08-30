@@ -196,7 +196,7 @@ class GyroPublisher(SerialNode):
         checksum1 = 0
         checksum2 = 0
         for i in range(1, 9):
-            if i < 6:  # noqa: PLR2004
+            if i < 6:
                 checksum1 ^= self.buffer[start_byte_index + i]
             checksum2 ^= self.buffer[start_byte_index + i]
 

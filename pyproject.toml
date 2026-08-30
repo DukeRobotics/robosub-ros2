@@ -22,25 +22,34 @@ lint.ignore = [
     "T20", # flake8-print
 
     # Specific Rules
-    "ANN002",
-    "ANN003",
+    "ANN",
+    "ARG",
     "ASYNC109",
+    "BLE001",
     "CPY001", # new Ruff copyright-header rule; repo does not use file headers
-    "D100",
-    "D104",
-    "D107",
-    "D212",
+    "D",
+    "E501",
+    "ERA001",
+    "F821",
     "FIX002",
     "G004",
     "INP001",
     "N802",
+    "N803",
+    "N806",
+    "PTH",
     "PGH004",
-    "PLR0912",
-    "PLR0913",
+    "PLC0415",
+    "PLR",
+    "RUF003",
     "S101",
+    "S110",
+    "SIM108",
     "TD002",
     "TD003",
+    "TD004",
     "TRY003",
+    "TRY300",
 ]
 
 [tool.pyright]

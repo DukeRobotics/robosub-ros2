@@ -101,7 +101,7 @@ class SerialNode(Node, ABC):
             self.get_logger().error(f'Error in connecting to {self._serial_device_name} over serial, trying again in '
                                     f'{self._connection_retry_period} seconds.')
 
-    def after_connect(self) -> Any:  # noqa: ANN401
+    def after_connect(self) -> Any:
         """
         Perform actions after a successful connection to the serial port but before starting the read timer.
 

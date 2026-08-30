@@ -33,7 +33,7 @@ class Acoustics(Node):
         # Parse request details, if any
 
         # Call controller, should intialize logic and do all of the work
-        closest, nearby, valid = controller.main()
+        closest, nearby, _valid = controller.main()
 
         # Post processing
         response.closest = closest

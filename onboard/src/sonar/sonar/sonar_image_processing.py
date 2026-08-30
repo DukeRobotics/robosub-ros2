@@ -77,17 +77,17 @@ def draw_wall_segment_overlay(
     height, width = overlay.shape[:2]
 
     ortho = segment.ortho_regression
-    kept_points = {(int(round(row)), int(round(col))) for row, col in ortho.points}
+    kept_points = {(round(row), round(col)) for row, col in ortho.points}
 
     for row, col in segment.points:
         if 0 <= row < height and 0 <= col < width:
-            is_kept = (int(round(row)), int(round(col))) in kept_points
+            is_kept = (round(row), round(col)) in kept_points
             color = point_color if is_kept else trimmed_point_color
             cv2.circle(overlay, (int(col), int(row)), radius=1, color=color, thickness=-1)
 
     row_start = np.clip(ortho.y_given_x(0), -10 * height, 10 * height)
     row_end = np.clip(ortho.y_given_x(width - 1), -10 * height, 10 * height)
-    cv2.line(overlay, (0, int(round(row_start))), (width - 1, int(round(row_end))), line_color, thickness=2)
+    cv2.line(overlay, (0, round(row_start)), (width - 1, round(row_end)), line_color, thickness=2)
 
     return overlay
 

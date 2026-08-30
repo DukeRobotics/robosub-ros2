@@ -8,7 +8,7 @@ import saleae
 
 class Logic:
     """Interface for Saleae Logic data acquisition hardware."""
-    def __init__(self, sampling_freq=781250, logic_path=''):
+    def __init__(self, sampling_freq=781250, logic_path='') -> None:
         self._launch_timeout = 15
         self._quiet = False
         self._port = 10429
@@ -54,17 +54,17 @@ class Logic:
             )
         return True
 
-    def kill_logic(self):
+    def kill_logic(self) -> None:
         """Kill the Logic software process."""
         saleae.Saleae.kill_logic()
 
-    def _configure_device(self):
+    def _configure_device(self) -> None:
         """Configure the active Logic device with channels and sample rate."""
         self._saleae.select_active_device(self._device_selection)
         self._saleae.set_active_channels(digital=None, analog=self._channels)
         self._saleae.set_sample_rate_by_minimum(0, self._sampling_freq)
 
-    def print_saleae_status(self):
+    def print_saleae_status(self) -> None:
         """Print debug information about the Saleae Logic device status."""
         print(f'DEBUG: IS LOGIC RUNNING: {self._saleae.is_logic_running()}')
         print(f'DEBUG: CONNECTED DEVICE: {self._saleae.get_connected_devices()}')

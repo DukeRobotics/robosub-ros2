@@ -115,7 +115,7 @@ class IVC:
     MESSAGES_TOPIC = '/sensors/modem/messages'
     SEND_MESSAGE_SERVICE = '/sensors/modem/send_message'
 
-    def __new__(cls, node: Node | None = None, bypass: bool = False) -> Self:  # noqa: ARG004
+    def __new__(cls, node: Node | None = None, bypass: bool = False) -> Self:
         """Create a new instance of the IVC class or return the existing instance."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -235,18 +235,14 @@ class IVC:
                     f.write(f'Sent IVC message: {acknowledgement.name} at {timestamp}\n')
 
     def _is_ack_message(self, msg_type: IVCMessageType) -> bool:
-        """
-        Return True if the given message type is an acknowledgement message.
-        """
+        """Return True if the given message type is an acknowledgement message."""
         return msg_type in {
             IVCMessageType.OOGWAY_ACKNOWLEDGE,
             IVCMessageType.CRUSH_ACKNOWLEDGE,
         }
 
     def _get_ack_message_for_self(self) -> IVCMessageType | None:
-        """
-        Return the acknowledgement IVC message type for this robot.
-        """
+        """Return the acknowledgement IVC message type for this robot."""
         robot_name = get_robot_name()
         if robot_name in {RobotName.OOGWAY, RobotName.OOGWAY_SHELL}:
             return IVCMessageType.OOGWAY_ACKNOWLEDGE
