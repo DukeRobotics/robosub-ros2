@@ -1,9 +1,9 @@
 pid:
   position:
     x:
-      Kp: 0.80000000000000004
+      Kp: 0.80
       Ki: 0
-      Kd: 0.41999999999999998
+      Kd: 0.42
       Ff: 0
       control_effort:
         min: -1
@@ -11,9 +11,9 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     y:
-      Kp: 0.84999999999999998
+      Kp: 0.85
       Ki: 0
-      Kd: 0.34999999999999998
+      Kd: 0.35
       Ff: 0
       control_effort:
         min: -1
@@ -21,9 +21,9 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     z:
-      Kp: 1.4299999999999999
+      Kp: 1.43
       Ki: 0
-      Kd: 0.84999999999999998
+      Kd: 0.85
       Ff: 0
       control_effort:
         min: -1
@@ -204,7 +204,7 @@ desired_power_limits:
 static_power_global:
   x: 0
   y: 0
-  z: -0.14499999999999999
+  z: -0.145
 power_scale_factor: 1
 thrusters:
   - name: front_right
