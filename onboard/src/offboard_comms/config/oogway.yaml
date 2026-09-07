@@ -41,6 +41,9 @@ arduino:
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketches/thruster
+    libraries:
+      - "'Adafruit BusIO'"
+      - servo
 dvl:
   ftdi: D309SFWS
 gyro:

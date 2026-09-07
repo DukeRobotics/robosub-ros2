@@ -42,6 +42,7 @@ arduino:
     sketch: sketches/thruster
     libraries:
       - "'Adafruit BusIO'"
+      - servo
 gyro:
   ftdi: FT81SUWZ
   zero_bias: 0.0024940463
