@@ -93,7 +93,7 @@ class PinkBinsDetector(Node):
                 final_x, final_y = center_x, center_y
                 chosen_label_score = max_clust_points.shape[0]
 
-        MAX_SCORE = 100  # noqa: N806
+        MAX_SCORE = 100
 
         if chosen_label_score < MAX_SCORE:
             self.publish_with_no_detection(frame, hsv_filtered_msg)

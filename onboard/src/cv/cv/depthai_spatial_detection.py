@@ -251,7 +251,7 @@ class DepthAISpatialDetector(Node):
             self.detection_feed_publisher = self.create_publisher(
                 CompressedImage, f'cv/{self.camera}/detections/compressed', 10)
 
-    def init_queues(self, device: dai.Device) -> None:  # noqa: ARG002
+    def init_queues(self, device: dai.Device) -> None:
         """
         Assign queues from the pipeline to dictionary of queues.
 
@@ -286,6 +286,15 @@ class DepthAISpatialDetector(Node):
             prev_conf, _ = detections_dict.get(detection.label, (None, None))
             if (prev_conf is not None and detection.confidence > prev_conf) or prev_conf is None:
                 detections_dict[detection.label] = detection.confidence, detection
+
+        # If this is a torpedo model, and it only detects the torpedo_banner without any glyphs,
+        # disregard this detection altogether.
+        torpedo_banner_index = 4
+        max_non_banner_detections = 3
+        if ('2026_torpedo' in self.current_model_name and
+                torpedo_banner_index in detections_dict and
+                len(detections_dict) <= max_non_banner_detections):
+            return
 
         detections = [detection for _, detection in detections_dict.values()]
         model = self.models[self.current_model_name]
@@ -352,8 +361,16 @@ class DepthAISpatialDetector(Node):
                 bbox, det_coords_robot_mm, -yaw_offset, label, confidence,
                 (self.camera_pixel_height, self.camera_pixel_width), self.using_sonar)
 
-    def publish_prediction(self, bbox: tuple, det_coords: tuple, yaw: float, label: str, confidence: float,
-                           shape: tuple, using_sonar: bool) -> None:
+    def publish_prediction(
+        self,
+        bbox: tuple,
+        det_coords: tuple,
+        yaw: float,
+        label: str,
+        confidence: float,
+        shape: tuple,
+        using_sonar: bool,
+    ) -> None:
         """
         Publish predictions to label-specific topic. Publishes to /model['topic']/[camera]/[label].
 

@@ -20,7 +20,7 @@ arduino:
         tag: TB
         topic: /sensors/temperature/battery
       - type: humidity
-        tag: HS
+        tag: HS>
         topic: /sensors/humidity/signal
       - type: humidity
         tag: HB
@@ -36,15 +36,15 @@ arduino:
           reset: 1500
         min_delay: 3.0
   thruster:
-    ftdi: AQ02V0UK
+    ftdi: B004838D
     fqbn: arduino:avr:nano
     core: arduino:avr
     sketch: sketches/thruster
     libraries:
-      - "'Adafruit BusIO'"
+      - Adafruit BusIO
 gyro:
   ftdi: FT81SUWZ
-  zero_bias: 0.0024940463
+  zero_bias: 0.0024887453
   scale_factor: 15497811.0
   negate: true
 modem:
@@ -52,13 +52,13 @@ modem:
 thrusters:
   - name: front_right
     cw: false
-    standard_esc: false
+    standard_esc: true
   - name: middle_right_first
-    cw: false
+    cw: true
     standard_esc: true
   - name: middle_right_second
-    cw: true
-    standard_esc: false
+    cw: false
+    standard_esc: true
   - name: back_right
     cw: false
     standard_esc: true

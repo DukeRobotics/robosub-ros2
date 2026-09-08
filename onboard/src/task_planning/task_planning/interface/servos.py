@@ -15,7 +15,7 @@ class MarkerDropperStates(Enum):
     """Enum for the states of the marker dropper servo."""
     ONE = 'one'
     TWO = 'two'
-    RESET
+    # RESET
 
 class TorpedoStates(Enum):
     """Enum for the states of the torpedo servo."""

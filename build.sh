@@ -71,6 +71,12 @@ build_workspace() {
     package_name=$2
     debug_mode=$3
 
+    # If we're building the onboard workspace, make sure the core workspace is visible
+    # so packages like custom_msgs can be resolved during configuration.
+    if [ "$workspace_dir" = "$ONBOARD_WS" ] && [ -f "$CORE_WS/install/setup.bash" ]; then
+        source "$CORE_WS/install/setup.bash"
+    fi
+
     # Colcon build must be run from the workspace directory
     cd "$workspace_dir" || exit
 

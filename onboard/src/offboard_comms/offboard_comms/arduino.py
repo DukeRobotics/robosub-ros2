@@ -21,7 +21,7 @@ CONFIG_YAML_PATH = OFFBOARD_COMMS_PATH_TEMPLATE.format(subpath=f'config/{ROBOT_N
 
 # Command templates for Arduino CLI
 ARDUINO_CORE_INSTALL_COMMAND_TEMPLATE = 'arduino-cli core install {core}'
-ARDUINO_LIBRARY_INSTALL_COMMAND_TEMPLATE = 'arduino-cli lib install {library}'
+ARDUINO_LIBRARY_INSTALL_COMMAND_TEMPLATE = 'arduino-cli lib install "{library}"'
 ARDUINO_COMPILE_COMMAND_TEMPLATE = (
     'arduino-cli compile -b {fqbn} "{sketch_path}" '
     f'--build-property "build.extra_flags=-DROBOT_NAME={ROBOT_NAME.upper()}"'
@@ -68,7 +68,7 @@ except KeyError:
         'top-level key "arduino".',
     )
 
-except Exception as e:  # noqa: BLE001
+except Exception as e:
     print(
         f'{OUTPUT_PREFIX}: FATAL ERROR: An unexpected error occurred when loading the config YAML file at '
         f'"{config_file_resolved_path}": {e}',

@@ -1,9 +1,9 @@
 pid:
   position:
     x:
-      Kp: 0.85
+      Kp: 0.80
       Ki: 0
-      Kd: 0.40
+      Kd: 0.42
       Ff: 0
       control_effort:
         min: -1
@@ -11,9 +11,9 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     y:
-      Kp: 0.80
+      Kp: 0.85
       Ki: 0
-      Kd: 0.05
+      Kd: 0.35
       Ff: 0
       control_effort:
         min: -1
@@ -23,7 +23,7 @@ pid:
     z:
       Kp: 1.43
       Ki: 0
-      Kd: 0.5
+      Kd: 0.85
       Ff: 0
       control_effort:
         min: -1
@@ -51,9 +51,9 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     yaw:
-      Kp: 0.09
+      Kp: 0.16
       Ki: 0
-      Kd: 0.02
+      Kd: 0.12
       Ff: 0
       control_effort:
         min: -1
@@ -204,10 +204,8 @@ desired_power_limits:
 static_power_global:
   x: 0
   y: 0
-  z: -0.206
+  z: -0.145
 power_scale_factor: 1
-# all x positions assume the corner link is 10.41527MM +x than it actually is
-# see README.md for more details
 thrusters:
   - name: front_right
     type: T200

@@ -1,4 +1,3 @@
-# ruff: noqa: N806
 
 import math
 from collections.abc import Coroutine
@@ -17,7 +16,7 @@ LANE_MARKER_HEIGHT_METERS = 0.3048
 
 
 @task
-async def prequal_task(self: Task) -> Task[None, None, None]:  # noqa: PLR0915
+async def prequal_task(self: Task) -> Task[None, None, None]:
     """Complete the prequalification task by tracking the lane marker."""
     DEPTH_LEVEL = -0.5
 

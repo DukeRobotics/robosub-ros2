@@ -206,17 +206,19 @@ class State:
         """
         Calculate the yaw correction needed to return the robot to its original gyro orientation.
 
+        The error is always wrapped to (-π, π] (shortest path). When return_raw is False, the
+        magnitude is limited by maximum_yaw / get_step_size_func while preserving sign.
+
         Args:
-            return_raw (bool, optional): If True, returns the raw yaw correction (difference in yaw angles).
-                If False, returns the processed correction normalized to [0, 2π), limited by the step size function.
-                Defaults to True.
+            return_raw (bool, optional): If True, returns the full wrapped yaw error. If False, returns
+                a signed step limited by the step size function. Defaults to True.
             maximum_yaw (float, optional): The maximum allowed yaw correction in radians for a single step.
                 Defaults to 30 degrees.
             get_step_size_func (Callable, optional): A function that takes the desired yaw correction and returns
                 the absolute step size to use. If None, defaults to a function limiting the correction to maximum_yaw.
 
         Returns:
-            float: The computed yaw correction in radians, either raw or processed, limited by the step size function.
+            float: The computed yaw correction in radians, either raw or step-limited.
         """
         orig_gyro_orientation = copy.deepcopy(self._orig_gyro.pose.pose.orientation)
         orig_gyro_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(orig_gyro_orientation))
@@ -224,13 +226,16 @@ class State:
         cur_gyro_orientation = copy.deepcopy(self._gyro.pose.pose.orientation)
         cur_gyro_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(cur_gyro_orientation))
 
-        raw_correction = orig_gyro_euler_angles[2] - cur_gyro_euler_angles[2]
+        # Wrap to (-π, π] so ±180° flips and gyro [-180, 180] wraparounds are handled correctly
+        raw_correction = math.atan2(
+            math.sin(orig_gyro_euler_angles[2] - cur_gyro_euler_angles[2]),
+            math.cos(orig_gyro_euler_angles[2] - cur_gyro_euler_angles[2]),
+        )
 
         if return_raw:
             return raw_correction
 
         if not get_step_size_func:
             get_step_size_func = lambda desired_yaw: min(abs(desired_yaw), maximum_yaw)  # noqa: E731
-        correction = raw_correction % (2 * np.pi)
-        sign_correction = np.sign(correction)
-        return sign_correction * get_step_size_func(correction)
+        sign_correction = np.sign(raw_correction) or 1.0
+        return float(sign_correction * get_step_size_func(raw_correction))

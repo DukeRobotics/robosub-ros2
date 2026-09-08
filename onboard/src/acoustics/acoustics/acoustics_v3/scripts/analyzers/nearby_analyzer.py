@@ -6,15 +6,17 @@ from .base_analyzer import BaseAnalyzer
 
 
 class NearbyAnalyzer(BaseAnalyzer):
-    """Nearby presence detection using static threshold analysis.
-    
+    """
+    Nearby presence detection using static threshold analysis.
+
     This analyzer determines if a signal source is nearby by checking if the
     filtered signal exceeds a static amplitude threshold.
     """
 
-    def __init__(self, threshold, **kwargs):
-        """Initialize nearby analyzer.
-        
+    def __init__(self, threshold, **kwargs) -> None:
+        """
+        Initialize nearby analyzer.
+
         Args:
             threshold: Static amplitude threshold for nearby detection
             **kwargs: Additional arguments passed to BaseAnalyzer
@@ -22,33 +24,36 @@ class NearbyAnalyzer(BaseAnalyzer):
         super().__init__(**kwargs)
         self.threshold = threshold
 
-    def get_name(self):
-        """Return analyzer name.
-        
+    def get_name(self) -> str:
+        """
+        Return analyzer name.
+
         Returns:
             String identifier for this analyzer
         """
-        return "Static Nearby Analyzer"
+        return 'Static Nearby Analyzer'
 
-    def print_results(self, analysis_results):
-        """Print nearby detection results.
-        
+    def print_results(self, analysis_results) -> None:
+        """
+        Print nearby detection results.
+
         Args:
             analysis_results: Dictionary returned from analyze_array
         """
         super().print_results(analysis_results)
-        print(f"\nNearby Detection (threshold: {self.threshold}):")
+        print(f'\nNearby Detection (threshold: {self.threshold}):')
         for result in analysis_results['results']:
-            status = "NEARBY" if result['nearby'] else "NOT NEARBY"
+            status = 'NEARBY' if result['nearby'] else 'NOT NEARBY'
             print(f"  Hydrophone {result['hydrophone_idx']}: {status}")
 
     def _analyze_single(self, hydrophone, sampling_freq):
-        """Analyze single hydrophone using static threshold.
-        
+        """
+        Analyze single hydrophone using static threshold.
+
         Args:
             hydrophone: Hydrophone object with signal data
             sampling_freq: Sampling frequency in Hz
-            
+
         Returns:
             Dictionary containing:
                 - nearby: Boolean indicating if signal exceeds threshold
@@ -61,7 +66,7 @@ class NearbyAnalyzer(BaseAnalyzer):
         """
         # Apply bandpass filter
         filtered_signal = self.apply_bandpass(
-            hydrophone.signal, sampling_freq
+            hydrophone.signal, sampling_freq,
         )
 
         # Detect threshold crossings
@@ -79,12 +84,13 @@ class NearbyAnalyzer(BaseAnalyzer):
             'filtered_freqs': filtered_freqs,
             'threshold': self.threshold,
             'band_min': self.search_band_min,
-            'band_max': self.search_band_max
+            'band_max': self.search_band_max,
         }
 
-    def _plot_single_signal(self, ax_time, ax_freq, hydrophone, result, idx):
-        """Plot nearby detection results for a single hydrophone.
-        
+    def _plot_single_signal(self, ax_time, ax_freq, hydrophone, result, idx) -> None:
+        """
+        Plot nearby detection results for a single hydrophone.
+
         Args:
             ax_time: Matplotlib axis for time domain plot
             ax_freq: Matplotlib axis for frequency domain plot
@@ -95,11 +101,11 @@ class NearbyAnalyzer(BaseAnalyzer):
         # Time domain plot
         ax_time.plot(
             hydrophone.times, result['filtered_signal'],
-            alpha=0.5, label='Filtered Signal', color='blue'
+            alpha=0.5, label='Filtered Signal', color='blue',
         )
         ax_time.axhline(
             result['threshold'], color='green',
-            linestyle=':', alpha=0.5, label='Threshold'
+            linestyle=':', alpha=0.5, label='Threshold',
         )
 
         # Indicate if nearby
@@ -109,7 +115,7 @@ class NearbyAnalyzer(BaseAnalyzer):
             0.5, 0.95, status,
             transform=ax_time.transAxes,
             fontsize=12, fontweight='bold',
-            color=color, ha='center', va='top'
+            color=color, ha='center', va='top',
         )
 
         # Frequency domain plot
@@ -120,10 +126,10 @@ class NearbyAnalyzer(BaseAnalyzer):
         ax_freq.plot(freqs, magnitude, label='Filtered Spectrum', color='blue')
         ax_freq.axvline(
             result['band_min'], color='red',
-            linestyle='--', alpha=0.5, label='Filter Range'
+            linestyle='--', alpha=0.5, label='Filter Range',
         )
         ax_freq.axvline(
             result['band_max'], color='red',
-            linestyle='--', alpha=0.5
+            linestyle='--', alpha=0.5,
         )
         ax_freq.set_xlim([0, 100000])  # Focus on relevant frequency range

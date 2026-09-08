@@ -72,6 +72,8 @@ class DVLPathfinderRawPublisher(SerialNode):
                 self.get_logger().warn(f'Unknown data type: {data_type}')
         except ValueError:
             self.get_logger().warn(f'Failed to parse line: {line}')
+        except IndexError as e:
+            self.get_logger().warn(f'Index out of bounds for line: {line} (Error: {e})')
 
     def _clean_line(self, line: str) -> str:
         """

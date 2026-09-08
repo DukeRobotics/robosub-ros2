@@ -25,7 +25,7 @@ ACTION_CLASSES_TO_TYPES_KEYS_TUPLE = tuple(ACTION_CLASSES_TO_TYPES.keys())
 class ROSMessageHandler(jsonpickle.handlers.BaseHandler):
     """JSONPickle handler to convert ROS messages to and from dictionaries."""
 
-    def flatten(self, obj: Any, data: dict) -> dict:  # noqa: ANN401
+    def flatten(self, obj: Any, data: dict) -> dict:
         """Flattens a ROS message object into a dictionary with relevant details."""
         data['ros/type'] = (
             '/'.join(type(obj).__module__.split('.')[:-1]) + '/' + type(obj).__name__
@@ -33,7 +33,7 @@ class ROSMessageHandler(jsonpickle.handlers.BaseHandler):
         data['ros/data'] = convert_ros_message_to_dictionary(obj)
         return data
 
-    def restore(self, obj: dict) -> Any:  # noqa: ANN401
+    def restore(self, obj: dict) -> Any:
         """Restores a ROS message from a dictionary representation."""
         message_type = obj['ros/type']
         dictionary = obj['ros/data']

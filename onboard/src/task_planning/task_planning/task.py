@@ -66,7 +66,7 @@ class TaskUpdatePublisher:
         self.node = node
         self.publisher = node.create_publisher(TaskUpdate, '/task_planning/updates', qos_profile)
 
-    def publish_update(self, task_id: int, parent_id: int, name: str, status: TaskStatus, data: Any) -> None:  # noqa: ANN401
+    def publish_update(self, task_id: int, parent_id: int, name: str, status: TaskStatus, data: Any) -> None:
         """
         Publish a message to the task_updates topic.
 
@@ -103,7 +103,7 @@ class TaskUpdatePublisher:
         msg_data = ''
         try:
             msg_data = jsonpickle.encode(data, **jsonpickle_options)
-        except Exception:  # noqa: BLE001
+        except Exception:
             self.node.get_logger().warn(
                 f'Task with id {task_id} failed to encode data to JSON when publishing {status.name}: {data}',
             )
@@ -235,7 +235,7 @@ class Task[YieldType, SendType, ReturnType]:
         """The keyword arguments used to initialize the coroutine."""
         return self._kwargs
 
-    def _publish_update(self, status: TaskStatus, data: Any) -> None:  # noqa: ANN401
+    def _publish_update(self, status: TaskStatus, data: Any) -> None:
         """
         Publish a message to the task_updates topic.
 
@@ -328,9 +328,9 @@ class Task[YieldType, SendType, ReturnType]:
             try:
                 self._publish_update(TaskStatus.DELETED, None)
                 self._coroutine.close()
-            except BaseException as e:
-                self._publish_update(TaskStatus.ERRORED, e)
-                raise
+            except BaseException:
+                # Publisher/node may already be destroyed during shutdown; never raise from __del__.
+                pass
             finally:
                 self._done = True
 

@@ -121,7 +121,7 @@ class HSVFilterTorpedos(Node):
         """
         return cv2.matchShapes(self.reference_image, contour, cv2.CONTOURS_MATCH_I1, 0.0)
 
-    def image_callback(self, data: CompressedImage) -> None:  # noqa: PLR0915
+    def image_callback(self, data: CompressedImage) -> None:
         """Attempt to convert image and apply contours."""
         try:
             # Convert the image from the compressed format to OpenCV format
@@ -266,7 +266,7 @@ class HSVFilterTorpedos(Node):
 
     def filter_outliers(self, bboxes: np.array) -> np.array:
         """Filter out outliers if there are more than two bounding boxes."""
-        if len(bboxes) <= 2:  # noqa: PLR2004
+        if len(bboxes) <= 2:
             return bboxes
 
         centers = [(x + w / 2, y + h / 2) for x, y, w, h in bboxes]
