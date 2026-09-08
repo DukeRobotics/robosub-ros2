@@ -50,7 +50,7 @@ async def main(self: Task) -> Task[None, None, None]:
         ivc_tasks.ivc_send(IVCMessageType.CRUSH_STYLE, timeout=7, parent=self),
         # Turn 120 degrees CCW toward the wall
         move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, 11 * math.pi / 12),
+            geometry_utils.create_pose(0, 0, 0, 0, 0,  math.pi / 2),
             keep_orientation=True,
             timeout=10,
             pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.03),
