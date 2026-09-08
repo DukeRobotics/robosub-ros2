@@ -34,6 +34,7 @@ async def main(self: Task) -> Task[None, None, None]:
         ivc_tasks.delineate_ivc_log(parent=self),
         comp_tasks.initial_submerge(0.8, enable_controls_flag=True, timeout=15, parent=self),
         comp_tasks.coin_flip(enable_same_direction=True, parent=self),
+        ivc_tasks.send_message(IVCMessageType.CRUSH_COIN_FLIP, timeout=7, parent=self),
         move_tasks.move_with_directions(
             [(2.5, 0, 0), (2, 0, 0)],
             depth_level=DEPTH_LEVEL,
@@ -196,6 +197,7 @@ async def main(self: Task) -> Task[None, None, None]:
             yaw_threshold=math.pi / 12,
             parent=self,
         ),
+        ivc_tasks.ivc_send(IVCMessageType.CRUSH_OCTAGON_ARRIVED, timeout=7, parent=self),
         # Turn 45 degrees CCW for the octagon image
         move_tasks.move_to_pose_local(
             geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi / 4),
@@ -246,7 +248,9 @@ async def main(self: Task) -> Task[None, None, None]:
             parent=self,
         ),
         ivc_tasks.ivc_send(IVCMessageType.CRUSH_HOME, timeout=7, parent=self),
+        ivc_tasks.ivc_send(IVCMessageType.CRUSH_DONE, timeout=7, parent=self),
         util_tasks.sleep(1000, parent=self),
+        
 
 
         ######## True competition plan, Lane D ########
