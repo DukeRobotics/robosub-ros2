@@ -71,6 +71,7 @@ GIT_ALLOWED_SIGNERS_PATH=
 ENABLE_GIT=true
 ROBOT_NAME=
 IS_ROBOT=
+ROBOT_DOCKER_RUNTIME=
 FOXGLOVERC_PATH=
 USER_UID=
 USER_GID=
@@ -91,6 +92,7 @@ USER_GID=
     > [!NOTE]
     > If you are setting up a new robot, you may need to add the robot name to the `robot/robot_names` file. See [robot/README.md](robot/README.md#robot_names) for more information.
 - `IS_ROBOT` (Optional): Set to `true` if you are setting up the repository on the robot. Set to `false` or do not include this variable in `.env` if you are setting up the repository on your development machine.
+- `ROBOT_DOCKER_RUNTIME` (Optional): Set this to `nvidia` on Crush so its Docker service uses NVIDIA Container Toolkit and exposes the Jetson GPU, CUDA driver, and video-encoder capability to the container. Leave it unset on Oogway and other non-NVIDIA hosts; it defaults to Docker's `runc` runtime.
 - `FOXGLOVERC_PATH` (Optional): Absolute path to the [`.foxgloverc`](#set-up-the-foxgloverc-file) file.
 - `USER_UID` and `USER_GID` (Optional): The user ID and group ID of the `ubuntu` user in the Docker container.
 
@@ -99,6 +101,30 @@ USER_GID=
     To retrieve these values, open a terminal outside of the Docker container. To get your user ID, run `id -u`. To get your group ID, run `id -g`.
     > [!NOTE]
     > If you are a Mac or Windows user, do **_not_** include `USER_UID` and `USER_GID` in your `.env` file. Include these variables **_only_** if you are a Linux user. If the variables are not included in `.env`, then the UID and GID will both be set to `1000`, which is the default UID and GID for non-root users in Ubuntu.
+
+### Enable the Jetson GPU on Crush
+
+This is required only on Crush. JetPack supplies the host driver, but Docker must also have NVIDIA Container Toolkit configured before a container can receive the driver's libraries and GPU device nodes. On Crush, install/configure the toolkit following NVIDIA's current [Docker instructions](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html), then run:
+
+```bash
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
+Confirm that `docker info` lists an `nvidia` runtime, then add this to Crush's `.env`:
+
+```bash
+ROBOT_DOCKER_RUNTIME=nvidia
+```
+
+Recreate the container with `./docker-build.sh`. Verify inside it with:
+
+```bash
+ls -l /dev/nvhost-gpu
+ldconfig -p | grep libcuda
+```
+
+`nvidia-smi` is normally not available on Jetson, so it is not an appropriate validation command there. Oogway must leave `ROBOT_DOCKER_RUNTIME` unset.
 
 ## Set Up the Robot
 If you are setting up the repository on the robot, there's a few additional steps you need to take. If you are setting up the repository on your development machine, skip to the [Set Up the Docker Container](#set-up-the-docker-container) section.
