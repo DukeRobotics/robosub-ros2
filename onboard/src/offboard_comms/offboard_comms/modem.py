@@ -68,7 +68,8 @@ class ModemPublisher(SerialNode):
 
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
-                         SerialReadType.BYTES_ALL, self.CONNECTION_RETRY_PERIOD, loop_rate=self.LOOP_RATE)
+                         SerialReadType.BYTES_ALL, connection_retry_period=self.CONNECTION_RETRY_PERIOD,
+                         loop_rate=self.LOOP_RATE)
         self.buffer = bytearray()
 
         self.status = ModemStatus(busy=False)
@@ -316,8 +317,8 @@ class ModemPublisher(SerialNode):
              f'Cannot send command {command_info.name} before receiving a diagnostic report.'),
             (command == SendModemCommand.Request.SET_POWER_LEVEL and
                 self.report.git_revision not in self.GIT_REVISIONS_WITH_POWER_LEVEL_COMMAND,
-             f'{command_info.name} command not available on this modem with firmware version '
-                f'{self.report.git_revision.hex()}.'),
+             (f'{command_info.name} command not available on this modem with firmware version '
+                f'{self.report.git_revision.hex()}.')),
             (command == SendModemCommand.Request.SET_POWER_LEVEL and
                 not (self.MIN_POWER_LEVEL <= raw_value <= self.MAX_POWER_LEVEL),
              f"Invalid power level '{raw_value}'. Must be in range [{self.MIN_POWER_LEVEL}, {self.MAX_POWER_LEVEL}]."),

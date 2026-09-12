@@ -13,7 +13,7 @@ async def fire_torpedo(self: Task, torpedo_side: TorpedoStates) -> Task[None, No
     logger.info(f'[fire_torpedo] Firing torpedo: {torpedo_side}')
     Servos().fire_torpedo(torpedo_side)
     logger.info(f'[fire_torpedo] Fired torpedo: {torpedo_side}')
-    await util_tasks.sleep(Duration(seconds=3), parent=self)
+    await util_tasks.sleep(Duration(seconds=5), parent=self)
 
 
 @task

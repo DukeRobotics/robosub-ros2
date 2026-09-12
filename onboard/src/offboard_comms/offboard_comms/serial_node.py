@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 from contextlib import suppress
 from enum import Enum
 from pathlib import Path
-from typing import Any
 
 import resource_retriever as rr
 import serial
@@ -25,7 +24,7 @@ class SerialNode(Node, ABC):
     """Abstract ROS node to read and write to serial."""
 
     def __init__(self, node_name: str, baudrate: int, config_file_path: str, serial_device_name: str,
-                 read_type: SerialReadType, connection_retry_period: float = 1, loop_rate: float = 10,
+                 read_type: SerialReadType, *, connection_retry_period: float = 1, loop_rate: float = 10,
                  max_num_consecutive_empty_lines: int = 5, parity: str = serial.PARITY_NONE,
                  read_timeout: float = 1.0, num_bytes_to_read: int = 1, flush_input_after_read: bool = False) -> None:
         """
@@ -101,7 +100,7 @@ class SerialNode(Node, ABC):
             self.get_logger().error(f'Error in connecting to {self._serial_device_name} over serial, trying again in '
                                     f'{self._connection_retry_period} seconds.')
 
-    def after_connect(self) -> Any:  # noqa: ANN401
+    def after_connect(self) -> None:
         """
         Perform actions after a successful connection to the serial port but before starting the read timer.
 

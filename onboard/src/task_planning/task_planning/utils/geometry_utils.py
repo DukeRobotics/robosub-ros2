@@ -149,7 +149,7 @@ def angular_distance_rpy(rpy1: tuple[float, float, float], rpy2: tuple[float, fl
     return Vector3(x=roll, y=pitch, z=yaw)
 
 
-def at_pose(current_pose: Pose, desired_pose: Pose, x_tol: float = 0.05, y_tol: float = 0.05, z_tol: float = 0.05,
+def at_pose(current_pose: Pose, desired_pose: Pose, *, x_tol: float = 0.05, y_tol: float = 0.05, z_tol: float = 0.05,
         roll_tol: float = 0.2, pitch_tol: float = 0.3, yaw_tol: float = 0.15) -> bool:
     """
     Check if current pose is within tolerance of a desired pose (position and orientation).
@@ -305,7 +305,7 @@ def create_pose(x: float, y: float, z: float, roll: float, pitch: float, yaw: fl
     return pose
 
 
-def create_twist(x: float, y: float, z: float, roll: float, pitch: float, yaw: float) -> Twist:
+def create_twist(*, x: float, y: float, z: float, roll: float, pitch: float, yaw: float) -> Twist:
     """
     Create a Twist message from linear and angular velocity values.
 

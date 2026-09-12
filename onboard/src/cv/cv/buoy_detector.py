@@ -80,8 +80,8 @@ class BuoyDetector(Node):
         contour_image_msg = self.bridge.cv2_to_imgmsg(image_with_contours, 'bgr8')
         self.contour_image_pub.publish(contour_image_msg)
 
-        MIN_AREA_OF_CONTOUR = 100  # noqa: N806
-        MATCH_TOLERANCE = 0.2  # noqa: N806
+        MIN_AREA_OF_CONTOUR = 100
+        MATCH_TOLERANCE = 0.2
 
         # only processes contours w/ area > MIN_AREA_OF_CONTOUR
         contours = [contour for contour in contours if cv2.contourArea(contour) > MIN_AREA_OF_CONTOUR]
@@ -107,7 +107,7 @@ class BuoyDetector(Node):
         if best_cnt is not None:
             x, y, w, h = cv2.boundingRect(best_cnt)
             bbox = (x, y, w, h)
-            self.publish_bbox(bbox, image)
+            self.publish_bbox(bbox)
 
             # Draw bounding box on the image
             cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -116,9 +116,11 @@ class BuoyDetector(Node):
         image_msg = self.bridge.cv2_to_imgmsg(image, 'bgr8')
         self.contour_image_with_bbox_pub.publish(image_msg)
 
+    MAX_BBOXES_WITHOUT_FILTERING = 2
+
     def filter_outliers(self, bboxes: np.array) -> np.array:
         """Filter out outliers if there are more than two bounding boxes."""
-        if len(bboxes) <= 2:  # noqa: PLR2004
+        if len(bboxes) <= self.MAX_BBOXES_WITHOUT_FILTERING:
             return bboxes
 
         centers = [(x + w / 2, y + h / 2) for x, y, w, h in bboxes]
@@ -136,7 +138,7 @@ class BuoyDetector(Node):
         ]
 
 
-    def publish_bbox(self, bbox: tuple[int, int, int, int], image: None) -> None:  # noqa: ARG002
+    def publish_bbox(self, bbox: tuple[int, int, int, int]) -> None:
         """
         Create a CVObject message to publish to the bounding box publisher.
 
@@ -167,7 +169,7 @@ class BuoyDetector(Node):
                                               MonoCam.IMG_SHAPE,
                                               (Buoy.WIDTH, 0),
                                               MonoCam.FOCAL_LENGTH,
-                                              MonoCam.SENSOR_SIZE, 1)
+                                              MonoCam.SENSOR_SIZE, adjustment_factor=1)
         bounding_box.coords.x, bounding_box.coords.y, bounding_box.coords.z = coords_list
 
         self.bounding_box_pub.publish(bounding_box)

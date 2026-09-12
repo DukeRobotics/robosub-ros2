@@ -11,6 +11,7 @@ Steps 1-3 need to be completed once to set up the repository and required softwa
 3. [Set Up the Dotenv File](#set-up-the-dotenv-file)
 4. [Set Up the Docker Container](#set-up-the-docker-container)
     - [Using VS Code Dev Containers](#using-vs-code-dev-containers)
+    - [Claude Code and Codex CLIs](#claude-code-and-codex-clis)
     - [Without VS Code Dev Containers](#without-vs-code-dev-containers)
 5. [Set Up Foxglove (Optional)](#set-up-foxglove-optional)
     - [Set Up Foxglove Desktop](#set-up-foxglove-desktop)
@@ -71,6 +72,7 @@ GIT_ALLOWED_SIGNERS_PATH=
 ENABLE_GIT=true
 ROBOT_NAME=
 IS_ROBOT=
+ROBOT_DOCKER_RUNTIME=
 FOXGLOVERC_PATH=
 USER_UID=
 USER_GID=
@@ -91,6 +93,7 @@ USER_GID=
     > [!NOTE]
     > If you are setting up a new robot, you may need to add the robot name to the `robot/robot_names` file. See [robot/README.md](robot/README.md#robot_names) for more information.
 - `IS_ROBOT` (Optional): Set to `true` if you are setting up the repository on the robot. Set to `false` or do not include this variable in `.env` if you are setting up the repository on your development machine.
+- `ROBOT_DOCKER_RUNTIME` (Optional): Set this to `nvidia` on Crush so its Docker service uses NVIDIA Container Toolkit and exposes the Jetson GPU, CUDA driver, and video-encoder capability to the container. Leave it unset on Oogway and other non-NVIDIA hosts; it defaults to Docker's `runc` runtime.
 - `FOXGLOVERC_PATH` (Optional): Absolute path to the [`.foxgloverc`](#set-up-the-foxgloverc-file) file.
 - `USER_UID` and `USER_GID` (Optional): The user ID and group ID of the `ubuntu` user in the Docker container.
 
@@ -99,6 +102,30 @@ USER_GID=
     To retrieve these values, open a terminal outside of the Docker container. To get your user ID, run `id -u`. To get your group ID, run `id -g`.
     > [!NOTE]
     > If you are a Mac or Windows user, do **_not_** include `USER_UID` and `USER_GID` in your `.env` file. Include these variables **_only_** if you are a Linux user. If the variables are not included in `.env`, then the UID and GID will both be set to `1000`, which is the default UID and GID for non-root users in Ubuntu.
+
+### Enable the Jetson GPU on Crush
+
+This is required only on Crush. JetPack supplies the host driver, but Docker must also have NVIDIA Container Toolkit configured before a container can receive the driver's libraries and GPU device nodes. On Crush, install/configure the toolkit following NVIDIA's current [Docker instructions](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html), then run:
+
+```bash
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
+Confirm that `docker info` lists an `nvidia` runtime, then add this to Crush's `.env`:
+
+```bash
+ROBOT_DOCKER_RUNTIME=nvidia
+```
+
+Recreate the container with `./docker-build.sh`. Verify inside it with:
+
+```bash
+ls -l /dev/nvhost-gpu
+ldconfig -p | grep libcuda
+```
+
+`nvidia-smi` is normally not available on Jetson, so it is not an appropriate validation command there. Oogway must leave `ROBOT_DOCKER_RUNTIME` unset.
 
 ## Set Up the Robot
 If you are setting up the repository on the robot, there's a few additional steps you need to take. If you are setting up the repository on your development machine, skip to the [Set Up the Docker Container](#set-up-the-docker-container) section.
@@ -147,6 +174,9 @@ Make sure you have Docker running on your machine. Then, follow the instructions
 > [!NOTE]
 > Starting the Docker container will create an empty `~/.foxglove-studio/` directory on your local machine if it does not already exist. Foxglove Desktop uses this directory to load locally installed extensions.
 
+> [!NOTE]
+> Starting the Docker container will also create the `~/.claude/`, `~/.claude.json`, and `~/.codex/` files/directories on your local machine if they do not already exist. See [Claude Code and Codex CLIs](#claude-code-and-codex-clis) below for more information.
+
 ### Using VS Code Dev Containers
 If you're using VS Code and have the Dev Containers extension installed:
 
@@ -185,6 +215,17 @@ If you're using VS Code and have the Dev Containers extension installed:
 > docker rm -f onboard2
 > ```
 > Then, run the `docker-build.sh` script again.
+
+### Claude Code and Codex CLIs
+The Claude Code and Codex CLIs are installed in the Dev Container, so you can run `claude` or `codex` in any integrated terminal.
+
+If you're using VS Code Dev Containers and already have Claude Code and/or the Codex CLI set up (logged in) on your host machine, the Dev Container automatically bind-mounts your host `~/.claude/`, `~/.claude.json`, and `~/.codex/` config/auth paths into the container. This means `claude`/`codex` are already logged in inside the container, and any changes (for example, updated settings or a new login) are shared between your host machine and the container. NOTE: This is only supported fro Linux/WSL. For MacOS, currently it is required to login every clean build.
+
+> [!NOTE]
+> This bind-mounting only happens when using VS Code Dev Containers, and relies on the `HOME` (Linux/macOS) or `USERPROFILE` (Windows) environment variable being set in the environment VS Code itself runs in.
+
+> [!NOTE]
+> On **macOS**, Claude Code stores your login in the macOS Keychain rather than in a file under `~/.claude`, so a host-side login does not carry over into the container even with the bind mount above. Just log in with `claude` inside the container terminal instead (as described above for developers without a host login) — that login is written to the mounted path and will persist across container rebuilds. Codex does not have this issue, since it stores its credentials as a plain file under `~/.codex` on both macOS and Linux.
 
 ### Without VS Code Dev Containers
 If you're **not** using VS Code or do **not** have the Dev Containers extension installed:

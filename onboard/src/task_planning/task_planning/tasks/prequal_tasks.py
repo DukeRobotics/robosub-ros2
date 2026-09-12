@@ -1,4 +1,3 @@
-# ruff: noqa: N806
 
 import math
 from collections.abc import Coroutine

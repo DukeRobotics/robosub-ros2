@@ -1,5 +1,4 @@
-# ruff: noqa: ARG001, D103, D417, ERA001, N806, PLR2004, PLR0915
-
+# ruff: noqa: ERA001, E501
 import math
 from enum import Enum
 
@@ -15,7 +14,7 @@ from task_planning.interface.servos import MarkerDropperStates, TorpedoStates
 from task_planning.interface.sonar import Sonar
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield
-from task_planning.tasks import move_tasks, servos_tasks, util_tasks
+from task_planning.tasks import acoustics_tasks, cv_tasks, move_tasks, servos_tasks, util_tasks
 from task_planning.tasks.base_comp_task import CompTask, comp_task
 from task_planning.utils import geometry_utils
 from task_planning.utils.other_utils import RobotName, get_robot_name
@@ -43,8 +42,11 @@ async def initial_submerge(self: CompTask, depth_level: float, z_tolerance: floa
     Submerge the robot a given amount.
 
     Args:
+        self: The task object.
         depth_level: The distance to submerge the robot in meters.
+        z_tolerance: Allowable error in the Z axis when reaching the target depth.
         enable_controls_flag: Flag to wait for ENABLE_CONTROLS status when true.
+        timeout: Maximum time in seconds to spend attempting to reach the target depth.
     """
     logger.info('[initial_submerge] Starting initial submerge')
 
@@ -73,65 +75,63 @@ async def coin_flip(self: CompTask, depth_level: float = 0.7,
     a specified threshold. After correcting yaw, the robot adjusts its depth to reach the desired level.
 
     Args:
-        self (CompTask): The task instance managing the execution of the coin flip task.
-        depth_level (float): The depth adjustment level relative to the robot's original depth. Default is 0.7.
-
-    Returns:
-        Task[None, None, None]: The result of the task execution.
-
-    Detailed Process:
-        1. Calculate the desired yaw correction using the difference between the original and current IMU orientations.
-        2. Gradually adjust yaw in steps, ensuring the correction does not exceed the maximum allowed yaw change.
-        3. Once the yaw is corrected to within 5 degrees, adjust the robot's depth to the specified level.
-        4. Log each step of the process for debugging and traceability.
-
-    Logging:
-        - Logs the initial start of the coin flip task.
-        - Logs intermediate yaw corrections and desired yaw adjustments.
-        - Logs depth corrections and the final completion of the task.
-
-    Example:
-        >>> await coin_flip(task_instance, depth_level=0.5)
-
-    Notes:
-        - Uses `State` to access robot's current and original states, including depth and IMU orientation.
-        - Uses `geometry_utils` to create poses for yaw and depth corrections.
-        - The task continuously loops until the yaw correction is within the specified threshold (±5 degrees).
+        self: The task object.
+        depth_level: Depth to reach relative to the original depth (meters submerged).
+        enable_same_direction: If True, lock the rotation direction from the initial error so
+            the robot does not reverse mid-correction; if False, each step uses the shortest path.
+        timeout: Seconds allowed per yaw step.
     """
     DEPTH_LEVEL = State().orig_depth - depth_level
+    YAW_TOLERANCE = math.radians(5)
+    # Stay strictly under π so a 180° setpoint is not treated as the opposite turn
+    MAX_YAW_STEP = math.radians(179)
 
-    if enable_same_direction:
-        while abs(State().get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
-            yaw_correction = State().get_gyro_yaw_correction(return_raw=False, maximum_yaw=2*np.pi)
-            logger.info(f'[coin_flip] Yaw correction: {yaw_correction}')
+    def yaw_error() -> float:
+        """Shortest-path yaw correction (orig - cur) in (-π, π]."""
+        return State().get_gyro_yaw_correction(return_raw=True)
 
-            if yaw_correction > np.pi:
-                yaw_correction -= np.pi
-                await self.correct_yaw(np.pi, timeout=timeout)
-                logger.info('[coin_flip] Yaw correct 180')
+    logger.info('[coin_flip] Starting coin flip')
+    initial_error = yaw_error()
+    logger.info(
+        f'[coin_flip] Initial yaw error: {initial_error:.4f} rad '
+        f'({math.degrees(initial_error):.1f} deg)',
+    )
 
-            logger.info(f'[coin_flip] Yaw correct remainder: {yaw_correction}')
-            await self.correct_yaw(yaw_correction, timeout=timeout)
+    if abs(initial_error) > YAW_TOLERANCE:
+        # Lock turn direction from the initial shortest-path error
+        direction = 1.0 if initial_error >= 0 else -1.0
 
-    else:
-        while abs(State().get_gyro_yaw_correction(return_raw=True)) > math.radians(5):
-            yaw_correction = State().get_gyro_yaw_correction(return_raw=False, maximum_yaw=2*np.pi)
-            logger.info(f'[coin_flip] Yaw correction: {yaw_correction}')
+        while abs(yaw_error()) > YAW_TOLERANCE:
+            error = yaw_error()
 
-            await self.correct_yaw(yaw_correction, timeout=timeout)
+            if enable_same_direction:
+                # Keep spinning the initially chosen way; stop if we overshoot
+                if error * direction <= 0:
+                    logger.info('[coin_flip] Overshot target heading; stopping yaw correction')
+                    break
+                step = direction * min(abs(error), MAX_YAW_STEP)
+            else:
+                step = math.copysign(min(abs(error), MAX_YAW_STEP), error)
 
-    logger.info(f'[coin_flip] Final yaw offset: {State().get_gyro_yaw_correction(return_raw=True)}')
+            logger.info(
+                f'[coin_flip] Yaw correction step: {step:.4f} rad ({math.degrees(step):.1f} deg)',
+            )
+            await self.correct_yaw(step, yaw_tolerance=0.1, timeout=timeout)
+
+    logger.info(f'[coin_flip] Final yaw offset: {yaw_error():.4f} rad')
 
     await self.correct_depth(DEPTH_LEVEL)
     logger.info('[coin_flip] Completed coin flip')
 
 
 @comp_task
-async def gate_task(self: CompTask, offset: int = 0, direction: int = 1) -> Task[None, None, None]:
+async def gate_task(self: CompTask, offset: int = 0,  # noqa: ARG001 - offset only used by disabled correction below
+                    direction: int = 1) -> Task[None, None, None]:
     """NOTE: This code is assuming we choose the sawfish side of the gate."""
     logger.info('[gate_task] Started gate task')
 
     DEPTH_LEVEL = State().orig_depth - 0.7
+    GATE_ARRIVAL_DISTANCE = 3
 
     def get_step_size(dist: float) -> float:
         dist_threshold = 4
@@ -146,7 +146,7 @@ async def gate_task(self: CompTask, offset: int = 0, direction: int = 1) -> Task
     await self.correct_depth(DEPTH_LEVEL)
 
     num_corrections = 0
-    while gate_dist > 3:
+    while gate_dist > GATE_ARRIVAL_DISTANCE:
         await self.move_x(step=get_step_size(gate_dist))
 
         await yaw_to_cv_object(CVObjectType.GATE_SAWFISH, direction=-1, yaw_threshold=math.radians(10),
@@ -181,14 +181,14 @@ async def gate_style_task(self: CompTask, depth_level: float = 0.9) -> Task[None
 
     async def roll() -> None:
         power = Twist()
-        power.angular.x = 1.0
+        power.angular.x = 0.5
         Controls().publish_desired_power(power)
         logger.info('[gate_style_task] Published roll power')
 
         if get_robot_name() == RobotName.OOGWAY:
             await util_tasks.sleep(2.25, parent=self)
         else:
-            await util_tasks.sleep(1.40, parent=self)
+            await util_tasks.sleep(3.0, parent=self)
 
         logger.info('[gate_style_task] Completed roll')
 
@@ -199,24 +199,27 @@ async def gate_style_task(self: CompTask, depth_level: float = 0.9) -> Task[None
         logger.info('[gate_style_task] Completed zero')
 
     await self.correct_depth(DEPTH_LEVEL)
+
+    await roll()
+    State().reset_pose()
+    await util_tasks.sleep(1.8, parent=self)
+    await self.correct_depth(DEPTH_LEVEL)
+
     await roll()
     State().reset_pose()
     await util_tasks.sleep(2.5, parent=self)
-
     await self.correct_depth(DEPTH_LEVEL)
-    await roll()
-    State().reset_pose()
-    await util_tasks.sleep(2.5, parent=self)
 
-    await self.correct_depth(DEPTH_LEVEL)
-    await util_tasks.sleep(2.5, parent=self)
+    await util_tasks.sleep(5, parent=self)
 
+    logger.info('[gate_style_task] Correcting roll and pitch')
     await self.correct_roll_and_pitch()
     logger.info('[gate_style_task] Reset orientation')
 
 
 @comp_task
 async def gate_task_dead_reckoning(self: CompTask, depth_level: float = 0.7) -> Task[None, None, None]:
+    """Move the robot through the gate by dead reckoning."""
     logger.info('[gate_task_dead_reckoning] Started gate task')
 
     DEPTH_LEVEL = State().orig_depth - depth_level
@@ -245,17 +248,21 @@ async def gate_task_dead_reckoning(self: CompTask, depth_level: float = 0.7) -> 
 @comp_task
 async def yaw_until_object_detection(self: CompTask, cv_object: CVObjectType, depth_level: float = 0.7,
                                      latency_threshold: int = 10, direction: int = 1) -> Task[None, None, None] | bool:
+    """Yaw the robot in increasing steps until the given CV object is detected."""
     logger.info('[yaw_until_object_detection] Beginning yaw_util_object_detection task')
 
     MAXIMUM_YAW = math.radians(30)
+    INITIAL_SEARCH_ATTEMPTS = 3
+    OVERCORRECTION_ATTEMPT = 4
+    SECONDARY_SEARCH_ATTEMPTS = 8
 
     iteration = 1
     while not CV().is_receiving_recent_cv_data(cv_object, latency_threshold):
-        if iteration <= 3:
+        if iteration <= INITIAL_SEARCH_ATTEMPTS:
             angle = MAXIMUM_YAW
-        elif iteration == 4:
+        elif iteration == OVERCORRECTION_ATTEMPT:
             angle = -2 * MAXIMUM_YAW
-        elif iteration <= 8:
+        elif iteration <= SECONDARY_SEARCH_ATTEMPTS:
             angle = -1 * MAXIMUM_YAW
         else:
             angle = 3 * MAXIMUM_YAW
@@ -264,7 +271,7 @@ async def yaw_until_object_detection(self: CompTask, cv_object: CVObjectType, de
         logger.info(f'[yaw_until_object_detection] No {cv_object} detection, setting yaw setpoint {angle}')
         await self.correct_yaw(angle * direction, yaw_tolerance=0.3, depth_level=depth_level, timeout=10)
 
-        if iteration > 8:
+        if iteration > SECONDARY_SEARCH_ATTEMPTS:
             return False
 
         # await self.correct_depth(depth_level)
@@ -275,7 +282,7 @@ async def yaw_until_object_detection(self: CompTask, cv_object: CVObjectType, de
 
 
 @comp_task
-async def yaw_to_cv_object(self: CompTask, cv_object: CVObjectType, direction: int = 1,
+async def yaw_to_cv_object(self: CompTask, cv_object: CVObjectType, *, direction: int = 1,  # noqa: PLR0915
                            yaw_threshold: float = math.radians(40), latency_threshold: int = 10,
                            depth_level: float = 0.5,
                            use_position_control: bool = True) -> Task[None, None, None] | bool:
@@ -284,6 +291,8 @@ async def yaw_to_cv_object(self: CompTask, cv_object: CVObjectType, direction: i
     MAXIMUM_YAW = math.radians(30)
     POSITION_SCALE_FACTOR = 0.4  # How much the correction should be scaled down from yaw calculation
     VELOCITY_SCALE_FACTOR = 0.1
+    FRAME_EDGE_LOW_X = 256
+    FRAME_EDGE_HIGH_X = 384
 
     logger.info('[yaw_to_cv_object] Starting yaw_to_cv_object')
 
@@ -292,7 +301,7 @@ async def yaw_to_cv_object(self: CompTask, cv_object: CVObjectType, direction: i
         return min(abs(desired_yaw), MAXIMUM_YAW)
 
     def get_yaw_threshold(desired_yaw: float, cv_x: float) -> float:
-        return desired_yaw * 1.75 if cv_x < 256 or cv_x > 384 else desired_yaw * 1.35
+        return desired_yaw * 1.75 if cv_x < FRAME_EDGE_LOW_X or cv_x > FRAME_EDGE_HIGH_X else desired_yaw * 1.35
 
     async def get_robust_cv_object_yaw() -> float:
         # Take average of 5 numbers and use that for yaw to try and offset outliers
@@ -325,10 +334,11 @@ async def yaw_to_cv_object(self: CompTask, cv_object: CVObjectType, direction: i
     logger.info(f'[yaw_to_cv_object] abs(cv_object_yaw): {abs(cv_object_yaw)}')
     logger.info(f'[yaw_to_cv_object] yaw_threshold: {yaw_threshold}')
 
+    MAX_YAW_CORRECTIONS = 3
     step = 1
     while abs(cv_object_yaw) > get_yaw_threshold(yaw_threshold, CV().bounding_boxes[cv_object].coords.x):
         # If we have made 3 corrections already, trust that yaw is reasonable and continue forward
-        if step > 3:
+        if step > MAX_YAW_CORRECTIONS:
             logger.info('[yaw_to_cv_object] Yaw has been corrected more than 3 times, breaking loop.')
             break
 
@@ -374,19 +384,23 @@ async def yaw_to_cv_object(self: CompTask, cv_object: CVObjectType, direction: i
 
 
 @comp_task
-async def buoy_task(self: CompTask, turn_to_face_buoy: bool = False,
+async def buoy_task(self: CompTask, turn_to_face_buoy: bool = False,  # noqa: PLR0915
                     depth_level: float = 0.7) -> Task[None, None, None]:
     """Circumnavigate the buoy. Requires robot to have submerged 0.5 meters."""
     logger.info('[buoy_task] Starting buoy task')
 
     DEPTH_LEVEL = State().orig_depth - depth_level
+    LARGE_STEP_DISTANCE = 3
+    MEDIUM_STEP_DISTANCE = 2
+    SMALL_STEP_DISTANCE = 1.5
+    CLOSE_RANGE_DISTANCE = 3
 
     def get_step_size(dist: float, dist_threshold: float) -> float:
-        if dist > 3:
+        if dist > LARGE_STEP_DISTANCE:
             return 2
-        if dist > 2:
+        if dist > MEDIUM_STEP_DISTANCE:
             return 1
-        if dist > 1.5:
+        if dist > SMALL_STEP_DISTANCE:
             return 0.5
         return min(dist - dist_threshold + 0.1, 0.25)
 
@@ -400,7 +414,7 @@ async def buoy_task(self: CompTask, turn_to_face_buoy: bool = False,
             logger.info(f'[buoy_task] Buoy dist: {CV().bounding_boxes[CVObjectType.BUOY].coords.x}')
 
             await self.correct_y_to_cv_obj(CVObjectType.BUOY, mult_factor=0.4)
-            if buoy_dist < 3:
+            if buoy_dist < CLOSE_RANGE_DISTANCE:
                 await self.correct_z_to_cv_obj(CVObjectType.BUOY)
             else:
                 await self.correct_depth(DEPTH_LEVEL)
@@ -414,8 +428,10 @@ async def buoy_task(self: CompTask, turn_to_face_buoy: bool = False,
     await move_to_buoy()
 
     if turn_to_face_buoy:
+        MIN_MOVE_AWAY_DISTANCE = 0.75
+
         def get_step_size_move_away(dist: float, dist_threshold: float) -> float:
-            if dist < 0.75:
+            if dist < MIN_MOVE_AWAY_DISTANCE:
                 return -0.5
             return max(dist - dist_threshold - 0.1, -0.25)
 
@@ -468,7 +484,7 @@ async def buoy_circumnavigation_power(self: CompTask, depth_level: float = 0.7) 
 
     Args:
         self (Task): The task instance.
-        depth (float): The depth offset to adjust the circumnavigation. Default is 0.7.
+        depth_level (float): The depth offset to adjust the circumnavigation. Default is 0.7.
 
     Returns:
         Task[None, None, None]: The result of the circumnavigation task.
@@ -502,6 +518,7 @@ async def buoy_circumnavigation_power(self: CompTask, depth_level: float = 0.7) 
 
 @comp_task
 async def after_buoy_task(self: CompTask) -> Task[None, None, None]:
+    """Move the robot away from the buoy by dead reckoning after circumnavigation."""
     LATENCY_THRESHOLD = 3
 
     directions = [
@@ -549,6 +566,7 @@ async def after_buoy_task(self: CompTask) -> Task[None, None, None]:
 
 @comp_task
 async def buoy_to_octagon(self: CompTask, direction: int = 1, move_forward: int = 0) -> Task[None, None, None]:
+    """Move the robot from the buoy toward the octagon by dead reckoning."""
     logger.info('[buoy_to_octagon] Started buoy to octagon')
 
     # Move towards octagon
@@ -564,6 +582,7 @@ async def buoy_to_octagon(self: CompTask, direction: int = 1, move_forward: int 
 
 @comp_task
 async def gate_to_octagon(self: CompTask, depth_level: float = 1, timeout: int = 30) -> Task[None, None, None]:
+    """Move the robot from the gate toward the octagon by dead reckoning."""
     DEPTH_LEVEL = State().orig_depth - depth_level
 
     logger.info('[gate_to_octagon] Started gate to octagon')
@@ -578,13 +597,14 @@ async def gate_to_octagon(self: CompTask, depth_level: float = 1, timeout: int =
 
 @comp_task
 async def slalom_task_dead_reckoning(self: CompTask, depth_level: float = 1.1) -> Task[None, None, None]:
+    """Complete the slalom task by dead reckoning."""
     DEPTH_LEVEL = State().orig_depth - depth_level
 
-    logger.info('[slalom_task_dead_reckoning] Started slalom task')
-
     if get_robot_name() == RobotName.OOGWAY:
-        pass
+        logger.info('[slalom_task_dead_reckoning] Slalom task called on Oogway, ignoring the task')
+
     elif get_robot_name() == RobotName.CRUSH:
+        logger.info('[slalom_task_dead_reckoning] Starting slalom task...')
         directions = [
             (2, 0, 0),
             (2, 0, 0),
@@ -592,11 +612,54 @@ async def slalom_task_dead_reckoning(self: CompTask, depth_level: float = 1.1) -
         ]
         await self.move_with_directions(directions, depth_level=DEPTH_LEVEL, timeout=20)
 
-    logger.info('[slalom_task_dead_reckoning] Finished slalom task')
+        logger.info('[slalom_task_dead_reckoning] Finished slalom task')
+
+
+@comp_task
+async def gate_to_slalom(self: CompTask, yaw_before_slalom: float, right_turn_after_gate: bool,
+                         depth_level: float = 1.1) -> Task[None, None, None] | None:
+    """
+    Perform the slalom task on Crush.
+
+    At the start of this task, Crush should have just crossed the gate and performed 2 barrel rolls.
+    During the task, Crush detects and aligns itself with the path marker, then
+    follows along that direction to the start of the slalom task by dead reckoning a set amount.
+    Crush then attempts the slalom task by dead reckoning.
+
+    Args:
+        self: The task object.
+        yaw_before_slalom (float): the signed angle (in radians) between the heading of the path marker
+            to the angle at which Crush should attempt the slalom task. Positive for anti-clockwise yaw.
+        right_turn_after_gate (bool): True if the start of the slalom task is somewhere to the right (positive-y)
+            of the gate, False otherwise.
+        depth_level (float): The depth to move at while approaching the slalom.
+    """
+    DEPTH_LEVEL = State().orig_depth - depth_level
+    YAW_BEFORE_SLALOM = yaw_before_slalom
+
+    if get_robot_name() == RobotName.OOGWAY:
+        logger.info('[gate_to_slalom] Gate to slalom was called on Oogway, ignoring the task')
+
+    elif get_robot_name() == RobotName.CRUSH:
+        logger.info('[gate_to_slalom] Starting gate to slalom task...')
+
+        await align_path_marker(right_turn=right_turn_after_gate, depth_level=DEPTH_LEVEL, parent=self)
+        directions = [
+            (2, 0, 0),
+            (2, 0, 0),
+            (2, 0, 0),
+        ]
+        await self.move_with_directions(directions, depth_level=DEPTH_LEVEL, timeout=20)
+
+        await self.correct_yaw(YAW_BEFORE_SLALOM)
+        await self.correct_depth(DEPTH_LEVEL)
+
+        logger.info('[gate_to_slalom] Finished gate to slalom task')
 
 
 @comp_task
 async def slalom_to_octagon_dead_reckoning(self: CompTask, depth_level: float = 1.1) -> Task[None, None, None]:
+    """Move the robot from the slalom to the octagon by dead reckoning."""
     DEPTH_LEVEL = State().orig_depth - depth_level
     LATENCY_THRESHOLD = 10
 
@@ -636,6 +699,7 @@ async def slalom_to_octagon_dead_reckoning(self: CompTask, depth_level: float = 
 
 @comp_task
 async def center_path_marker(self: CompTask, depth_level: float = 0.5) -> Task[None, None, None]:
+    """Center the robot on the path marker using its pixel offset in the frame."""
     DEPTH_LEVEL = State().orig_depth - depth_level
     PIXEL_THRESHOLD = 70
     STEP_SIZE = 0.2
@@ -721,6 +785,7 @@ async def align_path_marker(self: CompTask, depth_level: float = 0.5) -> Task[No
 
 @comp_task
 async def path_marker_to_marker_dropper_bins(self: CompTask, maximum_distance: float = 6) -> Task[None, None, None]:
+    """Move the robot from the path marker toward the marker dropper bins."""
     DEPTH_LEVEL = State().orig_depth - 0.5
     AREA_THRESHOLD = 1000
     LATENCY_THRESHOLD = 1
@@ -772,6 +837,7 @@ async def path_marker_to_marker_dropper_bins(self: CompTask, maximum_distance: f
 @comp_task
 async def spiral_bins_search(self: CompTask, depth_level: float = 0.5,
                              spiral_step_size: float = 0.5) -> Task[None, None, None] | bool:
+    """Search for the bins by moving the robot in an outward spiral pattern."""
     DEPTH_LEVEL = State().orig_depth - depth_level
     AREA_THRESHOLD = 1000
     LATENCY_THRESHOLD = 1
@@ -857,7 +923,7 @@ async def spiral_bins_search(self: CompTask, depth_level: float = 0.5,
 
 
 @comp_task
-async def marker_dropper_task(self: CompTask) -> Task[None, None, None]:
+async def marker_dropper_task(self: CompTask) -> Task[None, None, None]:  # noqa: PLR0915
     """Detect and drop markers into the red bin. Requires robot to have submerged 0.7 meters."""
     START_DEPTH_LEVEL = State().orig_depth - 0.6
     START_PIXEL_THRESHOLD = 70
@@ -878,7 +944,7 @@ async def marker_dropper_task(self: CompTask) -> Task[None, None, None]:
             return 1
         return -1
 
-    async def track_bin(target: CVObjectType, desired_depth: float, pixel_threshold: float,
+    async def track_bin(*, target: CVObjectType, desired_depth: float, pixel_threshold: float,
                         step_size: float = 0.20, x_offset: float = 0, y_offset: float = 0) -> None:
         logger.info(f'[marker_dropper_task] Target pixel distances: {CV().distances[target]}')
         pixel_x = CV().distances[target].x + x_offset
@@ -944,8 +1010,10 @@ async def marker_dropper_task(self: CompTask) -> Task[None, None, None]:
 
 
 @comp_task
-async def torpedo_task(self: CompTask, first_target: CVObjectType,
-                       depth_level: float = 0.5, direction: int = 1) -> Task[None, None, None]:
+async def torpedo_task(self: CompTask, first_target: CVObjectType,  # noqa: PLR0915
+                       depth_level: float = 0.5,
+                       direction: int = 1) -> Task[None, None, None]:
+    """Approach the torpedo banner and fire at the first target."""
     assert first_target in [CVObjectType.TORPEDO_REEF_SHARK_TARGET, CVObjectType.TORPEDO_SAWFISH_TARGET], \
         f'Invalid first_animal: {first_target}. Must be \
             CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET'
@@ -953,15 +1021,20 @@ async def torpedo_task(self: CompTask, first_target: CVObjectType,
     logger.info('[torpedo_task] Starting torpedo task')
 
     DEPTH_LEVEL = State().orig_depth - depth_level
+    VERY_LARGE_STEP_DISTANCE = 10
+    LARGE_STEP_DISTANCE = 6
+    MEDIUM_STEP_DISTANCE = 4
+    SMALL_STEP_DISTANCE = 1.5
+    CLOSE_RANGE_DISTANCE = 3
 
     def get_step_size(dist: float, dist_threshold: float) -> float:
-        if dist > 10:
+        if dist > VERY_LARGE_STEP_DISTANCE:
             goal_step = 4
-        elif dist > 6:
+        elif dist > LARGE_STEP_DISTANCE:
             goal_step = 3
-        elif dist > 4:
+        elif dist > MEDIUM_STEP_DISTANCE:
             goal_step = 1
-        elif dist > 1.5:
+        elif dist > SMALL_STEP_DISTANCE:
             goal_step = 0.5
         else:
             goal_step = 0.25
@@ -987,7 +1060,7 @@ async def torpedo_task(self: CompTask, first_target: CVObjectType,
 
             await self.correct_y_to_cv_obj(CVObjectType.TORPEDO_BANNER)
 
-            if torpedo_dist < 3:
+            if torpedo_dist < CLOSE_RANGE_DISTANCE:
                 await self.correct_z_to_cv_obj(CVObjectType.TORPEDO_BANNER)  # CV-based z-axis correction
             else:
                 await self.correct_depth(DEPTH_LEVEL)
@@ -1038,8 +1111,143 @@ async def torpedo_task(self: CompTask, first_target: CVObjectType,
     logger.info('[torpedo_task] Torpedo task completed')
 
 
+TORPEDO_2026_TARGETS: tuple[CVObjectType, ...] = (
+    CVObjectType.TORPEDO_AMBULANCE_TARGET,
+    CVObjectType.TORPEDO_BLOOD_TARGET,
+    CVObjectType.TORPEDO_FIRETRUCK_TARGET,
+    CVObjectType.TORPEDO_FIRE_TARGET,
+    CVObjectType.TORPEDO_LARGEST_TARGET,
+)
+
+
 @comp_task
-async def octagon_task(self: CompTask, direction: int = 1) -> Task[None, None, None]:
+async def torpedo_task_2026(
+    self: CompTask,
+    first_target: CVObjectType,
+    second_target: CVObjectType,
+    depth_level: float = 0.7,
+    direction: int = 1,
+) -> Task[None, None, None] | None:
+    """Approach the torpedo banner and fire at the first and second targets."""
+    logger.info('[torpedo_task_2026] Starting torpedo task')
+
+    if first_target not in TORPEDO_2026_TARGETS or second_target not in TORPEDO_2026_TARGETS:
+        logger.info(f'Invalid targets: {first_target} and {second_target}. Must be one of {TORPEDO_2026_TARGETS}')
+        return
+    # assert first_target != second_target, 'first_target and second_target must be different'
+
+    FINAL_STOP_DISTANCE = 2.5 # TODO: change to 2.0
+    TARGET_DETECTION_TIMEOUT = 5
+    TARGET_DETECTION_LATENCY = 2
+
+    async def wait_for_target_detection(target: CVObjectType) -> bool:
+        """Wait for a fresh HSV-matched detection of target before trusting its coords."""
+        logger.info('[torpedo_task_2026.wait_for_target_detection] Waiting for target detection...')
+        start_time = Clock().now()
+        while not CV().is_receiving_recent_cv_data(target, TARGET_DETECTION_LATENCY):
+            if (Clock().now() - start_time).nanoseconds * 1e-9 > TARGET_DETECTION_TIMEOUT:
+                logger.warning(
+                    f'[torpedo_task_2026.wait_for_target_detection] Timed out waiting for fresh {target} detection',
+                )
+                return False
+            await util_tasks.sleep(0.1, parent=self)
+        return True
+
+    async def fire_at_target(target: CVObjectType, torpedo: TorpedoStates,
+                             y_offset: float = 0, z_offset: float = 0) -> tuple[float, float]:
+        logger.info('[torpedo_task_2026.fire_at_target] Starting fire_at_target')
+        logger.info('[torpedo_task_2026.fire_at_target] Moving forward 0.5m')
+        await self.move_x(step=0.5)
+
+        for _ in range(1):
+            await wait_for_target_detection(target)
+
+            target_y = CV().bounding_boxes[target].coords.y + y_offset
+            target_z = CV().bounding_boxes[target].coords.z + z_offset
+            logger.info(f'[torpedo_task_2026.fire_at_target] Aligning to {target} at y={target_y} and z={target_z}')
+            await move_tasks.move_to_pose_local(
+                geometry_utils.create_pose(0, target_y, target_z, 0, 0, 0), parent=self,
+            )
+
+            # logger.info(f'[torpedo_task_2026.fire_at_target] Moving forward 0.5 meters')
+            # await self.move_x(step=0.25)
+
+        # logger.info(f'[torpedo_task_2026.fire_at_target] Final alignment to {target} at y={y_offset} and z={z_offset}')
+        # await move_tasks.move_to_pose_local(
+        #     geometry_utils.create_pose(0, y_offset, z_offset, 0, 0, 0), parent=self
+        # )
+        await servos_tasks.fire_torpedo(torpedo, parent=self)
+        return y_offset, z_offset
+
+    # Coarse approach and centering on the torpedo_banner (DepthAI front camera detection).
+    await cv_tasks.move_to_cv_obj(CVObjectType.TORPEDO_BANNER, target_distance=FINAL_STOP_DISTANCE,
+                                  depth_level=depth_level, search_direction=direction, parent=self)
+    logger.info('[torpedo_task_2026] Finished moving forwards to torpedo')
+
+    # Might want to add a small move forward if needed
+
+    # Final yaw to cv object to center object
+    await cv_tasks.yaw_to_cv_obj(CVObjectType.TORPEDO_BANNER, yaw_threshold=math.radians(5),
+                                 search_direction=direction, depth_threshold=0.1, depth_level=depth_level, parent=self)
+
+    # NOTE: THESE VALUES ARE MAGIC NUMBERS
+    # For the version of torpedo banner that we usually test on our own pool:
+    # depth_level=0.925 for our pool, will need to be retuned at the courses (probably around 1.2)
+    # To shoot the left torpedo on target:
+    # - The left target: self.move_y(step=-0.2)
+    # - The top target: self.move_y(step=-0.6) followed by self.correct_depth(desired_depth=State().depth + 0.2)
+    # Right torpedo TBD
+
+    # DEAD RECKONING CODE
+    # await move_tasks.move_to_pose_local(
+        #     geometry_utils.create_pose(0, 0, 0, 0, 0, 0.261799),
+        #     pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.05),
+        #     parent=self,
+        # ),
+
+
+    await self.correct_depth(desired_depth=State().depth - 0.25)
+    # # If approach from the left
+    # await self.move_y(step=-0.6)
+    # If approach from the right
+    await self.move_y(step=-0.55)
+    await self.move_x(step=0.4)
+
+    # await self.move_y(step=0.06)
+    await servos_tasks.fire_torpedo(TorpedoStates.RIGHT, parent=self)
+    await util_tasks.sleep(duration=3.0, parent=self)
+    await servos_tasks.fire_torpedo(TorpedoStates.LEFT, parent=self)
+
+    # await move_tasks.move_to_pose_local(
+    #     geometry_utils.create_pose(0, 0, 0.2, 0, 0, 0),
+    #     parent=self,
+    # )
+
+    # ACTUAL CV CODE
+    # Fine targeting: swap to the HSV-matched USB-camera detections for each glyph.
+    # first_target_y, first_target_z = await fire_at_target(first_target, TorpedoStates.LEFT, y_offset=-0.1, z_offset=0.1)
+
+    # Only for a new target, if same target should just re-align and shoot again
+    # if first_target != second_target:
+    #     # Undo the exact alignment move made for first_target to get back to a banner-centered pose.
+    #     await move_tasks.move_to_pose_local(
+    #         geometry_utils.create_pose(0, -first_target_y, -first_target_z, 0, 0, 0),
+    #         parent=self,
+    #     )
+
+    # logger.info('[torpedo_task_2026] Moving back 0.5m')
+    # await self.move_x(step=-0.5)
+    # # Center torpedo banner again
+    # await cv_tasks.yaw_to_cv_obj(CVObjectType.TORPEDO_BANNER, yaw_threshold=math.radians(5),
+    #                              search_direction=direction, depth_threshold=0.1, depth_level=depth_level, parent=self)
+
+    # await fire_at_target(second_target, TorpedoStates.RIGHT, z_offset=0.1)
+
+    logger.info('[torpedo_task_2026] Torpedo task completed')
+
+
+@comp_task
+async def octagon_task(self: CompTask, direction: int = 1) -> Task[None, None, None]:  # noqa: PLR0915
     """
     Detect, move towards the yellow bins, then surface inside the octagon.
 
@@ -1161,9 +1369,20 @@ async def octagon_task(self: CompTask, direction: int = 1) -> Task[None, None, N
     await face_fish(yaw_left=True, closer_banner=True)
 
     logger.info('[octagon_task] Surfacing...')
-    await move_tasks.move_to_pose_local(geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
-                                        timeout=10, parent=self)
+    await surface_task(parent=self)
     logger.info('[octagon_task] Finished surfacing')
+
+
+@comp_task
+async def surface_task(self: CompTask, timeout: int = 10) -> Task[None, None, None]:
+    """Surface the robot to the original depth (e.g. inside the octagon)."""
+    logger.info('[surface_task] Surfacing...')
+    await move_tasks.move_to_pose_local(
+        geometry_utils.create_pose(0, 0, State().orig_depth - State().depth, 0, 0, 0),
+        timeout=timeout,
+        parent=self,
+    )
+    logger.info('[surface_task] Finished surfacing')
 
 
 @comp_task
@@ -1223,6 +1442,7 @@ async def orient_to_wall(self: CompTask[None, None, None],
 
 @comp_task
 async def return_task_dead_reckoning(self: CompTask, depth_level: float = 0.7) -> Task[None, None, None]:
+    """Return the robot to the starting position by dead reckoning."""
     DEPTH_LEVEL = State().orig_depth - depth_level
 
     logger.info('[return_task_dead_reckoning] Started gate return task')
@@ -1239,3 +1459,22 @@ async def return_task_dead_reckoning(self: CompTask, depth_level: float = 0.7) -
         await self.move_with_directions(directions, depth_level=DEPTH_LEVEL, timeout=15)
 
     logger.info('[return_task_dead_reckoning] Moved through gate return')
+
+@comp_task
+async def acoustics_blocking(self: CompTask, attempts: int = 5,
+                             timeout: int = 60) -> Task[None, None, None]:  # noqa: ARG001 - timeout not yet wired up
+    """Repeatedly call the acoustics service until a valid response is received or attempts run out."""
+    for i in range(attempts):
+        print(f'[acoustics_blocking]: making call {i+1} to acoustics task')
+        closest, is_nearby, valid = await acoustics_tasks.request_acoustics(parent=self)
+        if valid:
+            print(f'[acoustics_blocking]: valid response from acoustics, closest {closest}, is_nearby {is_nearby}')
+            break
+        print('[acoustics_blocking]: invalid response from acoustics')
+
+    if is_nearby:
+        pass
+    else:
+        pass
+
+

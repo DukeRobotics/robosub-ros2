@@ -1,4 +1,5 @@
-# ruff: noqa: ERA001, F401, N806, F841
+# ruff: noqa: F401, ERA001, E501
+import math
 from math import radians
 
 from task_planning.interface.cv import CVObjectType
@@ -8,10 +9,13 @@ from task_planning.task import Task, task
 from task_planning.tasks import (
     buoyancy_tasks,
     comp_tasks,
+    cv_tasks,
+    ivc_tasks,
     move_tasks,
     prequal_tasks,
     servos_tasks,
     sonar_tasks,
+    util_tasks,
 )
 from task_planning.utils import geometry_utils
 
@@ -20,16 +24,76 @@ from task_planning.utils import geometry_utils
 async def main(self: Task) -> Task[None, None, None]:
     """Run the tasks to be performed by Oogway."""
     # Constants
-    DIRECTION_OF_TORPEDO_BANNER = 1
-    DEPTH = 0.5
-    # CVObjectType.TORPEDO_REEF_SHARK_TARGET or CVObjectType.TORPEDO_SAWFISH_TARGET
-    FIRST_TARGET = CVObjectType.TORPEDO_REEF_SHARK_TARGET
+    DIRECTION_OF_TORPEDO_BANNER = -1
+    DEPTH = 0.924
+    FIRST_TARGET = CVObjectType.TORPEDO_LARGEST_TARGET
+    SECOND_TARGET = CVObjectType.TORPEDO_LARGEST_TARGET
     tasks = [
+        ######### DO NOT TOUCH OR BIG SAAG WILL SPOON YOU #########
+
+
+        ## Third Chance Course D
+        comp_tasks.initial_submerge(DEPTH, parent=self),
+        ivc_tasks.delineate_ivc_log(parent=self),
+        ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TEST, parent=self),
+        move_tasks.move_with_directions([(5, 0, 0), (0, 2.3, 0), (6, 0, 0)], parent=self),
+        ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TORPEDOES_ARRIVED, parent=self),
+        util_tasks.sleep(2, parent=self),
+        ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TORPEDOES_PINGER, parent=self),
+        comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TORPEDOES_DONE, parent=self),
+        util_tasks.sleep(1000, parent=self),
+
+        ## SF Course D tested @ 7:30am Mon 13 Jul 2026, LEFT SIDE OF GATE
+        # # SEQUENCE: Gate --> torpedoes
+        # comp_tasks.initial_submerge(DEPTH, parent=self),
+        # ivc_tasks.delineate_ivc_log(parent=self),
+        # move_tasks.move_with_directions([(5, 0, 0), (0, 2, 0), (6, 0, 0)], parent=self),
+        # move_tasks.move_with_directions([(0, 2.3, 0), (6, 0, 0)], parent=self),
+        # ivc_tasks.ivc_send(IVCMessageType.OOGWAY_GATE, parent=self),
+        # comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        # ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TORPEDOES, parent=self),
+        # util_tasks.sleep(1000, parent=self),
+
+        ## SF Course A
+        # SEQUENCE: Gate --> torpedoes
+        # comp_tasks.initial_submerge(DEPTH, parent=self),
+        # move_tasks.move_with_directions([
+        #     (5, 0, 0),
+        #     (0, 3.5, 0),
+        #     (5, 0, 0),
+        # ], parent=self),
+        # comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+
+        #########     End sensitive taskplanning code.     #########
+
+        ### Semis 2 Task Planning:
+        # ivc_tasks.delineate_ivc_log(parent=self),
+        # comp_tasks.initial_submerge(0.3, parent=self),
+        # ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TEST, parent=self),
+        # comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+
+
+
         ######## Main competition tasks ########
         # ivc_tasks.delineate_ivc_log(parent=self),
-        comp_tasks.initial_submerge(DEPTH, parent=self),
-        # move_tasks.move_with_directions([(1, 0, 0), (0, 0.5, 0), (-1, 0, 0), (0, -0.5, 0)], parent=self),
+        # comp_tasks.initial_submerge(DEPTH, parent=self),
+        # move_tasks.move_with_directions([(4, 0, 0), (0, 2, 0), (6, 0, 0)], parent=self),
+        # comp_tasks.gate_task(offset=-0.1, direction=-1, parent=self),
+        # comp_tasks.torpedo_task_2026(first_target=FIRST_TARGET, second_target=SECOND_TARGET,
+        #                              depth_level=DEPTH, direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
+        # move_tasks.move_with_directions([(2.0, 0, 0), (0, 2.0, 0), (-2.0, 0, 0), (0, -2.0, 0)], parent=self),
         # comp_tasks.gate_task_dead_reckoning(depth_level=-DEPTH, parent=self),
+        # cv_tasks.yaw_to_cv_obj(CVObjectType.TORPEDO_BANNER, depth_level=DEPTH, parent=self),
+        # cv_tasks.move_to_cv_obj(CVObjectType.TORPEDO_BANNER, target_distance=2.5, depth_level=DEPTH, parent=self, search_direction=-1),
+        # move_tasks.move_with_directions([(0, -0.5, 0)], parent=self),
+        # servos_tasks.fire_torpedo(TorpedoStates.RIGHT, parent=self),
+        # servos_tasks.fire_torpedo(TorpedoStates.LEFT, parent=self),
+        # comp_tasks.torpedo_task_2026(
+        #     first_target=FIRST_TARGET, second_target=SECOND_TARGET, depth_level=DEPTH,
+        #     direction=DIRECTION_OF_TORPEDO_BANNER, parent=self,
+        # ),
+        # cv_tasks.move_to_cv_obj(FIRST_TARGET, target_distance=1, parent=self, search_direction=-1),
         # comp_tasks.torpedo_task(first_target=FIRST_TARGET, depth_level=DEPTH,
         #                         direction=DIRECTION_OF_TORPEDO_BANNER, parent=self),
         # TODO: task not found???
@@ -62,9 +126,12 @@ async def main(self: Task) -> Task[None, None, None]:
         ## IVC
         # TODO: task not found???
         # comp_tasks.oogway_ivc_start(IVCMessageType.OOGWAY_ACKNOWLEDGE, parent=self),
+        # ivc_tasks.ivc_send(IVCMessageType.OOGWAY_TEST, parent=self),
+        # ivc_tasks.test_ivc(IVCMessageType.OOGWAY_TEST, parent=self),
 
         ## Movement/CV tasks
         # move_tasks.move_with_directions([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)], parent=self),
+        # move_tasks.move_with_directions([(4, 0, 0), [-4, 0, 0]], parent=self),
         # move_tasks.move_to_pose_local(
         #     geometry_utils.create_pose(0, 0, 0, 0, 0, 1.6),
         #     parent=self,
@@ -82,7 +149,7 @@ async def main(self: Task) -> Task[None, None, None]:
 
         ######## Sonar tasks ########
         # sonar_tasks.sonar_test(-45., 45., 10., parent=self)
-        sonar_tasks.rotate_to_normal(-45., 45., 10., 0.01, parent=self),
+        # sonar_tasks.rotate_to_normal(-45., 45., 10., 0.01, parent=self),
         # sonar_tasks.rotate_to_angle_from_normal(-45., 45., 5., 5., 3.1415/6., parent=self),
     ]
 
