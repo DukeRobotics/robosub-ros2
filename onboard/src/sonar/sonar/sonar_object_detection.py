@@ -227,6 +227,7 @@ class OrthogonalRegression:
             ndarray | None: a boolean mask over points marking the largest inlier set found,
                 or None if no valid line hypothesis could be formed.
         """
+        MIN_VECTOR_NORM = 1e-9
         rng = np.random.default_rng()
         num_points = points.shape[0]
         best_inliers = None
@@ -236,7 +237,7 @@ class OrthogonalRegression:
             i, j = rng.choice(num_points, size=2, replace=False)
             direction = points[j] - points[i]
             norm = np.linalg.norm(direction)
-            if norm < 1e-9:
+            if norm < MIN_VECTOR_NORM:
                 continue  # degenerate hypothesis (duplicate points); skip
 
             unit_normal = np.array([-direction[1], direction[0]]) / norm

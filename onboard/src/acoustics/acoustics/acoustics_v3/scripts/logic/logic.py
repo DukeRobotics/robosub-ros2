@@ -1,14 +1,14 @@
 """Logic module for interfacing with Saleae Logic hardware."""
-import os
 import sys
 import time
+from pathlib import Path
 
 import saleae
 
 
 class Logic:
     """Interface for Saleae Logic data acquisition hardware."""
-    def __init__(self, sampling_freq=781250, logic_path='') -> None:
+    def __init__(self, sampling_freq: float = 781250, logic_path: str = '') -> None:
         self._launch_timeout = 15
         self._quiet = False
         self._port = 10429
@@ -42,7 +42,7 @@ class Logic:
         )
         self._configure_device()
 
-    def start_logic(self):
+    def start_logic(self) -> bool:
         """Start the Logic software if not already running."""
         if not saleae.Saleae.is_logic_running():
             return saleae.Saleae.launch_logic(
@@ -77,9 +77,9 @@ class Logic:
         print(f'DEBUG: POSSIBLE BANDWIDTH: {bandwidth}')
         print(f'DEBUG: ANALYZERS: {self._saleae.get_analyzers()}')
 
-    def start_csv_capture(self, seconds, output_dir):
+    def start_csv_capture(self, seconds: float, output_dir: str) -> str:
         """Capture data and export to CSV format."""
-        csv_path = os.path.join(output_dir, 'TEMP.csv')
+        csv_path = str(Path(output_dir) / 'TEMP.csv')
         self._saleae.set_capture_seconds(seconds)
         self._saleae.capture_start_and_wait_until_finished()
         self._saleae.export_data2(
@@ -89,9 +89,9 @@ class Logic:
             time.sleep(0.5)
         return csv_path
 
-    def export_binary_capture(self, seconds, output_dir, name='TEMP.bin'):
+    def export_binary_capture(self, seconds: float, output_dir: str, name: str = 'TEMP.bin') -> str:
         """Capture data and export to binary format."""
-        bin_path = os.path.join(output_dir, name)
+        bin_path = str(Path(output_dir) / name)
         self._saleae.set_capture_seconds(seconds)
         self._saleae.capture_start_and_wait_until_finished()
         self._saleae.export_data2(
@@ -103,10 +103,10 @@ class Logic:
             time.sleep(0.5)
         return bin_path
 
-    def export_binary_and_csv_capture(self, seconds, output_dir):
+    def export_binary_and_csv_capture(self, seconds: float, output_dir: str) -> tuple[str, str]:
         """Capture data and export to both binary and CSV formats."""
-        bin_path = os.path.join(output_dir, 'TEMP.bin')
-        csv_path = os.path.join(output_dir, 'TEMP.csv')
+        bin_path = str(Path(output_dir) / 'TEMP.bin')
+        csv_path = str(Path(output_dir) / 'TEMP.csv')
 
         self._saleae.set_capture_seconds(seconds)
         self._saleae.capture_start_and_wait_until_finished()

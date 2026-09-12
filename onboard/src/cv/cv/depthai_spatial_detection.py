@@ -259,8 +259,8 @@ class DepthAISpatialDetector(Node):
             device (DepthAI.Device): DepthAI.Device object for the connected device.
                 See https://docs.luxonis.com/projects/api/en/latest/components/device/
         """
-        self.output_queues['rgb'] = self.device.getOutputQueue(name='rgb', maxSize=1, blocking=False)
-        self.output_queues['detections'] = self.device.getOutputQueue(name='detections', maxSize=1, blocking=False)
+        self.output_queues['rgb'] = device.getOutputQueue(name='rgb', maxSize=1, blocking=False)
+        self.output_queues['detections'] = device.getOutputQueue(name='detections', maxSize=1, blocking=False)
 
     def detect(self) -> None:
         """Get current detections from output queues and publish."""
@@ -327,7 +327,7 @@ class DepthAISpatialDetector(Node):
 
             det_coords_robot_mm = calculate_relative_pose(bbox, tuple(model['input_size']),
                                                         tuple(model['sizes'][label]),
-                                                        self.focal_length, self.sensor_size, 2,
+                                                        self.focal_length, self.sensor_size, adjustment_factor=2,
                                                         scale_x=scale_x, scale_y=scale_y, scale_z=scale_z)
 
             # Find yaw angle offset
@@ -358,11 +358,12 @@ class DepthAISpatialDetector(Node):
                                            det_coords_robot_mm[2])  # Maintain original z
 
             self.publish_prediction(
-                bbox, det_coords_robot_mm, -yaw_offset, label, confidence,
-                (self.camera_pixel_height, self.camera_pixel_width), self.using_sonar)
+                bbox=bbox, det_coords=det_coords_robot_mm, yaw=-yaw_offset, label=label, confidence=confidence,
+                shape=(self.camera_pixel_height, self.camera_pixel_width), using_sonar=self.using_sonar)
 
     def publish_prediction(
         self,
+        *,
         bbox: tuple,
         det_coords: tuple,
         yaw: float,

@@ -83,6 +83,7 @@ class TorpedoTargetDetector2026(Node):
         self.coarse_detections[coarse_class]['coords'] = data.coords
 
     def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:
+        """Convert an HSV image in actual units (degrees, percent) to OpenCV's 8-bit HSV convention."""
         hsv_opencv = np.empty_like(hsv_actual, dtype=np.uint8)
         hsv_opencv[..., 0] = (hsv_actual[..., 0] / 2).astype(np.uint8)
         hsv_opencv[..., 1] = (hsv_actual[..., 1] / 100 * 255).astype(np.uint8)
@@ -140,6 +141,7 @@ class TorpedoTargetDetector2026(Node):
         return assignments
 
     def image_callback(self, data: CompressedImage) -> None:
+        """Decode the incoming compressed image and run torpedo target detection on it."""
         try:
             np_arr = np.frombuffer(data.data, np.uint8)
             image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
@@ -187,6 +189,7 @@ class TorpedoTargetDetector2026(Node):
         self.contour_image_with_bbox_pub.publish(self.bridge.cv2_to_imgmsg(bbox_img, 'bgr8'))
 
     def publish_bbox(self, bbox: tuple[int, int, int, int], publisher: Publisher) -> None:
+        """Publish a bounding box as a CVObject message on the given publisher."""
         x, y, w, h = bbox
         bounding_box = CVObject()
         bounding_box.header.stamp.sec, bounding_box.header.stamp.nanosec = (
@@ -215,13 +218,14 @@ class TorpedoTargetDetector2026(Node):
             (Torpedo.WIDTH, Torpedo.WIDTH),
             MonoCam.FOCAL_LENGTH,
             MonoCam.SENSOR_SIZE,
-            1,
+            adjustment_factor=1,
         )
         bounding_box.coords.x, bounding_box.coords.y, bounding_box.coords.z = coords_list
         publisher.publish(bounding_box)
 
 
 def main(args: None = None) -> None:
+    """Spin up the torpedo target detector 2026 node."""
     rclpy.init(args=args)
     node = TorpedoTargetDetector2026()
     try:

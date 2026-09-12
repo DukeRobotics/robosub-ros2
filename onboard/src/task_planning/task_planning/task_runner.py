@@ -46,7 +46,7 @@ class TaskPlanning(Node):
         CV(self, bypass=self.bypass)
         IVC(node=self, bypass=self.bypass)
         Servos(self, bypass=self.bypass)
-        # Sonar(self, bypass=self.bypass)
+        # Sonar(self, bypass=self.bypass)  # noqa: ERA001
         State(self, tf_buffer=tf_buffer, bypass=self.bypass)
 
         # Initialize the task update publisher
@@ -142,11 +142,10 @@ class TaskPlanning(Node):
             elif not self.task.done:
                 self.task.step()
 
-        except BaseException:
+        except BaseException as e:  # noqa: BLE001 - top-level task loop must not crash the node
             # Main has errored
-            # TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.ERRORED, e)
-            pass
-            # raise
+            self.get_logger().exception('Task planning main loop errored')
+            TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.ERRORED, e)
 
 def main(args: list[str] | None = None) -> None:
     """Spin up the task planning node."""

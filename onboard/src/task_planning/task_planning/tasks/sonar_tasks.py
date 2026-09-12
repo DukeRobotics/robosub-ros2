@@ -59,6 +59,7 @@ async def scan_normal_angle(start_angle: float, end_angle: float, scan_distance:
 
 @task
 async def rotate_to_normal(self: Task,
+                           *,
                            start_angle: float,
                            end_angle: float,
                            scan_distance: float,
@@ -113,6 +114,7 @@ async def rotate_to_normal(self: Task,
 
 @task
 async def rotate_to_angle_from_normal(self: Task,
+                                      *,
                                       start_angle: float,
                                       end_angle: float,
                                       scan_distance: float,

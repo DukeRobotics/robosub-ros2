@@ -42,12 +42,6 @@ class Torpedo:
     HIGH_BOT = np.array([340, 20, 25])
     HIGH_TOP = np.array([360, 60, 100])
 
-    # Nighttime values
-    # LOW_BOT = np.array([0, 30, 55])
-    # LOW_TOP = np.array([5, 40, 95])
-    # HIGH_BOT = np.array([345, 30, 55])
-    # HIGH_TOP = np.array([360, 40, 95])
-
     TORPEDO_BANNER_X_SCALE = 1.2
     TORPEDO_BANNER_Y_SCALE = 0.5
 

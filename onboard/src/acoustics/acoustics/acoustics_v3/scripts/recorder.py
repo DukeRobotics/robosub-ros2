@@ -1,19 +1,20 @@
 """Data controller for batch hydrophone data collection."""
-import os
 import time
+from pathlib import Path
 
 from logic import logic
 
 
 def collect_batch_data(
-        sampling_freq,
-        epochs,
-        capture_time,
-        output_base_path,
-        test_name,
-        is_logic_2=False,
-        is_mock=False,
-        ):
+        *,
+        sampling_freq: float,
+        epochs: int,
+        capture_time: float,
+        output_base_path: str,
+        test_name: str,
+        is_logic_2: bool = False,
+        is_mock: bool = False,
+        ) -> str:
     """
     Collect multiple epochs of hydrophone data.
 
@@ -32,12 +33,12 @@ def collect_batch_data(
     # Create test directory with timestamp
     timestamp = time.strftime('%Y-%m-%d--%H-%M-%S')
     test_folder = f'{test_name}_{timestamp}' if test_name else timestamp
-    test_path = os.path.join(output_base_path, test_folder)
-    os.makedirs(test_path, exist_ok=True)
+    test_path = str(Path(output_base_path) / test_folder)
+    Path(test_path).mkdir(parents=True, exist_ok=True)
 
     # Initialize Logic interface
     if is_logic_2:
-        from logic.logic2 import Logic2
+        from logic.logic2 import Logic2  # noqa: PLC0415 - defer saleae.automation dependency to Logic 2 only
         logic_interface = Logic2(is_mock=is_mock)
     else:
         logic_interface = logic.Logic(sampling_freq=sampling_freq)

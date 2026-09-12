@@ -260,14 +260,14 @@ async def ivc_receive_then_send(self: Task[None, None, None], msg: IVCMessageTyp
 
 
 @task
-async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:
+async def delineate_ivc_log(self: Task[None, None, None]) -> Task[None, None, None]:  # noqa: ARG001
     """Append a header to the IVC log file."""
     with Path('ivc_log.txt').open('a') as f:  # noqa: ASYNC230 TODO eventually use async io
         f.write('----- NEW RUN STARTED -----\n')
 
 
 @task
-async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[None, None, None]:
+async def add_to_ivc_log(self: Task[None, None, None], message: str) -> Task[None, None, None]:  # noqa: ARG001
     """Add a message to the IVC log file."""
     with Path('ivc_log.txt').open('a') as f: # noqa: ASYNC230 TODO eventually use async io
         f.write(f'{message}\n')

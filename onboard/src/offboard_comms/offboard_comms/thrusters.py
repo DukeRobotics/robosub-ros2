@@ -60,7 +60,7 @@ class Thrusters(SerialNode):
     def __init__(self) -> None:
         """Initialize the thruster node with all necessary components."""
         super().__init__(self.NODE_NAME, self.BAUDERATE, self.OFFBOARD_COMMS_CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
-                         SerialReadType.NONE, self.CONNECTION_RETRY_PERIOD)
+                         SerialReadType.NONE, connection_retry_period=self.CONNECTION_RETRY_PERIOD)
 
         with Path(rr.get_filename(self.CONTROLS_CONFIG_FILE_PATH, use_protocol=False)).open() as f:
             controls_config = yaml.safe_load(f)

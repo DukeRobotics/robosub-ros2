@@ -68,7 +68,7 @@ except KeyError:
         'top-level key "arduino".',
     )
 
-except Exception as e:
+except Exception as e:  # noqa: BLE001 - catch-all so any config-loading failure exits with a clear message
     print(
         f'{OUTPUT_PREFIX}: FATAL ERROR: An unexpected error occurred when loading the config YAML file at '
         f'"{config_file_resolved_path}": {e}',

@@ -16,7 +16,7 @@ from transforms3d.euler import euler2quat, quat2euler
 logger = get_logger('move_tasks')
 
 
-# EXPERIMENTAL: keep_depth
+# EXPERIMENTAL: keep_depth  # noqa: ERA001
 def _local_move_to_global_pose(local_pose: Pose, keep_orientation: bool = False,
                                depth_level: float | None = None) -> Pose:
     """
@@ -106,7 +106,8 @@ async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | 
 
 
 @task
-async def move_to_pose_local(self: Task, pose: Pose, keep_orientation: bool = False, depth_level: float | None = None,
+async def move_to_pose_local(self: Task, pose: Pose, *, keep_orientation: bool = False,
+                             depth_level: float | None = None,
                              pose_tolerances: Twist | None = None, timeout: int = 15,
                              keep_depth: bool = False) -> \
                                 Task[None, Pose | None, None]:
@@ -316,7 +317,7 @@ Directions = list[DirectionSpec]
 
 # Maps a maximum leg distance (in meters) to the timeout (in seconds) that should be used for legs up to that
 # distance. Keys need not be sorted when the dict is created; lookup handles that. Example:
-#   {1: 8, 3: 15, 6: 25}
+#   {1: 8, 3: 15, 6: 25}  # noqa: ERA001
 # means: legs of distance <=1m get 8s, <=3m (but >1m) get 15s, <=6m (but >3m) get 25s, and anything longer than
 # 6m also gets 25s (the timeout for the largest threshold).
 DistanceTimeouts = dict[float, int]
@@ -348,7 +349,8 @@ def _resolve_leg(direction_spec: DirectionSpec, default_timeout: int,
         2. A lookup in distance_timeouts based on the leg's travel distance.
         3. default_timeout.
     """
-    if len(direction_spec) == 2 and isinstance(direction_spec[0], tuple):
+    DIRECTION_WITH_TIMEOUT_LENGTH = 2
+    if len(direction_spec) == DIRECTION_WITH_TIMEOUT_LENGTH and isinstance(direction_spec[0], tuple):
         direction, leg_timeout = direction_spec
         return direction, leg_timeout
 
@@ -359,6 +361,7 @@ def _resolve_leg(direction_spec: DirectionSpec, default_timeout: int,
 @task
 async def move_with_directions(self: Task,
                                directions: Directions,
+                               *,
                                depth_level: float | None = None,
                                correct_yaw: bool = False,
                                correct_depth: bool = False,
@@ -442,6 +445,7 @@ async def move_with_directions(self: Task,
 
 
 def create_twist_tolerance(
+    *,
     linear_x: float = 0.05,
     linear_y: float = 0.05,
     linear_z: float = 0.05,

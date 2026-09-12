@@ -50,7 +50,7 @@ class Sonar(Node):
     CONSTANT_SWEEP_END = 150
 
     VALUE_THRESHOLD = 95  # Sonar intensity threshold
-    # Slightly looser clustering for thinner 3–5 m returns; keep RANSAC tight for angle precision
+    # Slightly looser clustering for thinner 3-5 m returns; keep RANSAC tight for angle precision
     DBSCAN_EPS = 4  # DBSCAN epsilon
     DBSCAN_MIN_SAMPLES = 7  # DBSCAN min samples
     MIN_WALL_ELONGATION = 2.0  # Min ratio of along-line to across-line variance; only rules out round/blob shapes
@@ -349,7 +349,8 @@ class Sonar(Node):
         self.get_logger().info(f'Recieved Sonar request: {left_gradians}, {right_gradians}, {new_range}')
 
         # Angle must be between 0 and 400 and range must be positive
-        if left_gradians < 0 or right_gradians < 0 or right_gradians > 400 or new_range < 0:
+        GRADIANS_PER_CIRCLE = 400
+        if left_gradians < 0 or right_gradians < 0 or right_gradians > GRADIANS_PER_CIRCLE or new_range < 0:
             self.get_logger().error('Bad sonar request')
             return response
 

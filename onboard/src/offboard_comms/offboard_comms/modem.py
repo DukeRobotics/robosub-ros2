@@ -68,7 +68,8 @@ class ModemPublisher(SerialNode):
 
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
-                         SerialReadType.BYTES_ALL, self.CONNECTION_RETRY_PERIOD, loop_rate=self.LOOP_RATE)
+                         SerialReadType.BYTES_ALL, connection_retry_period=self.CONNECTION_RETRY_PERIOD,
+                         loop_rate=self.LOOP_RATE)
         self.buffer = bytearray()
 
         self.status = ModemStatus(busy=False)

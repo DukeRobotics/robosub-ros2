@@ -1,3 +1,4 @@
+# ruff: noqa: ERA001
 import copy
 import math
 
@@ -109,7 +110,7 @@ async def yaw_until_object_detection(self: Task, cv_object: CVObjectType, search
     return True
 
 @task
-async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType, search_direction: int = 1,
+async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType, *, search_direction: int = 1,
                         yaw_threshold: float = math.radians(10), depth_threshold: float = 0.2,
                         depth_level: float = 0.5, pid_timeout: float = 20) -> Task[None, str | None, None] | bool:
     """
@@ -195,8 +196,10 @@ async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType, search_direction: i
 
 
 @task
-async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: float = 1, search_direction: int = 1,
-                         depth_threshold: float = 0.2, depth_level: float = 0.5) -> Task[None, str | None, None] | bool:
+async def move_to_cv_obj(self: Task, cv_object: CVObjectType, *, target_distance: float = 1,  # noqa: PLR0915
+                         search_direction: int = 1,
+                         depth_threshold: float = 0.2,
+                         depth_level: float = 0.5) -> Task[None, str | None, None] | bool:
     """
     Continuously move toward a CV object in robot X/Y/Z while tracking yaw.
 
@@ -226,6 +229,7 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
     close_threshold = 100
     arrival_y_tol = 0.15
     detection_latency = 10
+    negligible_step = 1e-3
 
     # depth_level from callers is positive meters submerged.
     positive_depth_level = depth_level
@@ -260,8 +264,8 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
     async def search_for_object() -> bool:
         logger.info('[cv_tasks.move_to_cv_obj] Searching for object before approach...')
         found = await yaw_to_cv_obj(
-            cv_object, search_direction, yaw_threshold, depth_threshold,
-            positive_depth_level, parent=self,
+            cv_object, search_direction=search_direction, yaw_threshold=yaw_threshold,
+            depth_threshold=depth_threshold, depth_level=positive_depth_level, parent=self,
         )
         if not found or not has_valid_detection():
             logger.info('[cv_tasks.move_to_cv_obj] Search failed or detection invalid.')
@@ -354,7 +358,7 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
         # Do not pass depth_level here — that would override pose Z and break continuous tracking.
         if move_task is None or move_task.done:
             # Zero local pose completes immediately; only start a move with a real command.
-            if forward_step == 0.0 and abs(y_step) < 1e-3 and abs(z_step) < 1e-3:
+            if forward_step == 0.0 and abs(y_step) < negligible_step and abs(z_step) < negligible_step:
                 await util_tasks.sleep(0.05, parent=self)
                 continue
             move_task = move_tasks.move_to_pose_local(
@@ -383,8 +387,8 @@ async def move_to_cv_obj(self: Task, cv_object: CVObjectType, target_distance: f
     # Hold depth at arrival (may differ from commanded depth_level after Z tracking).
     hold_depth = State().orig_depth - State().depth
     if not await yaw_to_cv_obj(
-        cv_object, search_direction, yaw_threshold, depth_threshold,
-        hold_depth, parent=self,
+        cv_object, search_direction=search_direction, yaw_threshold=yaw_threshold,
+        depth_threshold=depth_threshold, depth_level=hold_depth, parent=self,
     ):
         logger.info('[cv_tasks.move_to_cv_obj] Final recenter failed; holding current pose.')
 

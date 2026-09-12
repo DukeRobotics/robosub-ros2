@@ -101,7 +101,8 @@ class PeripheralPublisher(SerialNode):
 
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
-                         SerialReadType.LINE_NONBLOCKING, self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE)
+                         SerialReadType.LINE_NONBLOCKING, connection_retry_period=self.CONNECTION_RETRY_PERIOD,
+                         loop_rate=self.LOOP_RATE)
 
         self.sensors: dict[str, PeripheralSensor] = {}
         self.setup_sensors()
@@ -223,7 +224,8 @@ class PeripheralPublisher(SerialNode):
             # Create a string of possible states for the error message; format: ["state1", "state2", ...]
             possible_states = '[' + ', '.join(f'"{possible_state}"' for possible_state in servo.states) + ']'
             pwm_signals = '[' + ','.join(f'"{servo.states[possible_state]}"' for possible_state in servo.states) + ']'
-            error_msg = f'Invalid state "{state}" for {servo.name} servo. Must be one of {possible_states}. These are mapped to PWM signals {pwm_signals}.'
+            error_msg = (f'Invalid state "{state}" for {servo.name} servo. Must be one of {possible_states}. '
+                        f'These are mapped to PWM signals {pwm_signals}.')
 
             response.success = False
             response.message = error_msg

@@ -214,7 +214,7 @@ class TorpedoTargetDetector(Node):
                                               MonoCam.IMG_SHAPE,
                                               (Torpedo.WIDTH, Torpedo.WIDTH),
                                               MonoCam.FOCAL_LENGTH,
-                                              MonoCam.SENSOR_SIZE, 1)
+                                              MonoCam.SENSOR_SIZE, adjustment_factor=1)
         bounding_box.coords.x, bounding_box.coords.y, bounding_box.coords.z = coords_list
 
         publisher.publish(bounding_box)

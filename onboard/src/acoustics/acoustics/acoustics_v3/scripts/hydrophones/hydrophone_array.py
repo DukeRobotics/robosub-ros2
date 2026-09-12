@@ -1,8 +1,8 @@
 """Hydrophone array module for multi-sensor data processing."""
 from __future__ import annotations
 
-import os
 import struct
+from pathlib import Path
 from typing import BinaryIO
 
 import matplotlib.pyplot as plt
@@ -41,11 +41,11 @@ class HydrophoneArray:
             is_logic_2: If True, use Logic 2 parser for directory; if False, use Logic 1 parser
         """
         # For Logic 2, expect a directory with analog bin files
-        if is_logic_2 and os.path.isdir(path):
+        if is_logic_2 and Path(path).is_dir():
             self._load_from_logic2_directory(path)
         else:
             # For Logic 1, expect a single file
-            ext = os.path.splitext(path)[1].lower()
+            ext = Path(path).suffix.lower()
             if ext == '.bin':
                 self._load_from_bin(path)
             elif ext == '.csv':
@@ -58,7 +58,7 @@ class HydrophoneArray:
         self._reset_hydrophones()
 
         skip_rows = 0
-        with open(path, encoding='utf-8') as f:
+        with Path(path).open(encoding='utf-8') as f:
             for i, line in enumerate(f):
                 parts = line.strip().split(',')
                 try:
@@ -84,7 +84,7 @@ class HydrophoneArray:
     def _load_from_bin(self, path: str) -> None:
         self._reset_hydrophones()
 
-        with open(path, 'rb') as f:
+        with Path(path).open('rb') as f:
             # Read header: 8 bytes uint64, 4 bytes uint32, 8 bytes double
             header = f.read(8 + 4 + 8)
             num_samples, num_channels, sample_period = struct.unpack(
@@ -103,7 +103,8 @@ class HydrophoneArray:
             hydro.sampling_period = float(self.sampling_period)
             self._update_hydrophone(hydro, times, data[idx])
 
-    def _update_hydrophone(self, hydro, times, signal) -> None:
+    def _update_hydrophone(self, hydro: hydrophone_module.Hydrophone, times: np.ndarray,
+                           signal: np.ndarray) -> None:
         hydro.times = times
         hydro.signal = signal - np.mean(signal)
 
@@ -120,7 +121,8 @@ class HydrophoneArray:
         Parse Logic 2 analog binary format version 0 (Saleae format).
 
         Returns:
-            List of waveform dictionaries with keys: begin_time, trigger_time, sample_rate, downsample, num_samples, samples
+            List of waveform dictionaries with keys: begin_time, trigger_time, sample_rate, downsample,
+            num_samples, samples
         """
         # Parse header
         identifier = f.read(8)
@@ -164,21 +166,22 @@ class HydrophoneArray:
 
         # First, check if there's a CSV file in the directory
         csv_file = None
-        if os.path.isdir(directory):
-            for filename in os.listdir(directory):
-                if filename.endswith('.csv'):
-                    csv_file = os.path.join(directory, filename)
+        if Path(directory).is_dir():
+            for entry in Path(directory).iterdir():
+                if entry.name.endswith('.csv'):
+                    csv_file = str(entry)
                     break
 
         # If CSV found, load it (same format as Logic 1)
         if csv_file:
             self._load_from_csv(csv_file)
-            print(f'Loaded Logic 2 data from CSV: {os.path.basename(csv_file)}')
+            print(f'Loaded Logic 2 data from CSV: {Path(csv_file).name}')
             return
 
         # Otherwise, look for analog bin files with pattern _0, _1, _2, _3
-        if os.path.isdir(directory):
-            for filename in os.listdir(directory):
+        if Path(directory).is_dir():
+            for entry in Path(directory).iterdir():
+                filename = entry.name
                 if not filename.endswith('.bin'):
                     continue
 
@@ -189,9 +192,9 @@ class HydrophoneArray:
                 else:
                     continue
 
-                analog_file = os.path.join(directory, filename)
+                analog_file = str(entry)
                 try:
-                    with open(analog_file, 'rb') as f:
+                    with entry.open('rb') as f:
                         waveforms = self._parse_analog_v1(f)
 
                     if not waveforms:
@@ -213,9 +216,9 @@ class HydrophoneArray:
                     hydro.sampling_period = actual_sample_period
                     self._update_hydrophone(hydro, times, signal)
 
-                    print(f'Loaded Logic 2 channel {hydro_idx} from {os.path.basename(analog_file)}')
+                    print(f'Loaded Logic 2 channel {hydro_idx} from {entry.name}')
 
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001 - skip this channel file and keep loading the rest
                     print(f'Error loading {analog_file}: {e}')
 
 

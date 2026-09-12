@@ -1,8 +1,18 @@
 """Base analyzer module for hydrophone signal processing."""
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 from scipy.signal import butter, sosfiltfilt
+
+if TYPE_CHECKING:
+    import numpy as np
+    from matplotlib.axes import Axes
+
+    from acoustics.acoustics_v3.scripts.hydrophones.hydrophone import Hydrophone
+    from acoustics.acoustics_v3.scripts.hydrophones.hydrophone_array import HydrophoneArray
 
 
 class BaseAnalyzer(ABC):
@@ -40,7 +50,7 @@ class BaseAnalyzer(ABC):
     # ==================== ABSTRACT METHODS ====================
 
     @abstractmethod
-    def _analyze_single(self, hydrophone, sampling_freq) -> dict:
+    def _analyze_single(self, hydrophone: Hydrophone, sampling_freq: float) -> dict:
         """
         Analyze a single hydrophone signal.
 
@@ -58,7 +68,8 @@ class BaseAnalyzer(ABC):
         """
 
     @abstractmethod
-    def _plot_single_signal(self, ax_time, ax_freq, hydrophone, result, idx):
+    def _plot_single_signal(self, ax_time: Axes, ax_freq: Axes, hydrophone: Hydrophone, result: dict,
+                            idx: int) -> None:
         """
         Plot analysis results for a single hydrophone.
 
@@ -81,7 +92,7 @@ class BaseAnalyzer(ABC):
 
     # ==================== PUBLIC ====================
 
-    def analyze_array(self, hydrophone_array, selected: list[bool] | None = None):
+    def analyze_array(self, hydrophone_array: HydrophoneArray, selected: list[bool] | None = None) -> dict:
         """
         Analyze all selected hydrophones in the array.
 
@@ -119,7 +130,7 @@ class BaseAnalyzer(ABC):
 
         return analysis_results
 
-    def print_results(self, analysis_results) -> None:
+    def print_results(self, analysis_results: dict) -> None:
         """
         Print analysis results to console.
 
@@ -128,7 +139,8 @@ class BaseAnalyzer(ABC):
         """
         print(f"\n{analysis_results['analyzer']}")
 
-    def plot_results(self, hydrophone_array, analysis_results, selected=None) -> None:
+    def plot_results(self, hydrophone_array: HydrophoneArray, analysis_results: dict,
+                     selected: list[bool] | None = None) -> None:
         """
         Plot analysis results for all hydrophones.
 
@@ -176,7 +188,8 @@ class BaseAnalyzer(ABC):
 
     # ==================== COMMON ====================
 
-    def apply_bandpass(self, signal, sampling_freq, band_min=None, band_max=None):
+    def apply_bandpass(self, signal: np.ndarray, sampling_freq: float, band_min: float | None = None,
+                       band_max: float | None = None) -> np.ndarray:
         """
         Apply Butterworth bandpass filter to signal.
 

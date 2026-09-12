@@ -16,7 +16,7 @@ class Acoustics(Node):
         # TODO: add additional setup code
 
     def perform_acoustics_request(
-            self, request: AcousticsRequest.Request, response: AcousticsRequest.Response,
+            self, request: AcousticsRequest.Request, response: AcousticsRequest.Response,  # noqa: ARG002
     ) -> AcousticsRequest.Response:
         """
         Perform an acoustics request.

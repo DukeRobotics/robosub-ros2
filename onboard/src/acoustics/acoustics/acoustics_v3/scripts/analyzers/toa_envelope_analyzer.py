@@ -1,10 +1,19 @@
 """TOA estimation using Hilbert envelope detection."""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 from scipy.fft import fft, fftfreq
 from scipy.signal import hilbert
 
 from .base_analyzer import BaseAnalyzer
 from .garbage_detector import GarbageDetector
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
+    from acoustics.acoustics_v3.scripts.hydrophones.hydrophone import Hydrophone
 
 
 class TOAEnvelopeAnalyzer(BaseAnalyzer):
@@ -17,10 +26,10 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
 
     def __init__(
         self,
-        threshold_sigma=5,
-        raw_signal_threshold=3,
-        margin_front=0.1,
-        margin_end=0.1,
+        threshold_sigma: float = 5,
+        raw_signal_threshold: float = 3,
+        margin_front: float = 0.1,
+        margin_end: float = 0.1,
         **kwargs,
     ) -> None:
         """
@@ -50,7 +59,7 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
         """
         return 'TOA Envelope Detection'
 
-    def print_results(self, analysis_results) -> None:
+    def print_results(self, analysis_results: dict) -> None:
         """
         Print TOA detection results.
 
@@ -61,9 +70,10 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
         print('\nTOA Estimates:')
         for result in analysis_results['results']:
             is_valid = result.get('is_valid', '?')
-            print(f"  Hydrophone {result['hydrophone_idx']}: {result['toa_time']:.6f} s (sample {result['toa_idx']}) [Valid: {is_valid}]")
+            print(f"  Hydrophone {result['hydrophone_idx']}: {result['toa_time']:.6f} s "
+                  f"(sample {result['toa_idx']}) [Valid: {is_valid}]")
 
-    def _analyze_single(self, hydrophone, sampling_freq):
+    def _analyze_single(self, hydrophone: Hydrophone, sampling_freq: float) -> dict:
         """
         Analyze single hydrophone using envelope detection.
 
@@ -98,10 +108,7 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
             self.threshold_sigma * np.std(envelope)
         )
         toa_candidates = np.where(envelope > threshold)[0]
-        if len(toa_candidates) > 0:
-            toa_idx = toa_candidates[0]  # First crossing
-        else:
-            toa_idx = np.argmax(envelope)  # Fallback to peak
+        toa_idx = toa_candidates[0] if len(toa_candidates) > 0 else np.argmax(envelope)
 
         toa_time = hydrophone.times[toa_idx]
 
@@ -130,7 +137,8 @@ class TOAEnvelopeAnalyzer(BaseAnalyzer):
             'is_valid': is_valid,
         }
 
-    def _plot_single_signal(self, ax_time, ax_freq, hydrophone, result, idx) -> None:
+    def _plot_single_signal(self, ax_time: Axes, ax_freq: Axes, hydrophone: Hydrophone, result: dict,
+                            idx: int) -> None:  # noqa: ARG002 - idx required to match BaseAnalyzer's signature
         """
         Plot envelope analysis results for a single hydrophone.
 

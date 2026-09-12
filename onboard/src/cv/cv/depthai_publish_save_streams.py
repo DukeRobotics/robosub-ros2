@@ -240,7 +240,7 @@ class DepthAIStreamsPublisherAndSaver(Node):
         self.build_pipeline_cam_RGB()
         self.build_pipeline_cam_LR()
 
-    def build_pipeline_cam_LR(self) -> None:
+    def build_pipeline_cam_LR(self) -> None:  # noqa: PLR0915
         """Build pipeline for left and right cams, ve left and right, xout left and right."""
         # Setup MonoCamera node for left camera
         if self.publish_left or self.publish_disparity or self.publish_depth or self.save_left or self.save_disparity:

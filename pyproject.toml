@@ -22,34 +22,27 @@ lint.ignore = [
     "T20", # flake8-print
 
     # Specific Rules
-    "ANN",
-    "ARG",
+    "ANN002",
+    "ANN003",
     "ASYNC109",
-    "BLE001",
-    "CPY001", # new Ruff copyright-header rule; repo does not use file headers
-    "D",
-    "E501",
-    "ERA001",
-    "F821",
+    "CPY001", # copyright notice in the header
+    "D100",
+    "D104",
+    "D107",
+    "D212",
     "FIX002",
     "G004",
     "INP001",
     "N802",
-    "N803",
-    "N806",
-    "PTH",
+    "N806", # team convention: ALL_CAPS for local "constant" values within a function
     "PGH004",
-    "PLC0415",
-    "PLR",
-    "RUF003",
+    "PLR0912",
+    "PLR0913",
+    "PLR0917", # coordinate/tuple-style constructors (e.g. create_pose) are naturally positional
     "S101",
-    "S110",
-    "SIM108",
     "TD002",
     "TD003",
-    "TD004",
     "TRY003",
-    "TRY300",
 ]
 
 [tool.pyright]

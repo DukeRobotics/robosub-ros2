@@ -1,13 +1,15 @@
 """Batch processing script for hydrophone data analysis."""
 import csv
-import os
 import time
+from pathlib import Path
 
 from analyzers import NearbyAnalyzer, TOAEnvelopeAnalyzer
 from controller import check_all_valid, load_hydrophone_data, run_controller
+from hydrophones.hydrophone_array import HydrophoneArray
 
 
-def process_sample(array_obj, sample_name, truth, OUTPUT_PATH, SELECTED, confusion, results_list):
+def process_sample(*, array_obj: HydrophoneArray, sample_name: str, truth: int | None, output_path: str,
+                   selected: list[bool], confusion: dict, results_list: list) -> int:
     """Process a single hydrophone array sample and return results."""
     try:
         results = run_controller(
@@ -38,11 +40,11 @@ def process_sample(array_obj, sample_name, truth, OUTPUT_PATH, SELECTED, confusi
         nearby_status = [nearby_dict.get(i) for i in range(4)]
 
         # Check if all selected hydrophones are valid
-        all_valid = check_all_valid(toa_results, SELECTED)
+        all_valid = check_all_valid(toa_results, selected)
 
         # Write to CSV
         row = [sample_name, truth, predicted, *toas, all_valid, *valid_status, *nearby_status]
-        with open(OUTPUT_PATH, mode='a', newline='', encoding='utf-8') as f:
+        with Path(output_path).open(mode='a', newline='', encoding='utf-8') as f:
             csv.writer(f).writerow(row)
 
         # Update confusion matrix only for valid samples
@@ -53,11 +55,12 @@ def process_sample(array_obj, sample_name, truth, OUTPUT_PATH, SELECTED, confusi
             valid_files_count = 0
 
         print(f'Processed: {sample_name} | Predicted: H{predicted} | Truth: H{truth}')
-        return valid_files_count
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - skip this sample and keep processing the rest of the batch
         print(f'Error: {sample_name} - {e}')
         return 0
+    else:
+        return valid_files_count
 
 
 if __name__ == '__main__':
@@ -99,8 +102,8 @@ if __name__ == '__main__':
 
     # Setup output CSV
     timestamp = time.strftime('%Y-%m-%d--%H-%M-%S')
-    OUTPUT_PATH = os.path.join('analysis', f'analysis_{timestamp}.csv')
-    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+    OUTPUT_PATH = str(Path('analysis') / f'analysis_{timestamp}.csv')
+    Path(OUTPUT_PATH).parent.mkdir(parents=True, exist_ok=True)
 
     HEADERS = ['PATH', 'TRUTH', 'PREDICTED',
                'H0 TOA', 'H1 TOA', 'H2 TOA', 'H3 TOA',
@@ -108,7 +111,7 @@ if __name__ == '__main__':
                'H0 VALID', 'H1 VALID', 'H2 VALID', 'H3 VALID',
                'H0 NEARBY', 'H1 NEARBY', 'H2 NEARBY', 'H3 NEARBY']
 
-    with open(OUTPUT_PATH, mode='w', newline='', encoding='utf-8') as f:
+    with Path(OUTPUT_PATH).open(mode='w', newline='', encoding='utf-8') as f:
         csv.writer(f).writerow(HEADERS)
 
     # Initialize tracking
@@ -119,24 +122,17 @@ if __name__ == '__main__':
 
     # Process all data files
     for data_dir in DATA_PATHS:
-        dir_name = os.path.basename(os.path.normpath(data_dir))
+        dir_name = Path(data_dir).name
         try:
             truth = int(dir_name.split('_')[0])
         except (ValueError, IndexError):
             truth = None
 
         # Get list of items to process (epoch dirs for Logic 2, files for Logic 1)
-        items = []
         if IS_LOGIC_2:
-            for epoch_dir in os.listdir(data_dir):
-                epoch_path = os.path.join(data_dir, epoch_dir)
-                if os.path.isdir(epoch_path):
-                    items.append((epoch_dir, epoch_path))
+            items = [(entry.name, str(entry)) for entry in Path(data_dir).iterdir() if entry.is_dir()]
         else:
-            for filename in os.listdir(data_dir):
-                if filename.endswith('.bin'):
-                    filepath = os.path.join(data_dir, filename)
-                    items.append((filename, filepath))
+            items = [(entry.name, str(entry)) for entry in Path(data_dir).iterdir() if entry.name.endswith('.bin')]
 
         # Process each item
         for item_name, item_path in items:
@@ -150,7 +146,9 @@ if __name__ == '__main__':
                 plot_data=PLOT_DATA,
             )
 
-            valid_count = process_sample(array, item_name, truth, OUTPUT_PATH, SELECTED, confusion, ANALYZERS)
+            valid_count = process_sample(array_obj=array, sample_name=item_name, truth=truth,
+                                         output_path=OUTPUT_PATH, selected=SELECTED, confusion=confusion,
+                                         results_list=ANALYZERS)
             valid_files += valid_count
             if valid_count == 0 and item_name:
                 errors += 1

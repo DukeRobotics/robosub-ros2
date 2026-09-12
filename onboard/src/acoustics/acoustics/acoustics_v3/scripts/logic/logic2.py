@@ -1,5 +1,5 @@
 """Logic 2 module for interfacing with Saleae Logic 2 hardware."""
-import os
+from pathlib import Path
 
 from saleae.automation import CaptureConfiguration, LogicDeviceConfiguration, Manager, TimedCaptureMode
 from saleae.automation.errors import Logic2AlreadyRunningError
@@ -8,9 +8,11 @@ from saleae.automation.errors import Logic2AlreadyRunningError
 class Logic2:
     """Interface for Saleae Logic 2 data acquisition hardware."""
 
-    def __init__(self, is_mock=False) -> None:
+    def __init__(self, is_mock: bool = False) -> None:
+        app_path = ('/home/ubuntu/robosub-ros2/onboard/src/acoustics/acoustics/acoustics_v3/'
+                    'Logic-2.4.40-linux-x64.AppImage')
         try:
-            self._manager = Manager.launch(application_path='/home/ubuntu/robosub-ros2/onboard/src/acoustics/acoustics/acoustics_v3/Logic-2.4.40-linux-x64.AppImage')  # Use default path to Logic 2
+            self._manager = Manager.launch(application_path=app_path)  # Use default path to Logic 2
         except Logic2AlreadyRunningError:
             # Manager already running, connect to existing instance
             self._manager = Manager.connect()
@@ -31,7 +33,8 @@ class Logic2:
         """Close the Logic 2 manager."""
         self._manager.close()
 
-    def capture(self, seconds, prefix, base_dir, sample_rate=781250, formats=None):
+    def capture(self, seconds: float, prefix: str, base_dir: str, sample_rate: float = 781250,
+               formats: list[str] | None = None) -> dict[str, str]:
         """
         Capture data and export to specified formats.
 
@@ -48,8 +51,8 @@ class Logic2:
         # Create output directory with absolute path
         if formats is None:
             formats = ['csv', 'bin']
-        output_dir = os.path.abspath(os.path.join(base_dir, prefix))
-        os.makedirs(output_dir, exist_ok=True)
+        output_dir = (Path(base_dir) / prefix).resolve()
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         # Create device configuration with sample rate and channels
         device_config = LogicDeviceConfiguration(
@@ -72,12 +75,12 @@ class Logic2:
         # Export formats
         results = {}
         if 'csv' in formats or formats == ['csv', 'bin']:
-            capture.export_raw_data_csv(directory=output_dir)
-            results['csv'] = os.path.join(output_dir, 'data.csv')
+            capture.export_raw_data_csv(directory=str(output_dir))
+            results['csv'] = str(output_dir / 'data.csv')
 
         if 'bin' in formats or formats == ['csv', 'bin']:
-            capture.export_raw_data_binary(directory=output_dir)
-            results['bin'] = os.path.join(output_dir)
+            capture.export_raw_data_binary(directory=str(output_dir))
+            results['bin'] = str(output_dir)
 
         capture.close()
         return results

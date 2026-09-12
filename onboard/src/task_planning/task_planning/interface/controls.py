@@ -160,7 +160,7 @@ class Controls:
         self._all_axes_control_type = control_type
         self.start_new_move()
 
-    def set_axis_control_type(self, x: ControlTypes | None, y: ControlTypes | None,
+    def set_axis_control_type(self, *, x: ControlTypes | None, y: ControlTypes | None,
                               z: ControlTypes | None, roll: ControlTypes | None,
                               pitch: ControlTypes | None, yaw: ControlTypes | None) -> None:
         """

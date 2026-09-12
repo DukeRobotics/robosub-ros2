@@ -1,6 +1,6 @@
 """Controller module for hydrophone data acquisition and analysis."""
-import os
 import time
+from pathlib import Path
 
 from .analyzers import NearbyAnalyzer, TOAEnvelopeAnalyzer
 from .hydrophones import hydrophone_array
@@ -9,9 +9,9 @@ from .logic.logic2 import Logic2
 
 
 def run_controller(
-        hydrophone_array,
-        analyzers=None,
-        ):
+        hydrophone_array: hydrophone_array.HydrophoneArray,
+        analyzers: list | None = None,
+        ) -> list | None:
     """
     Run analysis on hydrophone array.
 
@@ -36,14 +36,15 @@ def run_controller(
 
 
 def capture_data(
-        sampling_freq,
-        capture_time,
-        capture_format,
-        output_dir,
-        is_logic_2=False,
-        is_mock=False,
-        close_logic_after=True,
-        ):
+        *,
+        sampling_freq: float,
+        capture_time: float,
+        capture_format: str,
+        output_dir: str,
+        is_logic_2: bool = False,
+        is_mock: bool = False,
+        close_logic_after: bool = True,
+        ) -> str:
     """
     Capture new data from Logic hardware.
 
@@ -59,7 +60,7 @@ def capture_data(
     Returns:
         Path to captured data directory/file
     """
-    os.makedirs(output_dir, exist_ok=True)
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     if is_logic_2:
         logic_interface = Logic2(is_mock=is_mock)
@@ -78,7 +79,7 @@ def capture_data(
         if close_logic_after:
             logic_interface.close()
 
-        return os.path.join(output_dir, timestamp)
+        return str(Path(output_dir) / timestamp)
     logic_interface = logic.Logic(sampling_freq=sampling_freq)
     logic_interface.print_saleae_status()
 
@@ -96,12 +97,12 @@ def capture_data(
 
 
 def load_hydrophone_data(
-        data_path,
-        sampling_freq,
-        selected_hydrophones,
-        is_logic_2,
-        plot_data,
-        ):
+        data_path: str,
+        sampling_freq: float,
+        selected_hydrophones: list[bool],
+        is_logic_2: bool,
+        plot_data: bool,
+        ) -> hydrophone_array.HydrophoneArray:
     """
     Load hydrophone data from file.
 
@@ -109,6 +110,8 @@ def load_hydrophone_data(
         data_path: Path to data file (.bin or .csv)
         sampling_freq: Sampling frequency in Hz
         selected_hydrophones: List of 4 bools indicating which to load
+        is_logic_2: If True, use Logic 2 parser for directory; if False, use Logic 1 parser
+        plot_data: Whether to plot raw signal and frequency spectrum after loading
 
     Returns:
         HydrophoneArray with loaded data
@@ -124,7 +127,7 @@ def load_hydrophone_data(
     return array
 
 
-def check_all_valid(toa_results, selected) -> bool:
+def check_all_valid(toa_results: list[dict], selected: list[bool]) -> bool:
     """
     Check if all selected hydrophones are valid.
 
@@ -143,7 +146,8 @@ def check_all_valid(toa_results, selected) -> bool:
     return True
 
 
-def find_closest_hydrophone(analysis_results, selected=None):
+def find_closest_hydrophone(analysis_results: list[dict] | None,
+                            selected: list[bool] | None = None) -> tuple[int | None, bool, bool]:
     """
     Find the closest hydrophone based on TOA analysis and nearby status.
 
@@ -187,7 +191,8 @@ def find_closest_hydrophone(analysis_results, selected=None):
     return (closest_hydrophone, is_nearby, all_valid)
 
 
-def main():
+def main() -> tuple[int | None, bool, bool]:
+    """Capture or load hydrophone data, run analysis, and report the closest/nearby hydrophone."""
     # Whether to use Logic 2 or Logic 1
     IS_LOGIC_2 = True
 
@@ -241,8 +246,6 @@ def main():
 
     # Step 1: Get data (capture new or load existing)
     if CAPTURE_NEW_DATA:
-        timestamp = time.strftime('%Y-%m-%d--%H-%M-%S')
-        os.path.join(CAPTURE_OUTPUT, timestamp)
         DATA_PATH = capture_data(
             sampling_freq=SAMPLING_FREQ,
             capture_time=CAPTURE_TIME,

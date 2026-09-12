@@ -1,13 +1,12 @@
 from rclpy.logging import get_logger
-
-# from task_planning.interface.acoustics import Acoustics
+from task_planning.interface.acoustics import Acoustics
 from task_planning.task import Task, task
 
 logger = get_logger('acoustics_tasks')
 
 
 @task
-async def request_acoustics(self: Task) -> Task[None, None, None]:
+async def request_acoustics(self: Task) -> Task[None, None, None]:  # noqa: ARG001 - self required by @task
     """
     Make a call to acoustics, and return the response.
 

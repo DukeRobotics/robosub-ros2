@@ -1,8 +1,17 @@
 """Nearby detection using static threshold analysis."""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 from scipy.fft import fft, fftfreq
 
 from .base_analyzer import BaseAnalyzer
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
+    from acoustics.acoustics_v3.scripts.hydrophones.hydrophone import Hydrophone
 
 
 class NearbyAnalyzer(BaseAnalyzer):
@@ -13,7 +22,7 @@ class NearbyAnalyzer(BaseAnalyzer):
     filtered signal exceeds a static amplitude threshold.
     """
 
-    def __init__(self, threshold, **kwargs) -> None:
+    def __init__(self, threshold: float, **kwargs) -> None:
         """
         Initialize nearby analyzer.
 
@@ -33,7 +42,7 @@ class NearbyAnalyzer(BaseAnalyzer):
         """
         return 'Static Nearby Analyzer'
 
-    def print_results(self, analysis_results) -> None:
+    def print_results(self, analysis_results: dict) -> None:
         """
         Print nearby detection results.
 
@@ -46,7 +55,7 @@ class NearbyAnalyzer(BaseAnalyzer):
             status = 'NEARBY' if result['nearby'] else 'NOT NEARBY'
             print(f"  Hydrophone {result['hydrophone_idx']}: {status}")
 
-    def _analyze_single(self, hydrophone, sampling_freq):
+    def _analyze_single(self, hydrophone: Hydrophone, sampling_freq: float) -> dict:
         """
         Analyze single hydrophone using static threshold.
 
@@ -87,7 +96,8 @@ class NearbyAnalyzer(BaseAnalyzer):
             'band_max': self.search_band_max,
         }
 
-    def _plot_single_signal(self, ax_time, ax_freq, hydrophone, result, idx) -> None:
+    def _plot_single_signal(self, ax_time: Axes, ax_freq: Axes, hydrophone: Hydrophone, result: dict,
+                            idx: int) -> None:  # noqa: ARG002 - idx required to match BaseAnalyzer's signature
         """
         Plot nearby detection results for a single hydrophone.
 

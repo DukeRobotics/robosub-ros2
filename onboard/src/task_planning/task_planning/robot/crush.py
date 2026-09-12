@@ -1,4 +1,4 @@
-# ruff: noqa: F401
+# ruff: noqa: F401, ERA001, E501
 import math
 import time
 from math import radians
