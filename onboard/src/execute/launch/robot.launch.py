@@ -38,9 +38,10 @@ def generate_launch_description() -> LaunchDescription:
         description='Enable or disable recording functionality',
     ))
 
-    ld.add_action(IncludeLaunchDescription(
-        XMLLaunchDescriptionSource(str(pkg_acoustics / 'launch' / 'acoustics.xml')),
-    ))
+    if robot_name == 'oogway':
+        ld.add_action(IncludeLaunchDescription(
+            XMLLaunchDescriptionSource(str(pkg_acoustics / 'launch' / 'acoustics.xml')),
+        ))
 
     ld.add_action(IncludeLaunchDescription(
         XMLLaunchDescriptionSource(str(pkg_controls / 'launch' / 'controls.xml')),

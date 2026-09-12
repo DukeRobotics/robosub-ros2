@@ -206,7 +206,7 @@ class State:
         """
         Calculate the yaw correction needed to return the robot to its original gyro orientation.
 
-        The error is always wrapped to (-π, π] (shortest path). When return_raw is False, the
+        The error is always wrapped to (-pi, pi] (shortest path). When return_raw is False, the
         magnitude is limited by maximum_yaw / get_step_size_func while preserving sign.
 
         Args:
@@ -226,7 +226,7 @@ class State:
         cur_gyro_orientation = copy.deepcopy(self._gyro.pose.pose.orientation)
         cur_gyro_euler_angles = quat2euler(geometry_utils.geometry_quat_to_transforms3d_quat(cur_gyro_orientation))
 
-        # Wrap to (-π, π] so ±180° flips and gyro [-180, 180] wraparounds are handled correctly
+        # Wrap to (-pi, pi] so ±180° flips and gyro [-180, 180] wraparounds are handled correctly
         raw_correction = math.atan2(
             math.sin(orig_gyro_euler_angles[2] - cur_gyro_euler_angles[2]),
             math.cos(orig_gyro_euler_angles[2] - cur_gyro_euler_angles[2]),
