@@ -10,7 +10,7 @@ logger = get_logger('acoustics_interface')
 class Acoustics:
     """Interface for requesting acoustics data via a ROS service."""
 
-    ACOUSTICS_REQUEST_SERVICE = '/aoustics/request'
+    ACOUSTICS_REQUEST_SERVICE = '/acoustics/request'
 
     def __init__(self, node: Node, bypass: bool = False) -> None:
         self.node = node
