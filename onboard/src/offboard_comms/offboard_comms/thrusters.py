@@ -1,6 +1,7 @@
 import csv
 import os
 import struct
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar
@@ -10,7 +11,7 @@ import resource_retriever as rr
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from custom_msgs.msg import PWMAllocs, ThrusterAllocs
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Int8
 
 from offboard_comms.serial_node import SerialNode, SerialReadType
 
@@ -42,10 +43,15 @@ class Thrusters(SerialNode):
     BAUDERATE = 57600
     SERIAL_DEVICE_NAME = 'thruster arduino'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
+    LOOP_RATE = 50.0  # Hz
 
     CONTROLS_CONFIG_FILE_PATH = f'package://controls/config/{os.getenv("ROBOT_NAME")}.yaml'
     OFFBOARD_COMMS_CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
     ARDUINO_NAME = 'thruster'
+    HEARTBEAT_MESSAGE = 'Heartbeat'
+    HEARTBEAT_TIMEOUT = 6.0  # seconds
+    HEARTBEAT_STATUS_PUBLISH_RATE = 1.0  # Hz
+    HEARTBEAT_STATUS_TOPIC = '/offboard/thruster/status'
     NUM_LOOKUP_ENTRIES = 201  # -1.0 to 1.0 in 0.01 increments
     VOLTAGE_FILES: ClassVar[list[tuple[float, str]]] = [
         (14.0, '14.csv'),
@@ -60,7 +66,11 @@ class Thrusters(SerialNode):
     def __init__(self) -> None:
         """Initialize the thruster node with all necessary components."""
         super().__init__(self.NODE_NAME, self.BAUDERATE, self.OFFBOARD_COMMS_CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
-                         SerialReadType.NONE, connection_retry_period=self.CONNECTION_RETRY_PERIOD)
+                         SerialReadType.BYTES_ALL, connection_retry_period=self.CONNECTION_RETRY_PERIOD,
+                         loop_rate=self.LOOP_RATE, read_timeout=0)
+
+        self._serial_read_buffer = bytearray()
+        self._last_heartbeat_time: float | None = None
 
         with Path(rr.get_filename(self.CONTROLS_CONFIG_FILE_PATH, use_protocol=False)).open() as f:
             controls_config = yaml.safe_load(f)
@@ -85,6 +95,34 @@ class Thrusters(SerialNode):
 
         # Create publisher
         self.pwm_publisher = self.create_publisher(PWMAllocs, '/offboard/pwm', 1)
+        self.heartbeat_status_publisher = self.create_publisher(Int8, self.HEARTBEAT_STATUS_TOPIC, 1)
+        self.heartbeat_status_timer = self.create_timer(
+            1.0 / self.HEARTBEAT_STATUS_PUBLISH_RATE,
+            self.publish_heartbeat_status,
+        )
+
+    def process_bytes(self, data: bytes) -> None:
+        """Buffer serial data and process each complete line."""
+        self._serial_read_buffer.extend(data)
+        lines = self._serial_read_buffer.split(b'\n')
+        self._serial_read_buffer = lines.pop()
+
+        for line in lines:
+            self.process_line(line.decode('utf-8', errors='ignore').strip())
+
+    def process_line(self, line: str) -> None:
+        """Update the heartbeat status when a heartbeat line is read."""
+        if line == self.HEARTBEAT_MESSAGE:
+            self._last_heartbeat_time = time.monotonic()
+            self.heartbeat_status_publisher.publish(Int8(data=1))
+
+    def publish_heartbeat_status(self) -> None:
+        """Publish whether a heartbeat was received within the timeout."""
+        heartbeat_is_recent = (
+            self._last_heartbeat_time is not None
+            and time.monotonic() - self._last_heartbeat_time <= self.HEARTBEAT_TIMEOUT
+        )
+        self.heartbeat_status_publisher.publish(Int8(data=int(heartbeat_is_recent)))
 
     def get_ftdi_string(self) -> str:
         """

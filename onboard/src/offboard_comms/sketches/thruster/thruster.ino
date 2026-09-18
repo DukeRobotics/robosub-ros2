@@ -16,6 +16,8 @@
 #define THRUSTER_PWM_MIN 1100
 #define THRUSTER_PWM_MAX 1900
 
+#define HEARTBEAT_RATE 5000
+
 bool valid_robot = true;
 
 Adafruit_PWMServoDriver pwm_multiplexer(0x40);
@@ -28,6 +30,8 @@ byte START_FLAG[] = {0xFF, 0xFF};
 uint64_t last_cmd_ms_ts;
 
 uint16_t* pwms;
+uint32_t last_heartbeat;
+uint32_t time;
 
 MultiplexedBasicESC* thrusters;
 
@@ -155,4 +159,11 @@ void loop() {
             write_pwms();
         }
     }
+
+    if(time > HEARTBEAT_RATE + last_heartbeat) {
+        Serial.println("Heartbeat");
+        last_heartbeat = time;
+    }
+
+    time = millis();
 }

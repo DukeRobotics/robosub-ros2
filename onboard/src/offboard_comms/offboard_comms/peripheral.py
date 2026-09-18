@@ -8,6 +8,7 @@ from typing import ClassVar
 import rclpy
 from custom_msgs.srv import SetContinuousServo, SetDiscreteServo
 from rclpy.service import Service
+from std_msgs.msg import Int8
 
 from offboard_comms.peripheral_sensors import (
     HumiditySensor,
@@ -92,6 +93,10 @@ class PeripheralPublisher(SerialNode):
     ARDUINO_NAME = 'peripheral'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
     LOOP_RATE = 50.0  # Hz
+    HEARTBEAT_MESSAGE = 'Heartbeat'
+    HEARTBEAT_TIMEOUT = 6.0  # seconds
+    HEARTBEAT_STATUS_PUBLISH_RATE = 1.0  # Hz
+    HEARTBEAT_STATUS_TOPIC = '/offboard/peripheral/status'
     SENSOR_CLASSES: ClassVar[dict[str, type[PeripheralSensor]]] = {
         'pressure': PressureSensor,
         'voltage': VoltageSensor,
@@ -103,6 +108,13 @@ class PeripheralPublisher(SerialNode):
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
                          SerialReadType.LINE_NONBLOCKING, connection_retry_period=self.CONNECTION_RETRY_PERIOD,
                          loop_rate=self.LOOP_RATE)
+
+        self._last_heartbeat_time: float | None = None
+        self.heartbeat_status_publisher = self.create_publisher(Int8, self.HEARTBEAT_STATUS_TOPIC, 1)
+        self.heartbeat_status_timer = self.create_timer(
+            1.0 / self.HEARTBEAT_STATUS_PUBLISH_RATE,
+            self.publish_heartbeat_status,
+        )
 
         self.sensors: dict[str, PeripheralSensor] = {}
         self.setup_sensors()
@@ -164,6 +176,11 @@ class PeripheralPublisher(SerialNode):
         Args:
             line (str): A line of data from the serial port.
         """
+        if line == self.HEARTBEAT_MESSAGE:
+            self._last_heartbeat_time = time.monotonic()
+            self.heartbeat_status_publisher.publish(Int8(data=1))
+            return
+
         if ':' not in line:
             self.get_logger().error(f'Invalid data format: "{line}"')
             return
@@ -182,6 +199,14 @@ class PeripheralPublisher(SerialNode):
             self.sensors[tag].update_and_publish_value(data_float)
         else:
             self.get_logger().error(f'Invalid tag: "{tag}"')
+
+    def publish_heartbeat_status(self) -> None:
+        """Publish whether a heartbeat was received within the timeout."""
+        heartbeat_is_recent = (
+            self._last_heartbeat_time is not None
+            and time.monotonic() - self._last_heartbeat_time <= self.HEARTBEAT_TIMEOUT
+        )
+        self.heartbeat_status_publisher.publish(Int8(data=int(heartbeat_is_recent)))
 
     def discrete_servo(self, request: SetDiscreteServo.Request, response: SetDiscreteServo.Response, tag: str) \
             -> SetDiscreteServo.Response:
