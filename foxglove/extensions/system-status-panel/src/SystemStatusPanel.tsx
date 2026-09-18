@@ -24,8 +24,6 @@ const TOPIC_DOWN_THRESHOLD_NSEC = secToNsec(2);
 enum Status {
   CPU = "CPU",
   RAM = "RAM",
-  PeripheralArduino = "PeripheralArduino",
-  ThrusterArduino = "ThrusterArduino",
   Voltage = "Voltage",
   HumiditySignal = "HumiditySignal",
   TempSignal = "TempSignal",
@@ -41,12 +39,8 @@ interface StatusConfig {
   suffix: string;
   // Extract a numeric value from a ROS message event.
   parse: (event: MessageEvent) => number;
-  // Return whether the reading should trigger a "warning" styling.
+  // Return whether the sensor reading should trigger a "warning" styling.
   warn: (value: number | undefined) => boolean;
-  // Return whether the reading should trigger an "error" styling.
-  error?: (value: number | undefined) => boolean;
-  // Format values that should be displayed as text instead of a number.
-  format?: (value: number) => string;
 }
 
 const STATUS_CONFIG: Record<Status, StatusConfig> = {
@@ -69,30 +63,6 @@ const STATUS_CONFIG: Record<Status, StatusConfig> = {
       return msgEvent.message.ram.percentage;
     },
     warn: (value) => value != undefined && value >= 90,
-  },
-  [Status.PeripheralArduino]: {
-    displayName: "Peripheral Arduino",
-    topic: "/offboard/peripheral/status",
-    suffix: "",
-    parse: (event) => {
-      const msgEvent = event as MessageEvent<StdMsgs.Int8>;
-      return msgEvent.message.data;
-    },
-    warn: () => false,
-    error: (value) => value !== 1,
-    format: (value) => (value === 1 ? "Connected" : "Disconnected"),
-  },
-  [Status.ThrusterArduino]: {
-    displayName: "Thruster Arduino",
-    topic: "/offboard/thruster/status",
-    suffix: "",
-    parse: (event) => {
-      const msgEvent = event as MessageEvent<StdMsgs.Int8>;
-      return msgEvent.message.data;
-    },
-    warn: () => false,
-    error: (value) => value !== 1,
-    format: (value) => (value === 1 ? "Connected" : "Disconnected"),
   },
   [Status.Voltage]: {
     displayName: "Voltage",
@@ -165,16 +135,7 @@ const TOPIC_TO_STATUSES = STATUSES.reduce<Record<string, Status[]>>((acc, status
 
 const ROBOT_CONFIG: Record<Robot, Status[]> = {
   [Robot.Crush]: STATUSES,
-  [Robot.Oogway]: [
-    Status.CPU,
-    Status.RAM,
-    Status.PeripheralArduino,
-    Status.ThrusterArduino,
-    Status.Voltage,
-    Status.HumiditySignal,
-    Status.TempSignal,
-    Status.TempGyro,
-  ],
+  [Robot.Oogway]: [Status.CPU, Status.RAM, Status.Voltage, Status.HumiditySignal, Status.TempSignal, Status.TempGyro],
 };
 
 type StatusValues = Partial<Record<Status, number>>;
@@ -281,9 +242,8 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
       topic: config.topic,
       name: config.displayName,
       value,
+      suffix: config.suffix,
       warn: config.warn(value),
-      error: config.error?.(value) ?? false,
-      displayValue: value == undefined ? "" : (config.format?.(value) ?? `${value.toFixed(1)}${config.suffix}`),
       publishing: topicPublishing,
     };
   });
@@ -301,7 +261,7 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
                   <TableRow
                     style={{
                       backgroundColor: (() => {
-                        if (!row.publishing || row.value == undefined || row.error) {
+                        if (!row.publishing || row.value == undefined) {
                           return theme.palette.error.dark;
                         } else if (row.warn) {
                           return theme.palette.warning.main;
@@ -327,7 +287,8 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="subtitle2" color={theme.palette.common.white}>
-                        {row.displayValue}
+                        {row.value?.toFixed(1)}
+                        {row.suffix}
                       </Typography>
                     </TableCell>
                   </TableRow>
