@@ -19,8 +19,12 @@
 // Baud rate for serial communication with Blue Robotics Bar30 High-Resolution 300m Depth/Pressure Sensor
 #define BAUD_RATE 9600
 
+#define HEARTBEAT_RATE 5000
+
 Robot* robot;
 bool valid_robot = true;
+uint32_t time;
+uint32_t last_heartbeat;
 
 void setupGyroTrigger() {
   // Set up Timer2 to generate two complementary 1000Hz square waves on OC2A (pin D11) and OC2B (pin D3)
@@ -90,4 +94,11 @@ void loop() {
     Serial.println("Error: Invalid ROBOT_NAME: " + String(ROBOT_NAME));
     delay(500); // Delay to avoid flooding the serial output
   }
+
+  if(time > HEARTBEAT_RATE + last_heartbeat) {
+    Serial.println("Heartbeat");
+    last_heartbeat = time;
+  }
+
+  time = millis();
 }
