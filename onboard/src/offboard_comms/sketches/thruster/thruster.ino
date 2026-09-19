@@ -11,6 +11,7 @@
 #define THRUSTER_STOP_PWM 1500
 #define THRUSTER_PWM_MIN 1100
 #define THRUSTER_PWM_MAX 1900
+#define HEARTBEAT_RATE 5000
 
 bool valid_robot = true;
 
@@ -22,6 +23,7 @@ int THRUSTER_PWM_OFFSET; // Hardware specific offset for PWMs -- refers to the r
 byte START_FLAG[] = {0xFF, 0xFF};
 
 uint64_t last_cmd_ms_ts;
+uint32_t last_heartbeat;
 
 uint16_t* pwms;
 
@@ -87,6 +89,12 @@ void loop() {
         Serial.println("Error: Invalid ROBOT_NAME: " + String(ROBOT_NAME));
         delay(500); // Delay to avoid flooding the serial output
         return;
+    }
+
+    uint32_t current_time = millis();
+    if (current_time - last_heartbeat >= HEARTBEAT_RATE) {
+        Serial.println("Heartbeat");
+        last_heartbeat = current_time;
     }
 
     // If we haven't received a new command in a while, stop all thrusters
