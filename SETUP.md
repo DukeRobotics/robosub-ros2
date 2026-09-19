@@ -191,15 +191,14 @@ If you're using VS Code and have the Dev Containers extension installed:
 > Then, run the `docker-build.sh` script again.
 
 ### Claude Code and Codex CLIs
-The Claude Code and Codex CLIs are installed in the Dev Container, so you can run `claude` or `codex` in any integrated terminal.
-
-If you're using VS Code Dev Containers and already have Claude Code and/or the Codex CLI set up (logged in) on your host machine, the Dev Container automatically bind-mounts your host `~/.claude/`, `~/.claude.json`, and `~/.codex/` config/auth paths into the container. This means `claude`/`codex` are already logged in inside the container, and any changes (for example, updated settings or a new login) are shared between your host machine and the container. NOTE: This is only supported fro Linux/WSL. For MacOS, currently it is required to login every clean build.
+You can run `claude` or `codex` in any integrated terminal in the container. In Dev Container, the host `~/.claude/`, `~/.claude.json`, and `~/.codex/` paths are mounted into the container. For Linux/WSL, this allows using same auth between host and container. For MacOS, auth is stored in Keychain, so you will need to login each time the container rebuilds.
 
 > [!NOTE]
-> This bind-mounting only happens when using VS Code Dev Containers, and relies on the `HOME` (Linux/macOS) or `USERPROFILE` (Windows) environment variable being set in the environment VS Code itself runs in.
+> The mounts use the `HOME` environment variable from the environment where VS Code runs. On Windows, set `HOME` to your user home directory if VS Code does not already provide it.
+> On WSL, `docker-build.sh skip-wsl` exits before creating these paths, so file-based host auth paths must already exist before opening the Dev Container.
 
 > [!NOTE]
-> On **macOS**, Claude Code stores your login in the macOS Keychain rather than in a file under `~/.claude`, so a host-side login does not carry over into the container even with the bind mount above. Just log in with `claude` inside the container terminal instead (as described above for developers without a host login) — that login is written to the mounted path and will persist across container rebuilds. Codex does not have this issue, since it stores its credentials as a plain file under `~/.codex` on both macOS and Linux.
+> On shared robot workspaces, log out before handing the workspace to another user: run `/logout` in Claude Code and `codex logout` for Codex. Keychain-backed auth must be logged out through the host/keychain as well.
 
 ### Without VS Code Dev Containers
 If you're **not** using VS Code or do **not** have the Dev Containers extension installed:
