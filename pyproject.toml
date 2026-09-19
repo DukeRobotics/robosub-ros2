@@ -25,6 +25,7 @@ lint.ignore = [
     "ANN002",
     "ANN003",
     "ASYNC109",
+    "CPY001", # copyright notice in the header
     "D100",
     "D104",
     "D107",
@@ -33,9 +34,11 @@ lint.ignore = [
     "G004",
     "INP001",
     "N802",
+    "N806", # team convention: ALL_CAPS for local "constant" values within a function
     "PGH004",
     "PLR0912",
     "PLR0913",
+    "PLR0917", # coordinate/tuple-style constructors (e.g. create_pose) are naturally positional
     "S101",
     "TD002",
     "TD003",

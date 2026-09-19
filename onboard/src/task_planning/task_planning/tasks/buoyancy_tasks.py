@@ -1,5 +1,3 @@
-# ruff: noqa: N806
-
 import math
 
 from geometry_msgs.msg import Twist, Vector3

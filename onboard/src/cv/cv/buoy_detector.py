@@ -80,8 +80,8 @@ class BuoyDetector(Node):
         contour_image_msg = self.bridge.cv2_to_imgmsg(image_with_contours, 'bgr8')
         self.contour_image_pub.publish(contour_image_msg)
 
-        MIN_AREA_OF_CONTOUR = 100  # noqa: N806
-        MATCH_TOLERANCE = 0.2  # noqa: N806
+        MIN_AREA_OF_CONTOUR = 100
+        MATCH_TOLERANCE = 0.2
 
         # only processes contours w/ area > MIN_AREA_OF_CONTOUR
         contours = [contour for contour in contours if cv2.contourArea(contour) > MIN_AREA_OF_CONTOUR]

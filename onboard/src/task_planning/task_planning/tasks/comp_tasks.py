@@ -1,4 +1,4 @@
-# ruff: noqa: ARG001, D103, D417, ERA001, N806, PLR2004, PLR0915
+# ruff: noqa: ARG001, D103, D417, ERA001, PLR2004, PLR0915
 
 import math
 from enum import Enum
