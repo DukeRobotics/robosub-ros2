@@ -50,10 +50,6 @@ fi
 mkdir -p ~/.foxglove-studio
 
 # Create Claude Code and Codex config/auth paths if they don't already exist
-# The Dev Container bind-mounts these paths (see .devcontainer/devcontainer.json) so that a developer's existing
-# Claude Code/Codex CLI login carries over into the container. Creating them here first ensures Docker mounts a
-# file at ~/.claude.json (instead of creating an empty directory in its place, which is Docker's default
-# behavior when bind-mounting a file path that doesn't exist yet)
 mkdir -p ~/.claude
 touch ~/.claude.json
 mkdir -p ~/.codex
