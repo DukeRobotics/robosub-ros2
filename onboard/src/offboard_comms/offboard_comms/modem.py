@@ -315,10 +315,16 @@ class ModemPublisher(SerialNode):
              f"Invalid channel '{raw_value}'. Must be in range [{self.MIN_CHANNEL}, {self.MAX_CHANNEL}]."),
             (command == SendModemCommand.Request.SET_POWER_LEVEL and not self.received_report,
              f'Cannot send command {command_info.name} before receiving a diagnostic report.'),
-            (command == SendModemCommand.Request.SET_POWER_LEVEL and
-                self.report.git_revision not in self.GIT_REVISIONS_WITH_POWER_LEVEL_COMMAND,
-             (f'{command_info.name} command not available on this modem with firmware version '
-                f'{self.report.git_revision.hex()}.')),
+            (
+            (
+            command == SendModemCommand.Request.SET_POWER_LEVEL
+            and self.report.git_revision not in self.GIT_REVISIONS_WITH_POWER_LEVEL_COMMAND
+            ),
+            (
+            f'{command_info.name} command not available on this modem with firmware version '
+            f'{self.report.git_revision.hex()}.'
+            ),
+            ),
             (command == SendModemCommand.Request.SET_POWER_LEVEL and
                 not (self.MIN_POWER_LEVEL <= raw_value <= self.MAX_POWER_LEVEL),
              f"Invalid power level '{raw_value}'. Must be in range [{self.MIN_POWER_LEVEL}, {self.MAX_POWER_LEVEL}]."),

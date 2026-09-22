@@ -1,6 +1,4 @@
-
 import math
-
 from geometry_msgs.msg import Twist, Vector3
 from rclpy.logging import get_logger
 from task_planning.interface.state import State

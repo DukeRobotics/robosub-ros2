@@ -1,5 +1,4 @@
-# ruff: noqa: F401, ERA001, E501
-import math
+# ruff: noqa: ERA001, F401, F841
 from math import radians
 
 from task_planning.interface.cv import CVObjectType
