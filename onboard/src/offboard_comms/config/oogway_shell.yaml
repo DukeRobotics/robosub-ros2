@@ -41,6 +41,8 @@ arduino:
     fqbn: arduino:megaavr:nona4809
     core: arduino:megaavr
     sketch: sketches/thruster
+    libraries:
+      - Adafruit BusIO
 gyro:
   ftdi: FT81SKA0
   zero_bias: 0.0023055327

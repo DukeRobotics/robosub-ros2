@@ -37,10 +37,10 @@ class Torpedo:
     WIDTH = 0.1016
 
     # No sun flickering values
-    LOW_BOT = np.array([0, 50, 45])
-    LOW_TOP = np.array([5, 95, 95])
-    HIGH_BOT = np.array([330, 50, 45])
-    HIGH_TOP = np.array([360, 95, 95])
+    LOW_BOT = np.array([0, 25, 25])
+    LOW_TOP = np.array([20, 80, 100])
+    HIGH_BOT = np.array([340, 20, 25])
+    HIGH_TOP = np.array([360, 60, 100])
 
     TORPEDO_BANNER_X_SCALE = 1.2
     TORPEDO_BANNER_Y_SCALE = 0.5
@@ -85,6 +85,32 @@ class YellowBins:
 
     YELLOW_4_BOT = np.array([60, 45, 35])
     YELLOW_4_TOP = np.array([70, 80, 75])
+
+class Compass:
+    """Yellow compass emoji HSV bounds and shape gates (actual HSV: H 0-360, S/V 0-100)."""
+    # From Task05_Table sheet: 12 in plate; yellow diam 96px / tile 120px = 0.80 -> 9.6 in
+    WIDTH = 0.244  # 9.6 in
+
+    YELLOW_BOT = np.array([20, 40, 40])
+    YELLOW_TOP = np.array([55, 100, 100])
+
+    MIN_CONTOUR_AREA = 150
+    MIN_CIRCULARITY = 0.65  # contourArea / (pi * r^2) of min enclosing circle
+
+class Sos:
+    """Red SOS emoji HSV bounds and shape gates (actual HSV: H 0-360, S/V 0-100)."""
+    # From Task05_Table sheet: 12 in plate; SOS ~99.5px / tile 120px = 0.83 -> 9.95 in
+    WIDTH = 0.253  # 9.95 in
+
+    # Red wraps around hue 0
+    RED_LOW_BOT = np.array([0, 40, 40])
+    RED_LOW_TOP = np.array([15, 100, 100])
+    RED_HIGH_BOT = np.array([345, 40, 40])
+    RED_HIGH_TOP = np.array([360, 100, 100])
+
+    MIN_CONTOUR_AREA = 200  # Reject small red blobs (e.g. compass needle)
+    MIN_ASPECT_RATIO = 0.75  # min(w,h) / max(w,h); ~1 for square
+    MIN_SOLIDITY = 0.65  # contourArea / boundingRect area
 
 class USBCamera(Enum):
     """Enum for different USB cameras."""

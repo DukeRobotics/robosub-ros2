@@ -119,6 +119,8 @@ gyro:
 - `dvl`
     - `ftdi` is the FTDI string of the DVL. This is a unique identifier for the DVL and is used to find the port that the DVL is connected to. To find the FTDI string, see the [Obtain FTDI String](#obtain-ftdi-string) section.
     - `negate_x_vel`, `negate_y_vel`, and `negate_z_vel` are boolean values that determine whether the DVL's velocity readings should be negated. These values are used to correct for the orientation of the DVL on the robot. If the DVL is mounted in a way that causes the velocity readings along one or more axes to have an incorrect sign, set the corresponding value(s) to `true`. Otherwise, set them to `false`.
+    - To pull raw data from the DVL, determine the USB port of the DVL, then run the following commands: `stty -F /dev/ttyUSB0 115200 raw`, followed by `cat /dev/ttyUSB0 | tee -a output.txt`. This will append the serial output to the `output.txt` file while printing the serial communication to the terminal.
+    - To communicate with the DVL, run the following command to communicate with picocom: `picocom -b 115200 /dev/ttyUSB{0}`. To exit this emulator, press `Ctrl + a` then `Ctrl + x`.
     > [!NOTE]
     > The DVL configuration structure is the same regardless of the DVL model.
 - `gyro`

@@ -125,14 +125,24 @@ async def test_ivc(self: Task[None, None, None], msg: IVCMessageType) -> None:
 
 
 @task
-async def ivc_send(self: Task[None, None, None], msg: IVCMessageType) -> None:
+async def ivc_send(self: Task[None, None, None], msg: IVCMessageType, timeout: float = 15) -> None:
     """Send IVC message."""
-    await wait_for_modem_ready(parent=self)
+    await wait_for_modem_ready(timeout=timeout, parent=self)
 
     future = IVC().send_message(msg)
     if future is None:
         logger.error('Could not call IVC send message service.')
     else:
+        sleep_task = util_tasks.sleep(timeout, parent=self)
+        while not future.done():
+            remaining_duration = sleep_task.step()
+            if not remaining_duration:
+                logger.error('Timeout waiting for IVC send.')
+                return
+
+            await util_tasks.sleep(min(remaining_duration, Duration(seconds=1)), parent=self)
+
+        sleep_task.close()
         service_response = cast('SendModemMessage.Response', await future)
         if service_response.success:
             logger.info(f'Sent IVC message: {msg.name}')
@@ -184,6 +194,12 @@ async def crush_ivc_spam(self: Task[None, None, None], msg_to_send: IVCMessageTy
         await ivc_send(msg_to_send, parent=self) # Send crush is done with gate
         await util_tasks.sleep(20, parent=self)
 
+@task
+async def crush_ivc_sr_spam(self: Task[None, None, None], msg_to_send: IVCMessageType) -> Task[None, None, None]:
+    """Receive IVC message for Crush."""
+    while True:
+        await ivc_send(msg_to_send, parent=self) # Send messages to Crush
+        await util_tasks.sleep(20, parent=self)
 
 @task
 async def ivc_send_then_receive(self: Task[None, None, None], msg_to_send: IVCMessageType,

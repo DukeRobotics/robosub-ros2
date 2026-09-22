@@ -78,7 +78,6 @@ class Robot {
         // It will also check for incoming serial data to control the servos
         void process() {
             currentTime = millis();
-
             if (currentTime - prevTimeVoltage >= voltageDelay) {
                 prevTimeVoltage = currentTime;
                 for (int i = 0; i < numVoltage; ++i) {

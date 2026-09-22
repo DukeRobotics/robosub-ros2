@@ -71,7 +71,8 @@ class CompTask(Task[YieldType, SendType, ReturnType], ABC):
         """
         await cv_tasks.correct_z(prop=cv_target, add_factor=add_factor, mult_factor=mult_factor, parent=self)
 
-    async def correct_yaw(self, yaw_correction: float, yaw_tolerance: float = 0.15, depth_level: float | None = None,
+    async def correct_yaw(self, yaw_correction: float, *, yaw_tolerance: float = 0.15,
+                          depth_level: float | None = None,
                           add_factor: float = 0, mult_factor: float = 1, timeout: int = 30) -> None:
         """
         Correct yaw orientation by the specified angle with optional adjustments.
@@ -129,7 +130,7 @@ class CompTask(Task[YieldType, SendType, ReturnType], ABC):
             correct_depth (bool, optional): If True, corrects the depth after moving to a pose. Defaults to True.
             timeout (int, optional): Maximum time in seconds to spend on each directional move. Defaults to 60.
         """
-        await move_tasks.move_with_directions(directions, depth_level, correct_yaw=correct_yaw,
+        await move_tasks.move_with_directions(directions, depth_level=depth_level, correct_yaw=correct_yaw,
                                               correct_depth=correct_depth, keep_orientation=True,
                                               timeout=timeout, parent=self)
 

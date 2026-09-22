@@ -31,6 +31,7 @@ class TopicTransformData:
     """
     def __init__(
         self,
+        *,
         input_topic: str,
         input_type: type[RosMessage],
         input_type_conversion: Callable[[RosMessage], RosMessage],
@@ -103,28 +104,28 @@ class TopicTransforms(Node):
 
     TOPIC_TRANSFORM_DATA: ClassVar[list[TopicTransformData]] = [
         TopicTransformData(
-            '/state',
-            Odometry,
-            lambda x: x.pose.pose,
-            '/transforms/state/pose',
-            Twist,
-            Conversions.pose_to_twist,
+            input_topic='/state',
+            input_type=Odometry,
+            input_type_conversion=lambda x: x.pose.pose,
+            output_topic='/transforms/state/pose',
+            output_type=Twist,
+            output_type_conversion=Conversions.pose_to_twist,
         ),
         TopicTransformData(
-            '/vectornav/imu',
-            Imu,
-            lambda x: x.orientation,
-            '/transforms/vectornav/imu/orientation',
-            Vector3,
-            Conversions.quat_to_vector,
+            input_topic='/vectornav/imu',
+            input_type=Imu,
+            input_type_conversion=lambda x: x.orientation,
+            output_topic='/transforms/vectornav/imu/orientation',
+            output_type=Vector3,
+            output_type_conversion=Conversions.quat_to_vector,
         ),
         TopicTransformData(
-            '/controls/desired_position',
-            Pose,
-            lambda x: x,
-            '/transforms/controls/desired_position',
-            Twist,
-            Conversions.pose_to_twist,
+            input_topic='/controls/desired_position',
+            input_type=Pose,
+            input_type_conversion=lambda x: x,
+            output_topic='/transforms/controls/desired_position',
+            output_type=Twist,
+            output_type_conversion=Conversions.pose_to_twist,
         ),
     ]
 

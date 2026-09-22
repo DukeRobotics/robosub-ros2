@@ -29,3 +29,8 @@ node_modules
 dist
 *.foxe
 ivc_log.txt
+
+# Acoustics
+onboard/src/acoustics/acoustics/acoustics_v3/*.AppImage
+
+dvl_timestamps.txt
