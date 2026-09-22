@@ -11,6 +11,7 @@ Steps 1-3 need to be completed once to set up the repository and required softwa
 3. [Set Up the Dotenv File](#set-up-the-dotenv-file)
 4. [Set Up the Docker Container](#set-up-the-docker-container)
     - [Using VS Code Dev Containers](#using-vs-code-dev-containers)
+    - [Claude Code and Codex CLIs](#claude-code-and-codex-clis)
     - [Without VS Code Dev Containers](#without-vs-code-dev-containers)
 5. [Set Up Foxglove (Optional)](#set-up-foxglove-optional)
     - [Set Up Foxglove Desktop](#set-up-foxglove-desktop)
@@ -147,6 +148,9 @@ Make sure you have Docker running on your machine. Then, follow the instructions
 > [!NOTE]
 > Starting the Docker container will create an empty `~/.foxglove-studio/` directory on your local machine if it does not already exist. Foxglove Desktop uses this directory to load locally installed extensions.
 
+> [!NOTE]
+> Starting the Docker container will also create the `~/.claude/`, `~/.claude.json`, and `~/.codex/` files/directories on your local machine if they do not already exist. See [Claude Code and Codex CLIs](#claude-code-and-codex-clis) below for more information.
+
 ### Using VS Code Dev Containers
 If you're using VS Code and have the Dev Containers extension installed:
 
@@ -185,6 +189,16 @@ If you're using VS Code and have the Dev Containers extension installed:
 > docker rm -f onboard2
 > ```
 > Then, run the `docker-build.sh` script again.
+
+### Claude Code and Codex CLIs
+You can run `claude` or `codex` in any integrated terminal in the container. In Dev Container, the host `~/.claude/`, `~/.claude.json`, and `~/.codex/` paths are mounted into the container. For Linux/WSL, this allows using same auth between host and container. For MacOS, auth is stored in Keychain, so you will need to login each time the container rebuilds.
+
+> [!NOTE]
+> The mounts use the `HOME` environment variable from the environment where VS Code runs. On Windows, set `HOME` to your user home directory if VS Code does not already provide it.
+> On WSL, `docker-build.sh skip-wsl` exits before creating these paths, so file-based host auth paths must already exist before opening the Dev Container.
+
+> [!NOTE]
+> On shared robot workspaces, log out before handing the workspace to another user: run `/logout` in Claude Code and `codex logout` for Codex. Keychain-backed auth must be logged out through the host/keychain as well.
 
 ### Without VS Code Dev Containers
 If you're **not** using VS Code or do **not** have the Dev Containers extension installed:

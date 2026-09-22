@@ -49,6 +49,11 @@ fi
 # On a Linux host, this ensures that the directory is owned by the user and not root
 mkdir -p ~/.foxglove-studio
 
+# Create Claude Code and Codex config/auth paths if they don't already exist
+mkdir -p ~/.claude
+touch ~/.claude.json
+mkdir -p ~/.codex
+
 # Read Git username and email from .env or default to global Git settings
 GIT_USER_NAME=$(git config --global user.name)
 GIT_USER_EMAIL=$(git config --global user.email)

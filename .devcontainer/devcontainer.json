@@ -4,6 +4,11 @@
     "service": "robosub-ros2",
     "workspaceFolder": "/home/ubuntu/robosub-ros2",
     "initializeCommand": "bash ./docker-build.sh skip-wsl",
+    "mounts": [
+        "source=${localEnv:HOME}/.claude,target=/home/ubuntu/.claude,type=bind",
+        "source=${localEnv:HOME}/.claude.json,target=/home/ubuntu/.claude.json,type=bind",
+        "source=${localEnv:HOME}/.codex,target=/home/ubuntu/.codex,type=bind"
+    ],
     "customizations": {
         "vscode": {
             "extensions": [
