@@ -72,7 +72,7 @@ class BinDetector(Node):
         contours_blue, _ = cv2.findContours(mask_blue, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         contours_red, _ = cv2.findContours(mask_red, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        MIN_AREA_OF_CONTOUR = 500  # noqa: N806
+        MIN_AREA_OF_CONTOUR = 500
 
         if contours_blue:
             # Take largest contour
