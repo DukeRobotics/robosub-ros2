@@ -12,7 +12,7 @@
 #define THRUSTER_PWM_MIN 1100
 #define THRUSTER_PWM_MAX 1900
 
-#define HEARTBEAT_RATE 5000
+#define HEARTBEAT_RATE 1000
 
 bool valid_robot = true;
 

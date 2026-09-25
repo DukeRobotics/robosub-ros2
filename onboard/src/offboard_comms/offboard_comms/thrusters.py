@@ -1,7 +1,6 @@
 import csv
 import os
 import struct
-import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar
@@ -49,7 +48,7 @@ class Thrusters(SerialNode):
     OFFBOARD_COMMS_CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
     ARDUINO_NAME = 'thruster'
     HEARTBEAT_MESSAGE = 'Heartbeat'
-    HEARTBEAT_TIMEOUT = 6.0  # seconds
+    HEARTBEAT_TIMEOUT = 15.0  # seconds
     HEARTBEAT_STATUS_PUBLISH_RATE = 1.0  # Hz
     HEARTBEAT_STATUS_TOPIC = '/offboard/thruster/status'
     NUM_LOOKUP_ENTRIES = 201  # -1.0 to 1.0 in 0.01 increments
@@ -113,14 +112,14 @@ class Thrusters(SerialNode):
     def process_line(self, line: str) -> None:
         """Update the heartbeat status when a heartbeat line is read."""
         if line == self.HEARTBEAT_MESSAGE:
-            self._last_heartbeat_time = time.monotonic()
-            self.heartbeat_status_publisher.publish(Int8(data=1))
+            self._last_heartbeat_time = self.get_clock().now().nanoseconds/1e9
+            return
 
     def publish_heartbeat_status(self) -> None:
         """Publish whether a heartbeat was received within the timeout."""
         heartbeat_is_recent = (
             self._last_heartbeat_time is not None
-            and time.monotonic() - self._last_heartbeat_time <= self.HEARTBEAT_TIMEOUT
+            and self.get_clock().now.nanoseconds/1e9 - self._last_heartbeat_time <= self.HEARTBEAT_TIMEOUT
         )
         self.heartbeat_status_publisher.publish(Int8(data=int(heartbeat_is_recent)))
 
