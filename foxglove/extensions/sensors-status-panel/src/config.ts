@@ -4,8 +4,6 @@ import { secToNsec } from "@duke-robotics/utils";
 export enum Sensor {
   IMU = "IMU",
   DVL = "DVL",
-  PeripheralArduino = "PeripheralArduino",
-  ThrusterArduino = "ThrusterArduino",
   Pressure = "Pressure",
   Gyro = "Gyro",
   FrontDAI = "FrontDAI",
@@ -27,8 +25,6 @@ export interface SensorConfig {
 export const SENSOR_CONFIG: Record<Sensor, SensorConfig> = {
   [Sensor.DVL]: { displayName: "DVL", topic: "/sensors/dvl/raw" },
   [Sensor.IMU]: { displayName: "IMU", topic: "/vectornav/imu" },
-  [Sensor.PeripheralArduino]: { displayName: "Peripheral Arduino", topic: "/offboard/peripheral/status" },
-  [Sensor.ThrusterArduino]: { displayName: "Thruster Arduino", topic: "/offboard/thruster/status" },
   [Sensor.Pressure]: { displayName: "Pressure", topic: "/sensors/depth" },
   [Sensor.Gyro]: { displayName: "Gyro", topic: "/sensors/gyro/status" },
   [Sensor.FrontDAI]: { displayName: "Front DAI", topic: "/camera/front/rgb/preview/compressed" },
@@ -45,8 +41,6 @@ export const ROBOT_CONFIG: Record<Robot, Array<Sensor>> = {
   [Robot.Oogway]: [
     Sensor.DVL,
     Sensor.IMU,
-    Sensor.PeripheralArduino,
-    Sensor.ThrusterArduino,
     Sensor.Pressure,
     Sensor.Gyro,
     Sensor.FrontDAI,
@@ -58,8 +52,6 @@ export const ROBOT_CONFIG: Record<Robot, Array<Sensor>> = {
   [Robot.Crush]: [
     Sensor.DVL,
     Sensor.IMU,
-    Sensor.PeripheralArduino,
-    Sensor.ThrusterArduino,
     Sensor.Pressure,
     Sensor.Gyro,
     Sensor.FrontMono,
