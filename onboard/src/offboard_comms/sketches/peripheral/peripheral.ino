@@ -19,7 +19,7 @@
 // Baud rate for serial communication with Blue Robotics Bar30 High-Resolution 300m Depth/Pressure Sensor
 #define BAUD_RATE 9600
 
-#define HEARTBEAT_RATE 5000
+#define HEARTBEAT_RATE 1000
 
 Robot* robot;
 bool valid_robot = true;
