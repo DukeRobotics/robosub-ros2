@@ -149,7 +149,7 @@ void loop() {
     }
 
     if(time > HEARTBEAT_RATE + last_heartbeat) {
-        Serial.println("Heartbeat");
+        Serial.println("&");
         last_heartbeat = time;
     }
 
