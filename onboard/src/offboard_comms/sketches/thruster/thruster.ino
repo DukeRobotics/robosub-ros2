@@ -27,7 +27,6 @@ uint64_t last_cmd_ms_ts;
 
 uint16_t* pwms;
 uint32_t last_heartbeat;
-uint32_t time;
 
 MultiplexedBasicESC* thrusters;
 
@@ -148,10 +147,8 @@ void loop() {
         }
     }
 
-    if(time > HEARTBEAT_RATE + last_heartbeat) {
+    if(millis() - last_heartbeat > HEARTBEAT_RATE) {
         Serial.println("&");
-        last_heartbeat = time;
+        last_heartbeat = millis();
     }
-
-    time = millis();
 }

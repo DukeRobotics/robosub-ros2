@@ -23,7 +23,6 @@
 
 Robot* robot;
 bool valid_robot = true;
-uint32_t time;
 uint32_t last_heartbeat;
 
 void setupGyroTrigger() {
@@ -95,10 +94,8 @@ void loop() {
     delay(500); // Delay to avoid flooding the serial output
   }
 
-  if(time > HEARTBEAT_RATE + last_heartbeat) {
+  if(millis() - last_heartbeat > HEARTBEAT_RATE) {
     Serial.println("&");
-    last_heartbeat = time;
+    last_heartbeat = millis();
   }
-
-  time = millis();
 }
