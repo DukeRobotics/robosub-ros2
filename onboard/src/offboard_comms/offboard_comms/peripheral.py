@@ -7,6 +7,7 @@ from typing import ClassVar
 
 import rclpy
 from custom_msgs.srv import SetContinuousServo, SetDiscreteServo
+from rclpy.service import Service
 from std_msgs.msg import Int8
 
 from offboard_comms.peripheral_sensors import (
