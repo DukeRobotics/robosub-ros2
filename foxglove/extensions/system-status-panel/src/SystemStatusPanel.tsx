@@ -135,7 +135,7 @@ const TOPIC_TO_STATUSES = STATUSES.reduce<Record<string, Status[]>>((acc, status
 
 const ROBOT_CONFIG: Record<Robot, Status[]> = {
   [Robot.Crush]: STATUSES,
-  [Robot.Oogway]: [Status.CPU, Status.RAM, Status.Voltage, Status.HumiditySignal, Status.TempSignal, Status.TempGyro,],
+  [Robot.Oogway]: [Status.CPU, Status.RAM, Status.Voltage, Status.HumiditySignal, Status.TempSignal, Status.TempGyro],
 };
 
 type StatusValues = Partial<Record<Status, number>>;
