@@ -96,6 +96,7 @@ class DVLPathfinderRawPublisher(SerialNode):
         self._current_msg.sa_roll = fields[0]
         self._current_msg.sa_pitch = fields[1]
         self._current_msg.sa_heading = fields[2]
+        self._current_msg.sa_valid = True
 
     def _parse_TS(self, line: str) -> None:
         """
@@ -198,4 +199,3 @@ def main(args: list[str] | None = None) -> None:
 
 if __name__ == '__main__':
     main()
-

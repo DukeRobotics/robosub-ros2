@@ -36,6 +36,10 @@ class GyroPublisher(SerialNode):
     CONNECTION_RETRY_PERIOD = 1.0 # seconds
     LOOP_RATE = 1000.0 # Hz
     TRIGGER_RATE = 1000.0 # Hz
+    # Conservative variance for the yaw-rate message consumed by the EKF.
+    # This includes installation, temperature, and zero-bias uncertainty—not
+    # only the sensor's short-term noise floor.
+    ANGULAR_VELOCITY_VARIANCE = 0.03
 
     TF_FRAME_ID = 'gyro'
 
@@ -88,7 +92,7 @@ class GyroPublisher(SerialNode):
         self.angular_velocity_twist_msg.twist.twist.angular.x = 0.0
         self.angular_velocity_twist_msg.twist.twist.angular.y = 0.0
         self.angular_velocity_twist_msg.twist.twist.angular.z = 0.0
-        self.angular_velocity_twist_msg.twist.covariance[35] = 0.01  # Only set the angular z, angular z covariance
+        self.angular_velocity_twist_msg.twist.covariance[35] = self.ANGULAR_VELOCITY_VARIANCE
 
         self.angular_position_raw_msg = Float64()
 

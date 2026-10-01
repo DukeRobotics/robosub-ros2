@@ -63,15 +63,18 @@ vectornav:
 vn_sensor_msgs:
   ros__parameters:
     use_enu: false
-    orientation_covariance: [0.01,  0.0,   0.0,
-                            0.0,   0.01,  0.0,
-                            0.0,   0.0,   0.01]
+    # Conservative vehicle-level initial variances. They include mounting,
+    # vibration, and magnetic-environment effects, not only VN-100 datasheet
+    # noise. Yaw is deliberately much less trusted than roll/pitch.
+    orientation_covariance: [0.04,  0.0,   0.0,
+                            0.0,   0.04,  0.0,
+                            0.0,   0.0,   0.25]
     angular_velocity_covariance: [0.01,  0.0,   0.0,
                          0.0,   0.01,  0.0,
-                         0.0,   0.0,   0.01]
-    linear_acceleration_covariance: [0.01,  0.0,   0.0,
-                         0.0,   0.01,  0.0,
-                         0.0,   0.0,   0.01]
+                         0.0,   0.0,   0.02]
+    linear_acceleration_covariance: [0.25,  0.0,   0.0,
+                         0.0,   0.25,  0.0,
+                         0.0,   0.0,   0.25]
     magnetic_covariance: [0.01,  0.0,   0.0,
                          0.0,   0.01,  0.0,
                          0.0,   0.0,   0.01]

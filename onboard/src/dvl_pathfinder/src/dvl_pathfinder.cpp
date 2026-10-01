@@ -10,6 +10,8 @@
 #include <custom_msgs/msg/dvl_raw.hpp>
 #include <filesystem>
 #include <memory>
+#include <cmath>
+#include <limits>
 #include <rclcpp/rclcpp.hpp>
 #include <rcpputils/asserts.hpp>
 #include <regex>
@@ -71,7 +73,9 @@ class DVLPathfinder : public rclcpp::Node {
         // ── Teledyne PD0 decoder ─────────────────────────────────────────────────
         decoder_ = std::make_unique<tdym::PDD_Decoder>();
         tdym::PDD_InitializeDecoder(decoder_.get());
-        tdym::PDD_SetInvalidValue(0);
+        // Keep invalid values distinguishable from a real zero-velocity bottom
+        // track. The fusion node uses this to reject invalid DVL fixes.
+        tdym::PDD_SetInvalidValue(std::numeric_limits<double>::quiet_NaN());
 
         // ── Background read thread ───────────────────────────────────────────────
         read_thread_ = std::thread(&DVLPathfinder::readLoop, this);
@@ -177,16 +181,48 @@ class DVLPathfinder : public rclcpp::Node {
 
             while (tdym::PDD_GetPD0Ensemble(decoder_.get(), &ens)) {
                 double vv[FOUR_BEAMS];
-                tdym::PDD_GetVesselVelocities(&ens, vv);
-                double range = tdym::PDD_GetRangeToBottom(&ens, vv);
+                double beam_ranges[FOUR_BEAMS];
+                const bool has_velocity = tdym::PDD_GetVesselVelocities(&ens, vv) != 0;
+                const double range = tdym::PDD_GetRangeToBottom(&ens, beam_ranges);
+
+                const bool bottom_track_valid = has_velocity && range > 0.0 &&
+                                                std::isfinite(vv[0]) && std::isfinite(vv[1]) &&
+                                                std::isfinite(vv[2]);
+                tdym::PDD_HPRSensor hpr;
+                const bool has_attitude = tdym::PDD_GetHPRSensor(&ens, &hpr, tdym::PDBT) != 0 &&
+                                          std::isfinite(hpr.roll) && std::isfinite(hpr.pitch) &&
+                                          std::isfinite(hpr.heading);
 
                 custom_msgs::msg::DVLRaw dvl_raw_msg;
                 dvl_raw_msg.header.stamp = now();
                 dvl_raw_msg.header.frame_id = frame_id_;
-                dvl_raw_msg.bs_transverse = vv[0];
-                dvl_raw_msg.bs_longitudinal = vv[1];
-                dvl_raw_msg.bs_normal = vv[2];
+                // DVLRaw uses the Pathfinder/Wayfinder wire convention of
+                // millimetres per second; dvl_to_odom converts it to SI.
+                dvl_raw_msg.bs_transverse = vv[0] * 1e3;
+                dvl_raw_msg.bs_longitudinal = vv[1] * 1e3;
+                dvl_raw_msg.bs_normal = vv[2] * 1e3;
                 dvl_raw_msg.bd_range = range;
+                // The fourth bottom-track velocity is the DVL's error velocity.
+                // It is consumed by dvl_to_odom to set a per-sample covariance.
+                dvl_raw_msg.bi_error = vv[3] * 1e3;
+                dvl_raw_msg.bs_status = bottom_track_valid ? "A" : "V";
+                dvl_raw_msg.sa_valid = has_attitude;
+                if (has_attitude) {
+                    dvl_raw_msg.sa_roll = hpr.roll;
+                    dvl_raw_msg.sa_pitch = hpr.pitch;
+                    dvl_raw_msg.sa_heading = hpr.heading;
+                }
+
+                if (ens.bottomTrack != nullptr) {
+                    dvl_raw_msg.bt_quality_valid = true;
+                    for (std::size_t i = 0; i < FOUR_BEAMS; ++i) {
+                        dvl_raw_msg.bt_beam_ranges[i] = beam_ranges[i];
+                        dvl_raw_msg.bt_correlation[i] = ens.bottomTrack->correlation[i];
+                        dvl_raw_msg.bt_intensity[i] = ens.bottomTrack->intensity[i];
+                        dvl_raw_msg.bt_percent_good[i] = ens.bottomTrack->percGood[i];
+                        dvl_raw_msg.bt_rssi[i] = ens.bottomTrack->rssi[i];
+                    }
+                }
                 dvl_raw_pub_->publish(dvl_raw_msg);
             }
         }

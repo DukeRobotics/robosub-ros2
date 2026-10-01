@@ -85,6 +85,13 @@ class DVLWayfinderPublisher(Node):
         Args:
             data_obj (OutputData): WayFinder output data.
         """
+        beam_ranges = [data_obj.range_beam1, data_obj.range_beam2,
+                       data_obj.range_beam3, data_obj.range_beam4]
+        valid_beam_count = sum(math.isfinite(beam_range) and beam_range > 0.0 for beam_range in beam_ranges)
+        bottom_track_valid = data_obj.is_valid and data_obj.is_velocity_valid() and valid_beam_count >= 3
+        if not bottom_track_valid:
+            return
+
         # Apply rotation matrix to velocities
         vels = np.matmul([data_obj.vel_x, data_obj.vel_y, data_obj.vel_z], self._rotation_matrix) * 1e3  # Convert to mm
 
@@ -93,6 +100,10 @@ class DVLWayfinderPublisher(Node):
         self.dvl_raw_msg.bs_transverse = vels[0]
         self.dvl_raw_msg.bs_longitudinal = vels[1]
         self.dvl_raw_msg.bs_normal = vels[2]
+        self.dvl_raw_msg.bi_error = data_obj.vel_err * 1e3
+        self.dvl_raw_msg.bs_status = 'A'
+        self.dvl_raw_msg.bt_beam_ranges = beam_ranges
+        self.dvl_raw_msg.bd_range = data_obj.mean_range
         self._pub.publish(self.dvl_raw_msg)
 
 def main(args: list[str] | None = None) -> None:
@@ -111,4 +122,3 @@ def main(args: list[str] | None = None) -> None:
 
 if __name__ == '__main__':
     main()
-

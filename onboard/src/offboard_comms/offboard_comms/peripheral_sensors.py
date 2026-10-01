@@ -78,6 +78,9 @@ class PressureSensor(PeripheralSensor):
     MIN_VALUE = -7
     MAX_VALUE = 7
     MEDIAN_FILTER_SIZE = 3
+    # Conservative initial vertical-position variance in m^2. This must be
+    # characterized against a known depth reference before lowering it.
+    DEPTH_VARIANCE = 0.04
 
     def __init__(self, node: Node, tag: str, topic: str) -> None:
         super().__init__(node, tag, topic, min_value=self.MIN_VALUE, max_value=self.MAX_VALUE,
@@ -91,7 +94,7 @@ class PressureSensor(PeripheralSensor):
         self._current_pressure_msg.pose.pose.orientation.y = 0.0
         self._current_pressure_msg.pose.pose.orientation.z = 0.0
         self._current_pressure_msg.pose.pose.orientation.w = 1.0
-        self._current_pressure_msg.pose.covariance[14] = 0.01   # Only the z,z covariance
+        self._current_pressure_msg.pose.covariance[14] = self.DEPTH_VARIANCE
 
         self._publisher = self.node.create_publisher(PoseWithCovarianceStamped, self.topic, 10)
 

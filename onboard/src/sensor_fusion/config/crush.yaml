@@ -9,20 +9,26 @@ ekf_localization_node:
 
     odom0: sensors/dvl/odom
     odom0_config: [false, false, false, # x, y, z
-                  false, false, false, # roll, pitch, yaw
-                  true,  true,  false, # linear velocity
+                  false, false, false, # roll, pitch, yaw; enable roll/pitch after pool-frame validation
+                  true,  true,  true,  # linear velocity
                   false, false, false, # angular velocity
                   false, false, false] # linear acceleration
     odom0_nodelay: true
-    odom0_differential: true
+    odom0_differential: false
+    odom0_pose_rejection_threshold: 3.0
+    odom0_twist_rejection_threshold: 3.0
 
     imu0: vectornav/imu
     imu0_config: [false, false, false,
                   false, false, false,
                   false, false, false,
                   true, true, false,
-                  false, false, false]
+                  true, true, true]
     imu0_nodelay: true
+    imu0_remove_gravitational_acceleration: true
+    imu0_pose_rejection_threshold: 3.0
+    imu0_angular_velocity_rejection_threshold: 3.0
+    imu0_linear_acceleration_rejection_threshold: 3.0
 
     pose0: sensors/depth
     pose0_config: [false, false, true,
@@ -31,7 +37,8 @@ ekf_localization_node:
                   false, false, false,
                   false, false, false]
     pose0_nodelay: true
-    pose0_differential: true
+    pose0_relative: true
+    pose0_pose_rejection_threshold: 3.0
 
     twist0: sensors/gyro/angular_velocity/twist
     twist0_config: [false, false, false,
@@ -41,6 +48,7 @@ ekf_localization_node:
                     false, false, false]
     twist0_nodelay: true
     twist0_queue_size: 50
+    twist0_twist_rejection_threshold: 3.0
 
     smooth_lagged_data: true
     history_length: 0.5

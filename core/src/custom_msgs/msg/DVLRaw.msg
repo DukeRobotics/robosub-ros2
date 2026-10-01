@@ -7,6 +7,7 @@ std_msgs/Header header
 float64 sa_roll
 float64 sa_pitch
 float64 sa_heading
+bool sa_valid
 
 # Timing and Scaling Data
 float64 ts_salinity
@@ -21,6 +22,16 @@ float64 bi_y_axis
 float64 bi_z_axis
 float64 bi_error
 string bi_status
+
+# Bottom-track quality data. These fields are populated when the DVL provides
+# per-beam diagnostics; consumers must check bt_quality_valid before using
+# them.
+bool bt_quality_valid
+float64[4] bt_beam_ranges
+uint8[4] bt_correlation
+uint8[4] bt_intensity
+uint8[4] bt_percent_good
+uint8[4] bt_rssi
 
 # Bottom-Track, Ship-Referenced Velocity Data
 float64 bs_transverse
