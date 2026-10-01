@@ -63,10 +63,9 @@ class Thrusters(SerialNode):
     def __init__(self) -> None:
         """Initialize the thruster node with all necessary components."""
         super().__init__(self.NODE_NAME, self.BAUDERATE, self.OFFBOARD_COMMS_CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
-                         SerialReadType.BYTES_ALL, connection_retry_period=self.CONNECTION_RETRY_PERIOD,
+                         SerialReadType.LINE_NONBLOCKING, connection_retry_period=self.CONNECTION_RETRY_PERIOD,
                          loop_rate=self.LOOP_RATE, read_timeout=0)
 
-        self._serial_read_buffer = bytearray()
         with Path(rr.get_filename(self.CONTROLS_CONFIG_FILE_PATH, use_protocol=False)).open() as f:
             controls_config = yaml.safe_load(f)
             self.num_thrusters = len(controls_config['thrusters'])
@@ -91,15 +90,6 @@ class Thrusters(SerialNode):
         # Create publisher
         self.pwm_publisher = self.create_publisher(PWMAllocs, '/offboard/pwm', 1)
         self.heartbeat_status_publisher = self.create_publisher(Int8, self.HEARTBEAT_STATUS_TOPIC, 1)
-
-    def process_bytes(self, data: bytes) -> None:
-        """Buffer serial data and process each complete line."""
-        self._serial_read_buffer.extend(data)
-        lines = self._serial_read_buffer.split(b'\n')
-        self._serial_read_buffer = lines.pop()
-
-        for line in lines:
-            self.process_line(line.decode('utf-8', errors='ignore').strip())
 
     def process_line(self, line: str) -> None:
         """Update the heartbeat status when a heartbeat line is read."""

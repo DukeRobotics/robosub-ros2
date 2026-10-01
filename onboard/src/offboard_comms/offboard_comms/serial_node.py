@@ -1,6 +1,4 @@
-import time
 from abc import ABC, abstractmethod
-from contextlib import suppress
 from enum import Enum
 from pathlib import Path
 
@@ -69,6 +67,7 @@ class SerialNode(Node, ABC):
 
         self._serial_port = None
         self._serial = None
+        self._line_buffer = bytearray()
         self._num_consecutive_empty_lines = 0
 
     @abstractmethod
@@ -107,23 +106,19 @@ class SerialNode(Node, ABC):
         This method can be overridden by subclasses to perform additional actions after connecting.
         """
 
-    def readline_nonblocking(self, tout: int = 1) -> str:
-        """
-        Read line from serial port without blocking.
+    def readline_nonblocking(self) -> str | None:
+        """Return the next complete buffered line without waiting for serial data."""
+        num_bytes = self._serial.in_waiting
+        if num_bytes:
+            self._line_buffer.extend(self._serial.read(num_bytes))
 
-        Args:
-            tout (int): timeout in seconds
+        newline_index = self._line_buffer.find(b'\n')
+        if newline_index == -1:
+            return None
 
-        Returns:
-            str: The line read from the serial port.
-        """
-        start = time.time()
-        buff = b''
-        while ((time.time() - start) < tout) and (b'\r\n' not in buff):
-            with suppress(serial.SerialException):
-                buff += self._serial.read(1)
-
-        return buff.decode('utf-8', errors='ignore')
+        line = bytes(self._line_buffer[:newline_index + 1])
+        del self._line_buffer[:newline_index + 1]
+        return line.decode('utf-8', errors='ignore')
 
     def writebytes(self, data: bytes) -> bool:
         """
@@ -187,6 +182,7 @@ class SerialNode(Node, ABC):
         self._serial.close()
         self._serial = None
         self._serial_port = None
+        self._line_buffer.clear()
         self.connect_timer.reset()
 
     def _read_bytes(self) -> bytes:
@@ -211,7 +207,7 @@ class SerialNode(Node, ABC):
 
         return data
 
-    def _read_line(self) -> str:
+    def _read_line(self) -> str | None:
         """
         Read line from serial.
 
@@ -221,7 +217,8 @@ class SerialNode(Node, ABC):
         if self._read_type == SerialReadType.LINE_BLOCKING:
             return self._serial.readline().decode('utf-8', errors='ignore').strip()
         if self._read_type == SerialReadType.LINE_NONBLOCKING:
-            return self.readline_nonblocking().strip()
+            line = self.readline_nonblocking()
+            return line.strip() if line is not None else None
 
         error_msg = f'Invalid read type for reading line from serial: {self._read_type}'
         raise ValueError(error_msg)
@@ -253,7 +250,8 @@ class SerialNode(Node, ABC):
                         return
                     case SerialReadType.LINE_BLOCKING | SerialReadType.LINE_NONBLOCKING:
                         line = self._read_line()
-                        self._handle_line(line)
+                        if line is not None:
+                            self._handle_line(line)
 
         except serial.SerialException:
             self.get_logger().error(f'Error in reading {self._serial_device_name} from serial, trying to reconnect.')
