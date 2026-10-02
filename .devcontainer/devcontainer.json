@@ -17,6 +17,7 @@
     "customizations": {
         "vscode": {
             "extensions": [
+                "anthropic.claude-code",
                 "bierner.github-markdown-preview",
                 "charliermarsh.ruff",
                 "cschlosser.doxdocgen",
@@ -37,6 +38,7 @@
                 "ms-vscode.cpptools-extension-pack",
                 "ms-vscode.vscode-serial-monitor",
                 "ms-vsliveshare.vsliveshare",
+                "openai.chatgpt",
                 "redhat.vscode-yaml",
                 "tamasfe.even-better-toml",
                 "timonwong.shellcheck",
