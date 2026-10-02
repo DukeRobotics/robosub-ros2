@@ -148,9 +148,6 @@ Make sure you have Docker running on your machine. Then, follow the instructions
 > [!NOTE]
 > Starting the Docker container will create an empty `~/.foxglove-studio/` directory on your local machine if it does not already exist. Foxglove Desktop uses this directory to load locally installed extensions.
 
-> [!NOTE]
-> Starting the Docker container will also create the `~/.claude/`, `~/.claude.json`, and `~/.codex/` files/directories on your local machine if they do not already exist. See [Claude Code and Codex CLIs](#claude-code-and-codex-clis) below for more information.
-
 ### Using VS Code Dev Containers
 If you're using VS Code and have the Dev Containers extension installed:
 
@@ -191,14 +188,7 @@ If you're using VS Code and have the Dev Containers extension installed:
 > Then, run the `docker-build.sh` script again.
 
 ### Claude Code and Codex CLIs
-You can run `claude` or `codex` in any integrated terminal in the container. In Dev Container, the host `~/.claude/`, `~/.claude.json`, and `~/.codex/` paths are mounted into the container. For Linux/WSL, this allows using same auth between host and container. For MacOS, auth is stored in Keychain, so you will need to login each time the container rebuilds.
-
-> [!NOTE]
-> The mounts use the `HOME` environment variable from the environment where VS Code runs. On Windows, set `HOME` to your user home directory if VS Code does not already provide it.
-> On WSL, `docker-build.sh skip-wsl` exits before creating these paths, so file-based host auth paths must already exist before opening the Dev Container.
-
-> [!NOTE]
-> On shared robot workspaces, log out before handing the workspace to another user: run `/logout` in Claude Code and `codex logout` for Codex. Keychain-backed auth must be logged out through the host/keychain as well.
+Claude Code and Codex are installed in the container. Run `claude` or `codex` in an integrated terminal and sign in when prompted. Host authentication files are not mounted or created by the setup. You may need to sign in again after rebuilding the container.
 
 ### Without VS Code Dev Containers
 If you're **not** using VS Code or do **not** have the Dev Containers extension installed:

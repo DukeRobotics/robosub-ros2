@@ -4,14 +4,10 @@
     "service": "robosub-ros2",
     "workspaceFolder": "/home/ubuntu/robosub-ros2",
     "initializeCommand": "bash ./docker-build.sh skip-wsl",
-    "mounts": [
-        "source=${localEnv:HOME}/.claude,target=/home/ubuntu/.claude,type=bind",
-        "source=${localEnv:HOME}/.claude.json,target=/home/ubuntu/.claude.json,type=bind",
-        "source=${localEnv:HOME}/.codex,target=/home/ubuntu/.codex,type=bind"
-    ],
     "customizations": {
         "vscode": {
             "extensions": [
+                "anthropic.claude-code",
                 "bierner.github-markdown-preview",
                 "charliermarsh.ruff",
                 "cschlosser.doxdocgen",
@@ -32,6 +28,7 @@
                 "ms-vscode.cpptools-extension-pack",
                 "ms-vscode.vscode-serial-monitor",
                 "ms-vsliveshare.vsliveshare",
+                "openai.chatgpt",
                 "redhat.vscode-yaml",
                 "tamasfe.even-better-toml",
                 "timonwong.shellcheck",
