@@ -11,6 +11,7 @@ Steps 1-3 need to be completed once to set up the repository and required softwa
 3. [Set Up the Dotenv File](#set-up-the-dotenv-file)
 4. [Set Up the Docker Container](#set-up-the-docker-container)
     - [Using VS Code Dev Containers](#using-vs-code-dev-containers)
+    - [Claude Code and Codex CLIs](#claude-code-and-codex-clis)
     - [Without VS Code Dev Containers](#without-vs-code-dev-containers)
 5. [Set Up Foxglove (Optional)](#set-up-foxglove-optional)
     - [Set Up Foxglove Desktop](#set-up-foxglove-desktop)
@@ -185,6 +186,9 @@ If you're using VS Code and have the Dev Containers extension installed:
 > docker rm -f onboard2
 > ```
 > Then, run the `docker-build.sh` script again.
+
+### Claude Code and Codex CLIs
+Claude Code and Codex are installed in the container. Run `claude` or `codex` in an integrated terminal and sign in when prompted. Host authentication files are not mounted or created by the setup. You may need to sign in again after rebuilding the container.
 
 ### Without VS Code Dev Containers
 If you're **not** using VS Code or do **not** have the Dev Containers extension installed:

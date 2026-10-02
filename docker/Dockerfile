@@ -124,11 +124,12 @@ RUN /home/ubuntu/venv/bin/pip install scikit-learn
 RUN /home/ubuntu/venv/bin/pip install sympy
 RUN /home/ubuntu/venv/bin/pip install transforms3d
 
-# Install Node.js (Jod)
+# Install Node.js (Jod), Claude Code, and Codex
 ENV NVM_DIR=/home/ubuntu/.nvm
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash \
     && . $NVM_DIR/nvm.sh \
-    && nvm install --lts=Jod
+    && nvm install --lts=Jod \
+    && npm install -g @anthropic-ai/claude-code @openai/codex
 
 # Create SSH directory
 RUN mkdir -p /home/ubuntu/.ssh
