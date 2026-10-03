@@ -1,6 +1,7 @@
 # ruff: noqa: S602
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -27,7 +28,7 @@ ARDUINO_COMPILE_COMMAND_TEMPLATE = (
     f'--build-property "build.extra_flags=-DROBOT_NAME={ROBOT_NAME.upper()}"'
 )
 ARDUINO_UPLOAD_COMMAND_TEMPLATE = 'arduino-cli upload -b {fqbn} -p {port} "{sketch_path}"'
-ARDUINO_GET_INSTALLED_LIBS = 'arduino-cli lib list'
+ARDUINO_GET_INSTALLED_LIBS = 'arduino-cli lib list --json'
 ARDUINO_GET_INSTALLED_CORES = 'arduino-cli core list'
 
 # Prefix for all output displayed by this script (not including subcommands)
@@ -231,10 +232,22 @@ def check_if_arduino_libs_installed(arduino_libs: list[str]) -> bool:
         bool: True if all libraries are installed, False otherwise.
     """
     try:
-        installed_libs = subprocess.check_output(ARDUINO_GET_INSTALLED_LIBS, shell=True, text=True).lower()
-        return all(lib.lower() in installed_libs for lib in arduino_libs)
-    except subprocess.CalledProcessError:
+        installed_data = json.loads(subprocess.check_output(ARDUINO_GET_INSTALLED_LIBS, shell=True, text=True))
+        installed_libs = {
+            entry['library']['name'].casefold(): entry['library']['version']
+            for entry in installed_data.get('installed_libraries', [])
+        }
+        for lib in arduino_libs:
+            name, separator, version = lib.rpartition('@')
+            if not separator:
+                name = lib
+            installed_version = installed_libs.get(name.casefold())
+            if installed_version is None or (separator and installed_version != version):
+                return False
+    except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError, TypeError):
         return False
+    else:
+        return True
 
 
 def install_libs(arduino_names: list[str], print_output: bool) -> None:

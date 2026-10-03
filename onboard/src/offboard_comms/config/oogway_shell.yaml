@@ -42,7 +42,8 @@ arduino:
     core: arduino:megaavr
     sketch: sketches/thruster
     libraries:
-      - Adafruit BusIO
+      - "Adafruit PWM Servo Driver Library@3.0.3"
+      - "Adafruit BusIO@1.17.4"
 gyro:
   ftdi: FT81SKA0
   zero_bias: 0.0023055327
