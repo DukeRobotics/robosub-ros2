@@ -10,7 +10,7 @@ import resource_retriever as rr
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from custom_msgs.msg import PWMAllocs, ThrusterAllocs
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Int8
 
 from offboard_comms.serial_node import SerialNode, SerialReadType
 
@@ -42,10 +42,13 @@ class Thrusters(SerialNode):
     BAUDERATE = 57600
     SERIAL_DEVICE_NAME = 'thruster arduino'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
+    LOOP_RATE = 50.0  # Hz
 
     CONTROLS_CONFIG_FILE_PATH = f'package://controls/config/{os.getenv("ROBOT_NAME")}.yaml'
     OFFBOARD_COMMS_CONFIG_FILE_PATH = f'package://offboard_comms/config/{os.getenv("ROBOT_NAME")}.yaml'
     ARDUINO_NAME = 'thruster'
+    HEARTBEAT_MESSAGE = '&'
+    HEARTBEAT_STATUS_TOPIC = '/offboard/thruster/status'
     NUM_LOOKUP_ENTRIES = 201  # -1.0 to 1.0 in 0.01 increments
     VOLTAGE_FILES: ClassVar[list[tuple[float, str]]] = [
         (14.0, '14.csv'),
@@ -60,7 +63,8 @@ class Thrusters(SerialNode):
     def __init__(self) -> None:
         """Initialize the thruster node with all necessary components."""
         super().__init__(self.NODE_NAME, self.BAUDERATE, self.OFFBOARD_COMMS_CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
-                         SerialReadType.NONE, connection_retry_period=self.CONNECTION_RETRY_PERIOD)
+                         SerialReadType.LINE_NONBLOCKING, connection_retry_period=self.CONNECTION_RETRY_PERIOD,
+                         loop_rate=self.LOOP_RATE, read_timeout=0)
 
         with Path(rr.get_filename(self.CONTROLS_CONFIG_FILE_PATH, use_protocol=False)).open() as f:
             controls_config = yaml.safe_load(f)
@@ -85,6 +89,13 @@ class Thrusters(SerialNode):
 
         # Create publisher
         self.pwm_publisher = self.create_publisher(PWMAllocs, '/offboard/pwm', 1)
+        self.heartbeat_status_publisher = self.create_publisher(Int8, self.HEARTBEAT_STATUS_TOPIC, 1)
+
+    def process_line(self, line: str) -> None:
+        """Update the heartbeat status when a heartbeat line is read."""
+        if line == self.HEARTBEAT_MESSAGE:
+            self.heartbeat_status_publisher.publish(Int8(data=1))
+            return
 
     def get_ftdi_string(self) -> str:
         """

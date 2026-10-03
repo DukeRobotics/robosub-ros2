@@ -39,7 +39,7 @@ interface StatusConfig {
   suffix: string;
   // Extract a numeric value from a ROS message event.
   parse: (event: MessageEvent) => number;
-  // Return whether the sensor reading should trigger a "warning" styling.
+  // Return whether the reading should trigger a "warning" styling.
   warn: (value: number | undefined) => boolean;
 }
 
@@ -242,8 +242,8 @@ function SystemStatusPanel({ context }: { context: PanelExtensionContext }): Rea
       topic: config.topic,
       name: config.displayName,
       value,
-      suffix: config.suffix,
       warn: config.warn(value),
+      suffix: config.suffix,
       publishing: topicPublishing,
     };
   });

@@ -8,6 +8,7 @@ from typing import ClassVar
 import rclpy
 from custom_msgs.srv import SetContinuousServo, SetDiscreteServo
 from rclpy.service import Service
+from std_msgs.msg import Int8
 
 from offboard_comms.peripheral_sensors import (
     HumiditySensor,
@@ -92,6 +93,8 @@ class PeripheralPublisher(SerialNode):
     ARDUINO_NAME = 'peripheral'
     CONNECTION_RETRY_PERIOD = 1.0  # seconds
     LOOP_RATE = 50.0  # Hz
+    HEARTBEAT_MESSAGE = '&'
+    HEARTBEAT_STATUS_TOPIC = '/offboard/peripheral/status'
     SENSOR_CLASSES: ClassVar[dict[str, type[PeripheralSensor]]] = {
         'pressure': PressureSensor,
         'voltage': VoltageSensor,
@@ -103,6 +106,8 @@ class PeripheralPublisher(SerialNode):
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
                          SerialReadType.LINE_NONBLOCKING, connection_retry_period=self.CONNECTION_RETRY_PERIOD,
                          loop_rate=self.LOOP_RATE)
+
+        self.heartbeat_status_publisher = self.create_publisher(Int8, self.HEARTBEAT_STATUS_TOPIC, 1)
 
         self.sensors: dict[str, PeripheralSensor] = {}
         self.setup_sensors()
@@ -164,6 +169,10 @@ class PeripheralPublisher(SerialNode):
         Args:
             line (str): A line of data from the serial port.
         """
+        if line == self.HEARTBEAT_MESSAGE:
+            self.heartbeat_status_publisher.publish(Int8(data=1))
+            return
+
         if ':' not in line:
             self.get_logger().error(f'Invalid data format: "{line}"')
             return
