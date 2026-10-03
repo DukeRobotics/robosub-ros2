@@ -1,34 +1,34 @@
 #include <Arduino.h>
-#include "DHT11.h"
+#include "DHT.h"
 
 class TempHumidity {
     private:
         int pinNum;
         String humidityTag;
         String tempTag;
-        DHT11* dht11;
+        DHT* dht22;
 
     public:
         TempHumidity(int pinNum, String tagSuffix) : pinNum(pinNum) {
             humidityTag = "H" + tagSuffix + ":";
             tempTag = "T" + tagSuffix + ":";
 
-            dht11 = new DHT11(pinNum);
-            dht11->setDelay(0);
+            dht22 = new DHT(pinNum, DHT22);
+            dht22->setDelay(0);
+            dht22->begin();
         }
 
         void callTempHumidity() {
-            int temperature = 0;
-            int humidity = 0;
-            int result = dht11->readTemperatureHumidity(temperature, humidity);
+            float temperature = dht22->readTemperature(true, true); // Fahrenheit and Force (Can Collect Within 2 Seconds)
+            float humidity = dht22->readHumidity(true); // Force (Can Collect Within 2 Seconds)
 
             // If result is 0, then the read was successful
             // If result is not 0, then the read was unsuccessful; do not print any data and try reading again next time this function is called
-            if (result == 0) {
+            if (!(isnan(temperature) || isnan(humidity))) {
                 String printHumidity = this->humidityTag + String((float)humidity);
                 Serial.println(printHumidity);
 
-                String printTemp = this->tempTag + String((float)temperature * 1.8 + 32); // Convert Celsius to Fahrenheit
+                String printTemp = this->tempTag + String((float)temperature); // Fahrenheit
                 Serial.println(printTemp);
             }
         }
