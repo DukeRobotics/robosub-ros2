@@ -116,3 +116,8 @@ class USBCamera(Enum):
     """Enum for different USB cameras."""
     front = 0
     bottom = 1
+
+class SlalomPole: # BASED ON 2026 COMPETITION HANDBOOK. May need to update for 2027
+    HEIGHT = 0.9144 #3ft height PVC pole
+    WIDTH = 0.033401 # "1 inch" PVC pole diameter, which actually has 1.315 outer diameter
+

@@ -58,7 +58,8 @@ class HSVFilter(Node):
     def create_additional_pubs_subs_vars(self) -> None:
         """Additional publishers and subscribers to be used later."""
 
-    def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:
+    def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:       # WARNING: assumes input HSV values are in the range H: [0, 360], S: [0, 100], V: [0, 100]
+        # Convert the input HSV values to OpenCV format                         # Which does not seem to be respected in config.py?
         """
         Convert actual HSV values to OpenCV HSV.
 
@@ -88,7 +89,7 @@ class HSVFilter(Node):
             return
 
         # Apply HSV filtering on the image
-        masks = [cv2.inRange(hsv_image, self.actual_to_opencv_hsv(r[0]),
+        masks = [cv2.inRange(hsv_image, self.actual_to_opencv_hsv(r[0]), 
                              self.actual_to_opencv_hsv(r[1])) for r in self.mask_ranges]
         mask = reduce(cv2.bitwise_or, masks)
 
