@@ -112,6 +112,9 @@ RUN touch /home/ubuntu/.sudo_as_admin_successful
 # Set up Python virtual environment and install packages
 # Virtual enviornment inherits system packages to ensure compatibility with ROS
 # The commands are ordered alphabetically
+# Apply shared constraints to every pip install, including transitive dependencies.
+COPY constraints.txt /home/ubuntu/constraints.txt
+ENV PIP_CONSTRAINT=/home/ubuntu/constraints.txt
 RUN python3 -m venv /home/ubuntu/venv --system-site-packages
 RUN /home/ubuntu/venv/bin/pip install bluerobotics-ping
 RUN /home/ubuntu/venv/bin/pip install contourpy==1.3.3
