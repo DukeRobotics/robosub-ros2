@@ -25,9 +25,6 @@ class CVObjectType(Enum):
     BIN_PINK_FRONT = 'bin_pink_front'
     BIN_PINK_BOTTOM = 'bin_pink_bottom'
     BUOY = 'buoy'
-    GATE_REEF_SHARK = 'b'
-    GATE_SAWFISH = 'c'
-    GATE_WHOLE = 'a'
     LANE_MARKER = 'lane_marker'
     PATH_MARKER = 'path_marker'
     TORPEDO_BANNER = 'torpedo_banner'
@@ -38,6 +35,16 @@ class CVObjectType(Enum):
     TORPEDO_LARGEST_TARGET = 'torpedo_largest_target'
     TORPEDO_LOWER_TARGET = 'h'
     TORPEDO_UPPER_TARGET = 'g'
+    TORPEDO_AMBULANCE = 'ambulance_front'
+    TORPEDO_BLOOD = 'blood_front'
+    TORPEDO_FIRETRUCK = 'firetruck_front'
+    TORPEDO_FIRE = 'fire_front'
+    TORPEDO_AMBULANCE_TARGET = 'torpedo_ambulance_target'
+    TORPEDO_BLOOD_TARGET = 'torpedo_blood_target'
+    TORPEDO_FIRETRUCK_TARGET = 'torpedo_firetruck_target'
+    TORPEDO_FIRE_TARGET = 'torpedo_fire_target'
+    COMPASS = 'compass'
+    SOS = 'sos'
 
 
 @singleton
@@ -62,7 +69,7 @@ class CV:
 
     MODELS_PATH = 'package://cv/models/depthai_models.yaml'
     CV_CAMERA = 'front'
-    CV_MODELS: ClassVar[list[str]] = ['2025_torpedo']
+    CV_MODELS: ClassVar[list[str]] = ['2026_torpedo_gray_n1000e6']
 
     # Need to see more than TORPEDO_BANNER_RATE_THRESHOLD messages per second
     TORPEDO_BANNER_RATE_THRESHOLD = 5
@@ -81,6 +88,17 @@ class CV:
         CVObjectType.TORPEDO_REEF_SHARK_TARGET: '/cv/front_usb/torpedo_reef_shark_target/bounding_box',
         CVObjectType.TORPEDO_SAWFISH_TARGET: '/cv/front_usb/torpedo_sawfish_target/bounding_box',
         CVObjectType.TORPEDO_LARGEST_TARGET: '/cv/front_usb/torpedo_largest_target/bounding_box',
+        CVObjectType.TORPEDO_LARGEST_TARGET: '/cv/front_usb/torpedo/largest_target/bounding_box',
+        CVObjectType.TORPEDO_AMBULANCE: '/cv/front/ambulance_front',
+        CVObjectType.TORPEDO_BLOOD: '/cv/front/blood_front',
+        CVObjectType.TORPEDO_FIRETRUCK: '/cv/front/firetruck_front',
+        CVObjectType.TORPEDO_FIRE: '/cv/front/fire_front',
+        CVObjectType.TORPEDO_AMBULANCE_TARGET: '/cv/front_usb/torpedo_ambulance_target/bounding_box',
+        CVObjectType.TORPEDO_BLOOD_TARGET: '/cv/front_usb/torpedo_blood_target/bounding_box',
+        CVObjectType.TORPEDO_FIRETRUCK_TARGET: '/cv/front_usb/torpedo_firetruck_target/bounding_box',
+        CVObjectType.TORPEDO_FIRE_TARGET: '/cv/front_usb/torpedo_fire_target/bounding_box',
+        CVObjectType.COMPASS: '/cv/front_usb/compass/bounding_box',
+        CVObjectType.SOS: '/cv/front_usb/sos/bounding_box',
     }
 
     DISTANCE_TOPICS: ClassVar[dict[CVObjectType, str]] = {
@@ -90,6 +108,8 @@ class CV:
         CVObjectType.PATH_MARKER: '/cv/bottom/path_marker/distance',
         CVObjectType.BIN_PINK_FRONT: '/cv/front_usb/bin_pink_front/distance',
         CVObjectType.BIN_PINK_BOTTOM: '/cv/front_usb/bin_pink_bottom/distance',
+        CVObjectType.COMPASS: '/cv/front_usb/compass/distance',
+        CVObjectType.SOS: '/cv/front_usb/sos/distance',
     }
 
     ANGLE_TOPICS: ClassVar[dict[CVObjectType, str]] = {
@@ -122,7 +142,9 @@ class CV:
                     node.create_subscription(
                         CVObject,
                         topic,
-                        lambda msg, model_class=model_class: self._on_receive_bounding_box_data(msg, model_class),
+                        lambda msg, model_class=model_class: self._on_receive_bounding_box_data(
+                            msg, self._resolve_object_type(model_class),
+                        ),
                         10,
                     )
 
@@ -149,8 +171,9 @@ class CV:
             )
 
         # Subscribe to angle topics
-        self._angles: dict[CVObjectType, float] = dict.fromkeys(self.ANGLE_TOPICS, 0)
-        self._angle_queues: dict[CVObjectType, list[float]] = {object_type: [] for object_type in self.ANGLE_TOPICS}
+        self._angles: dict[CVObjectType, float] = dict.fromkeys(self.ANGLE_TOPICS | self.BOUNDING_BOX_TOPICS, 0)
+        self._angle_queues: dict[CVObjectType, list[float]] = {
+            object_type: [] for object_type in self.ANGLE_TOPICS | self.BOUNDING_BOX_TOPICS}
         for object_type, object_topic in self.ANGLE_TOPICS.items():
             node.create_subscription(
                 Float64,
@@ -162,6 +185,14 @@ class CV:
         # Lane marker-specific data
         self._lane_marker_data = {}
         self._lane_marker_heights = []
+
+    @staticmethod
+    def _resolve_object_type(model_class: str) -> CVObjectType | str:
+        """Map a DepthAI model class name to CVObjectType when one exists."""
+        for object_type in CVObjectType:
+            if object_type.value == model_class:
+                return object_type
+        return model_class
 
     @property
     def bounding_boxes(self) -> dict[CVObjectType, CVObject]:
@@ -183,16 +214,13 @@ class CV:
         """The dictionary containing lane marker-specific data."""
         return self._lane_marker_data
 
-    def _on_receive_bounding_box_data(self, cv_data: CVObject, object_type: CVObjectType, filter_len: int = 10) -> None:
+    def _on_receive_bounding_box_data(self, cv_data: CVObject, object_type: CVObjectType) -> None:
         """
         Store the received CV bounding box.
 
         Args:
             cv_data (CVObject): The received CV data.
             object_type (CVObjectType): The name/type of the object.
-            filter_len (int, optional): The maximum number of distance data points to retain
-                for the moving average filter. Defaults to 10.
-
         """
         # Special filtering for TORPEDO_BANNER
         if object_type == CVObjectType.TORPEDO_BANNER:
@@ -221,9 +249,12 @@ class CV:
             self._lane_marker_data['touching_top'] = cv_data.coords.y - cv_data.height / 2 <= 0
             self._lane_marker_data['touching_bottom'] = cv_data.coords.y + cv_data.height / 2 >= self.FRAME_HEIGHT
 
-        if object_type == CVObjectType.PATH_MARKER:
-            self._angles[object_type] = self.update_moving_average(self._angle_queues[object_type],
-                                                                   cv_data.yaw, filter_len)
+        # self._angles[object_type] = self.update_moving_average(self._angle_queues[object_type],
+        #                                                        cv_data.yaw, filter_len)
+        if object_type not in self._angles:
+            self._angles[object_type] = cv_data.yaw
+        else:
+            self._angles[object_type] = self.update_exponential_moving_average(self._angles[object_type], cv_data.yaw)
 
     def _on_receive_distance_data(self, distance_data: Point, object_type: CVObjectType, filter_len: int = 10) -> None:
         """
@@ -302,6 +333,20 @@ class CV:
 
         return sum(queue) / len(queue)
 
+    def update_exponential_moving_average(self, old_value: float, new_value: float, smoothing_k: float = 0.2) -> float:
+        """
+        Update the exponential moving average filter with a new value.
+
+        Args:
+            old_value (lifloatst): The most recent value output.
+            new_value (float): The new data point.
+            smoothing_k (float, optional): The smoothing factor. Higher prioritizes newer values
+
+        Returns:
+            float: The new moving average.
+        """
+        return old_value * (1 - smoothing_k) + new_value * smoothing_k if old_value != 0.0 else new_value
+
     def get_pose(self, name: CVObjectType) -> Pose:
         """
         Get the pose of a detected object.
@@ -354,9 +399,15 @@ class CV:
             logger.info(f'{name} not in bounding boxes')
             return False
 
-        current_time = Clock().now().seconds_nanoseconds()[0]
-        detection_time = self._bounding_boxes[name].header.stamp.sec
+        data = self._bounding_boxes[name]
+        detection_time = data.header.stamp.sec
 
+        # Default placeholder CVObject() has stamp (0, 0) and looks "recent" early in sim time
+        # because current_time - 0 < latency for the first ~latency seconds.
+        if detection_time == 0 and data.header.stamp.nanosec == 0:
+            return False
+
+        current_time = Clock().now().seconds_nanoseconds()[0]
         recent = current_time - detection_time < latency
 
         if last_detection_time is not None:

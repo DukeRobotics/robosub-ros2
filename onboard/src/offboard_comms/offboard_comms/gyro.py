@@ -45,7 +45,8 @@ class GyroPublisher(SerialNode):
     def __init__(self) -> None:
 
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
-                         SerialReadType.BYTES_ALL, self.CONNECTION_RETRY_PERIOD, self.LOOP_RATE,
+                         SerialReadType.BYTES_ALL, connection_retry_period=self.CONNECTION_RETRY_PERIOD,
+                         loop_rate=self.LOOP_RATE,
                          parity=serial.PARITY_EVEN, read_timeout=0, flush_input_after_read=False)
 
         self.compute_avg_angular_velocity = self.declare_parameter('compute_avg_angular_velocity', False).value
@@ -193,10 +194,11 @@ class GyroPublisher(SerialNode):
         # Compute two checksums
         # First checksum is XOR of second through sixth bytes
         # Second checksum is XOR of second through ninth bytes
+        CHECKSUM1_BYTE_COUNT = 6
         checksum1 = 0
         checksum2 = 0
         for i in range(1, 9):
-            if i < 6:  # noqa: PLR2004
+            if i < CHECKSUM1_BYTE_COUNT:
                 checksum1 ^= self.buffer[start_byte_index + i]
             checksum2 ^= self.buffer[start_byte_index + i]
 

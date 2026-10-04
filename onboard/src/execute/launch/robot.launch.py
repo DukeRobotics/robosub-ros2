@@ -16,6 +16,7 @@ def generate_launch_description() -> LaunchDescription:
     Returns:
         LaunchDescription: The launch description containing the included launch files.
     """
+    pkg_acoustics = Path(get_package_share_directory('acoustics'))
     pkg_controls = Path(get_package_share_directory('controls'))
     pkg_cv = Path(get_package_share_directory('cv'))
     pkg_dvl_pathfinder = Path(get_package_share_directory('dvl_pathfinder'))  # noqa: F841 TODO tf lol
@@ -36,6 +37,11 @@ def generate_launch_description() -> LaunchDescription:
         default_value='false',
         description='Enable or disable recording functionality',
     ))
+
+    if robot_name == 'oogway':
+        ld.add_action(IncludeLaunchDescription(
+            XMLLaunchDescriptionSource(str(pkg_acoustics / 'launch' / 'acoustics.xml')),
+        ))
 
     ld.add_action(IncludeLaunchDescription(
         XMLLaunchDescriptionSource(str(pkg_controls / 'launch' / 'controls.xml')),
