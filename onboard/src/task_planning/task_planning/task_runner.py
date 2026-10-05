@@ -11,7 +11,6 @@ from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV
 from task_planning.interface.ivc import IVC
 from task_planning.interface.servos import Servos
-from task_planning.interface.sonar import Sonar
 from task_planning.interface.state import State
 from task_planning.robot import crush, oogway, oogway_shell
 from task_planning.task import Task, TaskStatus, TaskUpdatePublisher
@@ -47,7 +46,7 @@ class TaskPlanning(Node):
         CV(self, bypass=self.bypass)
         IVC(node=self, bypass=self.bypass)
         Servos(self, bypass=self.bypass)
-        Sonar(self, bypass=self.bypass)
+        # Sonar(self, bypass=self.bypass)  # noqa: ERA001
         State(self, tf_buffer=tf_buffer, bypass=self.bypass)
 
         # Initialize the task update publisher
@@ -143,10 +142,10 @@ class TaskPlanning(Node):
             elif not self.task.done:
                 self.task.step()
 
-        except BaseException as e:
+        except BaseException as e:  # noqa: BLE001 - top-level task loop must not crash the node
             # Main has errored
+            self.get_logger().exception('Task planning main loop errored')
             TaskUpdatePublisher().publish_update(Task.MAIN_ID, Task.MAIN_ID, 'main', TaskStatus.ERRORED, e)
-            raise
 
 def main(args: list[str] | None = None) -> None:
     """Spin up the task planning node."""

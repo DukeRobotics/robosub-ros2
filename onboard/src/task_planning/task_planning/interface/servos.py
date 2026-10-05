@@ -13,8 +13,9 @@ logger = get_logger('servos_interface')
 
 class MarkerDropperStates(Enum):
     """Enum for the states of the marker dropper servo."""
-    LEFT = 'left'
-    RIGHT = 'right'
+    ONE = 'one'
+    TWO = 'two'
+    # RESET
 
 class TorpedoStates(Enum):
     """Enum for the states of the torpedo servo."""
@@ -53,7 +54,7 @@ class Servos:
         'marker_dropper': ServoInfo(
             service_topic='/servos/marker_dropper',
             service_type=SetDiscreteServo,
-            robot_names=['oogway', 'oogway_shell'],
+            robot_names=['crush'],
         ),
         'torpedo': ServoInfo(
             service_topic='/servos/torpedo',

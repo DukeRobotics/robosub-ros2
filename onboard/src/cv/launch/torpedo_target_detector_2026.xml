@@ -1,0 +1,3 @@
+<launch>
+	<node name="torpedo_target_detector_2026" pkg="cv" exec="torpedo_target_detector_2026" output="screen"/>
+</launch>

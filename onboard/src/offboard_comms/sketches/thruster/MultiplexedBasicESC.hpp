@@ -2,7 +2,7 @@
 // It is designed to control a Blue Robotics Basic ESC using the Adafruit PWM Servo Driver.
 
 #include <Arduino.h>
-#include "Adafruit_PWMServoDriver.h"
+#include <Adafruit_PWMServoDriver.h>
 
 class MultiplexedBasicESC{
     private:

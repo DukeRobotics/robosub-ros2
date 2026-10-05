@@ -17,7 +17,7 @@ interface DiscreteServo {
 }
 
 const ROBOT_SERVOS: Record<Robot, DiscreteServo[]> = {
-  [Robot.Crush]: [{ name: "Marker Dropper", service: "/servos/marker_dropper", states: ["left", "right"] }],
+  [Robot.Crush]: [{ name: "Marker Dropper", service: "/servos/marker_dropper", states: ["one", "two", "reset"] }],
   [Robot.Oogway]: [{ name: "Torpedo", service: "/servos/torpedo", states: ["left", "right"] }],
 };
 
