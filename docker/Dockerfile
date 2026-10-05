@@ -129,7 +129,6 @@ RUN /home/ubuntu/venv/bin/pip install gputil
 RUN /home/ubuntu/venv/bin/pip install Jinja2==3.1.6
 RUN /home/ubuntu/venv/bin/pip install jsonpickle
 RUN /home/ubuntu/venv/bin/pip install kiwisolver==1.4.9
-RUN /home/ubuntu/venv/bin/pip install logic2-automation
 RUN /home/ubuntu/venv/bin/pip install MarkupSafe==3.0.3
 RUN /home/ubuntu/venv/bin/pip install matplotlib
 RUN /home/ubuntu/venv/bin/pip install mpmath==1.3.0
@@ -147,7 +146,6 @@ RUN /home/ubuntu/venv/bin/pip install python-dateutil==2.9.0.post0
 RUN /home/ubuntu/venv/bin/pip install python-nmap
 RUN /home/ubuntu/venv/bin/pip install pytz==2025.2
 RUN /home/ubuntu/venv/bin/pip install ruff
-RUN /home/ubuntu/venv/bin/pip install saleae
 RUN /home/ubuntu/venv/bin/pip install scikit-learn
 RUN /home/ubuntu/venv/bin/pip install scipy==1.14.*
 RUN /home/ubuntu/venv/bin/pip install six==1.17.0
