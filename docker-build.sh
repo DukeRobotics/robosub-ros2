@@ -1,6 +1,19 @@
 #!/bin/bash
 # shellcheck disable=SC2034,SC1091
 
+devcontainer=false
+rebuild=false
+no_cache=false
+github_action=false
+for arg in "$@"; do
+    case "$arg" in
+        --devcontainer) devcontainer=true ;;
+        --rebuild) rebuild=true ;;
+        --no-cache) no_cache=true ;;
+        --github-action) github_action=true ;;
+    esac
+done
+
 # Check if the first argument is "skip-wsl" and if the script is running in WSL
 # This is used by the Dev Container to avoid starting the container via this script when running on Windows
 if [[ "$1" == "skip-wsl" && -f /proc/sys/fs/binfmt_misc/WSLInterop ]]; then
@@ -29,7 +42,7 @@ if [ "$ENABLE_GIT" != "true" ] && [ "$ENABLE_GIT" != "false" ]; then
 fi
 
 # If this is not run by a Github Action, make sure ROBOT_NAME is set
-if [ "$1" != "--github-action" ] && [ "$2" != "--github-action" ]; then
+if [ "$github_action" != "true" ]; then
     if [ -z "$ROBOT_NAME" ]; then
         echo "Error: ROBOT_NAME is not set in .env"
         exit 1
@@ -58,19 +71,32 @@ mkdir -p ~/.claude
 touch ~/.claude.json
 mkdir -p ~/.codex
 
+# Reopening on a robot should start the existing container without recreating it.
+# The Dev Container initializer passes --rebuild for VS Code's rebuild commands.
+if [ "$devcontainer" == "true" ] && [ "$IS_ROBOT" == "true" ] && \
+    [ "$rebuild" != "true" ] && [ "$no_cache" != "true" ] && [ "$github_action" != "true" ]; then
+    if docker container inspect onboard2 > /dev/null 2>&1; then
+        echo "Starting existing onboard2 container."
+        docker start onboard2
+        exit $?
+    fi
+    if docker image inspect robosub-ros2:latest > /dev/null 2>&1; then
+        echo "Creating onboard2 from the existing robosub-ros2:latest image."
+        docker compose -f robot/docker-compose.yml up -d
+        exit $?
+    fi
+    echo "No local robosub-ros2:latest image found. Building it for the first time..."
+fi
+
 # Read Git username and email from .env or default to global Git settings
 GIT_USER_NAME=$(git config --global user.name)
 GIT_USER_EMAIL=$(git config --global user.email)
 
-# Year and week number in the format YYYY-WW
-# Invalidate the Docker build cache weekly to ensure consistent images across contributors
-year_week=$(date +%Y-%U)
-
 # Command used to build the Docker image
-docker_build_cmd="docker build --build-arg CACHE_BUSTER='$year_week' --build-arg ENABLE_GIT='$ENABLE_GIT'"
+docker_build_cmd="docker build --build-arg ENABLE_GIT='$ENABLE_GIT'"
 
-# If the first or second argument is --no-cache, build the image without cache
-if [ "$1" == "--no-cache" ] || [ "$2" == "--no-cache" ]; then
+# If --no-cache is specified, build the image without cache
+if [ "$no_cache" == "true" ]; then
     docker_build_cmd+=" --no-cache"
 fi
 
@@ -109,7 +135,7 @@ fi
 docker_build_cmd+=" -t robosub-ros2:latest ./docker"
 
 # Build the Docker image
-eval "$docker_build_cmd"
+eval "$docker_build_cmd" || exit 1
 
 # If $IS_ROBOT is set to "true", then this script is running on the robot
 if [ "$IS_ROBOT" == "true" ]; then

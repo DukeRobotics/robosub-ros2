@@ -1,3 +1,20 @@
 ---
 int32 closest
-bool nearby 
+bool nearby
+# closest is an A0-A3 index (0-3), or -1 when upstream channel analysis is invalid.
+bool analysis_valid
+bool nearby_available
+# Overall localization status: ok, no_detection, invalid, ambiguous, not_implemented.
+# Upstream TOA/nearby can be valid while direction estimation is not_implemented.
+string status
+string reason
+string capture_directory
+string timestamp_reference
+string[] channel_ids
+float64[] raw_toa_s
+float64[] calibrated_toa_s
+bool[] channel_valid
+string[] validation_reasons
+float64[] nearby_confidence
+custom_msgs/AcousticsDetection[] detections
+custom_msgs/AcousticsBearing[] bearings

@@ -187,7 +187,7 @@ If you're using VS Code and have the Dev Containers extension installed:
     ```
 3. Open the Command Palette (`Ctrl/Cmd + Shift + P`).
 4. Run the `Dev Containers: Reopen in Container` command.
-5. Wait for the container to finish building.
+5. Wait for the container to start. On Linux robots with `IS_ROBOT=true` in `.env`, reopening runs `docker start onboard2` if the container exists. If the container is missing, it creates it from the last locally built `robosub-ros2:latest` image, building the image first only if it is also missing.
 6. Now, you're ready to start developing!
     - VS Code is automatically configured with helpful extensions and settings.
     - Any changes you make in the `/home/ubuntu/robosub-ros2` directory in the container are reflected in the repository on your host machine.
@@ -215,6 +215,10 @@ If you're using VS Code and have the Dev Containers extension installed:
 > docker rm -f onboard2
 > ```
 > Then, run the `docker-build.sh` script again.
+
+On a Linux robot, use `Dev Containers: Rebuild and Reopen in Container` (or `Dev Containers: Rebuild Container` when already inside) to run the full `docker-build.sh` build and startup. The command to rebuild without cache also forwards `--no-cache`. You can still rebuild manually on the host (outside the container) with `./docker-build.sh` or `./docker-build.sh --no-cache`.
+
+The Linux initializer distinguishes reopening from rebuilding by reading the Dev Containers launcher's `--remove-existing-container` and `--build-no-cache` arguments from `/proc`. If the launcher changes these arguments, `.devcontainer/initialize.sh` will need updating.
 
 ### Claude Code and Codex CLIs
 The Claude Code and Codex CLIs are installed in the Dev Container, so you can run `claude` or `codex` in any integrated terminal.

@@ -1,0 +1,38 @@
+# Logic8 analog 0-3 map to A0-A3. Geometry below is illustrative; replace with measurements.
+geometry:
+  channel_ids: [A0, A1, A2, A3]
+  frame_id: hydrophone_array
+  coordinates_m:
+    - [0.0, 0.0, 0.0]
+    - [0.05, 0.0, 0.0]
+    - [0.0, 0.05, 0.0]
+    - [0.0, 0.0, 0.05]
+  # Positive offset = channel records late; calibrated TOA = raw TOA - offset.
+  # Samples retain the original grid; waveform delay candidates are calibrated once.
+  timing_offsets_s: [0.0, 0.0, 0.0, 0.0]
+# Same capture settings and TOA/nearby band as upstream main.
+sample_rate_hz: 781250.0
+pinger_frequency_hz: 32000.0
+filter_bandwidth_hz: 4000.0
+filter_order: 6
+capture_duration_s: 2.0
+capture_output_dir: Temp_Data
+use_mock_device: false
+toa_threshold_sigma: 5.0
+raw_signal_threshold: 0.5
+margin_front_s: 0.1
+margin_end_s: 0.1
+enable_nearby: true
+# Empty uses the bundled upstream 10ft model; override for another trusted upstream artifact.
+nearby_model_path: ''
+pre_trigger_s: 0.001
+post_trigger_s: 0.001
+window_duration_s: 0.01
+# Observed recordings have ~5 V bias. Enable only with measured ADC/amplifier limits.
+clipping_enabled: false
+clipping_level: 10.0
+sound_speed_m_s: 1482.0
+pair_consistency_tolerance_s: 0.00001
+fit_tolerance_m: 0.005
+max_candidate_combinations: 256
+planar_constraint: none

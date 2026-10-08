@@ -35,6 +35,14 @@ The `docker-build.sh` script builds the Docker image and starts the container.
     ```bash
     ./docker-build.sh skip-wsl
     ```
+- On Linux robots with `IS_ROBOT=true` in `.env`, the Dev Container initializer passes `--devcontainer` for normal reopening. This runs `docker start onboard2` if the container exists. If only the local `robosub-ros2:latest` image exists, it creates the container from that image; otherwise it builds the image first. Other hosts still build normally.
+    ```bash
+    ./docker-build.sh skip-wsl --devcontainer
+    ```
+- The initializer also passes `--rebuild` for VS Code's `Dev Containers: Rebuild and Reopen in Container` and `Dev Containers: Rebuild Container` commands. This runs the full build and startup even if the container or image already exists. The command to rebuild without cache also passes `--no-cache`. Running `./docker-build.sh` directly on the host still runs the full build and startup.
+    ```bash
+    ./docker-build.sh skip-wsl --devcontainer --rebuild
+    ```
 - The script accepts an optional flag `--no-cache` to build the Docker image without using the cache.
     ```bash
     ./docker-build.sh --no-cache

@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-	<arg name="stream" default="true" />
-	<arg name="debug" default="false" />
+	<arg name="config_file" default="$(find-pkg-share acoustics)/config/dsp.yaml" />
 	<node pkg="acoustics" name="acoustics" exec="acoustics" output="screen">
-		<param name="stream" value="$(var stream)" />
-		<param name="debug" value="$(var debug)" />
+		<param name="config_file" value="$(var config_file)" />
 	</node>
 </launch>
