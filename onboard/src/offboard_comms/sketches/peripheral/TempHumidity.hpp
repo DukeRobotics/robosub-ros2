@@ -14,7 +14,6 @@ class TempHumidity {
             tempTag = "T" + tagSuffix + ":";
 
             dht22 = new DHT(pinNum, DHT22);
-            dht22->setDelay(0);
             dht22->begin();
         }
 
