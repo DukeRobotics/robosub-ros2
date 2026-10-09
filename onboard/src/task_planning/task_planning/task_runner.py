@@ -2,7 +2,6 @@ from typing import Any, ClassVar
 
 import rclpy
 import tf2_ros
-from rclpy.clock import Clock, ClockType
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.time import Time
@@ -55,13 +54,13 @@ class TaskPlanning(Node):
         if not self.bypass:
 
             # Ensure transform from odom to base_link is available
-            min_transform_time = Clock(clock_type=ClockType.ROS_TIME).now()
-            last_message_time = Clock().now()
+            min_transform_time = self.get_clock().now()
+            last_message_time = self.get_clock().now()
             while rclpy.ok():
                 # Log message every second
-                if Clock().now() - last_message_time >= Duration(seconds=1):
+                if self.get_clock().now() - last_message_time >= Duration(seconds=1):
                     self.get_logger().info('Waiting for transform from base_link to odom...')
-                    last_message_time = Clock().now()
+                    last_message_time = self.get_clock().now()
 
                 try:
                     # Get latest available transform
@@ -77,13 +76,13 @@ class TaskPlanning(Node):
                 rclpy.spin_once(self, timeout_sec=0.1)
 
             # Ensure state is available
-            last_message_time = Clock().now()
+            last_message_time = self.get_clock().now()
             while rclpy.ok() and not State().received_state:
 
                 # Log message every second
-                if Clock().now() - last_message_time >= Duration(seconds=1):
+                if self.get_clock().now() - last_message_time >= Duration(seconds=1):
                     self.get_logger().info('Waiting to receive state...')
-                    last_message_time = Clock().now()
+                    last_message_time = self.get_clock().now()
 
                 rclpy.spin_once(self, timeout_sec=0.1)
 

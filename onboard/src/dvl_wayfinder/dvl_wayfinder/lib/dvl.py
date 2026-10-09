@@ -14,8 +14,9 @@ class Dvl():
     #pylint: disable=too-many-public-methods
     #pylint: disable=too-many-instance-attributes
 
-    def __init__(self, com=None, baudrate=115200):
-        self._commands = BinaryCommands()
+    def __init__(self, com=None, baudrate=115200, *, clock):
+        self._clock = clock
+        self._commands = BinaryCommands(clock=clock)
         self._system_tests = SystemTests()
         self._system_setup = SystemSetup()
         self._system_info = SystemInfo()
@@ -143,7 +144,7 @@ class Dvl():
         (self.last_err, date_time) = self._commands.get_time()
         if self.last_err.value == ResponseStatusType.SUCCESS.value:
             if date_time is not None:
-                self.time_diff = date_time - datetime.datetime.now()
+                self.time_diff = date_time - datetime.datetime.fromtimestamp(self._clock.now().nanoseconds / 1e9)
             return date_time
         return None
 
