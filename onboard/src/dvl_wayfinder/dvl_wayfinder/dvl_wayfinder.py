@@ -1,7 +1,6 @@
 import datetime as dt
 import math
 import os
-import time
 from pathlib import Path
 
 import numpy as np
@@ -9,6 +8,7 @@ import rclpy
 import resource_retriever as rr
 import yaml
 from custom_msgs.msg import DVLRaw
+from rclpy.duration import Duration
 from rclpy.node import Node
 from serial.tools import list_ports
 from transforms3d.euler import euler2mat
@@ -47,7 +47,7 @@ class DVLWayfinderPublisher(Node):
             rclpy.shutdown()
 
         # Connect to the DVL
-        self._sensor = Dvl()
+        self._sensor = Dvl(clock=self.get_clock())
         self._sensor.connect(self._serial_port, self.BAUDRATE)
 
         self.get_logger().info(f'Connected to DVL Wayfinder at {self._serial_port}.')
@@ -56,12 +56,12 @@ class DVLWayfinderPublisher(Node):
         # The DVL does not accept fractional seconds, so set the time precisely to the second by sleeping until the
         # next to next second begins, then set the DVL time
         self._sensor.enter_command_mode()
-        two_seconds = dt.datetime.now(dt.UTC) + dt.timedelta(seconds=2)
+        two_seconds = dt.datetime.fromtimestamp((self.get_clock().now().nanoseconds / 1e9) + 2, tz=dt.UTC)
         time_target = dt.datetime(two_seconds.year, two_seconds.month, two_seconds.day, two_seconds.hour,
                                   two_seconds.minute, two_seconds.second, tzinfo=dt.UTC)  # Remove fractional seconds
-        now = dt.datetime.now(dt.UTC)
-        time.sleep((time_target - now).total_seconds())
-        self._sensor.set_time(dt.datetime.now(dt.UTC))
+        now = dt.datetime.fromtimestamp(self.get_clock().now().nanoseconds / 1e9, tz=dt.UTC)
+        self.get_clock().sleep_for(Duration(seconds=(time_target - now).total_seconds()))
+        self._sensor.set_time(dt.datetime.fromtimestamp(self.get_clock().now().nanoseconds / 1e9, tz=dt.UTC))
         self._sensor.exit_command_mode()
 
         # Set up rotation matrix

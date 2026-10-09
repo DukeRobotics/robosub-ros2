@@ -178,7 +178,7 @@ Vectornav::Vectornav(const rclcpp::NodeOptions & options) : Node("vectornav", op
   if (reconnect_ms > 0ms) {
     RCLCPP_INFO(get_logger(), "Reconnect Timeout : %ld", reconnect_ms.count());
     reconnect_timer_ =
-      create_wall_timer(reconnect_ms, std::bind(&Vectornav::reconnect_timer, this));
+      create_timer(reconnect_ms, std::bind(&Vectornav::reconnect_timer, this));
   }
 }
 
@@ -275,7 +275,7 @@ void Vectornav::execute_cal(const std::shared_ptr<MagCalGH> goal_handle)
   // in the device API and may cause calls to return improper values
 
   // setup a ros rate timer (input is hz)
-  rclcpp::Rate loopRate(4.0);
+  rclcpp::Rate loopRate(4.0, get_clock());
 
   // make the result message just in case we have to abort
   auto result = std::make_shared<vectornav_msgs::action::MagCal::Result>();

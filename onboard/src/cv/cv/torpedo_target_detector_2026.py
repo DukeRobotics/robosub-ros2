@@ -6,7 +6,6 @@ import rclpy
 import resource_retriever as rr
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
-from rclpy.clock import Clock
 from rclpy.logging import get_logger
 from rclpy.node import Node, Publisher
 from sensor_msgs.msg import CompressedImage, Image
@@ -79,7 +78,7 @@ class TorpedoTargetDetector2026(Node):
             )
 
     def _update_coarse_detection(self, data: CVObject, coarse_class: str) -> None:
-        self.coarse_detections[coarse_class]['last_update'] = Clock().now().seconds_nanoseconds()[0]
+        self.coarse_detections[coarse_class]['last_update'] = self.get_clock().now().seconds_nanoseconds()[0]
         self.coarse_detections[coarse_class]['coords'] = data.coords
 
     def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:
@@ -167,7 +166,7 @@ class TorpedoTargetDetector2026(Node):
         cv2.drawContours(image_with_contours, contours, -1, (255, 0, 0), 2)
         self.contour_image_pub.publish(self.bridge.cv2_to_imgmsg(image_with_contours, 'bgr8'))
 
-        current_time = Clock().now().seconds_nanoseconds()[0]
+        current_time = self.get_clock().now().seconds_nanoseconds()[0]
         assignments = self._assign_contours(contours, current_time)
         bbox_img = image.copy()
 
