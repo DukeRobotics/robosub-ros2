@@ -8,7 +8,6 @@ from collections.abc import Coroutine
 
 import numpy as np
 from geometry_msgs.msg import Twist, Vector3
-from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.logging import get_logger
 from transforms3d.euler import quat2euler
@@ -23,7 +22,6 @@ from task_planning.tasks import cv_tasks, move_tasks, util_tasks
 from task_planning.utils import geometry_utils
 from task_planning.utils.other_utils import get_robot_name, RobotName
 
-from rclpy.clock import Clock
 
 logger = get_logger('comp_tasks')
 
@@ -617,7 +615,7 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     def is_receiving_pink_bin_data(latest_detection_time):
         return latest_detection_time and CVObjectType.BIN_PINK_BOTTOM in CV().bounding_boxes and \
             CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].score >= CONTOUR_SCORE_THRESHOLD and \
-            Clock().now().seconds_nanoseconds()[0] - CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.sec < LATENCY_THRESHOLD and \
+            Controls().node.get_clock().now().seconds_nanoseconds()[0] - CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.sec < LATENCY_THRESHOLD and \
             abs(CV().bounding_boxes[CVObjectType.BIN_PINK_BOTTOM].header.stamp.secs - latest_detection_time) < LATENCY_THRESHOLD
 
     async def move_x(step=1) -> None:

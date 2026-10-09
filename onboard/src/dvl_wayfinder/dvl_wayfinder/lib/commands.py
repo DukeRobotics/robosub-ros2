@@ -97,13 +97,13 @@ class Communicator():
 
     _MAX_Q_SIZE = 1000
 
-    def __init__(self, port=None):
+    def __init__(self, port=None, *, clock):
         if port is None:
             self.port = SerialPort()
         else:
             self.port = port
-        self.data_logger = DataLogger()
-        self.all_data_logger = DataLogger()
+        self.data_logger = DataLogger(clock)
+        self.all_data_logger = DataLogger(clock)
         self._decoder = PacketDecoder()
         self._fft_queue = Queue(Communicator._MAX_Q_SIZE)
         self._cmd_queue = Queue(Communicator._MAX_Q_SIZE)
@@ -268,8 +268,8 @@ LONG_COMMAND_TIMEOUT = 15
 class BinaryCommands(Communicator):
     """Binary commands interface.
     """
-    def __init__(self, port=None):
-        Communicator.__init__(self, port)
+    def __init__(self, port=None, *, clock):
+        Communicator.__init__(self, port, clock=clock)
 
     def enter_command_mode(self) -> ResponseStatusType:
         """Enters command mode (stops pinging).
