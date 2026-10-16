@@ -41,9 +41,6 @@ flowchart TD
     Ping360:::sensor --> Sonar:::package
     Sonar --> |Object Poses| TaskPlanning
 
-    Hydrophones:::sensor --> Acoustics:::package
-    Acoustics --> |Pinger Positions| TaskPlanning
-
     TaskPlanning --> |Desired State| Controls
     TaskPlanning --> |Servo Commands| OffboardCommsOut[Offboard Comms]:::package
     Controls --> |Thruster Allocations| OffboardCommsOut

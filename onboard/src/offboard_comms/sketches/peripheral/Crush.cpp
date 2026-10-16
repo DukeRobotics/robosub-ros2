@@ -1,6 +1,7 @@
 #include "Robot.hpp"
 
 #define VOLTAGE_PIN 3
+#define SERVO_MARKER 5
 #define THB_PIN 7
 #define THS_PIN 8
 
@@ -13,6 +14,7 @@ private:
     Pressure* pressure_sensor;
     TempHumidity* battery_temp_humidity_sensor;
     TempHumidity* signal_temp_humidity_sensor;
+    RobotServo* servo_marker;
 
 public:
     Crush(int voltageDelay, int pressureDelay, int tempHumidityDelay, int servoDelay, bool isShell = false)
@@ -22,10 +24,12 @@ public:
         pressure_sensor = new Pressure(MS5837::MS5837_30BA, "");
         battery_temp_humidity_sensor = new TempHumidity(THB_PIN, "B");
         signal_temp_humidity_sensor = new TempHumidity(THS_PIN, "S");
+        servo_marker = new RobotServo(SERVO_MARKER, 1300, 1500, 1700, "M");
 
         addVoltageSensor(voltage_sensor);
         addPressureSensor(pressure_sensor);
         addTempHumiditySensor(battery_temp_humidity_sensor);
         addTempHumiditySensor(signal_temp_humidity_sensor);
+        addServo(servo_marker);
     }
 };

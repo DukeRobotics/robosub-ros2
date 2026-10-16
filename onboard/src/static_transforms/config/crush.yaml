@@ -36,7 +36,7 @@ transforms:
     frame_id: corner_link
     child_frame_id: sonar_ping_360
   imu:
-    x: -0.238648756
+    x: -0.17236527
     y: -0.179527925
     z: 0.040239867
     roll: 0.0

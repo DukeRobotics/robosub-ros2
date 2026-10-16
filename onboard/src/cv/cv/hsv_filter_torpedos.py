@@ -264,9 +264,11 @@ class HSVFilterTorpedos(Node):
         image_msg = self.bridge.cv2_to_imgmsg(bbox_img, 'bgr8')
         self.contour_image_with_bbox_pub.publish(image_msg)
 
+    MAX_BBOXES_WITHOUT_FILTERING = 2
+
     def filter_outliers(self, bboxes: np.array) -> np.array:
         """Filter out outliers if there are more than two bounding boxes."""
-        if len(bboxes) <= 2:  # noqa: PLR2004
+        if len(bboxes) <= self.MAX_BBOXES_WITHOUT_FILTERING:
             return bboxes
 
         centers = [(x + w / 2, y + h / 2) for x, y, w, h in bboxes]
@@ -315,7 +317,7 @@ class HSVFilterTorpedos(Node):
                                               MonoCam.IMG_SHAPE,
                                               (Torpedo.WIDTH, Torpedo.WIDTH),
                                               MonoCam.FOCAL_LENGTH,
-                                              MonoCam.SENSOR_SIZE, 1)
+                                              MonoCam.SENSOR_SIZE, adjustment_factor=1)
         bounding_box.coords.x, bounding_box.coords.y, bounding_box.coords.z = coords_list
 
         publisher.publish(bounding_box)
