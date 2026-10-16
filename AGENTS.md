@@ -80,6 +80,7 @@ options.
 | --- | --- |
 | Build both ROS workspaces | `source build.sh` |
 | Build shared ROS interfaces | `source build.sh core` |
+| Clean ROS workspaces/interspaces | `source build.sh clean` |
 | Build one onboard package | `source build.sh PACKAGE_NAME` |
 | Lint Python, C++, and Bash | `./lint.py` |
 | Lint an affected package | `./lint.py --path onboard/src/PACKAGE_NAME` |
