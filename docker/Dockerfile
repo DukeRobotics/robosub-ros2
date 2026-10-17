@@ -1,6 +1,9 @@
 # Base Docker image for ROS2 Jazzy that supports linux/amd64 and linux/arm64
 FROM ros:jazzy
 
+# Install a pinned uv release for Python dependency installation.
+COPY --from=ghcr.io/astral-sh/uv:0.13.1 /uv /uvx /usr/local/bin/
+
 # Dummy argument to force Docker to rebuild the image by invalidating the cache when the argument value changes
 # Cache invalidation forces Docker to rerun the `apt update` command, ensuring that the latest `apt` package index is used when building the image
 ARG CACHE_BUSTER
@@ -109,51 +112,16 @@ USER ubuntu
 # Suppress login message about using sudo
 RUN touch /home/ubuntu/.sudo_as_admin_successful
 
-# Set up Python virtual environment and install packages
-# Virtual enviornment inherits system packages to ensure compatibility with ROS
-# The commands are ordered alphabetically
-# Apply shared constraints to every pip install, including transitive dependencies.
+# Set up the ROS-compatible Python environment and install dependencies from TOML.
+# The python-deps named build context supplies the repository-root manifest.
+COPY --from=python-deps /pyproject.toml /home/ubuntu/pyproject.toml
 COPY constraints.txt /home/ubuntu/constraints.txt
 ENV PIP_CONSTRAINT=/home/ubuntu/constraints.txt
+ENV UV_CONSTRAINT=/home/ubuntu/constraints.txt
+ENV UV_LINK_MODE=copy
 RUN python3 -m venv /home/ubuntu/venv --system-site-packages
-RUN /home/ubuntu/venv/bin/pip install bluerobotics-ping
-RUN /home/ubuntu/venv/bin/pip install contourpy==1.3.3
-RUN /home/ubuntu/venv/bin/pip install cycler==0.12.1
-RUN /home/ubuntu/venv/bin/pip install depthai==2.30.0
-RUN /home/ubuntu/venv/bin/pip install filelock==3.20.0
-RUN /home/ubuntu/venv/bin/pip install fonttools==4.60.0
-RUN /home/ubuntu/venv/bin/pip install fsspec==2025.9.0
-RUN /home/ubuntu/venv/bin/pip install future==1.0.0
-RUN /home/ubuntu/venv/bin/pip install GitPython
-RUN /home/ubuntu/venv/bin/pip install gputil
-RUN /home/ubuntu/venv/bin/pip install Jinja2==3.1.6
-RUN /home/ubuntu/venv/bin/pip install jsonpickle
-RUN /home/ubuntu/venv/bin/pip install kiwisolver==1.4.9
-RUN /home/ubuntu/venv/bin/pip install MarkupSafe==3.0.3
-RUN /home/ubuntu/venv/bin/pip install matplotlib
-RUN /home/ubuntu/venv/bin/pip install mpmath==1.3.0
-RUN /home/ubuntu/venv/bin/pip install mypy
-RUN /home/ubuntu/venv/bin/pip install networkx==3.5
-RUN /home/ubuntu/venv/bin/pip install numpy==1.26.0
-RUN /home/ubuntu/venv/bin/pip install packaging==25.0
-RUN /home/ubuntu/venv/bin/pip install pandas
-RUN /home/ubuntu/venv/bin/pip install pillow==11.3.0
-RUN /home/ubuntu/venv/bin/pip install psutil==7.1.0
-RUN /home/ubuntu/venv/bin/pip install pylint
-RUN /home/ubuntu/venv/bin/pip install pyparsing==3.2.5
-RUN /home/ubuntu/venv/bin/pip install pyserial
-RUN /home/ubuntu/venv/bin/pip install python-dateutil==2.9.0.post0
-RUN /home/ubuntu/venv/bin/pip install python-nmap
-RUN /home/ubuntu/venv/bin/pip install pytz==2025.2
-RUN /home/ubuntu/venv/bin/pip install ruff
-RUN /home/ubuntu/venv/bin/pip install scikit-learn
-RUN /home/ubuntu/venv/bin/pip install scipy==1.14.*
-RUN /home/ubuntu/venv/bin/pip install six==1.17.0
-RUN /home/ubuntu/venv/bin/pip install sympy
-RUN /home/ubuntu/venv/bin/pip install torch==2.9.0
-RUN /home/ubuntu/venv/bin/pip install transforms3d
-RUN /home/ubuntu/venv/bin/pip install typing_extensions==4.15.0
-RUN /home/ubuntu/venv/bin/pip install tzdata==2025.2
+RUN --mount=type=cache,target=/home/ubuntu/.cache/uv,uid=${USER_UID},gid=${USER_GID} \
+    uv pip install --python /home/ubuntu/venv/bin/python3 --requirement /home/ubuntu/pyproject.toml
 
 # Install Node.js (Jod), Claude Code, and Codex
 ENV NVM_DIR=/home/ubuntu/.nvm

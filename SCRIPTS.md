@@ -26,7 +26,7 @@ The `build.sh` script has several options to build and clean packages. The scrip
     - If the second argument is the name of a specific package in `onboard`, the script cleans only that package.
 
 ## `docker-build.sh`
-The `docker-build.sh` script builds the Docker image and starts the container.
+The `docker-build.sh` script builds the Docker image and starts the container. Run it on the host from the repository root. It requires Docker with BuildKit/buildx support for named build contexts: `./docker` supplies the Docker assets, and the `python-deps` context supplies the root `pyproject.toml`. The image installs its Python dependencies with uv; see [Python Dependencies in SETUP.md](SETUP.md#python-dependencies).
 - The script builds the Docker image and starts the container with the necessary configuration to sign commits, pull, and push changes to the remote repository.
     ```bash
     ./docker-build.sh
