@@ -12,7 +12,6 @@ import tf2_geometry_msgs
 import tf2_ros
 import yaml
 from geometry_msgs.msg import Point, Pose, Quaternion, TransformStamped
-from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.time import Time
@@ -52,15 +51,15 @@ def get_transform(node: Node, tf_buffer: Buffer) -> TransformStamped:
     Returns:
         TransformStamped: The transform from `base_link` to `corner_link`.
     """
-    starting_time = Clock().now()
-    last_message_time = Clock().now()
+    starting_time = node.get_clock().now()
+    last_message_time = node.get_clock().now()
 
     # Loops for 5 seconds to check for transformation
-    while rclpy.ok() and Clock().now() - starting_time < Duration(seconds=5):
+    while rclpy.ok() and node.get_clock().now() - starting_time < Duration(seconds=5):
         # Log message every second
-        if Clock().now() - last_message_time >= Duration(seconds=1):
+        if node.get_clock().now() - last_message_time >= Duration(seconds=1):
             print('Waiting for transform from base_link to corner_link...')
-            last_message_time = Clock().now()
+            last_message_time = node.get_clock().now()
 
         # Attempt to receive transformation
         with contextlib.suppress(tf2_ros.LookupException, tf2_ros.ConnectivityException):

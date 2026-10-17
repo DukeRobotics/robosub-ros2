@@ -4,7 +4,6 @@ from collections.abc import Callable
 from typing import cast
 
 from geometry_msgs.msg import Pose, Twist
-from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.logging import get_logger
 from task_planning.interface.controls import Controls
@@ -86,7 +85,7 @@ async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | 
     """
     Controls().start_new_move()
     Controls().publish_desired_position(pose)
-    start_time = Clock().now()
+    start_time = Controls().node.get_clock().now()
     while not geometry_utils.stopped_at_pose(State().state.pose.pose, pose, State().state.twist.twist,
                                              pose_tolerances=pose_tolerances):
         # Allow users of this task to update the pose
@@ -100,7 +99,7 @@ async def move_to_pose_global(_self: Task, pose: Pose, pose_tolerances: Twist | 
         Controls().publish_desired_position(pose)
 
         # Check if the timeout has been reached
-        if (Clock().now() - start_time) > Duration(seconds=timeout):
+        if (Controls().node.get_clock().now() - start_time) > Duration(seconds=timeout):
             logger.warning('Move to pose timed out')
             return None
 
@@ -211,8 +210,8 @@ async def move_with_power_for_seconds(_self: Task, power: Twist, seconds: float)
         New desired power to move with
     """
     Controls().publish_desired_power(power)
-    endtime = Clock().now() + seconds
-    while (Clock().now() < endtime):
+    endtime = Controls().node.get_clock().now() + Duration(seconds=seconds)
+    while (Controls().node.get_clock().now() < endtime):
         new_power = await Yield()
         if new_power is not None:
             power = new_power
