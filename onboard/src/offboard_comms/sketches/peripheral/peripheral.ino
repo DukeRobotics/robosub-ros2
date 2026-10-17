@@ -2,7 +2,7 @@
 #include <Servo.h>
 #include <Arduino.h>
 #include <Wire.h>
-#include "DHT11.h"
+#include "DHT.h"
 #include "MS5837.h"
 #include "Oogway.cpp"
 #include "Crush.cpp"
