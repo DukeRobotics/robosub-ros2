@@ -13,6 +13,12 @@ GRADIANS_PER_DEGREE = 400 / 360
 SPEED_OF_SOUND_IN_WATER = 1482  # m/s
 SAMPLE_PERIOD_TICK_DURATION = 25e-9  # s
 TRANSFORMATION_ANGLE = np.pi / 4
+MAX_SWEEP_ROWS = 100
+
+
+def sweep_center_angle(num_rows: int) -> float:
+    """Get the center angle in radians of a sweep with num_rows rows, as used by normal_angle and to_robot_position."""
+    return np.pi / 2 - min(num_rows, MAX_SWEEP_ROWS) * RADIANS_PER_GRADIAN / 2
 
 
 def transform_pose(
@@ -168,7 +174,8 @@ def get_distance_of_sample(sample_period: float, sample_index: int) -> float:
     return (sample_index + 0.5) * meters_per_sample(sample_period)
 
 
-def to_robot_position(x_index: int, y_index: int, sample_period: float, negate: bool) -> Pose:
+def to_robot_position(x_index: int, y_index: int, sample_period: float, negate: bool,
+                      center_angle: float = TRANSFORMATION_ANGLE) -> Pose:
     """
     Convert a point in sonar space to a robot global position.
 
@@ -177,6 +184,7 @@ def to_robot_position(x_index: int, y_index: int, sample_period: float, negate: 
         y_index (int | float): y-index of the data in the sonar response.
         sample_period (int): the sample period of the ping360
         negate (bool): whether to negate the pose or not
+        center_angle (float): center angle of the sweep in radians, from sweep_center_angle.
 
     Returns:
         Pose: Pose in target_frame_id containing x and y position of angle/index item.
@@ -190,9 +198,9 @@ def to_robot_position(x_index: int, y_index: int, sample_period: float, negate: 
         y_index,
     )
 
-    adjusted_x = (x_pos * np.cos(TRANSFORMATION_ANGLE) + y_pos * np.sin(TRANSFORMATION_ANGLE)) \
+    adjusted_x = (x_pos * np.cos(center_angle) + y_pos * np.sin(center_angle)) \
         * (-1.0 if negate else 1.0)
-    adjusted_y = (-x_pos * np.sin(TRANSFORMATION_ANGLE) + y_pos * np.cos(TRANSFORMATION_ANGLE)) \
+    adjusted_y = (-x_pos * np.sin(center_angle) + y_pos * np.cos(center_angle)) \
         * (-1.0 if negate else 1.0)
 
     yaw = np.arctan2(adjusted_y, adjusted_x)

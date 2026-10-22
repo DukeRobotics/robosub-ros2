@@ -112,6 +112,36 @@ async def rotate_to_normal(self: Task,
         steps += 1
         logger.info(f'Normal Angle {normal_angle} at step {steps}')
 
+ORIENT_TO_WALL_START_ANGLE = -15.0  # degrees
+ORIENT_TO_WALL_END_ANGLE = 15.0  # degrees
+ORIENT_TO_WALL_SCAN_DISTANCE = 10.0  # m
+ORIENT_TO_WALL_ATTEMPTS = 2
+
+
+@task
+async def orient_to_wall(self: Task,
+                         start_angle: float = ORIENT_TO_WALL_START_ANGLE,
+                         end_angle: float = ORIENT_TO_WALL_END_ANGLE,
+                         scan_distance: float = ORIENT_TO_WALL_SCAN_DISTANCE,
+                         attempts: int = ORIENT_TO_WALL_ATTEMPTS) -> Task[None, None, None]:
+    """Yaw once to face the wall found by a sonar sweep, retrying the sweep if no wall is found."""
+    for attempt in range(1, attempts + 1):
+        normal_angle = await scan_normal_angle(start_angle, end_angle, scan_distance)
+        if not np.isnan(normal_angle):
+            logger.info(f'Orienting to wall, yawing {normal_angle} rad')
+            await move_to_pose_local(
+                geometry_utils.create_pose(0, 0, 0, 0, 0, normal_angle),
+                keep_orientation=True,
+                timeout=10,
+                pose_tolerances=create_twist_tolerance(angular_yaw=ROTATION_YAW_TOLERANCE),
+                parent=self,
+            )
+            return
+        logger.info(f'No wall found on attempt {attempt} of {attempts}')
+
+    logger.warning('No wall found, skipping orientation.')
+
+
 @task
 async def rotate_to_angle_from_normal(self: Task,
                                       *,

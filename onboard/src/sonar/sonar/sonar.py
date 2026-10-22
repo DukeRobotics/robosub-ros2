@@ -255,8 +255,10 @@ class Sonar(Node):
 
         self.get_logger().info('Got segment')
 
+        center_angle = sonar_utils.sweep_center_angle(sweep.shape[0])
+
         if self.stream:
-            msg = Float32(data=float(np.arctan(nearest_segment.ortho_regression.slope)+np.pi / 4.))
+            msg = Float32(data=float(np.arctan(nearest_segment.ortho_regression.slope) + center_angle))
             self.wall_angle_publisher.publish(msg)
 
             wall_image = sonar_image_processing.draw_wall_segment_overlay(color_image, nearest_segment)
@@ -270,16 +272,16 @@ class Sonar(Node):
                 nearest_segment.ortho_regression.unit_normal[1],
                 nearest_segment.ortho_regression.unit_normal[0],
             )
-            - np.pi / 4.
+            - center_angle
         )
 
         self.get_logger().info(f'x: {x_index}, y: {y_index}, normal: {normal_angle}')
 
         return (
-            sonar_utils.to_robot_position(x_index, y_index, self.sample_period, self.NEGATE_POSE),
+            sonar_utils.to_robot_position(x_index, y_index, self.sample_period, self.NEGATE_POSE, center_angle),
             color_image,
             normal_angle,
-            np.arctan(nearest_segment.ortho_regression.slope)+np.pi / 4.)
+            np.arctan(nearest_segment.ortho_regression.slope) + center_angle)
 
     def constant_sweep(self) -> None:
         """
@@ -341,6 +343,12 @@ class Sonar(Node):
         if start_degrees > end_degrees:
             response.success = False
             response.message = f'Start angle {start_degrees} must be less than or equal to end angle {end_degrees}.'
+            return response
+
+        max_sweep_degrees = sonar_utils.MAX_SWEEP_ROWS / sonar_utils.GRADIANS_PER_DEGREE
+        if end_degrees - start_degrees > max_sweep_degrees:
+            response.success = False
+            response.message = f'Sweep from {start_degrees} to {end_degrees} exceeds {max_sweep_degrees} degrees.'
             return response
 
         left_gradians = sonar_utils.degrees_to_centered_gradians(start_degrees, self.center_gradians, self.increase_ccw)

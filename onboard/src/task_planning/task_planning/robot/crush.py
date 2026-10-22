@@ -542,7 +542,7 @@ async def main(self: Task) -> Task[None, None, None]:
 
         ## Octagon
         # comp_tasks.octagon_task(direction=1, parent=self),
-        # comp_tasks.orient_to_wall(parent=self),
+        # sonar_tasks.orient_to_wall(parent=self),
         # comp_tasks.gate_to_octagon(direction=1, move_forward=0, timeout=15, parent=self),
 
         ## Return home
