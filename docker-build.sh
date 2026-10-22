@@ -105,8 +105,8 @@ if [[ -f "$FOXGLOVERC_PATH" ]]; then
     docker_build_cmd+=" --secret id=foxgloverc,src='$FOXGLOVERC_PATH'"
 fi
 
-# Set the build context to the current (docker) directory
-docker_build_cmd+=" -t robosub-ros2:latest ./docker"
+# Keep Docker assets in ./docker and expose the root Python manifest through a named context.
+docker_build_cmd+=" --build-context python-deps=. -t robosub-ros2:latest ./docker"
 
 # Build the Docker image
 eval "$docker_build_cmd"
