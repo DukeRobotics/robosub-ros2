@@ -11,10 +11,9 @@ from rclpy.logging import get_logger
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV, CVObjectType
 from task_planning.interface.servos import MarkerDropperStates, TorpedoStates
-from task_planning.interface.sonar import Sonar
 from task_planning.interface.state import State
 from task_planning.task import Task, Yield
-from task_planning.tasks import cv_tasks, move_tasks, servos_tasks, util_tasks
+from task_planning.tasks import cv_tasks, move_tasks, servos_tasks, sonar_tasks, util_tasks
 from task_planning.tasks.base_comp_task import CompTask, comp_task
 from task_planning.utils import geometry_utils
 from task_planning.utils.other_utils import RobotName, get_robot_name
@@ -666,8 +665,8 @@ async def slalom_to_octagon_dead_reckoning(self: CompTask, depth_level: float = 
     async def face_fish(yaw_left: bool = True, closer_banner: bool = True) -> None:
         direction = 1 if yaw_left else -1
         yaw_distance = np.pi / 4 if closer_banner else 3 * np.pi / 4
-        await orient_to_wall(parent=self)
-        await orient_to_wall(parent=self)
+        await sonar_tasks.rotate_to_normal(start_angle=-15, end_angle=15, scan_distance=10,
+                                           yaw_threshold=math.pi / 36, parent=self)
         await self.correct_yaw(direction * yaw_distance)
 
     logger.info('[slalom_to_octagon_dead_reckoning] Started slalom task')
@@ -1362,7 +1361,8 @@ async def octagon_task(self: CompTask, direction: int = 1) -> Task[None, None, N
     async def face_fish(yaw_left: bool = True, closer_banner: bool = True) -> None:
         direction = 1 if yaw_left else -1
         yaw_distance = np.pi / 4 if closer_banner else 3 * np.pi / 4
-        await orient_to_wall(parent=self)
+        await sonar_tasks.rotate_to_normal(start_angle=-15, end_angle=15, scan_distance=10,
+                                           yaw_threshold=math.pi / 36, parent=self)
         await self.correct_yaw(direction * yaw_distance)
 
     await move_to_pink_bins()
@@ -1383,61 +1383,6 @@ async def surface_task(self: CompTask, timeout: int = 10) -> Task[None, None, No
         parent=self,
     )
     logger.info('[surface_task] Finished surfacing')
-
-
-@comp_task
-async def orient_to_wall(self: CompTask[None, None, None],
-                         end_angle: float = 15.0,
-                         start_angle: float = -15.0,
-                         distance: float = 10.0) -> Task[None, None, None]:
-    """Orient the robot to a wall using sonar sweep."""
-    async def get_sonar_normal_angle() -> float | None:
-        """Return the yaw angle of the wall in degrees."""
-        # Call sonar sweep request
-        sonar_future = Sonar().sweep(start_angle, end_angle, distance)
-        if sonar_future is not None:
-            logger.info('[orient_to_wall] Sonar sweep request sent, waiting for response...')
-
-            # Wait for the sonar sweep to complete
-            sonar_response = await sonar_future
-            logger.info(f'[orient_to_wall] Sonar sweep response received: {sonar_response}')
-
-            if not sonar_response.is_object:
-                logger.info('[orient_to_wall] Did not get valid object from scan')
-                return None
-
-            return sonar_response.normal_angle
-
-        logger.warning('[orient_to_wall] Sonar sweep request failed - bypass mode or service unavailable')
-        return math.nan
-
-    def convert_sonar_output_to_yaw(sonar_normal: float) -> float:
-        """Return how much robot needs to yaw to be normal to surface it scans. Input degrees, output radians."""
-        yaw_in_degrees = 180 - sonar_normal
-        return yaw_in_degrees * np.pi / 180
-
-    count = 2
-    got_valid_sweep = False
-
-    while not got_valid_sweep and count > 0:
-        count -= 1
-
-        sonar_output = await get_sonar_normal_angle()
-
-        if sonar_output is None:
-            logger.info(f'[orient_to_wall] Did not get valid sweep object, trying again {count} times')
-            continue
-
-        got_valid_sweep = True
-
-        if not math.isnan(sonar_output):
-            yaw_delta = convert_sonar_output_to_yaw(sonar_output)
-            logger.info(f'[orient_to_wall] Yaw delta from sonar sweep: {yaw_delta} radians')
-
-            # Move to the desired yaw angle
-            await self.correct_yaw(yaw_delta, timeout=10)
-        else:
-            logger.warning('[orient_to_wall] No yaw delta received from sonar sweep, skipping orientation.')
 
 
 @comp_task
