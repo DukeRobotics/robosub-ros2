@@ -1,2 +1,0 @@
-# Keep NumPy compatible with the ROS/OpenCV system packages.
-numpy==1.26.0

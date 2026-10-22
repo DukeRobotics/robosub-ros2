@@ -250,7 +250,7 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
 
 To add or update a Python library, edit `[project].dependencies` in `pyproject.toml`. The initial list preserves the former Dockerfile requirements, with Ruff pinned to `0.17.1`, the version observed in the development environment during migration. Existing Ruff and Pyright settings remain in the same file under their respective `[tool.*]` tables. The root project is an environment manifest (`[tool.uv].package = false`), rather than a ROS package to install.
 
-NumPy is explicitly pinned to `1.26.0` in the manifest for ROS/OpenCV compatibility. [docker/constraints.txt](docker/constraints.txt) also enforces this version for subsequent installs through both `PIP_CONSTRAINT` and `UV_CONSTRAINT`; uv does not read pip-specific configuration. If changing that pin after verifying compatibility, update both files together.
+NumPy is explicitly pinned to `1.26.0` in `pyproject.toml` for ROS/OpenCV compatibility. uv applies this pin when installing dependencies from the manifest. Verify ROS/OpenCV compatibility before changing it.
 
 Run the following **on the host**, from the repository root, after editing dependencies:
 

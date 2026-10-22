@@ -115,9 +115,6 @@ RUN touch /home/ubuntu/.sudo_as_admin_successful
 # Set up the ROS-compatible Python environment and install dependencies from TOML.
 # The python-deps named build context supplies the repository-root manifest.
 COPY --from=python-deps /pyproject.toml /home/ubuntu/pyproject.toml
-COPY constraints.txt /home/ubuntu/constraints.txt
-ENV PIP_CONSTRAINT=/home/ubuntu/constraints.txt
-ENV UV_CONSTRAINT=/home/ubuntu/constraints.txt
 ENV UV_LINK_MODE=copy
 RUN python3 -m venv /home/ubuntu/venv --system-site-packages
 RUN --mount=type=cache,target=/home/ubuntu/.cache/uv,uid=${USER_UID},gid=${USER_GID} \
