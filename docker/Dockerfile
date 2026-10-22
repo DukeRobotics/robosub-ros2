@@ -121,7 +121,7 @@ ENV UV_CONSTRAINT=/home/ubuntu/constraints.txt
 ENV UV_LINK_MODE=copy
 RUN python3 -m venv /home/ubuntu/venv --system-site-packages
 RUN --mount=type=cache,target=/home/ubuntu/.cache/uv,uid=${USER_UID},gid=${USER_GID} \
-    uv pip install --python /home/ubuntu/venv/bin/python3 --requirement /home/ubuntu/pyproject.toml
+    uv pip install --python /home/ubuntu/venv/bin/python3 --compile-bytecode --requirement /home/ubuntu/pyproject.toml
 
 # Install Node.js (Jod), Claude Code, and Codex
 ENV NVM_DIR=/home/ubuntu/.nvm

@@ -246,7 +246,7 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
 
 ### Python Dependencies
 
-[docker/Dockerfile](docker/Dockerfile) installs uv `0.13.1` from Astral's official image and uses it to install the external Python libraries and development tools listed in the root [pyproject.toml](pyproject.toml). Dependencies are installed together into `/home/ubuntu/venv`, which is created with `--system-site-packages` so Python can also access the ROS image's system packages. ROS packages in `core` and `onboard` are still built separately with colcon.
+[docker/Dockerfile](docker/Dockerfile) installs uv `0.13.1` from Astral's official image and uses it to install the external Python libraries and development tools listed in the root [pyproject.toml](pyproject.toml). Dependencies are installed together into `/home/ubuntu/venv`, which is created with `--system-site-packages` so Python can also access the ROS image's system packages. The install command enables `--compile-bytecode` so Python bytecode is generated during the image build rather than on first import. ROS packages in `core` and `onboard` are still built separately with colcon.
 
 To add or update a Python library, edit `[project].dependencies` in `pyproject.toml`. The initial list preserves the former Dockerfile requirements, with Ruff pinned to `0.17.1`, the version observed in the development environment during migration. Existing Ruff and Pyright settings remain in the same file under their respective `[tool.*]` tables. The root project is an environment manifest (`[tool.uv].package = false`), rather than a ROS package to install.
 
