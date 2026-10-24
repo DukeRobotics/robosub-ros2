@@ -18,12 +18,12 @@ class SonarDenoiser:
             data (ndarray): data in gradian space
         """
         self.data = data
-        self.shape_theta = min(100, self.data.shape[0])
+        self.shape_theta = self.data.shape[0]
         self.shape_radius = self.data.shape[1]
 
         # Reshape data
         processed_data = np.zeros(
-            shape=(100, np.floor(self.shape_radius * 1.41421356).astype(int)),
+            shape=(self.shape_theta, np.floor(self.shape_radius * 1.41421356).astype(int)),
         )
         processed_data[: self.shape_theta, : self.shape_radius] = self.data[: self.shape_theta]
 
@@ -109,23 +109,28 @@ class SonarDenoiser:
         # Return self
         return self
 
-    def init_cartesian(self) -> 'SonarDenoiser':
+    def init_cartesian(self, start_angle: float, stop_angle: float) -> 'SonarDenoiser':
         """
-        Update cartesian data based on gradian data.
+        Map gradian data to a square image with the sonar at its center.
+
+        Args:
+            start_angle (float): Angle of the first data row in degrees.
+            stop_angle (float): Stop angle in degrees, increasing counterclockwise.
 
         Returns:
             SonarDenoiser: returns itself to allow for method chaining.
         """
-        shape_array = np.arange(self.shape_radius)
+        shape_array = np.arange(-self.shape_radius, self.shape_radius)
         x, y = np.meshgrid(shape_array, shape_array)
 
-        theta = np.zeros(shape=(self.shape_radius, self.shape_radius), dtype=x.dtype)
-        theta[:, 0] = 89  # x=0
-        theta[:, 1:] = np.arctan(y[:, 1:] / x[:, 1:]) / np.pi * 180
+        theta = (np.degrees(np.arctan2(y, x)) - start_angle) % 360
+        scan_angle = (stop_angle - start_angle) % 360 or 360 # if stop = start, treat it as a 360 scan
         theta_gradians = (theta / 90 * 100).astype(int)
         r = (np.floor(np.sqrt(x**2 + y**2))).astype(int)
 
-        self.cartesian = self.data[theta_gradians, r]
+        mask = (theta < scan_angle) & (theta_gradians < self.shape_theta) & (r < self.shape_radius)
+        self.cartesian = np.zeros(x.shape)
+        self.cartesian[mask] = self.data[theta_gradians[mask], r[mask]]
         return self
 
     def normalize(self) -> 'SonarDenoiser':
