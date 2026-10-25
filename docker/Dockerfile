@@ -112,13 +112,13 @@ USER ubuntu
 # Suppress login message about using sudo
 RUN touch /home/ubuntu/.sudo_as_admin_successful
 
-# Set up the ROS-compatible Python environment and install dependencies from TOML.
-# The python-deps named build context supplies the repository-root manifest.
-COPY --from=python-deps /pyproject.toml /home/ubuntu/pyproject.toml
+# Set up the ROS-compatible Python environment and install locked Python dependencies.
+# The python-deps named build context supplies the repository-root manifest and lockfile.
+COPY --from=python-deps /pyproject.toml /uv.lock /home/ubuntu/
 ENV UV_LINK_MODE=copy
 RUN python3 -m venv /home/ubuntu/venv --system-site-packages
 RUN --mount=type=cache,target=/home/ubuntu/.cache/uv,uid=${USER_UID},gid=${USER_GID} \
-    uv pip install --python /home/ubuntu/venv/bin/python3 --compile-bytecode --requirement /home/ubuntu/pyproject.toml
+    UV_PROJECT_ENVIRONMENT=/home/ubuntu/venv uv sync --project /home/ubuntu --locked --compile-bytecode
 
 # Install Node.js (Jod), Claude Code, and Codex
 ENV NVM_DIR=/home/ubuntu/.nvm
