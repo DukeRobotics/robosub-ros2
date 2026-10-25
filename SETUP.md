@@ -72,6 +72,7 @@ GIT_ALLOWED_SIGNERS_PATH=
 ENABLE_GIT=true
 ROBOT_NAME=
 IS_ROBOT=
+ROBOT_DOCKER_RUNTIME=
 FOXGLOVERC_PATH=
 USER_UID=
 USER_GID=
@@ -92,6 +93,7 @@ USER_GID=
     > [!NOTE]
     > If you are setting up a new robot, you may need to add the robot name to the `robot/robot_names` file. See [robot/README.md](robot/README.md#robot_names) for more information.
 - `IS_ROBOT` (Optional): Set to `true` if you are setting up the repository on the robot. Set to `false` or do not include this variable in `.env` if you are setting up the repository on your development machine.
+- `ROBOT_DOCKER_RUNTIME` (Optional): Set this to `nvidia` on Crush so its Docker service uses NVIDIA Container Toolkit and exposes the Jetson GPU, CUDA driver, and video-encoder capability to the container. Leave it unset on Oogway and other non-NVIDIA hosts; it defaults to Docker's `runc` runtime.
 - `FOXGLOVERC_PATH` (Optional): Absolute path to the [`.foxgloverc`](#set-up-the-foxgloverc-file) file.
 - `USER_UID` and `USER_GID` (Optional): The user ID and group ID of the `ubuntu` user in the Docker container.
 
@@ -100,6 +102,30 @@ USER_GID=
     To retrieve these values, open a terminal outside of the Docker container. To get your user ID, run `id -u`. To get your group ID, run `id -g`.
     > [!NOTE]
     > If you are a Mac or Windows user, do **_not_** include `USER_UID` and `USER_GID` in your `.env` file. Include these variables **_only_** if you are a Linux user. If the variables are not included in `.env`, then the UID and GID will both be set to `1000`, which is the default UID and GID for non-root users in Ubuntu.
+
+### Enable the Jetson GPU on Crush
+
+This is required only on Crush. JetPack supplies the host driver, but Docker must also have NVIDIA Container Toolkit configured before a container can receive the driver's libraries and GPU device nodes. On Crush, install/configure the toolkit following NVIDIA's current [Docker instructions](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html), then run:
+
+```bash
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
+Confirm that `docker info` lists an `nvidia` runtime, then add this to Crush's `.env`:
+
+```bash
+ROBOT_DOCKER_RUNTIME=nvidia
+```
+
+Recreate the container with `./docker-build.sh`. Verify inside it with:
+
+```bash
+ls -l /dev/nvhost-gpu
+ldconfig -p | grep libcuda
+```
+
+`nvidia-smi` is normally not available on Jetson, so it is not an appropriate validation command there. Oogway must leave `ROBOT_DOCKER_RUNTIME` unset.
 
 ## Set Up the Robot
 If you are setting up the repository on the robot, there's a few additional steps you need to take. If you are setting up the repository on your development machine, skip to the [Set Up the Docker Container](#set-up-the-docker-container) section.
@@ -147,6 +173,9 @@ Make sure you have Docker running on your machine. Then, follow the instructions
 
 > [!NOTE]
 > Starting the Docker container will create an empty `~/.foxglove-studio/` directory on your local machine if it does not already exist. Foxglove Desktop uses this directory to load locally installed extensions.
+
+> [!NOTE]
+> Starting the Docker container will also create the `~/.claude/`, `~/.claude.json`, and `~/.codex/` files/directories on your local machine if they do not already exist. See [Claude Code and Codex CLIs](#claude-code-and-codex-clis) below for more information.
 
 ### Using VS Code Dev Containers
 If you're using VS Code and have the Dev Containers extension installed:
@@ -214,6 +243,32 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
     ```bash
     docker compose down
     ```
+
+### Python Dependencies
+
+[docker/Dockerfile](docker/Dockerfile) installs uv `0.13.1` from Astral's official image and uses it to install the external Python libraries and development tools listed in the root [pyproject.toml](pyproject.toml), using the exact versions resolved in [uv.lock](uv.lock). The build uses `uv sync --locked`, which fails if the lockfile is missing or needs updating to match the manifest. Dependencies are installed together into `/home/ubuntu/venv`, which is created with `--system-site-packages` so Python can also access the ROS image's system packages. The install command enables `--compile-bytecode` so Python bytecode is generated during the image build rather than on first import. ROS packages in `core` and `onboard` are still built separately with colcon.
+
+To add or update a Python library, edit `[project].dependencies` in `pyproject.toml`, then run `uv lock` inside the development container from `/home/ubuntu/robosub-ros2`. Review and commit both files together. `uv lock` updates the resolution without installing packages; it preserves existing locked versions where possible. Use `uv lock --upgrade-package pandas` to update pandas within its declared constraints, or `uv lock --upgrade` to update all dependencies within their constraints. Run `uv lock --check` to verify that the lockfile matches the manifest. The initial list preserves the former Dockerfile requirements, with Ruff pinned to `0.17.1`, the version observed in the development environment during migration. Existing Ruff and Pyright settings remain in the same file under their respective `[tool.*]` tables. The root project is an environment manifest (`[tool.uv].package = false`), rather than a ROS package to install.
+
+NumPy is explicitly pinned to `1.26.0` in `pyproject.toml` for ROS/OpenCV compatibility. uv applies this pin when installing dependencies from the manifest. Verify ROS/OpenCV compatibility before changing it.
+
+Run the following **on the host**, from the repository root, after editing dependencies:
+
+```bash
+./docker-build.sh
+```
+
+The script passes the repository root as the named build context `python-deps`, allowing the Dockerfile to copy `pyproject.toml` and `uv.lock` while retaining `./docker` as its main build context. This requires Docker with BuildKit/buildx support for named contexts. The Python install step uses a BuildKit cache mount owned by the configured container user and `UV_LINK_MODE=copy` to reuse downloads and built wheels without storing the cache in the image layer. See [Docker named contexts](https://docs.docker.com/build/concepts/context/#named-contexts) and [uv's Docker guide](https://docs.astral.sh/uv/guides/integration/docker/).
+
+For a temporary dependency refresh in an **existing development container**, run the following from `/home/ubuntu/robosub-ros2`:
+
+```bash
+UV_PROJECT_ENVIRONMENT=/home/ubuntu/venv uv sync --locked
+```
+
+This command syncs the existing virtual environment to the checked-out lockfile, including removing extra packages installed in that environment. It does not update the Docker image. The explicit `UV_PROJECT_ENVIRONMENT` keeps dependencies in the ROS-compatible environment instead of creating a repository-local `.venv`. Shell activation, VS Code, and CI continue using `/home/ubuntu/venv/bin/python3`, and [lint.py](lint.py) continues invoking Ruff from that environment. It runs `ruff check`, not `ruff format`. See [uv's locking and syncing guide](https://docs.astral.sh/uv/concepts/projects/sync/).
+
+The lockfile fixes resolved Python dependency versions across image rebuilds, including the weekly cache invalidation. It does not lock the ROS base image or apt packages. uv exposes inherited system packages at runtime but does not consider them during dependency resolution, so additional packages may shadow system versions. Validate dependency changes on both `linux/amd64` and `linux/arm64`, checking NumPy/OpenCV/ROS imports and the affected package builds. Check the target robot's GPU requirements separately for Torch changes. See [uv's system package behavior](https://docs.astral.sh/uv/reference/cli/#uv-venv--system-site-packages).
 
 ## Set Up Foxglove (Optional)
 Follow the following instructions if you plan to develop in the `foxglove` monorepo.

@@ -13,7 +13,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/config', [str(file) for file in Path('./config').glob('*.yaml')]),
-        ('share/' + package_name + '/launch', [str(file) for file in Path('./launch').glob('*')]),
+        ('share/' + package_name + '/launch', [str(file) for file in Path('./launch').glob('*') if file.is_file()]),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

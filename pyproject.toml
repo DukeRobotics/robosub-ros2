@@ -1,3 +1,52 @@
+[project]
+name = "robosub-python-environment"
+version = "0.0.0"
+requires-python = "==3.12.*"
+dependencies = [
+    "bluerobotics-ping",
+    "contourpy==1.3.3",
+    "cycler==0.12.1",
+    "depthai==2.30.0",
+    "filelock==3.20.0",
+    "fonttools==4.60.0",
+    "fsspec==2025.9.0",
+    "future==1.0.0",
+    "GitPython",
+    "gputil",
+    "Jinja2==3.1.6",
+    "jsonpickle",
+    "kiwisolver==1.4.9",
+    "MarkupSafe==3.0.3",
+    "matplotlib",
+    "mpmath==1.3.0",
+    "mypy",
+    "networkx==3.5",
+    "numpy==1.26.0",
+    "packaging==25.0",
+    "pandas",
+    "pillow==11.3.0",
+    "psutil==7.1.0",
+    "pylint",
+    "pyparsing==3.2.5",
+    "pyserial",
+    "python-dateutil==2.9.0.post0",
+    "python-nmap",
+    "pytz==2025.2",
+    "ruff==0.17.1",
+    "scikit-learn",
+    "scipy==1.14.*",
+    "six==1.17.0",
+    "sympy",
+    "torch==2.9.0",
+    "transforms3d",
+    "typing_extensions==4.15.0",
+    "tzdata==2025.2",
+]
+
+# ROS packages are built with colcon; the root project only lists dependencies.
+[tool.uv]
+package = false
+
 [tool.ruff]
 line-length = 120
 target-version = "py312"

@@ -161,7 +161,7 @@ class BinDetector(Node):
                                               MonoCam.IMG_SHAPE,
                                               (Bins.WIDTH, 0),
                                               MonoCam.FOCAL_LENGTH,
-                                              MonoCam.SENSOR_SIZE, 1)
+                                              MonoCam.SENSOR_SIZE, adjustment_factor=1)
         bounding_box.coords.x, bounding_box.coords.y, bounding_box.coords.z = coords_list
 
         # Convert the image with the bounding box to ROS Image message and publish

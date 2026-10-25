@@ -1,6 +1,9 @@
 # Base Docker image for ROS2 Jazzy that supports linux/amd64 and linux/arm64
 FROM ros:jazzy
 
+# Install a pinned uv release for Python dependency installation.
+COPY --from=ghcr.io/astral-sh/uv:0.13.1 /uv /uvx /usr/local/bin/
+
 # Dummy argument to force Docker to rebuild the image by invalidating the cache when the argument value changes
 # Cache invalidation forces Docker to rerun the `apt update` command, ensuring that the latest `apt` package index is used when building the image
 ARG CACHE_BUSTER
@@ -16,14 +19,18 @@ RUN apt-get update
 RUN apt install -y --no-install-recommends clang
 RUN apt install -y --no-install-recommends clang-format
 RUN apt install -y --no-install-recommends ffmpeg
+RUN apt install -y --no-install-recommends fuse
 RUN apt install -y --no-install-recommends gdb
 RUN apt install -y --no-install-recommends gdbserver
 RUN apt install -y --no-install-recommends iputils-ping
 RUN apt install -y --no-install-recommends libeigen3-dev
+RUN apt install -y --no-install-recommends libfuse2
+RUN apt install -y --no-install-recommends libgtk-3-0
 RUN apt install -y --no-install-recommends libyaml-cpp-dev
 RUN apt install -y --no-install-recommends nano
 RUN apt install -y --no-install-recommends nmap
 RUN apt install -y --no-install-recommends openssh-client
+RUN apt install -y --no-install-recommends python3-aiofiles
 RUN apt install -y --no-install-recommends python3-colcon-common-extensions
 RUN apt install -y --no-install-recommends python3-opencv
 RUN apt install -y --no-install-recommends python3-pip
@@ -105,26 +112,26 @@ USER ubuntu
 # Suppress login message about using sudo
 RUN touch /home/ubuntu/.sudo_as_admin_successful
 
-# Set up Python virtual environment and install packages
-# Virtual enviornment inherits system packages to ensure compatibility with ROS
-# The commands are ordered alphabetically
+# Set up the ROS-compatible Python environment and install locked Python dependencies.
+# The python-deps named build context supplies the repository-root manifest and lockfile.
+COPY --from=python-deps /pyproject.toml /uv.lock /home/ubuntu/
+ENV UV_LINK_MODE=copy
 RUN python3 -m venv /home/ubuntu/venv --system-site-packages
-RUN /home/ubuntu/venv/bin/pip install bluerobotics-ping
-RUN /home/ubuntu/venv/bin/pip install depthai==2.30.0
-RUN /home/ubuntu/venv/bin/pip install GitPython
-RUN /home/ubuntu/venv/bin/pip install gputil
-RUN /home/ubuntu/venv/bin/pip install jsonpickle
-RUN /home/ubuntu/venv/bin/pip install matplotlib
-RUN /home/ubuntu/venv/bin/pip install mypy
-RUN /home/ubuntu/venv/bin/pip install pandas
-RUN /home/ubuntu/venv/bin/pip install pyserial
-RUN /home/ubuntu/venv/bin/pip install python-nmap
-RUN /home/ubuntu/venv/bin/pip install ruff
-RUN /home/ubuntu/venv/bin/pip install scikit-learn
-RUN /home/ubuntu/venv/bin/pip install sympy
-RUN /home/ubuntu/venv/bin/pip install transforms3d
+RUN --mount=type=cache,target=/home/ubuntu/.cache/uv,uid=${USER_UID},gid=${USER_GID} \
+    UV_PROJECT_ENVIRONMENT=/home/ubuntu/venv uv sync --project /home/ubuntu --locked --compile-bytecode
 
 # Install Node.js (Jod), Claude Code, and Codex
+ENV NVM_DIR=/home/ubuntu/.nvm
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash \
+    && . $NVM_DIR/nvm.sh \
+    && nvm install --lts=Jod \
+    && npm install -g @anthropic-ai/claude-code @openai/codex
+
+# Install the Claude Code and Codex CLIs
+# These are installed here (rather than relying on a host install) so that they run natively regardless of the
+# host machine's OS/architecture. The Dev Container bind-mounts each developer's host ~/.claude, ~/.claude.json,
+# and ~/.codex config/auth paths (see .devcontainer/devcontainer.json), so these CLIs are already logged in if the
+# developer has Claude Code and/or the Codex CLI set up on their host machine
 ENV NVM_DIR=/home/ubuntu/.nvm
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash \
     && . $NVM_DIR/nvm.sh \
