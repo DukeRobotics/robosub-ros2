@@ -246,29 +246,15 @@ If you're **not** using VS Code or do **not** have the Dev Containers extension 
 
 ### Python Dependencies
 
-[docker/Dockerfile](docker/Dockerfile) installs uv `0.13.1` from Astral's official image and uses it to install the external Python libraries and development tools listed in the root [pyproject.toml](pyproject.toml), using the exact versions resolved in [uv.lock](uv.lock). The build uses `uv sync --locked`, which fails if the lockfile is missing or needs updating to match the manifest. Dependencies are installed together into `/home/ubuntu/venv`, which is created with `--system-site-packages` so Python can also access the ROS image's system packages. The install command enables `--compile-bytecode` so Python bytecode is generated during the image build rather than on first import. ROS packages in `core` and `onboard` are still built separately with colcon.
+[docker/Dockerfile](docker/Dockerfile) installs uv from Astral's official image and uses it to install the external Python libraries listed in the root [pyproject.toml](pyproject.toml), using the resolved [uv.lock](uv.lock). The build uses `uv sync --locked`, which fails if the lockfile is missing or needs updating to match the manifest. ROS packages in `core` and `onboard` are still built separately with colcon.
 
-To add or update a Python library, edit `[project].dependencies` in `pyproject.toml`, then run `uv lock` inside the development container from `/home/ubuntu/robosub-ros2`. Review and commit both files together. `uv lock` updates the resolution without installing packages; it preserves existing locked versions where possible. Use `uv lock --upgrade-package pandas` to update pandas within its declared constraints, or `uv lock --upgrade` to update all dependencies within their constraints. Run `uv lock --check` to verify that the lockfile matches the manifest. The initial list preserves the former Dockerfile requirements, with Ruff pinned to `0.17.1`, the version observed in the development environment during migration. Existing Ruff and Pyright settings remain in the same file under their respective `[tool.*]` tables. The root project is an environment manifest (`[tool.uv].package = false`), rather than a ROS package to install.
-
-NumPy is explicitly pinned to `1.26.0` in `pyproject.toml` for ROS/OpenCV compatibility. uv applies this pin when installing dependencies from the manifest. Verify ROS/OpenCV compatibility before changing it.
+To add or update a Python library, edit `[project].dependencies` in `pyproject.toml`, then run `uv lock`. Review and commit both files together. `uv lock` updates the resolution without installing packages. Run `uv lock --check` to verify that the lockfile matches the manifest.
 
 Run the following **on the host**, from the repository root, after editing dependencies:
 
 ```bash
 ./docker-build.sh
 ```
-
-The script passes the repository root as the named build context `python-deps`, allowing the Dockerfile to copy `pyproject.toml` and `uv.lock` while retaining `./docker` as its main build context. This requires Docker with BuildKit/buildx support for named contexts. The Python install step uses a BuildKit cache mount owned by the configured container user and `UV_LINK_MODE=copy` to reuse downloads and built wheels without storing the cache in the image layer. See [Docker named contexts](https://docs.docker.com/build/concepts/context/#named-contexts) and [uv's Docker guide](https://docs.astral.sh/uv/guides/integration/docker/).
-
-For a temporary dependency refresh in an **existing development container**, run the following from `/home/ubuntu/robosub-ros2`:
-
-```bash
-UV_PROJECT_ENVIRONMENT=/home/ubuntu/venv uv sync --locked
-```
-
-This command syncs the existing virtual environment to the checked-out lockfile, including removing extra packages installed in that environment. It does not update the Docker image. The explicit `UV_PROJECT_ENVIRONMENT` keeps dependencies in the ROS-compatible environment instead of creating a repository-local `.venv`. Shell activation, VS Code, and CI continue using `/home/ubuntu/venv/bin/python3`, and [lint.py](lint.py) continues invoking Ruff from that environment. It runs `ruff check`, not `ruff format`. See [uv's locking and syncing guide](https://docs.astral.sh/uv/concepts/projects/sync/).
-
-The lockfile fixes resolved Python dependency versions across image rebuilds, including the weekly cache invalidation. It does not lock the ROS base image or apt packages. uv exposes inherited system packages at runtime but does not consider them during dependency resolution, so additional packages may shadow system versions. Validate dependency changes on both `linux/amd64` and `linux/arm64`, checking NumPy/OpenCV/ROS imports and the affected package builds. Check the target robot's GPU requirements separately for Torch changes. See [uv's system package behavior](https://docs.astral.sh/uv/reference/cli/#uv-venv--system-site-packages).
 
 ## Set Up Foxglove (Optional)
 Follow the following instructions if you plan to develop in the `foxglove` monorepo.
