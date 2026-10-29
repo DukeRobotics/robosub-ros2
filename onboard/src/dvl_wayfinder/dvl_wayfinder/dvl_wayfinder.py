@@ -56,12 +56,10 @@ class DVLWayfinderPublisher(Node):
         # The DVL does not accept fractional seconds, so set the time precisely to the second by sleeping until the
         # next to next second begins, then set the DVL time
         self._sensor.enter_command_mode()
-        two_seconds = dt.datetime.fromtimestamp((self.get_clock().now().nanoseconds / 1e9) + 2, tz=dt.UTC)
-        time_target = dt.datetime(two_seconds.year, two_seconds.month, two_seconds.day, two_seconds.hour,
-                                  two_seconds.minute, two_seconds.second, tzinfo=dt.UTC)  # Remove fractional seconds
-        now = dt.datetime.fromtimestamp(self.get_clock().now().nanoseconds / 1e9, tz=dt.UTC)
-        self.get_clock().sleep_for(Duration(seconds=(time_target - now).total_seconds()))
-        self._sensor.set_time(dt.datetime.fromtimestamp(self.get_clock().now().nanoseconds / 1e9, tz=dt.UTC))
+        now = self.get_clock().now()
+        target_s = int(now.nanoseconds // 1e9) + 2
+        self.get_clock().sleep_for(Duration(nanoseconds=(target_s * 10e9 - now.nanoseconds)))
+        self._sensor.set_time(dt.datetime.fromtimestamp(self.get_clock().now().nanoseconds / 1e9, tz=dt.utc))
         self._sensor.exit_command_mode()
 
         # Set up rotation matrix
@@ -111,4 +109,3 @@ def main(args: list[str] | None = None) -> None:
 
 if __name__ == '__main__':
     main()
-
