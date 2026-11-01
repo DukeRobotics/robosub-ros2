@@ -20,7 +20,7 @@ arduino:
         tag: TB
         topic: /sensors/temperature/battery
       - type: humidity
-        tag: HS>
+        tag: HS
         topic: /sensors/humidity/signal
       - type: humidity
         tag: HB
