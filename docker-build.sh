@@ -49,6 +49,15 @@ fi
 # On a Linux host, this ensures that the directory is owned by the user and not root
 mkdir -p ~/.foxglove-studio
 
+# Create Claude Code and Codex config/auth paths if they don't already exist
+# The Dev Container bind-mounts these paths (see .devcontainer/devcontainer.json) so that a developer's existing
+# Claude Code/Codex CLI login carries over into the container. Creating them here first ensures Docker mounts a
+# file at ~/.claude.json (instead of creating an empty directory in its place, which is Docker's default
+# behavior when bind-mounting a file path that doesn't exist yet)
+mkdir -p ~/.claude
+touch ~/.claude.json
+mkdir -p ~/.codex
+
 # Read Git username and email from .env or default to global Git settings
 GIT_USER_NAME=$(git config --global user.name)
 GIT_USER_EMAIL=$(git config --global user.email)
@@ -96,8 +105,8 @@ if [[ -f "$FOXGLOVERC_PATH" ]]; then
     docker_build_cmd+=" --secret id=foxgloverc,src='$FOXGLOVERC_PATH'"
 fi
 
-# Set the build context to the current (docker) directory
-docker_build_cmd+=" -t robosub-ros2:latest ./docker"
+# Keep Docker assets in ./docker and expose the root Python manifest and lockfile through a named context.
+docker_build_cmd+=" --build-context python-deps=. -t robosub-ros2:latest ./docker"
 
 # Build the Docker image
 eval "$docker_build_cmd"

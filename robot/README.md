@@ -28,6 +28,8 @@ If you don't see the changes applied:
 ## `docker-compose.yml`
 The `docker-compose.yml` file in the `robot` directory extends the `docker-compose.yml` file in the repository root. It includes additional configurations for the robot's Docker container that enable the container to access devices connected to the robot.
 
+It also accepts an optional `ROBOT_DOCKER_RUNTIME` value from `.env`. Set it to `nvidia` only on a Jetson host with NVIDIA Container Toolkit configured; otherwise it defaults to `runc`. This keeps the shared compose configuration usable on Oogway's non-NVIDIA NUC.
+
 ## `robot_config.sh`
 The `robot_config.sh` script defines environment variables, aliases, and other configuration needed on the robot. It should be sourced in the robot's `.bashrc` file to make the configuration available in the robot's shell.
 - `onboard2`: Alias for running `docker-build.sh`.

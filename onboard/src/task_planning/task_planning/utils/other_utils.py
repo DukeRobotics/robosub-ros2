@@ -1,7 +1,10 @@
 import os
 from collections.abc import Callable
+from datetime import datetime
 from enum import Enum
 from typing import Any
+
+import pytz
 
 
 class RobotName(Enum):
@@ -36,3 +39,24 @@ def singleton(cls: type) -> Callable[[Any, Any], type]:
             instances[cls] = cls(*args, **kwargs)
         return instances[cls]
     return getinstance
+
+def ros_timestamp_to_pacific_time(sec: int, nanosec: int) -> str:
+    """
+    Convert ROS timestamp (seconds and nanoseconds) to human-readable Pacific time.
+
+    Args:
+        sec (int): Seconds since epoch
+        nanosec (int): Nanoseconds
+
+    Returns:
+        str: Human-readable timestamp in Pacific timezone
+    """
+    # Convert to datetime object
+    pacific_tz = pytz.timezone('US/Pacific')
+    timestamp = datetime.fromtimestamp(sec + nanosec / 1e9, tz=pacific_tz)
+
+    # Convert to Pacific timezone
+    pacific_time = timestamp.astimezone(pacific_tz)
+
+    # Format as human-readable string
+    return pacific_time.strftime('%Y-%m-%d %H:%M:%S %Z')

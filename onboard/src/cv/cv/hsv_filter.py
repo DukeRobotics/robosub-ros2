@@ -15,7 +15,7 @@ from cv.utils import calculate_relative_pose, compute_center_distance, compute_y
 
 class HSVFilter(Node):
     """Parent class for all HSV filtering scripts."""
-    def __init__(self, name: str, camera: str, mask_ranges: np.ndarray, width: float, height: float | None = None,
+    def __init__(self, *, name: str, camera: str, mask_ranges: np.ndarray, width: float, height: float | None = None,
                  pubs: list[str] | None = None, retrieval: int = cv2.RETR_TREE,
                  approx: int = cv2.CHAIN_APPROX_SIMPLE) -> None:
         super().__init__(f'{name}_hsv_filter')
@@ -176,7 +176,7 @@ class HSVFilter(Node):
                                                 MonoCam.IMG_SHAPE,
                                                 (self.width, self.height),
                                                 MonoCam.FOCAL_LENGTH,
-                                                MonoCam.SENSOR_SIZE, 1)
+                                                MonoCam.SENSOR_SIZE, adjustment_factor=1)
             bounding_box.coords.x, bounding_box.coords.y, bounding_box.coords.z = coords_list
 
             self.bounding_box_pub[i].publish(bounding_box)

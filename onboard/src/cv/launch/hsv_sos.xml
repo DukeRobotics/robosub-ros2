@@ -1,0 +1,3 @@
+<launch>
+	<node name="hsv_sos" pkg="cv" exec="hsv_sos" output="screen"/>
+</launch>

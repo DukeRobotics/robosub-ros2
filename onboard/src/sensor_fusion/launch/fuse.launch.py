@@ -30,7 +30,11 @@ def generate_launch_description() -> LaunchDescription:
         parameters=[str(Path(get_package_share_directory('sensor_fusion')) / 'config' / f'{robot_name}.yaml')],
         remappings=[
             ('odometry/filtered', 'state'),
-        ])
+        ],
+        # robot_localization probes for the next unused sensor index (e.g. imu1) by declaring it and
+        # then failing to read it, which makes rclcpp log a spurious "parameter is not initialized"
+        # warning. Raising the rclcpp logger to ERROR hides that noise without silencing the node.
+        arguments=['--ros-args', '--log-level', 'rclcpp:=ERROR'])
 
     ld.add_action(robot_localization)
 

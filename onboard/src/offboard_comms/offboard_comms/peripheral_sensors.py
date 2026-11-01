@@ -8,7 +8,7 @@ from std_msgs.msg import Float64
 class PeripheralSensor(ABC):
     """Abstract class for peripheral sensors."""
 
-    def __init__(self, node: Node, tag: str, topic: str, min_value: float = float('-inf'),
+    def __init__(self, node: Node, tag: str, topic: str, *, min_value: float = float('-inf'),
                  max_value: float = float('inf'), median_filter_size: int = 0) -> None:
         self.node = node
         self.tag = tag
@@ -61,7 +61,8 @@ class VoltageSensor(PeripheralSensor):
     MEDIAN_FILTER_SIZE = 0
 
     def __init__(self, node: Node, tag: str, topic: str) -> None:
-        super().__init__(node, tag, topic, self.MIN_VALUE, self.MAX_VALUE, self.MEDIAN_FILTER_SIZE)
+        super().__init__(node, tag, topic, min_value=self.MIN_VALUE, max_value=self.MAX_VALUE,
+                         median_filter_size=self.MEDIAN_FILTER_SIZE)
 
         self._current_voltage_msg = Float64()
         self._publisher = self.node.create_publisher(Float64, self.topic, 10)
@@ -79,7 +80,8 @@ class PressureSensor(PeripheralSensor):
     MEDIAN_FILTER_SIZE = 3
 
     def __init__(self, node: Node, tag: str, topic: str) -> None:
-        super().__init__(node, tag, topic, self.MIN_VALUE, self.MAX_VALUE, self.MEDIAN_FILTER_SIZE)
+        super().__init__(node, tag, topic, min_value=self.MIN_VALUE, max_value=self.MAX_VALUE,
+                         median_filter_size=self.MEDIAN_FILTER_SIZE)
 
         self._current_pressure_msg = PoseWithCovarianceStamped()
         self._current_pressure_msg.header.frame_id = 'odom'  # World frame
@@ -107,7 +109,8 @@ class TemperatureSensor(PeripheralSensor):
     MEDIAN_FILTER_SIZE = 3
 
     def __init__(self, node: Node, tag: str, topic: str) -> None:
-        super().__init__(node, tag, topic, self.MIN_VALUE, self.MAX_VALUE, self.MEDIAN_FILTER_SIZE)
+        super().__init__(node, tag, topic, min_value=self.MIN_VALUE, max_value=self.MAX_VALUE,
+                         median_filter_size=self.MEDIAN_FILTER_SIZE)
 
         self._current_temperature_msg = Float64()
         self._publisher = self.node.create_publisher(Float64, self.topic, 10)
@@ -125,7 +128,8 @@ class HumiditySensor(PeripheralSensor):
     MEDIAN_FILTER_SIZE = 3
 
     def __init__(self, node: Node, tag: str, topic: str) -> None:
-        super().__init__(node, tag, topic, self.MIN_VALUE, self.MAX_VALUE, self.MEDIAN_FILTER_SIZE)
+        super().__init__(node, tag, topic, min_value=self.MIN_VALUE, max_value=self.MAX_VALUE,
+                         median_filter_size=self.MEDIAN_FILTER_SIZE)
 
         self._current_humidity_msg = Float64()
         self._publisher = self.node.create_publisher(Float64, self.topic, 10)

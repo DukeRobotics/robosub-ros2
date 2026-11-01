@@ -11,6 +11,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.mixture import GaussianMixture
 
 from sonar import decode_ping_python_360
+from sonar.sonar_object_detection import SonarSegment
 
 SONAR_IMAGE_WIDTH = 16
 SONAR_IMAGE_HEIGHT = 2
@@ -43,6 +44,53 @@ def build_color_sonar_image_from_int_array(int_array: np.ndarray, npy_save_path:
     sonar_img = np.zeros_like(sonar_img) if max_val == 0 else sonar_img / max_val * 255
 
     return sonar_img.astype(np.uint8)
+
+def draw_wall_segment_overlay(
+    color_image: np.ndarray,
+    segment: SonarSegment,
+    point_color: tuple[int, int, int] = (0, 0, 255),
+    trimmed_point_color: tuple[int, int, int] = (0, 165, 255),
+    line_color: tuple[int, int, int] = (0, 255, 0),
+) -> np.ndarray:
+    """
+    Draw the detected wall segment's points and fitted line on top of a color sonar image.
+
+    If the segment's OrthogonalRegression used RANSAC to robustly fit its line (see
+    OrthogonalRegression.__init__'s inlier_threshold), points that were RANSAC inliers used
+    for the fit are drawn in point_color and points that were excluded are drawn in
+    trimmed_point_color, so it's visible how much of the segment's spread the final angle was
+    actually based on.
+
+    Args:
+        color_image (ndarray): the (H, W, 3) uint8 color sonar image to draw onto. Not mutated.
+        segment (SonarSegment): the wall segment to visualize, as chosen by
+            ClusteredSonarSegmentation.get_most_wall_like_segment.
+        point_color (tuple[int, int, int]): BGR color used to highlight points kept for the fit.
+        trimmed_point_color (tuple[int, int, int]): BGR color used for points that were part of
+            the segment but excluded from the final fit.
+        line_color (tuple[int, int, int]): BGR color used to draw the segment's fitted line.
+
+    Returns:
+        ndarray: a copy of color_image with the wall segment's points and fitted line overlaid.
+    """
+    overlay = color_image.copy()
+    height, width = overlay.shape[:2]
+
+    ortho = segment.ortho_regression
+    kept_points = {(round(row), round(col)) for row, col in ortho.points}
+
+    for row, col in segment.points:
+        if 0 <= row < height and 0 <= col < width:
+            is_kept = (round(row), round(col)) in kept_points
+            color = point_color if is_kept else trimmed_point_color
+            cv2.circle(overlay, (int(col), int(row)), radius=1, color=color, thickness=-1)
+
+    row_start = np.clip(ortho.y_given_x(0), -10 * height, 10 * height)
+    row_end = np.clip(ortho.y_given_x(width - 1), -10 * height, 10 * height)
+    cv2.line(overlay, (0, round(row_start)), (width - 1, round(row_end)), line_color, thickness=2)
+
+    return overlay
+
 
 def find_center_point_and_angle(array: np.ndarray, threshold: int, eps: float,
                                 min_samples: int, get_plot: bool = True) -> tuple:
