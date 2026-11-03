@@ -5,7 +5,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import rclpy
-from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.node import Node
 from std_msgs.msg import Float64
@@ -32,7 +31,7 @@ class RecordBag(Node):
             return
 
         # Initialize last message time to current time
-        self.last_msg_time = Clock().now()
+        self.last_msg_time = self.get_clock().now()
 
         # Subscribe to the voltage topic
         if bypass:
@@ -56,7 +55,7 @@ class RecordBag(Node):
             data: The voltage value published to the topic.
         """
         # Update last received message time
-        self.last_msg_time = Clock().now()
+        self.last_msg_time = self.get_clock().now()
 
         # If voltage is below 5V and the node is currently recording, stop recording
         min_voltage = 5
@@ -78,7 +77,7 @@ class RecordBag(Node):
         and time in a human-readable format.
         """
         # Get the current time in seconds since the Unix epoch
-        current_time_sec = Clock().now().seconds_nanoseconds()[0]
+        current_time_sec = self.get_clock().now().seconds_nanoseconds()[0]
 
         # Convert to a human-readable format
         human_readable_time = datetime.fromtimestamp(current_time_sec, tz=UTC).strftime('%Y.%m.%d_%I-%M-%S_%p')
@@ -107,7 +106,7 @@ class RecordBag(Node):
         Args:
             event: The timer event that triggered this function.
         """
-        current_time = Clock().now()
+        current_time = self.get_clock().now()
         if (current_time - self.last_msg_time) > self.TIMEOUT_DURATION and self.process is not None:
             self.get_logger().info(f'No voltage messages received for '
                                    f'{self.TIMEOUT_DURATION.nanoseconds / 1e9} seconds. '

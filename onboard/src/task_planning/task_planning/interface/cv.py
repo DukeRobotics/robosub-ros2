@@ -1,4 +1,3 @@
-import time
 from enum import Enum
 from pathlib import Path
 from typing import ClassVar
@@ -8,7 +7,6 @@ import resource_retriever as rr
 import yaml
 from custom_msgs.msg import CVObject
 from geometry_msgs.msg import Point, Pose
-from rclpy.clock import Clock
 from rclpy.logging import get_logger
 from rclpy.node import Node
 from std_msgs.msg import Float64
@@ -224,7 +222,7 @@ class CV:
         """
         # Special filtering for TORPEDO_BANNER
         if object_type == CVObjectType.TORPEDO_BANNER:
-            current_time = time.time()
+            current_time = self.node.get_clock().now().nanoseconds / 1e9
 
             # Add current message timestamp to recent messages
             self._torpedo_banner_recent_messages.append(current_time)
@@ -407,7 +405,7 @@ class CV:
         if detection_time == 0 and data.header.stamp.nanosec == 0:
             return False
 
-        current_time = Clock().now().seconds_nanoseconds()[0]
+        current_time = self.node.get_clock().now().seconds_nanoseconds()[0]
         recent = current_time - detection_time < latency
 
         if last_detection_time is not None:

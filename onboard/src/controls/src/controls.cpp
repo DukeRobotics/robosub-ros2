@@ -172,8 +172,7 @@ Controls::Controls() : Node("controls") {
     power_scale_factor_pub = this->create_publisher<std_msgs::msg::Float64>("controls/power_scale_factor", 1);
 
     // Start timer that runs thruster allocator
-    timer =
-        this->create_wall_timer(std::chrono::milliseconds(THRUSTER_ALLOCS_INTERVAL), std::bind(&Controls::run, this));
+    timer = this->create_timer(std::chrono::milliseconds(THRUSTER_ALLOCS_INTERVAL), std::bind(&Controls::run, this));
 }
 
 void Controls::desired_position_callback(const geometry_msgs::msg::Pose::SharedPtr msg) {

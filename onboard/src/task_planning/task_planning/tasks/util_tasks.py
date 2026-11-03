@@ -1,6 +1,5 @@
-from rclpy.clock import Clock
 from rclpy.duration import Duration
-from task_planning.task import Task, Yield, task
+from task_planning.task import Task, TaskUpdatePublisher, Yield, task
 
 
 @task
@@ -16,7 +15,7 @@ async def sleep(_self: Task[Duration, None, None], duration: float | Duration) -
         Duration: The remaining time until the sleep is complete.
     """
     duration = duration if isinstance(duration, Duration) else Duration(seconds=duration)
-    start_time = Clock().now()
+    start_time = TaskUpdatePublisher().node.get_clock().now()
     end_time = start_time + duration
-    while end_time > Clock().now():
-        await Yield(end_time - Clock().now())
+    while end_time > TaskUpdatePublisher().node.get_clock().now():
+        await Yield(end_time - TaskUpdatePublisher().node.get_clock().now())

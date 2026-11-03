@@ -3,7 +3,6 @@ import copy
 import math
 
 from geometry_msgs.msg import Twist, Vector3
-from rclpy.clock import Clock
 from rclpy.logging import get_logger
 from task_planning.interface.controls import Controls
 from task_planning.interface.cv import CV, CVObjectType
@@ -165,7 +164,7 @@ async def yaw_to_cv_obj(self: Task, cv_object: CVObjectType, *, search_direction
 
     move_to_pose_task.step()
 
-    clock = Clock()
+    clock = Controls().node.get_clock()
     starting_time = clock.now()
 
     while not move_to_pose_task.done:

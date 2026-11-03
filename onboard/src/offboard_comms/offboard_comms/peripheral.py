@@ -1,6 +1,5 @@
 import functools
 import os
-import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import ClassVar
@@ -201,7 +200,7 @@ class PeripheralPublisher(SerialNode):
         state = request.state
         servo: PeripheralDiscreteServo = self.servos[tag]
 
-        if time.time() - servo.last_called_time < servo.min_delay:
+        if self.get_clock().now().nanoseconds / 1e9 - servo.last_called_time < servo.min_delay:
             error_msg = (f'Minimum delay of {servo.min_delay} seconds not met since last call to '
                 f'{self.servos[tag].name} servo at tag {self.servos[tag]}')
 
@@ -214,7 +213,7 @@ class PeripheralPublisher(SerialNode):
         if state in servo.states:
             pwm = servo.states[state]
             if self.writeline(f'{tag}:{pwm}'):
-                servo.last_called_time = time.time()
+                servo.last_called_time = self.get_clock().now().nanoseconds / 1e9
                 response.success = True
                 response.message = f'Successfully set {servo.name} servo to state: "{state}"'
             else:
@@ -252,7 +251,7 @@ class PeripheralPublisher(SerialNode):
         pwm = request.pwm
         servo: PeripheralContinuousServo = self.servos[tag]
 
-        if time.time() - servo.last_called_time < servo.min_delay:
+        if self.get_clock().now().nanoseconds / 1e9 - servo.last_called_time < servo.min_delay:
             error_msg = (f'Minimum delay of {servo.min_delay} seconds not met since last call to '
                          f'{self.servos[tag].name} servo.')
 
@@ -264,7 +263,7 @@ class PeripheralPublisher(SerialNode):
 
         if servo.min_pwm <= pwm <= servo.max_pwm:
             if self.writeline(f'{tag}:{pwm}'):
-                servo.last_called_time = time.time()
+                servo.last_called_time = self.get_clock().now().nanoseconds / 1e9
                 response.success = True
                 response.message = f'Successfully set {servo.name} servo to PWM: {pwm}'
             else:

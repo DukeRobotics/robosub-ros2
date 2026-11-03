@@ -217,7 +217,8 @@ class SerialPort():
 class DataLogger():
     """ Class responsible for data logging.
     """
-    def __init__(self):
+    def __init__(self, clock):
+        self._clock = clock
         self._log_file = None
         self._log_file_name = ""
 
@@ -249,7 +250,7 @@ class DataLogger():
             On successful creation of the file returns file path.
             If the operation fails it returns None.
         """
-        now = datetime.datetime.now()
+        now = datetime.datetime.fromtimestamp(self._clock.now().nanoseconds * 1e-9, tz=datetime.timezone.utc)
         name = prefix + now.strftime("%Y-%m-%d_%H%M%S") + ext
         name = os.path.join(working_folder, name)
         self._log_file = open(name, "ab+")

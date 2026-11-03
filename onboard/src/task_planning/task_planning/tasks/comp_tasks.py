@@ -5,7 +5,6 @@ from enum import Enum
 import numpy as np
 from custom_msgs.msg import ControlTypes
 from geometry_msgs.msg import Twist, Vector3
-from rclpy.clock import Clock
 from rclpy.duration import Duration
 from rclpy.logging import get_logger
 from task_planning.interface.controls import Controls
@@ -935,7 +934,7 @@ async def marker_dropper_task(self: CompTask) -> Task[None, None, None]:  # noqa
 
     logger.info('[marker_dropper_task] Started marker dropper task')
 
-    start_time = Clock().now()
+    start_time = Controls().node.get_clock().now()
 
     def get_step_mult_factor(dist: float, threshold: float) -> int:
         if abs(dist) < threshold:
@@ -978,7 +977,7 @@ async def marker_dropper_task(self: CompTask) -> Task[None, None, None]:  # noqa
                 logger.info(f'[marker_dropper_task] Reached area threshold: area = {width * height}')
                 break
 
-            if Clock().now() - start_time > TIMEOUT:
+            if Controls().node.get_clock().now() - start_time > TIMEOUT:
                 logger.warning('[marker_dropper_task] Track bin timed out')
                 break
 
@@ -1143,9 +1142,9 @@ async def torpedo_task_2026(
     async def wait_for_target_detection(target: CVObjectType) -> bool:
         """Wait for a fresh HSV-matched detection of target before trusting its coords."""
         logger.info('[torpedo_task_2026.wait_for_target_detection] Waiting for target detection...')
-        start_time = Clock().now()
+        start_time = Controls().node.get_clock().now()
         while not CV().is_receiving_recent_cv_data(target, TARGET_DETECTION_LATENCY):
-            if (Clock().now() - start_time).nanoseconds * 1e-9 > TARGET_DETECTION_TIMEOUT:
+            if (Controls().node.get_clock().now() - start_time).nanoseconds * 1e-9 > TARGET_DETECTION_TIMEOUT:
                 logger.warning(
                     f'[torpedo_task_2026.wait_for_target_detection] Timed out waiting for fresh {target} detection',
                 )

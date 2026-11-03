@@ -6,7 +6,6 @@ import rclpy
 import resource_retriever as rr
 from custom_msgs.msg import CVObject
 from cv_bridge import CvBridge
-from rclpy.clock import Clock
 from rclpy.logging import get_logger
 from rclpy.node import Node, Publisher
 from sensor_msgs.msg import CompressedImage, Image
@@ -74,7 +73,7 @@ class HSVFilterTorpedos(Node):
         Returns:
             None.
         """
-        self.last_update_shark = Clock().now().seconds_nanoseconds()[0]
+        self.last_update_shark = self.get_clock().now().seconds_nanoseconds()[0]
         self.shark_coords = data.coords
         # x, y
 
@@ -88,7 +87,7 @@ class HSVFilterTorpedos(Node):
         Returns:
             None.
         """
-        self.last_update_sawfish = Clock().now().seconds_nanoseconds()[0]
+        self.last_update_sawfish = self.get_clock().now().seconds_nanoseconds()[0]
         self.sawfish_coords = data.coords
 
     def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:
@@ -188,7 +187,7 @@ class HSVFilterTorpedos(Node):
         num_of_contours = 2
 
         # Find highest and lower contour, assuming that those two will represent the upper and lower holes
-        if abs(self.last_update_shark - Clock().now().seconds_nanoseconds()[0]) < latency_sec \
+        if abs(self.last_update_shark - self.get_clock().now().seconds_nanoseconds()[0]) < latency_sec \
             and len(similar_size_contours) == num_of_contours and self.shark_coords is not None:
 
             largest_cnt = similar_size_contours[0]
@@ -206,8 +205,8 @@ class HSVFilterTorpedos(Node):
                 fish_cnt = similar_size_contours[0]
                 shark_cnt = similar_size_contours[1]
 
-        elif abs(self.last_update_shark - Clock().now().seconds_nanoseconds()[0]) < latency_sec \
-            and abs(self.last_update_sawfish - Clock().now().seconds_nanoseconds()[0]) < latency_sec \
+        elif abs(self.last_update_shark - self.get_clock().now().seconds_nanoseconds()[0]) < latency_sec \
+            and abs(self.last_update_sawfish - self.get_clock().now().seconds_nanoseconds()[0]) < latency_sec \
             and len(similar_size_contours) == 1 and self.shark_coords is not None \
             and self.sawfish_coords is not None:
 

@@ -1,4 +1,3 @@
-import time
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from enum import Enum
@@ -117,9 +116,9 @@ class SerialNode(Node, ABC):
         Returns:
             str: The line read from the serial port.
         """
-        start = time.time()
+        start = self.get_clock().now().nanoseconds / 1e9
         buff = b''
-        while ((time.time() - start) < tout) and (b'\r\n' not in buff):
+        while ((self.get_clock().now().nanoseconds / 1e9 - start) < tout) and (b'\r\n' not in buff):
             with suppress(serial.SerialException):
                 buff += self._serial.read(1)
 
