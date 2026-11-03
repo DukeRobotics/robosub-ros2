@@ -213,6 +213,11 @@ class Sonar(Node):
         """
         sweep = self.get_sweep(start_angle, end_angle)
         self.get_logger().info('Finished sweep')
+        if sweep.shape[0] > sonar_utils.MAX_SWEEP_ROWS:
+            self.get_logger().warning(
+                f'Sweep has {sweep.shape[0]} rows; only the first {sonar_utils.MAX_SWEEP_ROWS} (90 degrees) are '
+                'processed, so results cover only part of the requested range',
+            )
 
         if self.stream:
             self.raw_image_publisher.publish(
@@ -255,8 +260,12 @@ class Sonar(Node):
 
         self.get_logger().info('Got segment')
 
+        # Measure angles from the sweep's actual centre ray rather than assuming a full 90 degree sweep, so
+        # narrower sweeps (e.g. +-25 degrees) are not offset by (45 - half-width) degrees
+        center_angle = sonar_utils.sweep_center_angle(sweep.shape[0])
+
         if self.stream:
-            msg = Float32(data=float(np.arctan(nearest_segment.ortho_regression.slope)+np.pi / 4.))
+            msg = Float32(data=float(np.arctan(nearest_segment.ortho_regression.slope) + center_angle))
             self.wall_angle_publisher.publish(msg)
 
             wall_image = sonar_image_processing.draw_wall_segment_overlay(color_image, nearest_segment)
@@ -270,16 +279,16 @@ class Sonar(Node):
                 nearest_segment.ortho_regression.unit_normal[1],
                 nearest_segment.ortho_regression.unit_normal[0],
             )
-            - np.pi / 4.
+            - center_angle
         )
 
         self.get_logger().info(f'x: {x_index}, y: {y_index}, normal: {normal_angle}')
 
         return (
-            sonar_utils.to_robot_position(x_index, y_index, self.sample_period, self.NEGATE_POSE),
+            sonar_utils.to_robot_position(x_index, y_index, self.sample_period, self.NEGATE_POSE, center_angle),
             color_image,
             normal_angle,
-            np.arctan(nearest_segment.ortho_regression.slope)+np.pi / 4.)
+            np.arctan(nearest_segment.ortho_regression.slope) + center_angle)
 
     def constant_sweep(self) -> None:
         """

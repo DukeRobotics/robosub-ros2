@@ -12,7 +12,26 @@ RADIANS_PER_GRADIAN = np.pi / 200
 GRADIANS_PER_DEGREE = 400 / 360
 SPEED_OF_SOUND_IN_WATER = 1482  # m/s
 SAMPLE_PERIOD_TICK_DURATION = 25e-9  # s
-TRANSFORMATION_ANGLE = np.pi / 4
+TRANSFORMATION_ANGLE = np.pi / 4  # Centre ray angle of a full 100-gradian (90 degree) sweep
+MAX_SWEEP_ROWS = 100  # SonarDenoiser keeps at most this many angle rows (100 gradians = 90 degrees)
+
+
+def sweep_center_angle(num_rows: int) -> float:
+    """
+    Get the angle of a sweep's centre ray, measured from the row axis of SonarDenoiser's cartesian image.
+
+    init_cartesian places sweep row i at i * 0.9 degrees from the image's column axis, so a sweep of num_rows rows
+    is centred at num_rows * 0.45 degrees from that axis. Segment points and their regression are in (row, col)
+    order, so normal_angle, angle_of_wall and to_robot_position measure angles from the row axis instead, which puts
+    the centre ray at 90 degrees minus that. A full 100-row (90 degree) sweep gives pi/4 either way.
+
+    Args:
+        num_rows (int): Number of angle rows in the sweep. Rows beyond MAX_SWEEP_ROWS are dropped by SonarDenoiser.
+
+    Returns:
+        float: Angle of the sweep's centre ray from the row axis, in radians.
+    """
+    return np.pi / 2 - min(num_rows, MAX_SWEEP_ROWS) / MAX_SWEEP_ROWS * (np.pi / 4)
 
 
 def transform_pose(
@@ -168,7 +187,8 @@ def get_distance_of_sample(sample_period: float, sample_index: int) -> float:
     return (sample_index + 0.5) * meters_per_sample(sample_period)
 
 
-def to_robot_position(x_index: int, y_index: int, sample_period: float, negate: bool) -> Pose:
+def to_robot_position(x_index: int, y_index: int, sample_period: float, negate: bool,
+                      center_angle: float = TRANSFORMATION_ANGLE) -> Pose:
     """
     Convert a point in sonar space to a robot global position.
 
@@ -177,6 +197,8 @@ def to_robot_position(x_index: int, y_index: int, sample_period: float, negate: 
         y_index (int | float): y-index of the data in the sonar response.
         sample_period (int): the sample period of the ping360
         negate (bool): whether to negate the pose or not
+        center_angle (float): angle of the sweep's centre ray from sweep_center_angle. Defaults to pi/4,
+            the centre of a full 90 degree sweep.
 
     Returns:
         Pose: Pose in target_frame_id containing x and y position of angle/index item.
@@ -190,9 +212,9 @@ def to_robot_position(x_index: int, y_index: int, sample_period: float, negate: 
         y_index,
     )
 
-    adjusted_x = (x_pos * np.cos(TRANSFORMATION_ANGLE) + y_pos * np.sin(TRANSFORMATION_ANGLE)) \
+    adjusted_x = (x_pos * np.cos(center_angle) + y_pos * np.sin(center_angle)) \
         * (-1.0 if negate else 1.0)
-    adjusted_y = (-x_pos * np.sin(TRANSFORMATION_ANGLE) + y_pos * np.cos(TRANSFORMATION_ANGLE)) \
+    adjusted_y = (-x_pos * np.sin(center_angle) + y_pos * np.cos(center_angle)) \
         * (-1.0 if negate else 1.0)
 
     yaw = np.arctan2(adjusted_y, adjusted_x)

@@ -19,7 +19,7 @@ from task_planning.interface.servos import Servos, TorpedoStates
 from task_planning.interface.state import State
 from task_planning.interface.ivc import IVCMessageType
 from task_planning.task import Task, Yield, task
-from task_planning.tasks import cv_tasks, move_tasks, util_tasks
+from task_planning.tasks import cv_tasks, move_tasks, sonar_tasks, util_tasks
 from task_planning.utils import geometry_utils
 from task_planning.utils.other_utils import get_robot_name, RobotName
 
@@ -306,8 +306,8 @@ async def slalom_to_octagon_dead_reckoning(self: Task, depth_level=1.1) -> Task[
     async def face_fish(yaw_left: bool = True, closer_banner: bool = True):
         direction = 1 if yaw_left else -1
         yaw_distance = np.pi / 4 if closer_banner else 3*np.pi/4
-        await orient_to_wall(parent=self)
-        await orient_to_wall(parent=self)
+        await sonar_tasks.rotate_to_normal(start_angle=-15, end_angle=15, scan_distance=10,
+                                           yaw_threshold=math.pi / 36, parent=self)
         await move_tasks.yaw_from_local_pose(direction*yaw_distance, parent=self)
 
     logger.info('Started slalom task')
@@ -736,7 +736,8 @@ async def octagon_task(self: Task, direction: int = 1) -> Task[None, None, None]
     async def face_fish(yaw_left: bool = True, closer_banner: bool = True):
         direction = 1 if yaw_left else -1
         yaw_distance = np.pi/4 if closer_banner else 3*np.pi/4
-        await orient_to_wall(parent=self)
+        await sonar_tasks.rotate_to_normal(start_angle=-15, end_angle=15, scan_distance=10,
+                                           yaw_threshold=math.pi / 36, parent=self)
         await move_tasks.yaw_from_local_pose(direction*yaw_distance, parent=self)
 
     await move_to_pink_bins()
@@ -863,47 +864,6 @@ async def torpedo_task(self: Task, first_target: CVObjectType, depth_level=0.5, 
     await Servos().fire_torpedo(TorpedoStates.LEFT)
 
     logger.info("Torpedo task completed")
-
-
-@task
-async def orient_to_wall(self: Task[None, None, None],
-                         end_angle: float = 15.0,
-                         start_angle: float = -15.0,
-                         distance: float = 10.0) -> Task[None, None, None]:
-    """
-    Orient the robot to a wall using sonar sweep.
-    """
-    def convert_sonar_output_to_yaw(sonar_normal: float) -> float:
-        """
-        Returns how much robot needs to yaw to be normal to surface it scans. Input degrees, output radians.
-        """
-        yaw_in_degrees = 180 - sonar_normal
-        return yaw_in_degrees * np.pi / 180
-
-    count = 2
-    got_valid_sweep = False
-
-    while not got_valid_sweep and count > 0:
-        count -= 1
-
-        # TODO: sonar_output not defined
-        if sonar_output is None:
-            logger.info(f"Did not get valid sweep object, trying again {count} times")
-            continue
-
-        got_valid_sweep = True
-
-        if not math.isnan(sonar_output):
-            yaw_delta = convert_sonar_output_to_yaw(sonar_output)
-            logger.info(f"Yaw delta from sonar sweep: {yaw_delta} radians")
-            # Move to the desired yaw angle
-            await move_tasks.move_to_pose_local(
-                geometry_utils.create_pose(0, 0, 0, 0, 0, yaw_delta),
-                time_limit=10,
-                parent=self,
-            )
-        else:
-            logger.warning("No yaw delta received from sonar sweep, skipping orientation.")
 
 
 @task
