@@ -23,6 +23,7 @@ const TOPIC_DOWN_THRESHOLD_NSEC = secToNsec(2);
 
 enum Status {
   CPU = "CPU",
+  GPU = "GPU",
   RAM = "RAM",
   Voltage = "Voltage",
   HumiditySignal = "HumiditySignal",
@@ -51,6 +52,16 @@ const STATUS_CONFIG: Record<Status, StatusConfig> = {
     parse: (event) => {
       const msgEvent = event as MessageEvent<CustomMsgs.SystemUsage>;
       return msgEvent.message.cpu_percent;
+    },
+    warn: (value) => value != undefined && value >= 90,
+  },
+  [Status.GPU]: {
+    displayName: "GPU",
+    topic: "/system/usage",
+    suffix: "%",
+    parse: (event) => {
+      const msgEvent = event as MessageEvent<CustomMsgs.SystemUsage>;
+      return msgEvent.message.gpu_percent;
     },
     warn: (value) => value != undefined && value >= 90,
   },
