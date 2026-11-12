@@ -29,16 +29,16 @@ class HSVRedPole(hsv_filter.HSVFilter):
         kept = []
         for contour in contours:
             area = cv2.contourArea(contour)
-            if area < 100: 
+            if area < 50: 
                 continue 
 
             x, y, w, h = cv2.boundingRect(contour)
-            if w <= 0 or h <= 0:
+            if w <= 0 or h <= 0: # discard contours with non-positive dimensions
                 continue
 
             aspect = float(w) / float(h)
-            # pole is tall and thin
-            if aspect < 0.05 or aspect > 0.6:
+            # discard contours that are too fat
+            if aspect > (1/10): # Aspect ratio of poles is supposed to be 1:30, but should have some padding since filter probably wont pick up the whole thing
                 continue
 
             kept.append(contour)
@@ -50,7 +50,7 @@ class HSVRedPole(hsv_filter.HSVFilter):
         return kept[:3] #probably only need first, closest pole. In fact, smaller poles in distance may confuse task planning.
 
     def morphology(self, mask: np.ndarray) -> np.ndarray:
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 15))             #   Rectangular kernel to close small gaps and remove noise
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 20))             #   Rectangular kernel to close small gaps and remove noise
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)                  #   Close small gaps in the mask
         return cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)                   #   Remove noise from the mask
 

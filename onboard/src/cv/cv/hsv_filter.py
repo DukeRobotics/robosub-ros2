@@ -36,6 +36,8 @@ class HSVFilter(Node):
 
         self.all_contours_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/all_contours', 10)
 
+        self.raw_hsv_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/hsv_raw', 10) # Publisher for raw HSV image without morphology
+
         # Subscribers and publishers
         if pubs is None:
             self.bounding_box_pub = [self.create_publisher(CVObject, f'/cv/{camera}_usb/{name}/bounding_box', 10)]
@@ -96,7 +98,14 @@ class HSVFilter(Node):
         # Apply morphological filters as necessary to clean up binary image
         final_hsv = self.morphology(mask)
 
-        # Publish the HSV filtered image
+        # Publish HSV filter without morphology
+        raw_mask = mask
+        final_hsv = self.morphology(raw_mask)
+
+        raw_mask_msg = self.bridge.cv2_to_imgmsg(raw_mask, 'mono8')
+        self.raw_hsv_pub.publish(raw_mask_msg)
+
+        # Publish the HSV filtered(morphology) image
         hsv_filtered_msg = self.bridge.cv2_to_imgmsg(final_hsv, 'mono8')
         self.hsv_filtered_pub.publish(hsv_filtered_msg)
 
@@ -133,8 +142,8 @@ class HSVFilter(Node):
             rect_center = rect[0]
             x, y, w, h = (rect_center[0], rect_center[1], rect[1][0], rect[1][1])
 
-            # Check if width is 0, and return base case of None
-            if (w == 0):
+            # Check if width or height is non-positive, and return base case of None
+            if (w <= 0) or (h <= 0):
                 return
 
             # Get dimensions, attributes of relevant shapes
