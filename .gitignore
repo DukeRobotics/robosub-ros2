@@ -31,4 +31,7 @@ dist
 ivc_log.txt
 
 
+# Old competition bag files
+**old_competition_bags/**
+
 dvl_timestamps.txt
