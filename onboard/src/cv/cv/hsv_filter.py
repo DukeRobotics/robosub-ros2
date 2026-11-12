@@ -58,8 +58,8 @@ class HSVFilter(Node):
     def create_additional_pubs_subs_vars(self) -> None:
         """Additional publishers and subscribers to be used later."""
 
-    def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:       # WARNING: assumes input HSV values are in the range H: [0, 360], S: [0, 100], V: [0, 100]
-        # Convert the input HSV values to OpenCV format                         # Which does not seem to be respected in config.py?
+    def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:   
+        # Convert the input HSV values to OpenCV format                         
         """
         Convert actual HSV values to OpenCV HSV.
 
@@ -185,7 +185,7 @@ class HSVFilter(Node):
             self.distance_pub[i].publish(dist_point)
 
             # Draw bounding box on the image
-            cv2.rectangle(bbox_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.drawContours(bbox_img, [box], 0, (0, 255, 0), 2)
 
         image_msg = self.bridge.cv2_to_imgmsg(bbox_img, 'bgr8')
         self.all_contours_pub.publish(image_msg)

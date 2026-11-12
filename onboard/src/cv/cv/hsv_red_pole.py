@@ -13,9 +13,9 @@ class HSVRedBin(hsv_filter.HSVFilter):
             name='pole_red',
             camera='front',                                                     #   FIX: Check which cam to use for pole detection. Pretty sure it's front cam
             mask_ranges=[
-                [cv_constants.Bins.RED_LOW_BOT, cv_constants.Bins.RED_LOW_TOP], #   FIX:   These ranges were used for red bin. 
+                [cv_constants.SlalomPole.RED_LOW_BOT, cv_constants.SlalomPole.RED_LOW_TOP], #   FIX:   These ranges were used for red bin. 
                                                                                 #   Modify constants in cv.config for pole detection
-                [cv_constants.Bins.RED_HIGH_BOT, cv_constants.Bins.RED_HIGH_TOP],
+                [cv_constants.SlalomPole.RED_HIGH_BOT, cv_constants.SlalomPole.RED_HIGH_TOP],
             ],
             width=cv_constants.SlalomPole.WIDTH,                                      
             height=cv_constants.SlalomPole.HEIGHT,                              #   Monocular depth estimate depends on the "known height" here, so this is critical

@@ -14,6 +14,8 @@ class Bins:
     WIDTH = 0.3048  # width of one square of the bin, in m
 
     # Define the range for HSV filtering on the red bin
+    # Warning: hsv_red_bin.py uses hsv_filter's actual_to_opencv_hsv function 
+    # which should not use these ranges
     RED_LOW_BOT = np.array([0, 110, 150])
     RED_LOW_TOP = np.array([12, 255, 255])
     RED_HIGH_BOT = np.array([170, 50, 85])
@@ -120,4 +122,9 @@ class USBCamera(Enum):
 class SlalomPole: # BASED ON 2026 COMPETITION HANDBOOK. May need to update for 2027
     HEIGHT = 0.9144 #3ft height PVC pole
     WIDTH = 0.033401 # "1 inch" PVC pole diameter, which actually has 1.315 outer diameter
+
+    RED_LOW_BOT  = np.array([0,   43.1373, 58.8235]) # Correct HSV ranges for using hsv_filter actual_to_opencv_hsv function
+    RED_LOW_TOP  = np.array([24,  100,     100])
+    RED_HIGH_BOT = np.array([340, 19.6078, 33.3333])
+    RED_HIGH_TOP = np.array([358, 100,     100])
 

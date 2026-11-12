@@ -33,4 +33,7 @@ ivc_log.txt
 # Acoustics
 onboard/src/acoustics/acoustics/acoustics_v3/*.AppImage
 
+# Old competition bag files
+**old_competition_bags/**
+
 dvl_timestamps.txt
