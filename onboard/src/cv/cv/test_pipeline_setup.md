@@ -4,6 +4,11 @@ This guide replays a recorded front USB camera stream, runs the red-pole HSV
 detector on it, and visualizes the detector output in Foxglove. Run the ROS
 commands inside the repository's Docker development container.
 
+## 0. Bugs
+If docker container refuses to start ```Cannot start Docker Compose application. Reason: compose [start] exit status 1. Container onboard2 Starting Error response from daemon: error while creating mount source path```, try ```wsl --shutdown```, restart wsl, then ```docker compose down```, ```docker compose up -d```
+
+If git commands fail due to existing index.lock, and there should not be one, do ```rm -f .git/index.lock``` from project root
+
 ## 1. Build the CV package
 
 From the repository root, build all packages once if the workspaces have not

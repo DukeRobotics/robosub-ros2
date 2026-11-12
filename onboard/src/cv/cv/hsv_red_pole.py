@@ -6,7 +6,7 @@ import cv.config as cv_constants
 from cv import hsv_filter
 
 
-class HSVRedBin(hsv_filter.HSVFilter):
+class HSVRedPole(hsv_filter.HSVFilter):
     """Parent class for all HSV filtering scripts."""
     def __init__(self) -> None:
         super().__init__(
@@ -22,27 +22,42 @@ class HSVRedBin(hsv_filter.HSVFilter):
                                                                                 #   If we don't move to stereo vision, probably don't want to hardcode height in case robot is
                                                                                 #   rolling/pitching.
                                                                                 
-            pubs=['pole_1', 'pole_2', 'pole_3'],                                #   These are 3 publishers for the three red poles
+            pubs=['pole_1', 'pole_2', 'pole_3'],                                #   These are 3 publishers for the three red poles. For actual use, we probably only need the first, closest one.
         )
 
-    def filter(self, contours: list) -> list:                                   #   FIX: May want to filter by aspect ratio for pole detection
-                                                                                #   but test on video data to see what contours look like first
-                                                                                #   Slalom task seems to have 3 red poles total, so will return largest 3 for now
-        """Pick the largest 3 contours for now."""
-        final_contours = sorted(contours, key=cv2.contourArea, reverse=True)
-        return final_contours[:3]
+    def filter(self, contours: list) -> list:
+        kept = []
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area < 100: 
+                continue 
+
+            x, y, w, h = cv2.boundingRect(contour)
+            if w <= 0 or h <= 0:
+                continue
+
+            aspect = float(w) / float(h)
+            # pole is tall and thin
+            if aspect < 0.05 or aspect > 0.6:
+                continue
+
+            kept.append(contour)
+
+        if not kept:
+            return []
+
+        kept = sorted(kept, key=cv2.contourArea, reverse=True)
+        return kept[:3] #probably only need first, closest pole. In fact, smaller poles in distance may confuse task planning.
 
     def morphology(self, mask: np.ndarray) -> np.ndarray:
-        """Apply a kernel morphology."""
-        kernel = np.ones((3, 3), np.uint8)                                      #   FIX: Not too sure what sort of morphology masks to use. Closing may merge adjacent poles,
-                                                                                #   since poles are thin and tall, arranged in a sort of line, opening may thin them further,
-                                                                                #   since aspect ratio of poles is pretty high (about 30:1 height-to-width) Need to test
-        return cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 15))             #   Rectangular kernel to close small gaps and remove noise
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)                  #   Close small gaps in the mask
+        return cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)                   #   Remove noise from the mask
 
 def main(args: list[str] | None = None) -> None:
     """Run the node."""
     rclpy.init(args=args)
-    hsv_filter = HSVRedBin()
+    hsv_filter = HSVRedPole()
 
     try:
         rclpy.spin(hsv_filter)
