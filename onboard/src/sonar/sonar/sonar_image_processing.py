@@ -1,21 +1,11 @@
-import math
 from pathlib import Path
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from rclpy.logging import get_logger
-from sklearn.cluster import DBSCAN
-from sklearn.linear_model import LinearRegression
-from sklearn.mixture import GaussianMixture
 
 from sonar import decode_ping_python_360
-from sonar.sonar_object_detection import SonarSegment
 
-SONAR_IMAGE_WIDTH = 16
-SONAR_IMAGE_HEIGHT = 2
-MIN_DIMENSIONS_FOR_SEGMENTATION = 2
 
 def build_color_sonar_image_from_int_array(int_array: np.ndarray, npy_save_path: str | None = None,
                                            jpeg_save_path: str | None = None) -> np.ndarray:
@@ -33,6 +23,7 @@ def build_color_sonar_image_from_int_array(int_array: np.ndarray, npy_save_path:
     Returns:
         ndarray: Sonar image from the scan.
     """
+    int_array = np.nan_to_num(int_array, nan=0.0, posinf=0.0, neginf=0.0)
     sonar_img = np.stack([int_array, int_array, int_array], axis=-1)
     if jpeg_save_path:
         plt.imsave(jpeg_save_path, sonar_img)
@@ -45,138 +36,25 @@ def build_color_sonar_image_from_int_array(int_array: np.ndarray, npy_save_path:
 
     return sonar_img.astype(np.uint8)
 
-def draw_wall_segment_overlay(
-    color_image: np.ndarray,
-    segment: SonarSegment,
-    point_color: tuple[int, int, int] = (0, 0, 255),
-    trimmed_point_color: tuple[int, int, int] = (0, 165, 255),
-    line_color: tuple[int, int, int] = (0, 255, 0),
-) -> np.ndarray:
-    """
-    Draw the detected wall segment's points and fitted line on top of a color sonar image.
-
-    If the segment's OrthogonalRegression used RANSAC to robustly fit its line (see
-    OrthogonalRegression.__init__'s inlier_threshold), points that were RANSAC inliers used
-    for the fit are drawn in point_color and points that were excluded are drawn in
-    trimmed_point_color, so it's visible how much of the segment's spread the final angle was
-    actually based on.
-
-    Args:
-        color_image (ndarray): the (H, W, 3) uint8 color sonar image to draw onto. Not mutated.
-        segment (SonarSegment): the wall segment to visualize, as chosen by
-            ClusteredSonarSegmentation.get_most_wall_like_segment.
-        point_color (tuple[int, int, int]): BGR color used to highlight points kept for the fit.
-        trimmed_point_color (tuple[int, int, int]): BGR color used for points that were part of
-            the segment but excluded from the final fit.
-        line_color (tuple[int, int, int]): BGR color used to draw the segment's fitted line.
-
-    Returns:
-        ndarray: a copy of color_image with the wall segment's points and fitted line overlaid.
-    """
+def draw_label_overlay(color_image: np.ndarray, labels: np.ndarray) -> np.ndarray:
+    """Tint Cartesian labeled regions and draw their numeric IDs on a copy of a BGR image."""
     overlay = color_image.copy()
-    height, width = overlay.shape[:2]
-
-    ortho = segment.ortho_regression
-    kept_points = {(round(row), round(col)) for row, col in ortho.points}
-
-    for row, col in segment.points:
-        if 0 <= row < height and 0 <= col < width:
-            is_kept = (round(row), round(col)) in kept_points
-            color = point_color if is_kept else trimmed_point_color
-            cv2.circle(overlay, (int(col), int(row)), radius=1, color=color, thickness=-1)
-
-    row_start = np.clip(ortho.y_given_x(0), -10 * height, 10 * height)
-    row_end = np.clip(ortho.y_given_x(width - 1), -10 * height, 10 * height)
-    cv2.line(overlay, (0, round(row_start)), (width - 1, round(row_end)), line_color, thickness=2)
-
+    for label_id in np.unique(labels):
+        if label_id <= 0:
+            continue
+        mask = labels == label_id
+        hue = int(label_id * 37) % 180
+        color = cv2.cvtColor(np.uint8([[[hue, 220, 255]]]), cv2.COLOR_HSV2BGR)[0, 0]
+        overlay[mask] = (0.5 * overlay[mask] + 0.5 * color).astype(np.uint8)
+        rows, cols = np.nonzero(mask)
+        # Anchor inside the region, even when a curved object's centroid lies outside it.
+        nearest = np.argmin((rows - rows.mean()) ** 2 + (cols - cols.mean()) ** 2)
+        origin = (int(cols[nearest]), int(rows[nearest]))
+        text = str(int(label_id))
+        cv2.putText(overlay, text, origin, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 3, cv2.LINE_AA)
+        cv2.putText(overlay, text, origin, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
     return overlay
 
-
-def find_center_point_and_angle(array: np.ndarray, threshold: int, eps: float,
-                                min_samples: int, get_plot: bool = True) -> tuple:
-    """
-    Find the center point and angle of the largest cluster in the array.
-
-    Args:
-        array (ndarray): The sonar image array.
-        threshold (int): Threshold to apply to the array.
-        eps (float): Maximum distance between two samples for one to be
-            considered as in the neighborhood of the other.
-        min_samples (int): Number of samples in a neighborhood for a point
-            to be considered as a core point.
-        get_plot (bool, optional): Whether to return the plot of the results.
-            Defaults to True.
-
-    Returns:
-        float: The average column index of the largest cluster.
-        float: The angle of the largest cluster.
-        ndarray: The sonar image with the results plotted.
-    """
-    if get_plot:
-        plt.figure(figsize=(SONAR_IMAGE_WIDTH, SONAR_IMAGE_HEIGHT))
-        plt.imshow(array, cmap='viridis', aspect='auto')
-
-    get_logger('sonar_interface').info('test')
-
-    # Convert values > threshold to list of points
-    points = np.argwhere(array > threshold)
-    if points.size == 0:
-        get_logger('sonar_interface').info('No valid sonar points')
-        return None, None, None
-
-    # Perform DBSCAN clustering
-    db = DBSCAN(eps=eps, min_samples=min_samples).fit(points)
-    labels = db.labels_
-
-    # Get cluster with the most points
-    unique_labels = set(labels)
-    cluster_counts = {k: np.sum(labels == k) for k in unique_labels if k != -1}
-
-    if not cluster_counts:
-        get_logger('sonar_interface').info('No valid sonar clusters found')
-        return None, None, None
-
-    # Get the points of the largest cluster and calculate the average column index
-    largest_cluster_label = max(cluster_counts, key=cluster_counts.get)
-    class_member_mask = (labels == largest_cluster_label)
-    max_clust_points = points[class_member_mask]
-    average_column_index = np.mean(max_clust_points[:, 1])
-
-    # Linear regression to find slope
-    x = max_clust_points[:, 0].reshape(-1, 1)
-    y = max_clust_points[:, 1]
-    linreg_sklearn = LinearRegression()
-    linreg_sklearn.fit(x, y)
-
-    slope_sklearn = linreg_sklearn.coef_[0]
-    intercept_sklearn = linreg_sklearn.intercept_
-    angle = math.degrees(math.atan(slope_sklearn))
-
-    # Plot the results
-    if get_plot:
-        x_vals_plot = np.arange(array.shape[0])
-        y_vals_plot = intercept_sklearn + slope_sklearn * x_vals_plot
-        plt.plot(
-            y_vals_plot, x_vals_plot, 'r', linewidth=4,
-            label=f'Line: y = {slope_sklearn:.2f}x + {intercept_sklearn:.2f}',
-        )
-        plt.scatter(
-            average_column_index, array.shape[0]/2,
-            color='k', s=150, zorder=3, label='Center Point',
-        )
-        plt.xticks([])
-        plt.yticks([])
-        plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-
-        fig = plt.gcf()
-        canvas = FigureCanvas(fig)
-        canvas.draw()
-
-        image = np.frombuffer(canvas.tostring_argb(), dtype='uint8')
-        image = image.reshape((*fig.canvas.get_width_height()[::-1], 4))
-        array = cv2.cvtColor(image[:, :, 1:], cv2.COLOR_RGB2BGR)
-
-    return average_column_index, angle, array
 
 def build_sonar_img_from_log_file(filename: str, start_index: int = 49, end_index: int = 149) -> np.ndarray:
     """
@@ -250,31 +128,3 @@ def build_sonar_image(data_list: list, display_results: bool = False, npy_save_p
         cv2.waitKey(0)
 
     return sonar_img
-
-def sonar_gaussian_mixture_model_cluster(sonar_data: np.ndarray) -> np.ndarray:
-    """
-    Cluster a sonar scan into background, walls, and buoys using GMM clustering. Adapted from Pranav Bijith's GMM code.
-
-    Args:
-        sonar_data (ndarray): a sonar scan in cartesian coordinates which may contain nothing, walls, and buoys
-
-    Returns:
-        ndarray: ndarray of sonar_data segmented into three categories: nothing, walls, and buoys
-    """
-    finalcopygrid = sonar_data.copy()
-    finalcopygrid[finalcopygrid != 0] = 255
-    h, w = finalcopygrid.shape
-    x = np.column_stack((finalcopygrid.reshape(-1), np.repeat(np.arange(h), w), np.tile(np.arange(w), h)))
-    mask = finalcopygrid.reshape(-1) != 0
-    x_masked = x[mask]
-
-    if x_masked.shape[0] >= MIN_DIMENSIONS_FOR_SEGMENTATION:
-        gmm = GaussianMixture(n_components=2, random_state=42)
-        gmm.fit(x_masked)
-        cluster_labels = np.full(mask.shape, -1)
-        cluster_labels[mask] = gmm.predict(x_masked)
-    else:
-        print('No nonzero pixels found — skipping GMM')
-        cluster_labels = np.full(mask.shape, -1)
-
-    return cluster_labels.reshape(finalcopygrid.shape)

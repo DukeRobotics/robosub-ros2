@@ -1,6 +1,6 @@
 # Sonar
 
-The sonar package listens from sonar ping data from the Blue Robotics Ping360. We then run a denoising pipeline which primarily utilizes 2D FFTs to allow for object detection within the scan. The package publishes sonar scans as they are run.
+The sonar package listens from sonar ping data from the Blue Robotics Ping360. We then run a denoising pipeline to allow for object detection within the scan. The package publishes sonar scans as they are run.
 
 ## Structure
 The following are the folders and files in the sonar package:
@@ -33,11 +33,12 @@ increase_ccw: <bool> Whether angle values increases counterclockwise or not
 - `/sonar/image/compressed`
   - When the sonar pipeline runs, it publishes the denoised image to this topic
   - Type: `sensor_msgs/CompressedImage`
+- `/sonar/image/labeled`
+  - When the sonar pipeline runs, it publishes the denoised image with segments on top
+  - Type: `sensor_msgs/CompressedImage`
 - `/sonar/image/wall`
-  - When the sonar pipeline finds a wall-like segment, it publishes the denoised image with that segment's points and fitted line overlaid on top, showing exactly what was detected as the wall
-  - Only published when a wall-like segment is found; not published on scans where no wall is detected
+  - Reserved for custom wall visualization; currently no messages are published.
   - Type: `sensor_msgs/CompressedImage`
 - `/sonar/wall/angle`
-  - When the sonar pipeline runs, it publishes the relative angle of a wall (if found) to the robot
-  - When it faces directly at a wall: 0 radians, if it is parallel with the wall on the right side: pi/2 radians, if it is parallel with the wall on the left side: -pi/2 radians.
+  - Reserved for custom wall fitting; currently no messages are published.
   - Type: `std_msgs/msg/Float32`

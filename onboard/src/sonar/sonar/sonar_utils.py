@@ -1,7 +1,4 @@
 import numpy as np
-import rclpy
-import tf2_geometry_msgs
-import tf2_ros
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Pose
 from sensor_msgs.msg import CompressedImage
@@ -13,42 +10,6 @@ GRADIANS_PER_DEGREE = 400 / 360
 SPEED_OF_SOUND_IN_WATER = 1482  # m/s
 SAMPLE_PERIOD_TICK_DURATION = 25e-9  # s
 TRANSFORMATION_ANGLE = np.pi / 4
-
-
-def transform_pose(
-    buffer: tf2_ros.Buffer, pose: tf2_geometry_msgs.PoseStamped, source_frame_id: str, target_frame_id: str,
-) -> tf2_geometry_msgs.PoseStamped:
-    """
-    Transform pose from source reference frame to target reference frame.
-
-    Args:
-        buffer (tf2_ros.Buffer): The tf2 buffer containing transform data.
-        pose (Pose): Pose in the source reference frame.
-        source_frame_id (str): Name of the source frame (e.g., 'sonar_ping_360').
-        target_frame_id (str): Name of the target frame (e.g., 'camera_depthai_front').
-
-    Returns:
-        Pose: Pose in the target reference frame.
-    """
-    try:
-        # Wait for transform to be available
-        transform = buffer.lookup_transform(
-            target_frame_id,
-            source_frame_id,
-            rclpy.time.Time(),
-        )
-
-        # Transform the pose
-        return tf2_geometry_msgs.do_transform_pose(pose, transform)
-
-    except (
-        tf2_ros.LookupException,
-        tf2_ros.ConnectivityException,
-        tf2_ros.ExtrapolationException,
-        tf2_ros.InvalidArgumentException,
-    ) as e:
-        error_message = f'Failed to transform pose: {e}'
-        raise RuntimeError(error_message) from e
 
 
 def centered_gradians_to_radians(angle_gradians: float, center_gradians: float, increase_ccw: bool) -> float:
