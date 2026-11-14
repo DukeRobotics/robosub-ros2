@@ -236,6 +236,12 @@ wheels = [
 ]
 
 [[package]]
+name = "jetson-gpio"
+version = "2.1.13"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ab/02/bc497bd9aabf390785bac5feeeb3e070e539912ed835ff3b41daa3c7c1fb/jetson_gpio-2.1.13.tar.gz", hash = "sha256:45d4b1de074497d51227929e654bd51bf7fd96f006a7be702dc07a78968a8b66", size = 37716, upload-time = "2026-07-27T15:22:40.664Z" }
+
+[[package]]
 name = "jinja2"
 version = "3.1.6"
 source = { registry = "https://pypi.org/simple" }
@@ -735,6 +741,7 @@ dependencies = [
     { name = "future" },
     { name = "gitpython" },
     { name = "gputil" },
+    { name = "jetson-gpio" },
     { name = "jinja2" },
     { name = "jsonpickle" },
     { name = "kiwisolver" },
@@ -777,6 +784,7 @@ requires-dist = [
     { name = "future", specifier = "==1.0.0" },
     { name = "gitpython" },
     { name = "gputil" },
+    { name = "jetson-gpio", specifier = "==2.1.13" },
     { name = "jinja2", specifier = "==3.1.6" },
     { name = "jsonpickle" },
     { name = "kiwisolver", specifier = "==1.4.9" },

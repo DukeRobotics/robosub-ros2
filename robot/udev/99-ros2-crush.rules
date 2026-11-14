@@ -15,3 +15,6 @@ SUBSYSTEM=="tty", ATTRS{idProduct}=="6001", ATTRS{idVendor}=="0403", ATTRS{seria
 
 # Set the FTDI USB-to-serial device latency timer to 1ms for lower communication delay; this prevents IMU messages from getting bunched up
 ACTION=="add", SUBSYSTEM=="usb-serial", DRIVER=="ftdi_sio", ATTR{latency_timer}="1"
+
+# Allow the host gpio group to access GPIO controllers (including Docker supplementary members).
+SUBSYSTEM=="gpio", KERNEL=="gpiochip*", GROUP="gpio", MODE="0660"
