@@ -20,8 +20,15 @@ bool valid_robot = true;
 
 Adafruit_PWMServoDriver pwm_multiplexer(0x40);
 
+const uint8_t OOGWAY_THRUSTER_PINS[] = {0, 1, 2, 3, 4, 5, 6, 7};
+const uint8_t OOGWAY_SHELL_THRUSTER_PINS[] = {0, 1, 2, 3, 4, 5, 6, 7};
+//const uint8_t CRUSH_THRUSTER_PINS[] = {0, 1, 2, 3, 4, 5, 6, 7};
+const uint8_t CRUSH_THRUSTER_PINS[] = {5, 7, 0, 4, 3, 2, 1, 6};
+
+
 int NUM_THRUSTERS;
 int THRUSTER_PWM_OFFSET; // Hardware specific offset for PWMs -- refers to the robot-specific offsets
+const uint8_t* THRUSTER_PINS;
 
 byte START_FLAG[] = {0xFF, 0xFF};
 
@@ -53,14 +60,17 @@ void setup() {
         case OOGWAY:
             NUM_THRUSTERS = 8;
             THRUSTER_PWM_OFFSET = 0;
+            THRUSTER_PINS = OOGWAY_THRUSTER_PINS;
             break;
         case OOGWAY_SHELL:
             NUM_THRUSTERS = 8;
             THRUSTER_PWM_OFFSET = 57;
+            THRUSTER_PINS = OOGWAY_SHELL_THRUSTER_PINS;
             break;
         case CRUSH:
             NUM_THRUSTERS = 8;
             THRUSTER_PWM_OFFSET = 210;
+            THRUSTER_PINS = CRUSH_THRUSTER_PINS;
             break;
         default:
             valid_robot = false;
@@ -81,7 +91,7 @@ void setup() {
 
     for (uint8_t i = 0; i < NUM_THRUSTERS; i++) {
         thrusters[i].initialize(&pwm_multiplexer);
-        thrusters[i].attach(i);
+        thrusters[i].attach(THRUSTER_PINS[i]);
     }
 
     // Initialize the PWMs to stop
