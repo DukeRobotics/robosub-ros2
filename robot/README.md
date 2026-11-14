@@ -30,6 +30,8 @@ The `docker-compose.yml` file in the `robot` directory extends the `docker-compo
 
 It also accepts an optional `ROBOT_DOCKER_RUNTIME` value from `.env`. Set it to `nvidia` only on a Jetson host with NVIDIA Container Toolkit configured; otherwise it defaults to `runc`. This keeps the shared compose configuration usable on Oogway's non-NVIDIA NUC.
 
+Crush's udev file also grants the host `gpio` group read/write access to `/dev/gpiochip*`. Set `JETSON_GPIO_GID` in the local `.env` to that group's numeric ID; Compose adds it to the container user's supplementary groups. When unset, the mapping falls back to `USER_GID` or `1000`. See [GPIO access on Crush](../SETUP.md#gpio-access-on-crush) for host setup, container recreation, and checks that do not toggle pins. No root ROS process is required.
+
 ## `robot_config.sh`
 The `robot_config.sh` script defines environment variables, aliases, and other configuration needed on the robot. It should be sourced in the robot's `.bashrc` file to make the configuration available in the robot's shell.
 - `onboard2`: Alias for running `docker-build.sh`.

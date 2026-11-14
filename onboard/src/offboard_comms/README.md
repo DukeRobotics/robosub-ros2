@@ -453,3 +453,43 @@ When `peripheral.py` receives a service request to control a servo, it first val
 
 > [!WARNING]
 > The Peripheral Arduino will not accept any other commands for a servo until the servo has returned to its original position. Thus, if service request(s) are sent for a servo within `min_delay` seconds of the last successful request for that servo, the service will respond to those request(s) with an error message and no command will be sent to the servo. Thus, the service caller must **wait at least `min_delay` seconds between service requests** for the same servo.
+
+## Arduino Reset on Crush
+
+On Crush, the existing `thrusters` node owns `/offboard/reset_thruster` and the `peripheral` node owns `/offboard/reset_peripheral`, both `std_srvs/srv/Trigger`. Each service requires its corresponding node to be running, even when serial is disconnected. Each node initializes only its own output LOW (released), without issuing a reset. Run only one instance of each node. Other robots do not initialize Jetson GPIO.
+
+### Wiring and prerequisites
+
+Complete [Docker GPIO permissions](../../../SETUP.md#gpio-access-on-crush) first. On the Jetson host, identify the installed JetPack/L4T version and configure the selected pins as GPIO outputs using the matching NVIDIA pinmux procedure. See [NVIDIA GPIO setup](https://github.com/NVIDIA/jetson-gpio) and [header configuration](https://docs.nvidia.com/jetson/archives/r36.3/DeveloperGuide/HR/ConfiguringTheJetsonExpansionHeaders.html); the latter describes Jetson Linux 36.3, so use documentation matching the installed release. Verify board detection inside Docker with `python -c "from Jetson import GPIO; print(GPIO.JETSON_INFO)"`. Device-tree information must be visible to the container, or its model must be explicitly configured as documented by NVIDIA.
+
+Use the NVIDIA developer-kit 40-pin header's **physical numbering**, not BCM numbering:
+
+| Jetson physical pin | Connection |
+| --- | --- |
+| 29 (GPIO01) | Thruster reset transistor base through 4.7 kΩ |
+| 31 (GPIO11) | Peripheral reset transistor base through 4.7 kΩ |
+| 6 (GND) | Both transistor emitters and both Nano grounds |
+
+For each Arduino, use a separate NPN transistor with collector connected to the Nano's dedicated RST/RESET pin and a 10 kΩ resistor from base to emitter. Verify the transistor's lead order. The classic AVR Nano's reset pull-up releases RESET when the transistor is off. HIGH on the Jetson turns the transistor on and pulls RESET LOW; LOW releases it. Do not connect the Nano RESET line directly to a Jetson GPIO: its pull-up is on the Nano's 5 V side. No Arduino sketch changes are needed.
+
+Verify the selected header pins are unused and measure pulses with the Arduino reset connections removed before attaching either board. External base pull-downs keep the transistors off when GPIOs are inputs; actual boot/shutdown electrical behavior must be measured on Crush.
+
+### Build and operation
+
+Inside the configured container, from the repository root:
+
+```bash
+source build.sh offboard_comms
+ros2 launch offboard_comms offboard_comms.launch.py
+```
+
+Alternatively, with `ROBOT_NAME=crush`, run `ros2 run offboard_comms thrusters` or `ros2 run offboard_comms peripheral` to start the corresponding node and reset service. Missing GPIO devices, permissions, or initialization failures are logged; serial communication continues and reset requests return failure. Correct GPIO setup and restart the affected node to retry initialization. There is no standalone reset executable.
+
+**Hardware operation:** Disable controls and disconnect thruster power for initial testing. Resetting the thruster Arduino is not an emergency stop: the external PWM driver can retain its output while the Arduino reboots. Peripheral reset interrupts sensors, servos, and the gyro trigger signal. Ensure attached mechanisms are safe before calling:
+
+```bash
+ros2 service call /offboard/reset_thruster std_srvs/srv/Trigger '{}'
+ros2 service call /offboard/reset_peripheral std_srvs/srv/Trigger '{}'
+```
+
+The `arduino_reset` section in [Crush's configuration](config/crush.yaml) assigns pins 29/31, a 0.1-second pulse, and a 3-second per-board cooldown measured from the last attempted reset. Pin assignments may be swapped between these two supported GPIO pins. Overlapping requests and requests during cooldown return `success: false`. A steady-clock ROS timer releases the pulse and completes the response asynchronously, allowing other callbacks to run during the pulse. Peripheral serial reads accumulate available bytes without waiting for a complete line. Serial writes time out after 100 ms; connection, write, and close errors use the serial retry path without issuing GPIO resets. Executor delays can extend pulse duration; this is not a real-time timing guarantee. A successful response confirms the GPIO pulse completed, not Arduino readiness; verify sensor topics and serial communication recover before resuming operations. GPIO errors return failure, and the node attempts to release the line even if assertion fails. Normal shutdown releases and cleans up only the node's assigned pin; it never asserts reset. Startup and serial reconnection never assert GPIO reset. A process or host failure during a pulse cannot guarantee release timing.

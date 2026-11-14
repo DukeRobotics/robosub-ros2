@@ -9,6 +9,7 @@ import rclpy
 from custom_msgs.srv import SetContinuousServo, SetDiscreteServo
 from rclpy.service import Service
 
+from offboard_comms.arduino_reset import ArduinoReset
 from offboard_comms.peripheral_sensors import (
     HumiditySensor,
     PeripheralSensor,
@@ -102,7 +103,7 @@ class PeripheralPublisher(SerialNode):
     def __init__(self) -> None:
         super().__init__(self.NODE_NAME, self.BAUDRATE, self.CONFIG_FILE_PATH, self.SERIAL_DEVICE_NAME,
                          SerialReadType.LINE_NONBLOCKING, connection_retry_period=self.CONNECTION_RETRY_PERIOD,
-                         loop_rate=self.LOOP_RATE)
+                         loop_rate=self.LOOP_RATE, read_timeout=0)
 
         self.sensors: dict[str, PeripheralSensor] = {}
         self.setup_sensors()
@@ -113,6 +114,16 @@ class PeripheralPublisher(SerialNode):
         }
         self.servos: dict[str, PeripheralDiscreteServo | PeripheralContinuousServo] = {}
         self.setup_servos()
+
+        self._reset = None
+        if os.getenv('ROBOT_NAME') == 'crush':
+            self._reset = ArduinoReset(self, self.ARDUINO_NAME, self._config.get('arduino_reset', {}))
+
+    def destroy_node(self) -> None:
+        """Release this Arduino's reset output before serial and ROS cleanup."""
+        if self._reset is not None:
+            self._reset.close()
+        super().destroy_node()
 
     def get_ftdi_string(self) -> str:
         """

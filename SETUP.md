@@ -95,6 +95,7 @@ USER_GID=
 - `IS_ROBOT` (Optional): Set to `true` if you are setting up the repository on the robot. Set to `false` or do not include this variable in `.env` if you are setting up the repository on your development machine.
 - `ROBOT_DOCKER_RUNTIME` (Optional): Set this to `nvidia` on Crush so its Docker service uses NVIDIA Container Toolkit and exposes the Jetson GPU, CUDA driver, and video-encoder capability to the container. Leave it unset on Oogway and other non-NVIDIA hosts; it defaults to Docker's `runc` runtime.
 - `FOXGLOVERC_PATH` (Optional): Absolute path to the [`.foxgloverc`](#set-up-the-foxgloverc-file) file.
+- `JETSON_GPIO_GID` (Crush only): Numeric ID of the host `gpio` group. Set this after following [GPIO access on Crush](#gpio-access-on-crush). Leave it unset on other robots. This supplementary group does not replace `USER_GID`.
 - `USER_UID` and `USER_GID` (Optional): The user ID and group ID of the `ubuntu` user in the Docker container.
 
     If you are a Linux user, set these variables to your user ID and group ID. This ensures that all files in this repository are owned by that combination of user ID and group ID in both the container and host machine, which avoids file permission issues.
@@ -150,6 +151,52 @@ Each robot has its own udev rules file located in the `robot/udev` directory. Th
     ls /dev
     ```
     and check if the symlinks are present. If the symlinks are not present, reboot the robot and check again.
+
+### GPIO Access on Crush
+
+Run these steps **on Crush's Jetson host, outside Docker**, from the repository root. They change persistent host permissions and recreate the container, interrupting running nodes; stop robot operations first. No GPIO pins are toggled by these checks.
+
+1. Create the GPIO group if absent and read its numeric ID:
+
+   ```bash
+   sudo groupadd -f -r gpio
+   getent group gpio
+   ```
+
+   The third colon-separated field is the group ID. Add `JETSON_GPIO_GID=NUMBER` to your local `.env`, replacing `NUMBER` with that ID. Do not copy an example ID from another machine.
+
+2. Install Crush's udev file using the preceding [udev instructions](#set-up-udev-rules), if it is not already installed. Its GPIO rule assigns controller devices to `root:gpio` with mode `0660`. Apply it:
+
+   ```bash
+   sudo udevadm control --reload-rules
+   sudo udevadm trigger --subsystem-match=gpio
+   sudo udevadm settle
+   ls -ln /dev/gpiochip*
+   ```
+
+   Confirm the group column matches `JETSON_GPIO_GID` and permissions are `crw-rw----`. If there are no controller devices, investigate host GPIO support before continuing.
+
+3. Recreate the robot container to apply supplementary membership:
+
+   ```bash
+   docker compose --env-file .env -f robot/docker-compose.yml up -d --force-recreate
+   docker exec onboard2 id
+   docker exec onboard2 ls -ln /dev/gpiochip0
+   ```
+
+   Use an existing controller path from step 2 if `gpiochip0` is absent. Confirm `id` reports the normal `ubuntu` UID and the host GPIO GID among its groups. A group name need not appear inside Docker: Linux checks numeric IDs. Restarting an existing container does not update group membership; an image rebuild is not required for this change.
+
+4. Check access as the container's default user without requesting lines or changing outputs:
+
+   ```bash
+   docker exec onboard2 /home/ubuntu/venv/bin/python -c 'import glob, os; paths = glob.glob("/dev/gpiochip*"); assert paths, "No GPIO controllers exposed"; [(os.close(os.open(p, os.O_RDWR)), print("Opened:", p)) for p in paths]'
+   ```
+
+   Repeat the ownership and access checks after a host reboot. A permission error indicates the numeric membership or host device permissions need correction.
+
+The robot Compose file adds `JETSON_GPIO_GID` as a supplementary group. When unset, it falls back to `USER_GID` (or `1000`), so other robots need no GPIO group. Adding the host login user to `gpio` is optional for native tools and is not required by this container mapping.
+
+This grants controller-level access, not access restricted to two pins. It does not configure Jetson pinmux, board detection, reset wiring, or ROS reset services. Those require separate setup and verification. The existing privileged container setting remains unchanged.
 
 ### Set Up Shell Configuration
 Set up the required shell configuration on the robot, which is used outside of the Docker container.

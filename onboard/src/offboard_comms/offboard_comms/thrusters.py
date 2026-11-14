@@ -12,6 +12,7 @@ from ament_index_python.packages import get_package_share_directory
 from custom_msgs.msg import PWMAllocs, ThrusterAllocs
 from std_msgs.msg import Float64
 
+from offboard_comms.arduino_reset import ArduinoReset
 from offboard_comms.serial_node import SerialNode, SerialReadType
 
 
@@ -85,6 +86,16 @@ class Thrusters(SerialNode):
 
         # Create publisher
         self.pwm_publisher = self.create_publisher(PWMAllocs, '/offboard/pwm', 1)
+
+        self._reset = None
+        if os.getenv('ROBOT_NAME') == 'crush':
+            self._reset = ArduinoReset(self, self.ARDUINO_NAME, self._config.get('arduino_reset', {}))
+
+    def destroy_node(self) -> None:
+        """Release this Arduino's reset output before serial and ROS cleanup."""
+        if self._reset is not None:
+            self._reset.close()
+        super().destroy_node()
 
     def get_ftdi_string(self) -> str:
         """

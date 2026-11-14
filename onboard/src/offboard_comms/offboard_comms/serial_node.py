@@ -1,6 +1,5 @@
 import time
 from abc import ABC, abstractmethod
-from contextlib import suppress
 from enum import Enum
 from pathlib import Path
 
@@ -67,6 +66,8 @@ class SerialNode(Node, ABC):
         self.connect_timer = self.create_timer(self._connection_retry_period, self.connect)
         self.read_timer = self.create_timer(1.0/loop_rate, self.read, autostart=False)
 
+        self._line_buffer = bytearray()
+        self._line_started = time.monotonic()
         self._serial_port = None
         self._serial = None
         self._num_consecutive_empty_lines = 0
@@ -84,19 +85,20 @@ class SerialNode(Node, ABC):
         """Find and connect to the serial port."""
         try:
             self._serial_port = next(list_ports.grep(self.get_ftdi_string())).device.strip()
-        except StopIteration:
+        except (StopIteration, serial.SerialException, OSError):
             self.get_logger().error(f'Could not find {self._serial_device_name} in serial ports, trying again in '
                                     f'{self._connection_retry_period} seconds.')
             return
 
         try:
-            self._serial = serial.Serial(self._serial_port, self._baud, timeout=self._read_timeout, write_timeout=None,
+            self._serial = serial.Serial(self._serial_port, self._baud, timeout=self._read_timeout, write_timeout=0.1,
                                          bytesize=serial.EIGHTBITS, parity=self._parity, stopbits=serial.STOPBITS_ONE)
             self.connect_timer.cancel()
             self.after_connect()
             self.read_timer.reset()
             self.get_logger().info(f'Connected to {self._serial_device_name} at {self._serial_port}.')
-        except StopIteration:
+        except (StopIteration, serial.SerialException, OSError):
+            self.reset_serial()
             self.get_logger().error(f'Error in connecting to {self._serial_device_name} over serial, trying again in '
                                     f'{self._connection_retry_period} seconds.')
 
@@ -107,23 +109,20 @@ class SerialNode(Node, ABC):
         This method can be overridden by subclasses to perform additional actions after connecting.
         """
 
-    def readline_nonblocking(self, tout: int = 1) -> str:
-        """
-        Read line from serial port without blocking.
-
-        Args:
-            tout (int): timeout in seconds
-
-        Returns:
-            str: The line read from the serial port.
-        """
-        start = time.time()
-        buff = b''
-        while ((time.time() - start) < tout) and (b'\r\n' not in buff):
-            with suppress(serial.SerialException):
-                buff += self._serial.read(1)
-
-        return buff.decode('utf-8', errors='ignore')
+    def readline_nonblocking(self, tout: int = 1) -> str | None:
+        """Accumulate available bytes, returning None while a partial line is pending."""
+        self._line_buffer.extend(self._serial.read(min(self._serial.in_waiting, 4096)))
+        end = self._line_buffer.find(b'\r\n')
+        if end >= 0:
+            line = self._line_buffer[:end]
+            del self._line_buffer[:end + 2]
+            self._line_started = time.monotonic()
+            return line.decode('utf-8', errors='ignore')
+        if time.monotonic() - self._line_started >= tout:
+            self._line_buffer.clear()
+            self._line_started = time.monotonic()
+            return ''
+        return None
 
     def writebytes(self, data: bytes) -> bool:
         """
@@ -138,7 +137,7 @@ class SerialNode(Node, ABC):
         if self._serial and self._serial.is_open:
             try:
                 self._serial.write(data)
-            except serial.SerialException:
+            except (serial.SerialException, OSError):
                 self.get_logger().error(f'Error in writing to {self._serial_device_name} serial port, trying to '
                                         'reconnect.')
                 self.reset_serial()
@@ -184,9 +183,15 @@ class SerialNode(Node, ABC):
     def reset_serial(self) -> None:
         """Reset the serial connection."""
         self.read_timer.cancel()
-        self._serial.close()
+        try:
+            if self._serial is not None:
+                self._serial.close()
+        except (serial.SerialException, OSError) as exc:
+            self.get_logger().error(f'Error closing {self._serial_device_name}: {exc}')
         self._serial = None
         self._serial_port = None
+        self._line_buffer.clear()
+        self._line_started = time.monotonic()
         self.connect_timer.reset()
 
     def _read_bytes(self) -> bytes:
@@ -211,7 +216,7 @@ class SerialNode(Node, ABC):
 
         return data
 
-    def _read_line(self) -> str:
+    def _read_line(self) -> str | None:
         """
         Read line from serial.
 
@@ -221,7 +226,8 @@ class SerialNode(Node, ABC):
         if self._read_type == SerialReadType.LINE_BLOCKING:
             return self._serial.readline().decode('utf-8', errors='ignore').strip()
         if self._read_type == SerialReadType.LINE_NONBLOCKING:
-            return self.readline_nonblocking().strip()
+            line = self.readline_nonblocking()
+            return line.strip() if line is not None else None
 
         error_msg = f'Invalid read type for reading line from serial: {self._read_type}'
         raise ValueError(error_msg)
@@ -253,14 +259,15 @@ class SerialNode(Node, ABC):
                         return
                     case SerialReadType.LINE_BLOCKING | SerialReadType.LINE_NONBLOCKING:
                         line = self._read_line()
-                        self._handle_line(line)
+                        if line is not None:
+                            self._handle_line(line)
 
-        except serial.SerialException:
+        except (serial.SerialException, OSError):
             self.get_logger().error(f'Error in reading {self._serial_device_name} from serial, trying to reconnect.')
             self.reset_serial()
 
     def destroy_node(self) -> None:
         """Clean up resources when node is destroyed."""
-        if self._serial and self._serial.is_open:
-            self._serial.close()
+        self.reset_serial()
+        self.connect_timer.cancel()
         super().destroy_node()
