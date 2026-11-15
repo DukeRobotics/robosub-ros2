@@ -118,12 +118,42 @@ Confirm that `docker info` lists an `nvidia` runtime, then add this to Crush's `
 ROBOT_DOCKER_RUNTIME=nvidia
 ```
 
-Recreate the container with `./docker-build.sh`. Verify inside it with:
+On the **Jetson host**, check `command -v tegrastats`. The Jetson Compose file
+expects `/usr/bin/tegrastats`; if the command reports a different absolute path,
+set `TEGRASTATS_HOST_PATH` to that path in `.env`. If the command is missing,
+restore the utility from the host's matching JetPack/L4T installation first.
+
+From the repository root **on the host**, recreate the container with
+`./docker-build.sh`. With `IS_ROBOT=true` and `ROBOT_DOCKER_RUNTIME=nvidia`, this
+selects [robot/docker-compose.jetson.yml](robot/docker-compose.jetson.yml), which
+mounts the host executable read-only into the container on every recreation.
+Recreation stops processes in the existing container; do this with robot
+operations stopped. No image rebuild is needed solely to apply the mount; to
+reuse the existing image instead, run:
+
+```bash
+docker compose --env-file .env -f robot/docker-compose.jetson.yml up -d --force-recreate
+```
+
+For VS Code Dev Containers on Crush, add this line **after** the existing
+`source .../robot/robot_config.sh` line in the host's `~/.bashrc`, substituting the
+absolute repository path, and open VS Code from that shell:
+
+```bash
+export ROBOSUB_ROS2_COMPOSE_FILE_PATH=/absolute/path/to/robosub-ros2/robot/docker-compose.jetson.yml
+```
+
+Verify inside the container with:
 
 ```bash
 ls -l /dev/nvhost-gpu
 ldconfig -p | grep libcuda
 ```
+
+Also run `tegrastats --interval 1000` inside the container and stop it with
+Ctrl+C after checking that `GR3D_FREQ` readings appear. A binary mount does not
+supply missing shared libraries or device permissions; investigate those if the
+command starts but fails to report GPU data.
 
 `nvidia-smi` is normally not available on Jetson, so it is not an appropriate validation command there. Oogway must leave `ROBOT_DOCKER_RUNTIME` unset.
 

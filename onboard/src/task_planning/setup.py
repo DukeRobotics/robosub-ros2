@@ -1,11 +1,11 @@
-from setuptools import find_packages, setup
+from setuptools import find_namespace_packages, setup
 
 package_name = 'task_planning'
 
 setup(
     name=package_name,
     version='0.0.0',
-    packages=find_packages(exclude=['test']),
+    packages=find_namespace_packages(include=['task_planning', 'task_planning.*']),
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),

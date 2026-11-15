@@ -1,0 +1,13 @@
+# Jetson hosts only: reuse the robot setup and expose JetPack's matching utility.
+services:
+  robosub-ros2:
+    extends:
+      file: docker-compose.yml
+      service: robosub-ros2
+    volumes:
+      - type: bind
+        source: ${TEGRASTATS_HOST_PATH:-/usr/bin/tegrastats}
+        target: /usr/local/bin/tegrastats
+        read_only: true
+        bind:
+          create_host_path: false
