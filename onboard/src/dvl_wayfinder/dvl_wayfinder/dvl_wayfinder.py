@@ -91,6 +91,9 @@ class DVLWayfinderPublisher(Node):
         bottom_track_valid = data_obj.is_valid and data_obj.is_velocity_valid() and valid_beam_count >= 3
         if not bottom_track_valid:
             return
+        if data_obj.coordinate_system != 1:
+            self.get_logger().error('Wayfinder velocity must use instrument XYZ.', throttle_duration_sec=5)
+            return
 
         # Apply rotation matrix to velocities
         vels = np.matmul([data_obj.vel_x, data_obj.vel_y, data_obj.vel_z], self._rotation_matrix) * 1e3  # Convert to mm
@@ -102,6 +105,7 @@ class DVLWayfinderPublisher(Node):
         self.dvl_raw_msg.bs_normal = vels[2]
         self.dvl_raw_msg.bi_error = data_obj.vel_err * 1e3
         self.dvl_raw_msg.bs_status = 'A'
+        self.dvl_raw_msg.bt_ranges_valid = True
         self.dvl_raw_msg.bt_beam_ranges = beam_ranges
         self.dvl_raw_msg.bd_range = data_obj.mean_range
         self._pub.publish(self.dvl_raw_msg)

@@ -1,3 +1,4 @@
+import math
 import os
 
 import rclpy
@@ -34,11 +35,33 @@ class DVLPathfinderRawPublisher(SerialNode):
             'BE': self._parse_BE,
             'BD': self._parse_BD,
             'RA': self._parse_RA,
+            'WI': self._parse_WI,
+            'WS': self._parse_WS,
+            'WD': self._parse_WD,
         }
 
         self._pub = self.create_publisher(DVLRaw, self.TOPIC_NAME, 10)
 
-        self._current_msg = DVLRaw()
+        self._current_msg = self._new_message()
+
+    @staticmethod
+    def _new_message() -> DVLRaw:
+        """Keep missing/sentinel data distinct from a real stationary fix."""
+        msg = DVLRaw()
+        msg.bs_transverse = msg.bs_longitudinal = msg.bs_normal = math.nan
+        msg.ws_transverse = msg.ws_longitudinal = msg.ws_normal = math.nan
+        msg.bi_error = msg.wi_error = msg.wd_time = math.nan
+        return msg
+
+    def _publish_current(self) -> None:
+        """Publish an ensemble once; never carry velocity into the next one."""
+        self._current_msg.header.frame_id = 'dvl'
+        self._pub.publish(self._current_msg)
+        self._current_msg = self._new_message()
+
+    def after_connect(self) -> None:
+        """Discard measurements from the previous serial connection."""
+        self._current_msg = self._new_message()
 
     def get_ftdi_string(self) -> str:
         """
@@ -51,7 +74,8 @@ class DVLPathfinderRawPublisher(SerialNode):
 
     def _extract_floats(self, num_string: str, start: int, stop: int | None) -> list[float]:
         """Return a list of floats from a given string, using LINE_DELIM and going from start to stop."""
-        return [float(num) for num in num_string.split(self.LINE_DELIM)[start:stop]]
+        values = [float(num) for num in num_string.split(self.LINE_DELIM)[start:stop]]
+        return [math.nan if value == -32768 else value for value in values]
 
     def process_line(self, line: str) -> None:
         """
@@ -69,7 +93,7 @@ class DVLPathfinderRawPublisher(SerialNode):
         try:
             if data_type in self._dvl_line_parsers:
                 self._dvl_line_parsers[data_type](self._clean_line(line))
-            else:
+            elif data_type != 'WE':  # Earth-frame water velocity is not used.
                 self.get_logger().warn(f'Unknown data type: {data_type}')
         except ValueError:
             self.get_logger().warn(f'Failed to parse line: {line}')
@@ -92,9 +116,13 @@ class DVLPathfinderRawPublisher(SerialNode):
         Args:
             line (str): line to parse
         """
-        fields = self._extract_floats(line, 0, None)
-        self._current_msg.sa_roll = fields[0]
-        self._current_msg.sa_pitch = fields[1]
+        # Water-only mode has no BD sentence: finish it at the next SA.
+        if self._current_msg.bs_status or self._current_msg.ws_status:
+            self._publish_current()
+        self._current_msg = self._new_message()
+        fields = self._extract_floats(line, 0, 3)
+        self._current_msg.sa_pitch = fields[0]
+        self._current_msg.sa_roll = fields[1]
         self._current_msg.sa_heading = fields[2]
         self._current_msg.sa_valid = True
 
@@ -105,12 +133,14 @@ class DVLPathfinderRawPublisher(SerialNode):
         Args:
             line (str): line to parse
         """
-        fields = self._extract_floats(line, 1, None)
+        if self._current_msg.bs_status or self._current_msg.ws_status:
+            self._publish_current()  # Also recover if SA/BD was lost.
+        fields = self._extract_floats(line, 1, 5)
         self._current_msg.ts_salinity = fields[0]
         self._current_msg.ts_temperature = fields[1]
         self._current_msg.ts_depth = fields[2]
         self._current_msg.ts_sound_speed = fields[3]
-        self._current_msg.ts_built_in_test = int(fields[4])
+        self._current_msg.ts_built_in_test = int(line.split(self.LINE_DELIM)[5].strip(), 16)
 
     def _parse_BI(self, line: str) -> None:
         """
@@ -120,11 +150,12 @@ class DVLPathfinderRawPublisher(SerialNode):
             line (str): line to parse
         """
         fields = self._extract_floats(line, 0, 4)
+        status = line.split(self.LINE_DELIM)[4].strip()
         self._current_msg.bi_x_axis = fields[0]
         self._current_msg.bi_y_axis = fields[1]
         self._current_msg.bi_z_axis = fields[2]
         self._current_msg.bi_error = fields[3]
-        self._current_msg.bi_status = line.split(self.LINE_DELIM)[4]
+        self._current_msg.bi_status = status
 
     def _parse_BS(self, line: str) -> None:
         """
@@ -134,11 +165,13 @@ class DVLPathfinderRawPublisher(SerialNode):
             line (str): line to parse
         """
         fields = self._extract_floats(line, 0, 3)
+        status = line.split(self.LINE_DELIM)[3].strip()
 
         self._current_msg.bs_transverse = fields[0]
         self._current_msg.bs_longitudinal = fields[1]
         self._current_msg.bs_normal = fields[2]
-        self._current_msg.bs_status = line.split(self.LINE_DELIM)[3]
+        self._current_msg.bs_status = status
+        self._current_msg.header.stamp = self.get_clock().now().to_msg()
 
     def _parse_BE(self, line: str) -> None:
         """
@@ -167,19 +200,38 @@ class DVLPathfinderRawPublisher(SerialNode):
         self._current_msg.bd_range = fields[3]
         self._current_msg.bd_time = fields[4]
 
-        self._current_msg.header.stamp = self.get_clock().now().to_msg()
-        self._current_msg.header.frame_id = 'dvl'
-
-        self._pub.publish(self._current_msg)
-        self._current_msg = DVLRaw()
+        self._publish_current()
 
     def _parse_RA(self, line: str) -> None:
         """
-        Parse range and altitude data. *This data is not currently used*.
+        Parse PD13 beam ranges (deci-metres); PD13 has no correlation values.
 
         Args:
             line (str): The line to parse.
         """
+        ranges = self._extract_floats(line, 1, 5)
+        if len(ranges) != 4:
+            raise ValueError('RA requires four beam ranges')
+        self._current_msg.bt_beam_ranges = [value * 0.1 for value in ranges]
+        self._current_msg.bt_ranges_valid = True
+
+    def _parse_WI(self, line: str) -> None:
+        """Read water-track error velocity without relabelling instrument axes."""
+        fields = self._extract_floats(line, 0, 4)
+        status = line.split(self.LINE_DELIM)[4].strip()
+        self._current_msg.wi_error = fields[3] if status == 'A' else math.nan
+
+    def _parse_WS(self, line: str) -> None:
+        """Read ship-frame water velocity from the same ensemble as bottom track."""
+        fields = self._extract_floats(line, 0, 3)
+        status = line.split(self.LINE_DELIM)[3].strip()
+        self._current_msg.ws_transverse, self._current_msg.ws_longitudinal, self._current_msg.ws_normal = fields
+        self._current_msg.ws_status = status
+        self._current_msg.header.stamp = self.get_clock().now().to_msg()
+
+    def _parse_WD(self, line: str) -> None:
+        """Read age of the last good water velocity; do not publish twice per ping."""
+        self._current_msg.wd_time = self._extract_floats(line, 4, 5)[0]
 
 
 def main(args: list[str] | None = None) -> None:

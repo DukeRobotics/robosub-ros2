@@ -906,6 +906,9 @@ class OutputData:
             return
 
         length = len(arr)
+        if length < OutputData._MIN_SIZE:
+            self._create_empty()
+            return
         [self.size] = struct.unpack("I", arr[2:6])
         self.is_valid = (length == self.size)
         """Defines if data in the class are valid."""
@@ -1034,7 +1037,7 @@ class OutputData:
                 elif beam == 3:
                     valid = not math.isnan(self.range_beam3)
                 elif beam == 4:
-                    valid = math.isnan(self.range_beam4)
+                    valid = math.isfinite(self.range_beam4) and self.range_beam4 > 0
         return valid
 
     def is_velocity_valid(self, component=None):
@@ -1053,7 +1056,7 @@ class OutputData:
         valid = False
         if self.is_valid:
             if component is None:
-                valid = not(math.isnan(self.vel_x) or math.isnan(self.vel_y))
+                valid = all(math.isfinite(value) for value in (self.vel_x, self.vel_y, self.vel_z))
             if isinstance(component, int):
                 if component == 1:
                     valid = not math.isnan(self.vel_x)

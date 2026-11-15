@@ -6,6 +6,7 @@ ekf_localization_node:
     world_frame: odom
 
     frequency: 20.0
+    print_diagnostics: true
 
     odom0: sensors/dvl/odom
     odom0_config: [false, false, false, # x, y, z
@@ -15,19 +16,17 @@ ekf_localization_node:
                   false, false, false] # linear acceleration
     odom0_nodelay: true
     odom0_differential: false
-    odom0_pose_rejection_threshold: 3.0
-    odom0_twist_rejection_threshold: 3.0
+    # DVL quality changes covariance; do not hard-reject finite DVL fixes by innovation.
 
     imu0: vectornav/imu
     imu0_config: [false, false, false,
                   false, false, false,
                   false, false, false,
                   true, true, false,
-                  true, true, true]
+                  false, false, false] # no IMU acceleration during DVL gaps
     imu0_nodelay: true
     imu0_remove_gravitational_acceleration: true
-    imu0_pose_rejection_threshold: 3.0
-    imu0_angular_velocity_rejection_threshold: 3.0
+    imu0_twist_rejection_threshold: 3.0
     imu0_linear_acceleration_rejection_threshold: 3.0
 
     pose0: sensors/depth
@@ -37,8 +36,9 @@ ekf_localization_node:
                   false, false, false,
                   false, false, false]
     pose0_nodelay: true
+    pose0_differential: false
     pose0_relative: true
-    pose0_pose_rejection_threshold: 3.0
+    pose0_rejection_threshold: 3.0
 
     twist0: sensors/gyro/angular_velocity/twist
     twist0_config: [false, false, false,
@@ -48,7 +48,7 @@ ekf_localization_node:
                     false, false, false]
     twist0_nodelay: true
     twist0_queue_size: 50
-    twist0_twist_rejection_threshold: 3.0
+    twist0_rejection_threshold: 3.0
 
     smooth_lagged_data: true
     history_length: 0.5
@@ -69,7 +69,7 @@ ekf_localization_node:
                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.000025, 0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.000025, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.00004, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                                  0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.000 01, 0.0,    0.0,    0.0,    0.0,    0.0,
+                                  0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.00001, 0.0,    0.0,    0.0,    0.0,    0.0,
                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.00001, 0.0,    0.0,    0.0,    0.0,
                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.001,    0.0,    0.0,    0.0,
                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.00001, 0.0,    0.0,
