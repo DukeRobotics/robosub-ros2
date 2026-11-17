@@ -116,3 +116,15 @@ class USBCamera(Enum):
     """Enum for different USB cameras."""
     front = 0
     bottom = 1
+
+class SlalomPole: # BASED ON 2026 COMPETITION HANDBOOK. May need to update for 2027
+    """Slalom pole dimensions and HSV color bounds."""
+    HEIGHT = 0.9144  # 3ft height PVC pole
+    WIDTH = 0.033401 # "1 inch" PVC pole diameter,
+                     # which actually has 1.315 outer diameter
+
+    RED_LOW_BOT  = np.array([0,   43.1373, 58.8235])
+    RED_LOW_TOP  = np.array([24,  100,     100])
+    RED_HIGH_BOT = np.array([340, 19.6078, 33.3333])
+    RED_HIGH_TOP = np.array([358, 100,     100])
+
