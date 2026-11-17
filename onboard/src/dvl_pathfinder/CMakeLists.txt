@@ -15,6 +15,7 @@ find_package(custom_msgs REQUIRED)
 find_package(fmt REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 include_directories(
@@ -47,6 +48,7 @@ target_link_libraries(dvl_pathfinder
   ${ament_index_cpp_TARGETS}
   ${custom_msgs_TARGETS}
   ${geometry_msgs_TARGETS}
+  ${std_msgs_TARGETS}
 )
 
 # Explicitly set the language for C files

@@ -93,7 +93,7 @@ class DVLPathfinderRawPublisher(SerialNode):
         try:
             if data_type in self._dvl_line_parsers:
                 self._dvl_line_parsers[data_type](self._clean_line(line))
-            elif data_type != 'WE':  # Earth-frame water velocity is not used.
+            elif data_type not in ('WE', 'HM'):  # Earth-frame water velocity and PD6 health are not fused.
                 self.get_logger().warn(f'Unknown data type: {data_type}')
         except ValueError:
             self.get_logger().warn(f'Failed to parse line: {line}')

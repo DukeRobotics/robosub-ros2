@@ -13,6 +13,7 @@
 #include <cmath>
 #include <limits>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/u_int8_multi_array.hpp>
 #include <rcpputils/asserts.hpp>
 #include <regex>
 #include <string>
@@ -61,6 +62,7 @@ class DVLPathfinder : public rclcpp::Node {
 
         // ── Publishers ───────────────────────────────────────────────────────────
         dvl_raw_pub_ = create_publisher<custom_msgs::msg::DVLRaw>("/sensors/dvl/raw", 10);
+        pd0_pub_ = create_publisher<std_msgs::msg::UInt8MultiArray>("/sensors/dvl/pd0", 10);
 
         // ── Serial initialisation ────────────────────────────────────────────────
         if (!openSerial()) {
@@ -179,9 +181,27 @@ class DVLPathfinder : public rclcpp::Node {
 
             tdym::PDD_AddDecoderData(decoder_.get(), buf, static_cast<int>(n));
 
-            while (tdym::PDD_GetPD0Ensemble(decoder_.get(), &ens)) {
+            while (true) {
+                ens = {};  // Optional blocks must not retain pointers from the previous ping.
+                if (!tdym::PDD_GetPD0Ensemble(decoder_.get(), &ens)) {
+                    break;
+                }
+                // Preserve every checksum-verified ensemble, including optional
+                // diagnostic/water-track blocks not mapped into DVLRaw.
+                std_msgs::msg::UInt8MultiArray packet;
+                packet.data.assign(ens.data, ens.data + ens.ensSize);
+                pd0_pub_->publish(packet);
+
+                // The decoded velocity topic is consumed as ship-frame data.
+                // Other frames remain available in the recorded PD0 bytes.
+                if (ens.fixedLeader[0] == nullptr || ens.fixedLeaderSize[0] < 26 ||
+                    (ens.fixedLeader[0]->xform & 0x18) != 0x10) {
+                    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
+                                        "PD0 recorded, but decoded velocity requires ship coordinates (EX10xxx).");
+                    continue;
+                }
                 double vv[FOUR_BEAMS];
-                double beam_ranges[FOUR_BEAMS];
+                double beam_ranges[FOUR_BEAMS]{};
                 const bool has_velocity = tdym::PDD_GetVesselVelocities(&ens, vv) != 0;
                 const double range = tdym::PDD_GetRangeToBottom(&ens, beam_ranges);
 
@@ -215,6 +235,7 @@ class DVLPathfinder : public rclcpp::Node {
 
                 if (ens.bottomTrack != nullptr) {
                     dvl_raw_msg.bt_quality_valid = true;
+                    dvl_raw_msg.bt_ranges_valid = true;
                     for (std::size_t i = 0; i < FOUR_BEAMS; ++i) {
                         dvl_raw_msg.bt_beam_ranges[i] = beam_ranges[i];
                         dvl_raw_msg.bt_correlation[i] = ens.bottomTrack->correlation[i];
@@ -237,6 +258,7 @@ class DVLPathfinder : public rclcpp::Node {
     std::thread read_thread_;
 
     rclcpp::Publisher<custom_msgs::msg::DVLRaw>::SharedPtr dvl_raw_pub_;
+    rclcpp::Publisher<std_msgs::msg::UInt8MultiArray>::SharedPtr pd0_pub_;
 };
 
 int main(int argc, char** argv) {

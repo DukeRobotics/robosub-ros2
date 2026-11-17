@@ -5,6 +5,66 @@ IMU roll/pitch rates, and the separate gyro's yaw rate. The existing DVL driver,
 `dvl_to_odom`, and EKF handle the pipeline; no additional nodes are needed.
 Robot profiles are in `config/{oogway,oogway_shell,crush}.yaml`.
 
+## Pathfinder formats and PD0 recording
+
+The Python reader accepts **both PD6 and PD13**; it does not configure the
+instrument. `pathfinder_format` defaults to `pd6` and selects the reader, not
+the hardware's persistent output setting.
+
+| Format | Use |
+| --- | --- |
+| PD6 | Text bottom/water velocity, status and error velocity; sufficient for normal fusion. |
+| PD13 | Similar text output, adding pressure and individual beam ranges; useful for bottom-lock checks. |
+| PD0 | Binary diagnostic ensembles with selectable quality, configuration and timing blocks; useful for calibration bags. |
+
+Neither PD6 nor PD13 exposes per-beam correlation magnitudes. PD0 can provide
+correlation, intensity, percent-good, ranges and RSSI, plus optional high-resolution
+velocity (`5803h`) and navigation uncertainty/timing (`2013h`) when the device's
+features support them. It exposes more evidence for covariance tuning; changing
+the encoding does not itself improve acoustic accuracy. Enabled blocks affect
+packet size and available serial bandwidth. See the
+[Pathfinder guide](https://www.teledynemarine.com/en-us/resources/Documents/Brand%20Support/RD%20INSTRUMENTS/Technical%20Resources/Manuals%20and%20Guides/Pathfinder/PathFinder%20DVL%20Guide_Apr22.pdf),
+“Choosing an Output Data Format.”
+
+For PD0 tests, reuse the existing C++ `dvl_pathfinder` driver in place of the
+Python reader. No extra driver runs concurrently. Configure the device for PD0
+using the vendor setup tool, with fixed leader `0000h`, bottom track `0600h`,
+and any supported diagnostic blocks needed for the experiment. Use ship
+coordinates (`EX10xxx`, preserving the intended tilt/three-beam flags) for
+decoded velocity; other coordinate systems are recorded but not fused.
+
+After sourcing ROS and the core workspace, rebuild from `onboard/`:
+
+```bash
+colcon build --packages-select dvl_pathfinder offboard_comms execute
+source install/setup.bash
+export ROBOT_NAME=oogway
+ros2 launch execute robot.launch.py pathfinder_format:=pd0
+```
+
+In another sourced terminal, record:
+
+```bash
+ros2 bag record -o pd0_covariance_run /sensors/dvl/pd0 /sensors/dvl/raw \
+  /sensors/dvl/odom /sensors/depth /sensors/gyro/angular_velocity/twist \
+  /vectornav/imu /state /diagnostics /tf /tf_static
+```
+
+`/sensors/dvl/pd0` is `std_msgs/msg/UInt8MultiArray`: each message contains one
+complete checksum-verified ensemble, including its header/checksum and optional
+blocks. Bag timestamps are ROS receipt times, not hardware ping times; native
+timing fields remain in the bytes for offline analysis. `/sensors/dvl/raw`
+contains decoded bottom velocity/quality for convenient plotting. Record the
+binary topic too so optional blocks are preserved even if not decoded yet.
+
+This PD0 test reader currently maps **bottom track only** into fusion; water-track
+blocks remain in the binary recording. Use PD6/PD13 for the existing online
+water-track fallback. To return, stop the launch, restore the device's PD6
+output setting, and launch with `pathfinder_format:=pd6` (or omit the argument).
+Do not independently start both serial drivers. The standalone existing
+`ros2 launch dvl_pathfinder dvl_pathfinder.xml` is also available when the Python
+reader is stopped.
+
 ## DVL bottom lock and water-track fallback
 
 - Prefer bottom-track velocity with status `A`, finite XYZ, and at least three

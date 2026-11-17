@@ -19,7 +19,6 @@ def generate_launch_description() -> LaunchDescription:
     pkg_acoustics = Path(get_package_share_directory('acoustics'))
     pkg_controls = Path(get_package_share_directory('controls'))
     pkg_cv = Path(get_package_share_directory('cv'))
-    pkg_dvl_pathfinder = Path(get_package_share_directory('dvl_pathfinder'))  # noqa: F841 TODO tf lol
     pkg_dvl_wayfinder = Path(get_package_share_directory('dvl_wayfinder'))
     pkg_offboard_comms = Path(get_package_share_directory('offboard_comms'))
     pkg_sensor_fusion = Path(get_package_share_directory('sensor_fusion'))
@@ -36,6 +35,10 @@ def generate_launch_description() -> LaunchDescription:
         'enable_recording',
         default_value='false',
         description='Enable or disable recording functionality',
+    ))
+    ld.add_action(DeclareLaunchArgument(
+        'pathfinder_format', default_value='pd6', choices=['pd6', 'pd13', 'pd0'],
+        description='Pathfinder output reader; PD0 is for diagnostic recording.',
     ))
 
     if robot_name == 'oogway':
@@ -58,6 +61,7 @@ def generate_launch_description() -> LaunchDescription:
 
     ld.add_action(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(pkg_offboard_comms / 'launch' / 'offboard_comms.launch.py')),
+        launch_arguments=[('pathfinder_format', LaunchConfiguration('pathfinder_format'))],
     ))
 
     ld.add_action(IncludeLaunchDescription(
