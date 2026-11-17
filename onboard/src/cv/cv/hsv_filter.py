@@ -36,7 +36,8 @@ class HSVFilter(Node):
 
         self.all_contours_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/all_contours', 10)
 
-        self.raw_hsv_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/hsv_raw', 10) # Publisher for raw HSV image without morphology
+        # Publisher for raw HSV image without morphology
+        self.raw_hsv_pub = self.create_publisher(Image, f'/cv/{camera}_usb/{name}/hsv_raw', 10)
 
         # Subscribers and publishers
         if pubs is None:
@@ -60,8 +61,7 @@ class HSVFilter(Node):
     def create_additional_pubs_subs_vars(self) -> None:
         """Additional publishers and subscribers to be used later."""
 
-    def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:   
-        # Convert the input HSV values to OpenCV format                         
+    def actual_to_opencv_hsv(self, hsv_actual: np.ndarray) -> np.ndarray:
         """
         Convert actual HSV values to OpenCV HSV.
 
@@ -80,7 +80,7 @@ class HSVFilter(Node):
         return hsv_opencv
 
     def image_callback(self, data: CompressedImage) -> None:
-        """Attemp to convert image and apply contours."""
+        """Attempt to convert image and apply contours."""
         try:
             # Convert the image from the compressed format to OpenCV format
             np_arr = np.frombuffer(data.data, np.uint8)
@@ -91,18 +91,15 @@ class HSVFilter(Node):
             return
 
         # Apply HSV filtering on the image
-        masks = [cv2.inRange(hsv_image, self.actual_to_opencv_hsv(r[0]), 
+        masks = [cv2.inRange(hsv_image, self.actual_to_opencv_hsv(r[0]),
                              self.actual_to_opencv_hsv(r[1])) for r in self.mask_ranges]
         mask = reduce(cv2.bitwise_or, masks)
 
         # Apply morphological filters as necessary to clean up binary image
         final_hsv = self.morphology(mask)
 
-        # Publish HSV filter without morphology
-        raw_mask = mask
-        final_hsv = self.morphology(raw_mask)
-
-        raw_mask_msg = self.bridge.cv2_to_imgmsg(raw_mask, 'mono8')
+        # Publish the raw HSV filtered image without morphology
+        raw_mask_msg = self.bridge.cv2_to_imgmsg(mask, 'mono8')
         self.raw_hsv_pub.publish(raw_mask_msg)
 
         # Publish the HSV filtered(morphology) image

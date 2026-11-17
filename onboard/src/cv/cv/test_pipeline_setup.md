@@ -9,19 +9,32 @@ If docker container refuses to start ```Cannot start Docker Compose application.
 
 If git commands fail due to existing index.lock, and there should not be one, do ```rm -f .git/index.lock``` from project root
 
+## 0.5. SSD Logs
+
+Add the below to docker-compose.yml under ```volumes``` and plug the SSD in. You may have to do something to make WSL recognize the SSD and mount it to /mnt/d in WSL.
+```
+      - type: bind
+        source: /mnt/d
+        target: /home/ubuntu/robosub-ros2/old_competition_bags
+        read_only: true
+```
+
+
 ## 1. Build the CV package
 
 From the repository root, build all packages once if the workspaces have not
 been built yet:
 
 ```bash
-source build.sh
+. build.sh clean
+. build.sh
 ```
 
 For later changes to the CV package, rebuild just that package:
 
 ```bash
-source build.sh cv
+. build.sh clean cv
+. build.sh cv
 ```
 
 ## 2. Replay the camera bag
@@ -75,7 +88,8 @@ dependencies, rebuild from the repository root in the container before
 restarting the node:
 
 ```bash
-source build.sh cv
+. build.sh clean
+. build.sh
 ros2 run cv hsv_red_pole
 ```
 
@@ -87,10 +101,10 @@ Foxglove will display the new output as soon as the restarted node publishes.
 Open a third terminal in the container and run:
 
 ```bash
-ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=28765
+fg-ws
 ```
 
-This is the command behind the repository's `fg-ws` alias. In Foxglove Studio,
+In Foxglove Studio,
 connect to `ws://localhost:28765` when the container is running on your
 computer. Add Image panels for the topics above to watch the mask and
 detections live.
