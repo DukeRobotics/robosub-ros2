@@ -30,31 +30,18 @@ and sysfs interfaces. It replaces GPUtil/`nvidia-smi`. From the repository root
 inside the container, check access with `tegrastats --interval 1000` (Ctrl+C to
 stop), then launch the publisher using the command above.
 
-If `tegrastats` is not found in the container, the ROS image does not include
-this JetPack host utility. On **Crush's Jetson host, outside Docker**, first check:
+On Crush, the shared [robot Compose configuration](../../../robot/docker-compose.yml)
+mounts the host's `tegrastats` executable read-only into the container. Set
+`TEGRASTATS_HOST_PATH` to the host's absolute executable path and
+`ROBOT_DOCKER_RUNTIME=nvidia` in `.env`; see
+[Crush's Jetson setup](../../../SETUP.md#enable-the-jetson-gpu-on-crush).
+The mount persists across container recreation. On x86 hosts, leave both variables
+unset; Compose mounts a non-executable `/dev/null` placeholder and GPU telemetry
+is unavailable.
 
-```bash
-command -v tegrastats
-tegrastats --interval 1000
-```
-
-Stop the check with Ctrl+C. If it works on the host, copy that host's executable
-into the existing container (also run these commands on the host):
-
-```bash
-docker cp "$(command -v tegrastats)" onboard2:/usr/local/bin/tegrastats
-docker exec onboard2 tegrastats --interval 1000
-```
-
-Stop the container check with Ctrl+C, then restart the system info publisher.
-This copy lasts only until the container is recreated. For a permanent host
-binary mount, follow [Crush's Jetson setup](../../../SETUP.md#enable-the-jetson-gpu-on-crush).
-`docker-build.sh` selects the Jetson Compose file on robot hosts configured with
-`ROBOT_DOCKER_RUNTIME=nvidia`; Oogway keeps the shared robot configuration.
-If the host command is also missing, restore the utility from the matching
-JetPack/L4T installation before retrying. If the copied executable reports
-missing libraries or omits GPU readings, copying alone is insufficient: inspect
-its library dependencies and the container's Jetson device/sysfs access.
+If `tegrastats` cannot run inside the container, check that the host executable
+exists, the `.env` settings were applied when creating the container, and the
+NVIDIA runtime exposes the required libraries and device/sysfs interfaces.
 
 The node keeps one `tegrastats` process running at a one-second sampling interval
 and reads it outside the ROS executor. `gpu_percent` reports `GR3D_FREQ`
@@ -70,8 +57,14 @@ disk publishing continues. Restore `tegrastats` access and restart the node to
 retry starting the reader. Non-Jetson machines also follow this fallback; there
 is no discrete NVIDIA GPU backend. Shutdown stops only this node's child process.
 
-After changing this package, run `source build.sh system_utils` from the repository
-root inside the container and restart the publisher.
+After changing this package, rebuild from the repository root inside the container:
+
+```bash
+. build.sh clean system_utils
+. build.sh system_utils
+```
+
+Then restart the publisher.
 
 ## Topic Transforms
 

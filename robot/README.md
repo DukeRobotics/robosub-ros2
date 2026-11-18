@@ -30,17 +30,12 @@ The `docker-compose.yml` file in the `robot` directory extends the `docker-compo
 
 It also accepts an optional `ROBOT_DOCKER_RUNTIME` value from `.env`. Set it to `nvidia` only on a Jetson host with NVIDIA Container Toolkit configured; otherwise it defaults to `runc`. This keeps the shared compose configuration usable on Oogway's non-NVIDIA NUC.
 
-## `docker-compose.jetson.yml`
-
-On robot hosts with `ROBOT_DOCKER_RUNTIME=nvidia`, `docker-build.sh` selects this
-file instead of `robot/docker-compose.yml`. It extends that robot configuration
-and mounts the host's `/usr/bin/tegrastats` read-only at
-`/usr/local/bin/tegrastats` in the container. This survives container recreation
-without copying a binary into the image. The host executable must already exist;
-Compose fails rather than creating a directory if it is missing. Set
-`TEGRASTATS_HOST_PATH` in the root `.env` if `command -v tegrastats` reports a
-different absolute host path. Oogway continues using `robot/docker-compose.yml`.
-See [Crush setup](../SETUP.md#enable-the-jetson-gpu-on-crush) for activation.
+Set `TEGRASTATS_HOST_PATH` to the host's absolute `tegrastats` path on Crush.
+The same Compose file mounts it read-only at `/usr/local/bin/tegrastats`, including
+after container recreation. An invalid path fails instead of creating a host
+directory. On x86 hosts, leave it unset: the mount uses `/dev/null`, which is not
+executable, so the publisher treats GPU telemetry as unavailable. See
+[Crush setup](../SETUP.md#enable-the-jetson-gpu-on-crush).
 
 ## `robot_config.sh`
 The `robot_config.sh` script defines environment variables, aliases, and other configuration needed on the robot. It should be sourced in the robot's `.bashrc` file to make the configuration available in the robot's shell.

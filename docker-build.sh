@@ -114,9 +114,6 @@ eval "$docker_build_cmd"
 # If $IS_ROBOT is set to "true", then this script is running on the robot
 if [ "$IS_ROBOT" == "true" ]; then
     compose_file="robot/docker-compose.yml"
-    if [ "$ROBOT_DOCKER_RUNTIME" = "nvidia" ]; then
-        compose_file="robot/docker-compose.jetson.yml"
-    fi
 else
     compose_file="docker-compose.yml"
 fi
