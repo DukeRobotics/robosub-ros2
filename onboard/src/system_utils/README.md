@@ -24,6 +24,48 @@ To launch the system info publisher, use the command:
 ros2 launch system_utils system_info_pub.xml
 ```
 
+GPU telemetry comes from NVIDIA Jetson's `tegrastats`, which must be available on
+`PATH` **inside the development container** with access to the Jetson's device
+and sysfs interfaces. It replaces GPUtil/`nvidia-smi`. From the repository root
+inside the container, check access with `tegrastats --interval 1000` (Ctrl+C to
+stop), then launch the publisher using the command above.
+
+On Crush, the shared [robot Compose configuration](../../../robot/docker-compose.yml)
+mounts the host's `tegrastats` executable read-only into the container. Set
+`TEGRASTATS_HOST_PATH` to the host's absolute executable path and
+`ROBOT_DOCKER_RUNTIME=nvidia` in `.env`; see
+[Crush's Jetson setup](../../../SETUP.md#enable-the-jetson-gpu-on-crush).
+The mount persists across container recreation. On x86 hosts, leave both variables
+unset; Compose mounts a non-executable `/dev/null` placeholder and GPU telemetry
+is unavailable.
+
+If `tegrastats` cannot run inside the container, check that the host executable
+exists, the `.env` settings were applied when creating the container, and the
+NVIDIA runtime exposes the required libraries and device/sysfs interfaces.
+
+The node keeps one `tegrastats` process running at a one-second sampling interval
+and reads it outside the ROS executor. `gpu_percent` reports `GR3D_FREQ`
+utilization; `gpu_speed` reports the maximum listed GPU clock in GHz, or zero
+when no clock is reported. GPU memory fields remain zero because `tegrastats`
+does not provide GPU-only memory usage; system RAM remains available in `ram`.
+See [NVIDIA's field descriptions](https://docs.nvidia.com/jetson/archives/r36.3/DeveloperGuide/AT/JetsonLinuxDevelopmentTools/TegrastatsUtility.html).
+
+If the utility is missing, exits, produces no valid GPU readings, or the latest
+reading is over five seconds old, GPU fields remain zero and warnings explain
+that telemetry is unavailable. These zeros are not measurements. CPU, RAM, and
+disk publishing continues. Restore `tegrastats` access and restart the node to
+retry starting the reader. Non-Jetson machines also follow this fallback; there
+is no discrete NVIDIA GPU backend. Shutdown stops only this node's child process.
+
+After changing this package, rebuild from the repository root inside the container:
+
+```bash
+. build.sh clean system_utils
+. build.sh system_utils
+```
+
+Then restart the publisher.
+
 ## Topic Transforms
 
 The topic transforms node will allow the user to transform a topic from one message type to another. This is useful primarily for debugging purposes, or to make certain topics more human-readable. To run the node, use the command:
