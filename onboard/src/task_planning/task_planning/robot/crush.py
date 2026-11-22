@@ -34,26 +34,26 @@ async def main(self: Task) -> Task[None, None, None]:
         Strafe:
         0.5: ~5
     """
-    DEPTH_LEVEL = State().orig_depth - 0.8
+    DEPTH_LEVEL = State().orig_depth - 0.5
     tasks = [
 
     #     ######## True competition plan, Lane D ########
     #     # Gate
     #     ivc_tasks.delineate_ivc_log(parent=self),
-        comp_tasks.initial_submerge(0.8, enable_controls_flag=True, timeout=15, parent=self),
+        comp_tasks.initial_submerge(0.5, enable_controls_flag=True, timeout=15, parent=self),
     #     comp_tasks.coin_flip(enable_same_direction=True, parent=self),
     #     ivc_tasks.send_message(IVCMessageType.CRUSH_COIN_FLIP, timeout=7, parent=self),
-    #     move_tasks.move_with_directions(
-    #         [(2.5, 0, 0), (2, 0, 0)],
-    #         depth_level=DEPTH_LEVEL,
-    #         correct_yaw=True,
-    #         correct_depth=True,
-    #         keep_orientation=True,
-    #         keep_depth=True,
-    #         timeout=12,
-    #         pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.03),
-    #         parent=self,
-    #     ),
+        move_tasks.move_with_directions(
+            [(2, 0, 0)],
+            depth_level=DEPTH_LEVEL,
+            correct_yaw=True,
+            correct_depth=True,
+            keep_orientation=True,
+            keep_depth=True,
+            timeout=12,
+            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.03),
+            parent=self,
+        ),
     #     ivc_tasks.ivc_send(IVCMessageType.CRUSH_GATE, timeout=7, parent=self),
     #     comp_tasks.gate_style_task(depth_level=1.0, parent=self),
     #     ivc_tasks.ivc_send(IVCMessageType.CRUSH_STYLE, timeout=7, parent=self),

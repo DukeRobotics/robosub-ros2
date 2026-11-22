@@ -1,9 +1,9 @@
 pid:
   position:
     x:
-      Kp: 0.80
+      Kp: 0.80000000000000004
       Ki: 0
-      Kd: 0.42
+      Kd: 0.41999999999999998
       Ff: 0
       control_effort:
         min: -1
@@ -11,9 +11,9 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     y:
-      Kp: 0.85
+      Kp: 0.84999999999999998
       Ki: 0
-      Kd: 0.35
+      Kd: 0.34999999999999998
       Ff: 0
       control_effort:
         min: -1
@@ -21,9 +21,9 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     z:
-      Kp: 1.43
+      Kp: 2.5
       Ki: 0
-      Kd: 0.85
+      Kd: 0.84999999999999998
       Ff: 0
       control_effort:
         min: -1
@@ -31,7 +31,7 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     roll:
-      Kp: 0.05
+      Kp: 0.050000000000000003
       Ki: 0
       Kd: 0
       Ff: 0
@@ -41,7 +41,7 @@ pid:
       derivative_type: 1
       error_ramp_rate: 1000
     pitch:
-      Kp: 0.05
+      Kp: 0.050000000000000003
       Ki: 0
       Kd: 0
       Ff: 0
@@ -135,7 +135,7 @@ pid:
     y:
       Kp: 1
       Ki: 0.02
-      Kd: 0.05
+      Kd: 0.050000000000000003
       Ff: 0
       control_effort:
         min: -1
