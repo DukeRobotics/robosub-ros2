@@ -94,6 +94,7 @@ USER_GID=
     > If you are setting up a new robot, you may need to add the robot name to the `robot/robot_names` file. See [robot/README.md](robot/README.md#robot_names) for more information.
 - `IS_ROBOT` (Optional): Set to `true` if you are setting up the repository on the robot. Set to `false` or do not include this variable in `.env` if you are setting up the repository on your development machine.
 - `ROBOT_DOCKER_RUNTIME` (Optional): Set this to `nvidia` on Crush so its Docker service uses NVIDIA Container Toolkit and exposes the Jetson GPU, CUDA driver, and video-encoder capability to the container. Leave it unset on Oogway and other non-NVIDIA hosts; it defaults to Docker's `runc` runtime.
+- `TEGRASTATS_HOST_PATH` (Optional): On Crush, set this to the absolute path reported by `command -v tegrastats` on the host. The robot Compose file mounts it read-only at `/usr/local/bin/tegrastats`. Leave it unset on x86 hosts; the mount defaults to the non-executable `/dev/null` placeholder.
 - `FOXGLOVERC_PATH` (Optional): Absolute path to the [`.foxgloverc`](#set-up-the-foxgloverc-file) file.
 - `USER_UID` and `USER_GID` (Optional): The user ID and group ID of the `ubuntu` user in the Docker container.
 
@@ -112,18 +113,34 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 ```
 
-Confirm that `docker info` lists an `nvidia` runtime, then add this to Crush's `.env`:
+Confirm that `docker info` lists an `nvidia` runtime and run `command -v tegrastats`
+on the host. Add the following to Crush's `.env`, replacing `/usr/bin/tegrastats`
+if the command reports a different absolute path. If the utility is missing,
+restore it from the host's matching JetPack/L4T installation first:
 
 ```bash
 ROBOT_DOCKER_RUNTIME=nvidia
+TEGRASTATS_HOST_PATH=/usr/bin/tegrastats
 ```
 
-Recreate the container with `./docker-build.sh`. Verify inside it with:
+From the repository root **on the host**, run `./docker-build.sh` to apply the
+runtime and read-only tegrastats mount using [robot/docker-compose.yml](robot/docker-compose.yml).
+Container recreation stops existing processes; do this with robot operations
+stopped.
+
+Verify inside the container with:
 
 ```bash
 ls -l /dev/nvhost-gpu
 ldconfig -p | grep libcuda
 ```
+
+Run `tegrastats --interval 1000` inside the container and check for `GR3D_FREQ`
+readings, then stop it with Ctrl+C. The host binary mount persists across container
+recreation. If it reports missing libraries or cannot read GPU data, check the
+NVIDIA runtime and device permissions. See the
+[system-utils README](onboard/src/system_utils/README.md#system-info-publisher)
+for telemetry behavior.
 
 `nvidia-smi` is normally not available on Jetson, so it is not an appropriate validation command there. Oogway must leave `ROBOT_DOCKER_RUNTIME` unset.
 

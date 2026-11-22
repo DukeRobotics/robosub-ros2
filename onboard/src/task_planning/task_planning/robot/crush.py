@@ -34,17 +34,17 @@ async def main(self: Task) -> Task[None, None, None]:
         Strafe:
         0.5: ~5
     """
-    DEPTH_LEVEL = State().orig_depth - 0.8
+    DEPTH_LEVEL = State().orig_depth - 0.5
     tasks = [
 
-        ######## True competition plan, Lane D ########
-        # Gate
-        ivc_tasks.delineate_ivc_log(parent=self),
-        comp_tasks.initial_submerge(0.8, enable_controls_flag=True, timeout=15, parent=self),
-        comp_tasks.coin_flip(enable_same_direction=True, parent=self),
-        ivc_tasks.send_message(IVCMessageType.CRUSH_COIN_FLIP, timeout=7, parent=self),
+    #     ######## True competition plan, Lane D ########
+    #     # Gate
+    #     ivc_tasks.delineate_ivc_log(parent=self),
+        comp_tasks.initial_submerge(0.5, enable_controls_flag=True, timeout=15, parent=self),
+    #     comp_tasks.coin_flip(enable_same_direction=True, parent=self),
+    #     ivc_tasks.send_message(IVCMessageType.CRUSH_COIN_FLIP, timeout=7, parent=self),
         move_tasks.move_with_directions(
-            [(2.5, 0, 0), (2, 0, 0)],
+            [(2, 0, 0)],
             depth_level=DEPTH_LEVEL,
             correct_yaw=True,
             correct_depth=True,
@@ -54,40 +54,40 @@ async def main(self: Task) -> Task[None, None, None]:
             pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.03),
             parent=self,
         ),
-        ivc_tasks.ivc_send(IVCMessageType.CRUSH_GATE, timeout=7, parent=self),
-        comp_tasks.gate_style_task(depth_level=1.0, parent=self),
-        ivc_tasks.ivc_send(IVCMessageType.CRUSH_STYLE, timeout=7, parent=self),
-        # Turn 120 degrees CCW toward the wall
-        move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, 11 * math.pi / 12),
-            keep_orientation=True,
-            timeout=10,
-            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.03),
-            parent=self,
-        ),
-        sonar_tasks.rotate_to_normal(
-            start_angle=-25,
-            end_angle=25,
-            scan_distance=8,
-            yaw_threshold=math.pi / 24,
-            parent=self,
-        ),
-        sonar_tasks.rotate_to_normal(
-            start_angle=-45,
-            end_angle=45,
-            scan_distance=7,
-            yaw_threshold=math.pi / 36,
-            parent=self,
-        ),
-        # Turn 90 degrees CW toward the slalom.
-        move_tasks.move_to_pose_local(
-            geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi/2),
-            keep_orientation=True,
-            timeout=10,
-            pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.03),
-            parent=self,
-        ),
-        # Continue through the gate, then move left.
+    #     ivc_tasks.ivc_send(IVCMessageType.CRUSH_GATE, timeout=7, parent=self),
+    #     comp_tasks.gate_style_task(depth_level=1.0, parent=self),
+    #     ivc_tasks.ivc_send(IVCMessageType.CRUSH_STYLE, timeout=7, parent=self),
+    #     # Turn 120 degrees CCW toward the wall
+    #     move_tasks.move_to_pose_local(
+    #         geometry_utils.create_pose(0, 0, 0, 0, 0, 11 * math.pi / 12),
+    #         keep_orientation=True,
+    #         timeout=10,
+    #         pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.03),
+    #         parent=self,
+    #     ),
+    #     sonar_tasks.rotate_to_normal(
+    #         start_angle=-25,
+    #         end_angle=25,
+    #         scan_distance=8,
+    #         yaw_threshold=math.pi / 24,
+    #         parent=self,
+    #     ),
+    #     sonar_tasks.rotate_to_normal(
+    #         start_angle=-45,
+    #         end_angle=45,
+    #         scan_distance=7,
+    #         yaw_threshold=math.pi / 36,
+    #         parent=self,
+    #     ),
+    #     # Turn 90 degrees CW toward the slalom.
+    #     move_tasks.move_to_pose_local(
+    #         geometry_utils.create_pose(0, 0, 0, 0, 0, -math.pi/2),
+    #         keep_orientation=True,
+    #         timeout=10,
+    #         pose_tolerances=move_tasks.create_twist_tolerance(angular_yaw=0.03),
+    #         parent=self,
+    #     ),
+    #     # Continue through the gate, then move left.
 
         # Slalom
         move_tasks.move_with_directions(

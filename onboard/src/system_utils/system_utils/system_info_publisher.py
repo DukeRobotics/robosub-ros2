@@ -1,11 +1,12 @@
 
 from typing import ClassVar
 
-import GPUtil
 import psutil
 import rclpy
 from custom_msgs.msg import SystemUsage
 from rclpy.node import Node
+
+from system_utils.tegrastats import TegrastatsReader
 
 
 class SystemInfoPublisher(Node):
@@ -25,6 +26,11 @@ class SystemInfoPublisher(Node):
 
         self._pub = self.create_publisher(SystemUsage, self.TOPIC_NAME, 10)
         self._current_msg = SystemUsage()
+        self._gpu_reader = None
+        try:
+            self._gpu_reader = TegrastatsReader()
+        except OSError as exc:
+            self.get_logger().warning(f'Cannot start tegrastats; GPU telemetry unavailable: {exc}')
         self.run()
 
         self.get_logger().info('System info publisher node started.')
@@ -36,20 +42,22 @@ class SystemInfoPublisher(Node):
 
     def get_gpu(self) -> None:
         """Retrieve GPU usage information and update the message."""
-        retrieved_gpus = GPUtil.getGPUs()
-        if len(retrieved_gpus) > 0:
-            gpu = retrieved_gpus[0]
-            self._current_msg.gpu_memory.used = gpu.memoryUsed / 1000
-            self._current_msg.gpu_memory.total = gpu.memoryTotal / 1000
-            self._current_msg.gpu_memory.percentage = gpu.memoryUsed / gpu.memoryTotal * 100
-            self._current_msg.gpu_percent = gpu.load * 100
-            self._current_msg.gpu_speed = 0.0
-        else:
-            self._current_msg.gpu_memory.used = 0.0
-            self._current_msg.gpu_memory.total = 0.0
-            self._current_msg.gpu_memory.percentage = 0.0
-            self._current_msg.gpu_percent = 0.0
-            self._current_msg.gpu_speed = 0.0
+        # Jetson uses shared system RAM; tegrastats does not report GPU-only memory.
+        # Fresh messages retain zero GPU memory fields when that data is unavailable.
+        stats = self._gpu_reader.get_gpu() if self._gpu_reader is not None else None
+        if stats is None:
+            self.get_logger().warning(
+                'GPU telemetry unavailable: check tegrastats in the container and restart this node.',
+                throttle_duration_sec=30.0,
+            )
+            return
+        self._current_msg.gpu_percent, self._current_msg.gpu_speed = stats
+
+    def destroy_node(self) -> None:
+        """Stop our telemetry subprocess when the ROS node shuts down."""
+        if self._gpu_reader is not None:
+            self._gpu_reader.close()
+        super().destroy_node()
 
     def get_ram(self) -> None:
         """Retrieve RAM usage information and update the message."""

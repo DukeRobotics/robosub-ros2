@@ -214,12 +214,6 @@ wheels = [
 ]
 
 [[package]]
-name = "gputil"
-version = "1.4.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ed/0e/5c61eedde9f6c87713e89d794f01e378cfd9565847d4576fa627d758c554/GPUtil-1.4.0.tar.gz", hash = "sha256:099e52c65e512cdfa8c8763fca67f5a5c2afb63469602d5dcb4d296b3661efb9", size = 5545, upload-time = "2018-12-18T09:12:13.63Z" }
-
-[[package]]
 name = "isort"
 version = "9.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -734,7 +728,6 @@ dependencies = [
     { name = "fsspec" },
     { name = "future" },
     { name = "gitpython" },
-    { name = "gputil" },
     { name = "jinja2" },
     { name = "jsonpickle" },
     { name = "kiwisolver" },
@@ -776,7 +769,6 @@ requires-dist = [
     { name = "fsspec", specifier = "==2025.9.0" },
     { name = "future", specifier = "==1.0.0" },
     { name = "gitpython" },
-    { name = "gputil" },
     { name = "jinja2", specifier = "==3.1.6" },
     { name = "jsonpickle" },
     { name = "kiwisolver", specifier = "==1.4.9" },

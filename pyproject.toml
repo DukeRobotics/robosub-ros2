@@ -12,7 +12,6 @@ dependencies = [
     "fsspec==2025.9.0",
     "future==1.0.0",
     "GitPython",
-    "gputil",
     "Jinja2==3.1.6",
     "jsonpickle",
     "kiwisolver==1.4.9",
